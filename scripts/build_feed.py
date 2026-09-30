@@ -56,15 +56,8 @@ def youtube(xml):
     return out
 
 def dedupe(posts):
-    """같은 봉사 글이 티스토리·네이버에 둘 다 있으면 홈페이지엔 티스토리 글만 보여준다 (±1일)."""
-    def day(p):
-        try: return datetime.fromisoformat(p["date"]).date()
-        except Exception: return None
-    t_days = [day(p) for p in posts if p["src"] == "tistory" and p["kind"] == "봉사" and day(p)]
-    def dup(p):
-        d = day(p)
-        return p["src"] == "naver" and p["kind"] == "봉사" and d and any(abs((d - x).days) <= 1 for x in t_days)
-    return [p for p in posts if not dup(p)]
+    """봉사 글은 티스토리에서만 가져온다 (네이버 봉사 글은 홈페이지에 안 보임)."""
+    return [p for p in posts if not (p["src"] == "naver" and p["kind"] == "봉사")]
 
 def main():
     posts, errors = [], []
