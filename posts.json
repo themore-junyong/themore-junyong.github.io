@@ -1,6 +1,16 @@
 {
- "updated": "2026-09-30T01:50:44.635654+00:00",
+ "updated": "2026-09-30T06:56:53.279190+00:00",
  "posts": [
+  {
+   "kind": "말씀",
+   "src": "tistory",
+   "title": "당신의 하나님은 너무 작다 | 창세기 강해 2026 ①",
+   "link": "https://changenavigator.tistory.com/entry/%EB%8B%B9%EC%8B%A0%EC%9D%98-%ED%95%98%EB%82%98%EB%8B%98%EC%9D%80-%EB%84%88%EB%AC%B4-%EC%9E%91%EB%8B%A4-%EC%B0%BD%EC%84%B8%EA%B8%B0-%EA%B0%95%ED%95%B4-2026-%E2%91%A0",
+   "date": "2026-09-30T06:05:21+00:00",
+   "summary": "태초에 하나님이 천지를 창조하시니라. (창세기 1:1) 성경을 펼치면 가장 먼저 만나는 문장입니다. 너무 익숙해서 그냥 넘어가곤 하죠. 그런데 하나님은 사랑하라는…",
+   "image": "https://blog.kakaocdn.net/dn/ICUdU/dJMcablFD1o/WAFTBGoQSBzJMy7fKelRdk/img.png",
+   "cat": "설교&middot;묵상"
+  },
   {
    "kind": "강의",
    "src": "naver",
@@ -877,5 +887,7 @@
    "cat": "설교&middot;묵상"
   }
  ],
- "errors": []
+ "errors": [
+  "youtube: HTTP Error 404: Not Found"
+ ]
 }
