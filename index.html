@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>THE MORE 김준용</title>
+<meta name="description" content="사역자·강사·앱 개발자·봉사 리더 김준용. 받은 것을 흘려보내는 사람.">
+<meta property="og:title" content="THE MORE 김준용">
+<meta property="og:description" content="받은 은혜보다 한 걸음 더, 받은 사랑보다 한 사람 더.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=IBM+Plex+Sans+KR:wght@400;500;600&display=swap">
+<style>
+/* Layout: 한 줄 세로 흐름 — 물줄기처럼 위에서 아래로, 넓은 여백과 왼쪽 정렬 */
+:root{
+  --bg:#F3F5F4;        /* 새벽 돌빛 */
+  --surface:#FFFFFF;
+  --ink:#16222B;       /* 깊은 먹빛 남색 */
+  --muted:#5B6A72;
+  --line:#D5DDDC;
+  --flow:#1F6F78;      /* 흘러가는 물빛 */
+  --flow-soft:#E1EEEE;
+  --display:"Gowun Batang","Noto Serif KR",Georgia,serif;
+  --body:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0F171C;--surface:#16222A;--ink:#E7EEEE;--muted:#98A8AE;--line:#27363F;--flow:#6FC1C6;--flow-soft:#17333A;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0F171C;--surface:#16222A;--ink:#E7EEEE;--muted:#98A8AE;--line:#27363F;--flow:#6FC1C6;--flow-soft:#17333A;color-scheme:dark}
+
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.75}
+.wrap{max-width:760px;margin:0 auto;padding-inline:20px;padding-block:48px 72px;display:flex;flex-direction:column;gap:72px}
+h1,h2,h3{font-family:var(--display);font-weight:700;text-wrap:balance;margin:0}
+p{margin:0}
+a{color:var(--flow)}
+a:focus-visible,button:focus-visible{outline:2px solid var(--flow);outline-offset:3px;border-radius:4px}
+.eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:600}
+
+/* Hero */
+.hero{display:flex;flex-direction:column;gap:20px}
+.mark{font-family:var(--display);font-size:clamp(44px,11vw,84px);line-height:1;letter-spacing:-.01em}
+.mark span{color:var(--flow)}
+.who{font-size:18px;color:var(--muted)}
+.who b{color:var(--ink);font-weight:600}
+.wave{width:100%;max-width:100%;height:40px;display:block}
+.wave path{fill:none;stroke:var(--flow);stroke-width:2;stroke-linecap:round;stroke-dasharray:900;stroke-dashoffset:0;animation:flow 2.4s ease-out both}
+@keyframes flow{from{stroke-dashoffset:900}to{stroke-dashoffset:0}}
+@media (prefers-reduced-motion:reduce){.wave path{animation:none}}
+.thesis{font-family:var(--display);font-size:clamp(22px,4.6vw,30px);line-height:1.5;max-width:22em}
+.triad{display:flex;flex-wrap:wrap;gap:8px 18px;font-size:14px;color:var(--muted);letter-spacing:.06em}
+.triad span::before{content:"More ";color:var(--flow);font-weight:600}
+
+/* Section */
+section{display:flex;flex-direction:column;gap:24px}
+h2{font-size:26px}
+.lead{color:var(--muted);max-width:36em}
+
+.pillars{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;background:var(--line);border-block:1px solid var(--line)}
+.pillar{background:var(--bg);padding:22px 18px 22px 0;display:flex;flex-direction:column;gap:8px;min-width:0}
+.pillar:not(:first-child){padding-left:18px}
+.pillar h3{font-size:20px}
+.pillar .tag{font-size:13px;color:var(--flow);font-weight:600}
+.pillar p{font-size:15px;color:var(--muted)}
+
+.doors{display:flex;flex-direction:column;gap:12px}
+.door{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:20px 22px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 16px;align-items:center}
+.door h3{font-size:19px}
+.door p{grid-column:1;font-size:15px;color:var(--muted)}
+.door .go{grid-column:2;grid-row:1 / span 2;font-size:14px;font-weight:600;text-decoration:none;white-space:nowrap}
+
+.channels{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.channels li{display:grid;grid-template-columns:7.5em minmax(0,1fr);gap:16px;padding-block:14px;border-bottom:1px solid var(--line)}
+.channels li:first-child{border-top:1px solid var(--line)}
+.channels .k{font-size:13px;color:var(--muted);font-weight:600;letter-spacing:.04em}
+.channels a{text-decoration:none;font-weight:500;overflow-wrap:anywhere}
+.channels small{display:block;color:var(--muted);font-size:14px}
+
+.contact{background:var(--flow-soft);border-radius:12px;padding:28px 24px;display:flex;flex-direction:column;gap:14px}
+.mail{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.mail code{font-family:var(--body);font-size:18px;font-weight:600;user-select:all}
+.mail button{font:inherit;font-size:14px;border:1px solid var(--flow);background:transparent;color:var(--flow);border-radius:999px;padding:4px 14px;cursor:pointer}
+.mail button:hover{background:var(--flow);color:var(--bg)}
+
+footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);padding-top:20px}
+
+@media (max-width:620px){
+  .pillars{grid-template-columns:minmax(0,1fr)}
+  .pillar,.pillar:not(:first-child){padding:20px 0}
+  .door{grid-template-columns:minmax(0,1fr)}
+  .door .go{grid-column:1;grid-row:auto}
+  .channels li{grid-template-columns:minmax(0,1fr);gap:2px}
+}
+
+/* 최근 이야기 */
+.tabs{display:flex;flex-wrap:wrap;gap:8px}
+.tabs button{font:inherit;font-size:14px;border:1px solid var(--line);background:var(--surface);color:var(--muted);border-radius:999px;padding:6px 14px;cursor:pointer}
+.tabs button[aria-pressed="true"]{border-color:var(--flow);background:var(--flow);color:var(--bg)}
+.feed{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:12px}
+.post{display:grid;grid-template-columns:96px minmax(0,1fr);gap:16px;align-items:start;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px;text-decoration:none;color:inherit}
+.post:hover{border-color:var(--flow)}
+.post .th{width:96px;height:96px;border-radius:8px;background:var(--flow-soft) center/cover no-repeat;display:flex;align-items:center;justify-content:center;color:var(--flow);font-family:var(--display);font-size:22px}
+.post .meta{font-size:12px;color:var(--muted);display:flex;gap:8px;margin-bottom:4px}
+.post .meta b{color:var(--flow);font-weight:600}
+.post h3{font-family:var(--body);font-size:17px;font-weight:600;line-height:1.45}
+.post p{font-size:14px;color:var(--muted);margin-top:4px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.empty{color:var(--muted);font-size:15px;padding:18px 0}
+.more{align-self:flex-start;font:inherit;font-size:14px;border:1px solid var(--flow);background:transparent;color:var(--flow);border-radius:999px;padding:6px 16px;cursor:pointer}
+.acts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.act{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:20px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.act .tag{font-size:13px;color:var(--flow);font-weight:600}
+.act h3{font-size:20px}
+.act p{font-size:15px;color:var(--muted);flex:1}
+.act a{font-size:14px;font-weight:600;text-decoration:none}
+@media (max-width:620px){.acts{grid-template-columns:minmax(0,1fr)}.post{grid-template-columns:72px minmax(0,1fr)}.post .th{width:72px;height:72px}}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <header class="hero">
+    <p class="eyebrow">사역자 · 강사 · 앱 개발자 · 봉사 리더</p>
+    <h1 class="mark">THE <span>MORE</span></h1>
+    <p class="who"><b>김준용</b> · 받은 것을 흘려보내는 사람</p>
+    <svg class="wave" viewBox="0 0 720 40" preserveAspectRatio="none" aria-hidden="true"><path d="M2 22 C 90 4, 150 38, 240 20 S 390 4, 480 22 S 630 38, 718 18"/></svg>
+    <p class="thesis">받은 은혜보다 한 걸음 더,<br>받은 사랑보다 한 사람 더.</p>
+    <div class="triad"><span>Love</span><span>Grace</span><span>Life</span></div>
+  </header>
+
+  <section aria-labelledby="h-feed">
+    <h2 id="h-feed">최근 이야기</h2>
+    <div class="tabs" role="group" aria-label="분류">
+      <button type="button" data-k="" aria-pressed="true">전체</button>
+      <button type="button" data-k="말씀" aria-pressed="false">말씀</button>
+      <button type="button" data-k="강의" aria-pressed="false">강의</button>
+      <button type="button" data-k="봉사" aria-pressed="false">봉사</button>
+      <button type="button" data-k="앱" aria-pressed="false">앱</button>
+      <button type="button" data-k="영상" aria-pressed="false">영상</button>
+    </div>
+    <ul class="feed" id="feed"><li class="empty">글을 불러오는 중…</li></ul>
+    <button type="button" class="more" id="more" hidden>더 보기</button>
+  </section>
+
+  <section aria-labelledby="h-acts">
+    <h2 id="h-acts">하는 일</h2>
+    <p class="lead">사역자의 시간을 지키고, 사람을 세우는 일을 합니다.</p>
+    <div class="acts">
+      <div class="act"><span class="tag">말씀</span><h3>묵상과 설교</h3><p>본문에서 건진 한 문장을 나눕니다. 교회·청년부 강의와 집회도 섬깁니다.</p><a href="https://changenavigator.tistory.com/" target="_blank" rel="noopener">묵상 글 보기 →</a></div>
+      <div class="act"><span class="tag">강의</span><h3>학교·기관 강의</h3><p>진로·취업, 커뮤니케이션, 리더십, AI 활용. 내일 바로 써먹는 강의를 합니다.</p><a href="https://blog.naver.com/fiveluck_" target="_blank" rel="noopener">강의 후기 보기 →</a></div>
+      <div class="act"><span class="tag">봉사</span><h3>도와줄래? One Light</h3><p>매월 둘째·넷째 토요일, 아이들과 한부모 가정을 찾아가 함께합니다.</p><a href="https://litt.ly/dowajullae" target="_blank" rel="noopener">함께하기 →</a></div>
+      <div class="act"><span class="tag">앱</span><h3>교회를 위한 앱</h3><p>목회자가 행정보다 사람에게 시간을 쓰도록 만든 교인관리 앱을 나눕니다.</p><a href="#contact">목회자 문의 →</a></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="h-ch">
+    <h2 id="h-ch">채널</h2>
+    <ul class="channels">
+      <li><span class="k">인스타그램</span><span><a href="https://www.instagram.com/themore.junyong/" target="_blank" rel="noopener">@themore.junyong</a><small>말씀 한 문장, 현장과 관계</small></span></li>
+      <li><span class="k">유튜브</span><span><a href="https://www.youtube.com/channel/UC9PrjdPbRZqrPmphj4eCGUA" target="_blank" rel="noopener">THE MORE</a><small>설교, 묵상 릴스, 간증</small></span></li>
+      <li><span class="k">블로그</span><span><a href="https://changenavigator.tistory.com/" target="_blank" rel="noopener">THE MORE 티스토리</a><small>묵상 · 봉사 · 앱 이야기</small></span></li>
+      <li><span class="k">강사 블로그</span><span><a href="https://blog.naver.com/fiveluck_" target="_blank" rel="noopener">강사 김준용</a><small>학교·기관 강의 후기</small></span></li>
+      <li><span class="k">봉사 공동체</span><span><a href="https://www.instagram.com/onelight_movement/" target="_blank" rel="noopener">@onelight_movement</a><small>도와줄래? · One Light 현장</small></span></li>
+    </ul>
+  </section>
+
+  <section id="contact" class="contact" aria-labelledby="h-contact">
+    <h2 id="h-contact">연락</h2>
+    <p class="lead">강의, 앱, 봉사 어떤 이야기든 편하게 보내주세요.</p>
+    <div class="mail"><code id="email">tobadyclup@naver.com</code><button type="button" id="copy">주소 복사</button></div>
+  </section>
+
+  <footer>© THE MORE · 김준용 <span id="upd"></span></footer>
+</main>
+<script>
+document.getElementById('copy').addEventListener('click',function(){var b=this,t=document.getElementById('email').textContent;function sel(){var r=document.createRange();r.selectNodeContents(document.getElementById('email'));var s=getSelection();s.removeAllRanges();s.addRange(r);b.textContent='선택됨 · 복사하세요';}try{navigator.clipboard.writeText(t).then(function(){b.textContent='복사됨';setTimeout(function(){b.textContent='주소 복사'},1600)},sel)}catch(e){sel()}});
+(function(){
+  var all=[],k='',shown=8,feed=document.getElementById('feed'),more=document.getElementById('more');
+  var SRC={tistory:'티스토리',naver:'네이버',youtube:'유튜브'};
+  function esc(s){return String(s||'').replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+  function d(s){if(!s)return'';var x=new Date(s);return x.getFullYear()+'.'+String(x.getMonth()+1).padStart(2,'0')+'.'+String(x.getDate()).padStart(2,'0')}
+  function render(){
+    var list=all.filter(function(p){return !k||p.kind===k});
+    if(!list.length){feed.innerHTML='<li class="empty">아직 올라온 글이 없어요. 곧 채워집니다.</li>';more.hidden=true;return}
+    feed.innerHTML=list.slice(0,shown).map(function(p){
+      var th=p.image?'<span class="th" style="background-image:url(\''+esc(p.image)+'\')"></span>':'<span class="th">'+esc(p.kind.slice(0,1))+'</span>';
+      return '<li><a class="post" href="'+esc(p.link)+'" target="_blank" rel="noopener">'+th+'<span><span class="meta"><b>'+esc(p.kind)+'</b><span>'+d(p.date)+'</span><span>'+(SRC[p.src]||'')+'</span></span><h3>'+esc(p.title)+'</h3><p>'+esc(p.summary)+'</p></span></a></li>'}).join('');
+    more.hidden=list.length<=shown;
+  }
+  document.querySelectorAll('.tabs button').forEach(function(b){b.addEventListener('click',function(){k=b.dataset.k;shown=8;document.querySelectorAll('.tabs button').forEach(function(x){x.setAttribute('aria-pressed',x===b)});render()})});
+  more.addEventListener('click',function(){shown+=8;render()});
+  fetch('posts.json',{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){all=j.posts||[];if(j.updated)document.getElementById('upd').textContent='· 업데이트 '+d(j.updated);render()}).catch(function(){feed.innerHTML='<li class="empty">글 목록을 불러오지 못했어요.</li>'});
+})();
+</script>
+</body>
+</html>
