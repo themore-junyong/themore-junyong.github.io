@@ -34,13 +34,14 @@ def rss(src, xml):
     for it in ET.fromstring(xml).iter("item"):
         g = lambda t: (it.findtext(t) or "")
         cat = g("category"); desc = g("description")
+        title = g("title")
         if src == "tistory":
-            kind = next((v for k, v in TISTORY_MAP if k in cat), "말씀")
+            kind = next((v for k, v in TISTORY_MAP if k in cat), None) or ("봉사" if "봉사" in title else "말씀")
         else:
             if any(k in cat for k in SKIP_NAVER): continue
-            kind = "강의"
+            kind = "봉사" if ("봉사" in cat or "봉사" in title) else "강의"
         out.append({"kind": kind, "src": src, "title": clean(g("title"), 80), "link": g("link").strip(),
-                    "date": iso(g("pubDate")), "summary": clean(desc), "image": first_img(desc)})
+                    "date": iso(g("pubDate")), "summary": clean(desc), "image": first_img(desc), "cat": cat.strip()})
     return out
 
 def youtube(xml):
