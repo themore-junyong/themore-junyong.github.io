@@ -1,4 +1,4 @@
-"""티스토리·네이버·유튜브 새 글을 모아 posts.json 생성 (GitHub Actions에서 하루 1회 실행)."""
+"""티스토리·네이버·유튜브 새 글을 모아 posts.json 생성 (GitHub Actions에서 매시간 실행)."""
 import json, re, urllib.request, xml.etree.ElementTree as ET
 from email.utils import parsedate_to_datetime
 from datetime import datetime, timezone
@@ -55,6 +55,17 @@ def youtube(xml):
                     "image": f"https://i.ytimg.com/vi/{vid}/hqdefault.jpg"})
     return out
 
+def dedupe(posts):
+    """같은 봉사 글이 티스토리·네이버에 둘 다 있으면 홈페이지엔 티스토리 글만 보여준다 (±1일)."""
+    def day(p):
+        try: return datetime.fromisoformat(p["date"]).date()
+        except Exception: return None
+    t_days = [day(p) for p in posts if p["src"] == "tistory" and p["kind"] == "봉사" and day(p)]
+    def dup(p):
+        d = day(p)
+        return p["src"] == "naver" and p["kind"] == "봉사" and d and any(abs((d - x).days) <= 1 for x in t_days)
+    return [p for p in posts if not dup(p)]
+
 def main():
     posts, errors = [], []
     for src, url in FEEDS:
@@ -68,6 +79,7 @@ def main():
         old = []
     seen = {p["link"] for p in posts}
     posts += [p for p in old if p["link"] not in seen]  # 피드에서 밀려난 예전 글도 유지
+    posts = dedupe(posts)
     posts.sort(key=lambda p: p.get("date", ""), reverse=True)
     json.dump({"updated": datetime.now(timezone.utc).isoformat(), "posts": posts[:200], "errors": errors},
               open("posts.json", "w", encoding="utf-8"), ensure_ascii=False, indent=1)
