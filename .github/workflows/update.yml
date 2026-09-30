@@ -1,0 +1,22 @@
+name: 새 글 모으기
+on:
+  schedule:
+    - cron: "7 21 * * *"   # 매일 한국시간 06:07
+    - cron: "7 11 * * *"   # 매일 한국시간 20:07
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  feed:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: python scripts/build_feed.py
+      - run: |
+          git config user.name "themore-bot"
+          git config user.email "bot@users.noreply.github.com"
+          git add posts.json
+          git diff --cached --quiet || git commit -m "새 글 모으기"
+          git push
