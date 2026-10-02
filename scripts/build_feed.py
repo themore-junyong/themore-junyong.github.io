@@ -56,8 +56,15 @@ def youtube(xml):
     return out
 
 def dedupe(posts):
-    """봉사 글은 티스토리에서만 가져온다 (네이버 봉사 글은 홈페이지에 안 보임)."""
-    return [p for p in posts if not (p["src"] == "naver" and p["kind"] == "봉사")]
+    """봉사 글은 티스토리에서만 가져온다 (네이버 봉사 글은 홈페이지에 안 보임).
+    같은 출처에 같은 제목이 여러 개면(재발행 등) 앞의 것 하나만 남긴다 — 현재 피드 글이 앞에 온다."""
+    out, titles = [], set()
+    for p in posts:
+        if p["src"] == "naver" and p["kind"] == "봉사": continue
+        key = (p["src"], p["title"])
+        if key in titles: continue
+        titles.add(key); out.append(p)
+    return out
 
 def main():
     posts, errors = [], []
@@ -70,8 +77,15 @@ def main():
         old = json.load(open("posts.json", encoding="utf-8")).get("posts", [])
     except Exception:
         old = []
+    now = datetime.now(timezone.utc).isoformat()
+    posts = [p for p in posts if p.get("date", "") <= now]  # 예약(미래) 글은 아직 안 올림
     seen = {p["link"] for p in posts}
-    posts += [p for p in old if p["link"] not in seen]  # 피드에서 밀려난 예전 글도 유지
+    # 피드에서 밀려난 예전 글은 유지하되, 피드가 아직 덮는 기간인데 피드에 없는 글은 삭제·비공개된 것이니 버린다
+    oldest = {}
+    for p in posts:
+        if p.get("date"): oldest[p["src"]] = min(oldest.get(p["src"], p["date"]), p["date"])
+    posts += [p for p in old if p["link"] not in seen
+              and not (p["src"] in oldest and p.get("date", "") >= oldest[p["src"]])]
     posts = dedupe(posts)
     posts.sort(key=lambda p: p.get("date", ""), reverse=True)
     json.dump({"updated": datetime.now(timezone.utc).isoformat(), "posts": posts[:200], "errors": errors},
