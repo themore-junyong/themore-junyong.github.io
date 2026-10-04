@@ -1,6 +1,25 @@
 {
- "updated": "2026-10-04T21:25:38.873490+00:00",
+ "updated": "2026-10-04T22:27:19.074806+00:00",
  "posts": [
+  {
+   "kind": "영상",
+   "src": "youtube",
+   "title": "하나님은 왜 이 한 문장으로 성경을 시작하셨을까? | 창세기 1:1",
+   "link": "https://www.youtube.com/watch?v=2mqrKM5jQuo",
+   "date": "2026-10-04T22:08:24+00:00",
+   "summary": "목회자 AI 활용 · 창세기 말씀 · 봉사 이야기 \"AI, 사역과 일에 어떻게 써야 할지 막막하신가요?\" 저는 전도사이자 AI 강사 김준용입니다. 월급 없이 사역…",
+   "image": "https://i.ytimg.com/vi/2mqrKM5jQuo/hqdefault.jpg"
+  },
+  {
+   "kind": "봉사",
+   "src": "tistory",
+   "title": "용인청소년수련관 눈썰매장, 2026년 첫 봉사 | 꿈을키우는집 1월 봉사활동 후기",
+   "link": "https://changenavigator.tistory.com/entry/%EC%9A%A9%EC%9D%B8%EC%B2%AD%EC%86%8C%EB%85%84%EC%88%98%EB%A0%A8%EA%B4%80-%EB%88%88%EC%8D%B0%EB%A7%A4%EC%9E%A5-2026%EB%85%84-%EC%B2%AB-%EB%B4%89%EC%82%AC-%EA%BF%88%EC%9D%84%ED%82%A4%EC%9A%B0%EB%8A%94%EC%A7%91-1%EC%9B%94-%EB%B4%89%EC%82%AC%ED%99%9C%EB%8F%99-%ED%9B%84%EA%B8%B0",
+   "date": "2026-10-04T22:00:55+00:00",
+   "summary": "2026년 1월 10일, 꿈을키우는집 아이들과 새해 첫 봉사를 다녀왔습니다. 장소는 용인청소년수련관 눈썰매장이었습니다. 갑자기 찾아온 한파에 눈까지 내린 날이었지…",
+   "image": "https://blog.kakaocdn.net/dn/bDxNUj/dJMcaikJWg4/4wnwwjYCSghHVKIBMhp2d1/img.png",
+   "cat": "봉사활동"
+  },
   {
    "kind": "봉사",
    "src": "tistory",
