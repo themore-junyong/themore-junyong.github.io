@@ -1,5 +1,5 @@
 {
- "updated": "2026-10-07T02:29:02.794731+00:00",
+ "updated": "2026-10-07T03:29:26.951682+00:00",
  "posts": [
   {
    "kind": "영상",
@@ -767,6 +767,6 @@
   }
  ],
  "errors": [
-  "youtube: HTTP Error 404: Not Found"
+  "youtube: HTTP Error 500: Internal Server Error"
  ]
 }
