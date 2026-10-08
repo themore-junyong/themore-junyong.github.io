@@ -1,6 +1,15 @@
 {
- "updated": "2026-10-08T06:36:13.379189+00:00",
+ "updated": "2026-10-08T07:32:39.398980+00:00",
  "posts": [
+  {
+   "kind": "영상",
+   "src": "youtube",
+   "title": "예배가 끝나면 시작되던 일 | 앱 개발기 ① #shorts",
+   "link": "https://www.youtube.com/watch?v=mK9oue3M7-c",
+   "date": "2026-10-08T02:17:17+00:00",
+   "summary": "예배가 끝나면 시작되던 일이 있었습니다. 종이 명부를 펴고, 누가 왔는지 한 줄씩 확인하는 일. 그 시간을 사람에게 돌려드리고 싶어서, 직접 앱을 만들기 시작했습…",
+   "image": "https://i.ytimg.com/vi/mK9oue3M7-c/hqdefault.jpg"
+  },
   {
    "kind": "봉사",
    "src": "tistory",
@@ -776,7 +785,5 @@
    "cat": "설교&middot;묵상"
   }
  ],
- "errors": [
-  "youtube: HTTP Error 404: Not Found"
- ]
+ "errors": []
 }
