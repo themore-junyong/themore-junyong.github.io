@@ -9,7 +9,7 @@ FEEDS = [
     ("youtube", "https://www.youtube.com/feeds/videos.xml?channel_id=UC9PrjdPbRZqrPmphj4eCGUA"),
 ]
 # 티스토리 카테고리 → 홈페이지 분류
-TISTORY_MAP = [("봉사", "봉사"), ("앱", "앱"), ("말씀", "말씀"), ("묵상", "말씀"), ("설교", "말씀")]
+TISTORY_MAP = [("강사", "강사 활동"), ("봉사", "봉사"), ("앱", "앱"), ("말씀", "말씀"), ("묵상", "말씀"), ("설교", "말씀")]
 SKIP_NAVER = ["공지"]  # 네이버에서 빼고 싶은 카테고리
 
 def get(url):
