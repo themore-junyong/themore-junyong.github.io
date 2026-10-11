@@ -1,6 +1,16 @@
 {
- "updated": "2026-10-11T22:28:10.285569+00:00",
+ "updated": "2026-10-11T23:27:08.649602+00:00",
  "posts": [
+  {
+   "kind": "강사 활동",
+   "src": "tistory",
+   "title": "고등학교 진로캠프 활동 2가지 | 팀 빌딩부터 우리 지역 기업 찾기까지",
+   "link": "https://changenavigator.tistory.com/entry/%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90-%EC%A7%84%EB%A1%9C%EC%BA%A0%ED%94%84-%ED%99%9C%EB%8F%99-2%EA%B0%80%EC%A7%80-%ED%8C%80-%EB%B9%8C%EB%94%A9%EB%B6%80%ED%84%B0-%EC%9A%B0%EB%A6%AC-%EC%A7%80%EC%97%AD-%EA%B8%B0%EC%97%85-%EC%B0%BE%EA%B8%B0%EA%B9%8C%EC%A7%80",
+   "date": "2026-10-11T23:08:46+00:00",
+   "summary": "인천의 한 고등학교에서 하루 여섯 교시 직업진로 캠프를 진행했어요. 진로 수업을 준비하는 선생님이라면 그대로 가져다 쓸 수 있는 활동 두 가지를 정리했습니다. ①…",
+   "image": "https://blog.kakaocdn.net/dn/bUp2XV/dJMcagHr5ql/dFrRMNnjQfBdo4bd23xx91/img.jpg",
+   "cat": "강사 활동"
+  },
   {
    "kind": "봉사",
    "src": "tistory",
@@ -824,5 +834,7 @@
    "cat": "설교&middot;묵상"
   }
  ],
- "errors": []
+ "errors": [
+  "youtube: HTTP Error 500: Internal Server Error"
+ ]
 }
