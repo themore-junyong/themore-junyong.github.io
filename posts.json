@@ -1,6 +1,16 @@
 {
- "updated": "2026-10-11T23:27:08.649602+00:00",
+ "updated": "2026-10-12T00:41:35.858856+00:00",
  "posts": [
+  {
+   "kind": "말씀",
+   "src": "tistory",
+   "title": "창세기 1장 6-31절 해설, 당신을 위한 자리 | 창세기 강해 2026 ③",
+   "link": "https://changenavigator.tistory.com/entry/%EC%B0%BD%EC%84%B8%EA%B8%B0-1%EC%9E%A5-6-31%EC%A0%88-%ED%95%B4%EC%84%A4-%EB%8B%B9%EC%8B%A0%EC%9D%84-%EC%9C%84%ED%95%9C-%EC%9E%90%EB%A6%AC-%EC%B0%BD%EC%84%B8%EA%B8%B0-%EA%B0%95%ED%95%B4-2026-%E2%91%A2",
+   "date": "2026-10-11T23:42:06+00:00",
+   "summary": "",
+   "image": "https://blog.kakaocdn.net/dn/m8SCN/dJMcaaf6Lol/VyhxKx4q1cS6B8WP37TwNK/img.png",
+   "cat": "설교&middot;묵상"
+  },
   {
    "kind": "강사 활동",
    "src": "tistory",
@@ -835,6 +845,6 @@
   }
  ],
  "errors": [
-  "youtube: HTTP Error 500: Internal Server Error"
+  "youtube: HTTP Error 404: Not Found"
  ]
 }
