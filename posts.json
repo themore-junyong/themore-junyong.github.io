@@ -1,5 +1,5 @@
 {
- "updated": "2026-10-12T06:40:43.869020+00:00",
+ "updated": "2026-10-12T07:35:15.711347+00:00",
  "posts": [
   {
    "kind": "말씀",
@@ -10,6 +10,15 @@
    "summary": "",
    "image": "https://blog.kakaocdn.net/dn/m8SCN/dJMcaaf6Lol/VyhxKx4q1cS6B8WP37TwNK/img.png",
    "cat": "설교&middot;묵상"
+  },
+  {
+   "kind": "영상",
+   "src": "youtube",
+   "title": "당신을 위한 자리 | 창세기 1:6-31 #shorts",
+   "link": "https://www.youtube.com/watch?v=ySgnOXUqqb8",
+   "date": "2026-10-11T23:30:55+00:00",
+   "summary": "아기가 태어나기 전, 부모는 무엇부터 준비할까요? 하나님도 그러셨습니다. 엿새 동안 세상을 하나씩 준비하시고, 맨 마지막에 사람을 지으셨죠. 온 우주가 당신을 위…",
+   "image": "https://i.ytimg.com/vi/ySgnOXUqqb8/hqdefault.jpg"
   },
   {
    "kind": "강사 활동",
@@ -844,7 +853,5 @@
    "cat": "설교&middot;묵상"
   }
  ],
- "errors": [
-  "youtube: HTTP Error 404: Not Found"
- ]
+ "errors": []
 }
