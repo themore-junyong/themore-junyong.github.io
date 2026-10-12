@@ -1,6 +1,16 @@
 {
- "updated": "2026-10-12T21:28:23.225536+00:00",
+ "updated": "2026-10-12T22:28:56.357383+00:00",
  "posts": [
+  {
+   "kind": "앱",
+   "src": "tistory",
+   "title": "개발자가 아닌 사역자가 만든 앱 | 앱 개발기 ②",
+   "link": "https://changenavigator.tistory.com/entry/%EA%B0%9C%EB%B0%9C%EC%9E%90%EA%B0%80-%EC%95%84%EB%8B%8C-%EC%82%AC%EC%97%AD%EC%9E%90%EA%B0%80-%EB%A7%8C%EB%93%A0-%EC%95%B1-%EC%95%B1-%EA%B0%9C%EB%B0%9C%EA%B8%B0-%E2%91%A1",
+   "date": "2026-10-12T22:00:00+00:00",
+   "summary": "앱을 만들던 어느 날, 화면을 보다가 멈췄습니다. 성도 명단의 '성도ID'라는 칸 이름이 '부품ID'로 바뀌어 있었거든요. 교회 출석 앱에서 성도가 부품이 된 겁…",
+   "image": "https://blog.kakaocdn.net/dn/r2dBL/dJMcag1sv18/hUYU7I33YdKj27QGWKXofk/img.png",
+   "cat": "앱 이야기"
+  },
   {
    "kind": "말씀",
    "src": "tistory",
