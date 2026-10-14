@@ -1,6 +1,15 @@
 {
- "updated": "2026-10-14T06:52:10.395883+00:00",
+ "updated": "2026-10-14T07:47:13.750004+00:00",
  "posts": [
+  {
+   "kind": "영상",
+   "src": "youtube",
+   "title": "남들이 정말 나를 볼까? | 스포트라이트 효과 · 마음은 왜 그럴까 ① #shorts",
+   "link": "https://www.youtube.com/watch?v=E2HU5opf2aw",
+   "date": "2026-10-13T22:00:15+00:00",
+   "summary": "단체 사진, 누구 얼굴부터 찾으세요? 네, 내 얼굴이죠. 그런데 옆 사람도 똑같이 자기 얼굴만 찾고 있어요. 사람들은 내 실수를 생각보다 훨씬 덜 보고, 훨씬 빨…",
+   "image": "https://i.ytimg.com/vi/E2HU5opf2aw/hqdefault.jpg"
+  },
   {
    "kind": "앱",
    "src": "tistory",
@@ -863,7 +872,5 @@
    "cat": "설교&middot;묵상"
   }
  ],
- "errors": [
-  "youtube: HTTP Error 404: Not Found"
- ]
+ "errors": []
 }
