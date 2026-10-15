@@ -1,5 +1,5 @@
 {
- "updated": "2026-10-15T06:52:16.685368+00:00",
+ "updated": "2026-10-15T07:47:41.172460+00:00",
  "posts": [
   {
    "kind": "봉사",
@@ -882,7 +882,5 @@
    "cat": "설교&middot;묵상"
   }
  ],
- "errors": [
-  "youtube: HTTP Error 404: Not Found"
- ]
+ "errors": []
 }
