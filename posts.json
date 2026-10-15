@@ -1,6 +1,25 @@
 {
- "updated": "2026-10-15T10:42:34.786328+00:00",
+ "updated": "2026-10-15T11:42:25.884753+00:00",
  "posts": [
+  {
+   "kind": "말씀",
+   "src": "tistory",
+   "title": "스포트라이트 효과, 남들이 정말 나를 볼까? | 마음은 왜 그럴까 ①",
+   "link": "https://changenavigator.tistory.com/entry/%EC%8A%A4%ED%8F%AC%ED%8A%B8%EB%9D%BC%EC%9D%B4%ED%8A%B8-%ED%9A%A8%EA%B3%BC-%EB%82%A8%EB%93%A4%EC%9D%B4-%EC%A0%95%EB%A7%90-%EB%82%98%EB%A5%BC-%EB%B3%BC%EA%B9%8C-%EB%A7%88%EC%9D%8C%EC%9D%80-%EC%99%9C-%EA%B7%B8%EB%9F%B4%EA%B9%8C-%E2%91%A0",
+   "date": "2026-10-15T11:28:47+00:00",
+   "summary": "단체 사진을 받으면 제일 먼저 누구 얼굴부터 찾으세요? 네, 내 얼굴이죠. 눈 감았나, 표정이 이상하진 않나, 혼자 한참 확대해 보고요. 그런데 재밌는 건, 옆 …",
+   "image": "https://blog.kakaocdn.net/dn/QCG7M/dJMcaa1rjDg/cFgVmOYpxdr8fBl5pvWxWK/img.png",
+   "cat": "마음은 왜 그럴까"
+  },
+  {
+   "kind": "영상",
+   "src": "youtube",
+   "title": "예배 끝나고 출석 체크, 얼마나 걸리세요? | 앱 개발기 ② #shorts",
+   "link": "https://www.youtube.com/watch?v=0nnH2NGXKYQ",
+   "date": "2026-10-15T11:00:15+00:00",
+   "summary": "저는 매주 종이 명부를 한 줄 한 줄 넘기느라 시간을 꽤 쓰고 있었습니다. 그런데 알고 보니 구글 시트 하나면 되더라고요. 앱시트에 연결하면 리더들이 각자 휴대폰…",
+   "image": "https://i.ytimg.com/vi/0nnH2NGXKYQ/hqdefault.jpg"
+  },
   {
    "kind": "봉사",
    "src": "tistory",
