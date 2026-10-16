@@ -1,6 +1,25 @@
 {
- "updated": "2026-10-16T10:42:02.697062+00:00",
+ "updated": "2026-10-16T11:41:24.167428+00:00",
  "posts": [
+  {
+   "kind": "영상",
+   "src": "youtube",
+   "title": "목회자는 평일에 뭐 할까? | 노는 목회자",
+   "link": "https://www.youtube.com/watch?v=YnoAbwjdzXM",
+   "date": "2026-10-16T11:00:38+00:00",
+   "summary": "받은 것을 흘려보내는 사람, THE MORE 김준용입니다. 설교 · 하루 10분 성경 통독 · 간증을 나눕니다. 도움이 되셨다면 필요한 분께 보내주세요. 평일엔 …",
+   "image": "https://i.ytimg.com/vi/YnoAbwjdzXM/hqdefault.jpg"
+  },
+  {
+   "kind": "말씀",
+   "src": "tistory",
+   "title": "노는 목회자, 목회자는 평일에 뭐 할까? | 브랜딩 ①",
+   "link": "https://changenavigator.tistory.com/entry/%EB%85%B8%EB%8A%94-%EB%AA%A9%ED%9A%8C%EC%9E%90-%EB%AA%A9%ED%9A%8C%EC%9E%90%EB%8A%94-%ED%8F%89%EC%9D%BC%EC%97%90-%EB%AD%90-%ED%95%A0%EA%B9%8C-%EB%B8%8C%EB%9E%9C%EB%94%A9-%E2%91%A0",
+   "date": "2026-10-16T11:00:22+00:00",
+   "summary": "목회자는 평일에 뭐 할까요? 주일 말고 다른 날엔 뭘 하는지, 생각보다 자주 듣는 질문이에요. 저는 이렇게 삽니다. 저의 일주일 평일엔 학교와 기관을 찾아가 진로…",
+   "image": "https://blog.kakaocdn.net/dn/sP3QC/dJMcacLT0sG/lDbzedvSZCr73T2LGNuch1/img.png",
+   "cat": "브랜딩"
+  },
   {
    "kind": "말씀",
    "src": "tistory",
