@@ -1,0 +1,55 @@
+rules_version = '2';
+
+// 교회 출석앱 보안 규칙
+// - config/admins 문서의 emails 배열에 있는 사람 = 관리자(준용). 모든 교회를 만들고 고칠 수 있음.
+// - churches/{교회}.leaders 배열에 있는 사람 = 그 교회 리더. 그 교회 성도·출석만 보고 쓸 수 있음.
+// - 그 밖의 사람은 아무것도 볼 수 없음.
+service cloud.firestore {
+  match /databases/{db}/documents {
+
+    function signedIn() {
+      return request.auth != null && request.auth.token.email_verified == true;
+    }
+    function myEmail() {
+      return request.auth.token.email.lower();
+    }
+    function isAdmin() {
+      return signedIn()
+        && exists(/databases/$(db)/documents/config/admins)
+        && myEmail() in get(/databases/$(db)/documents/config/admins).data.emails;
+    }
+    function isLeader(cid) {
+      return signedIn()
+        && myEmail() in get(/databases/$(db)/documents/churches/$(cid)).data.leaders;
+    }
+    function canUse(cid) {
+      return isAdmin() || isLeader(cid);
+    }
+
+    match /config/admins {
+      allow read: if isAdmin();
+      allow write: if false; // 콘솔에서만 수정
+    }
+
+    match /churches/{cid} {
+      allow read: if isAdmin() || (signedIn() && myEmail() in resource.data.leaders);
+      allow write: if isAdmin();
+
+      match /members/{mid} {
+        allow read: if canUse(cid);
+        allow create, update: if canUse(cid)
+          && request.resource.data.name is string
+          && request.resource.data.name.size() > 0;
+        allow delete: if isAdmin();
+      }
+
+      match /attendance/{aid} {
+        allow read: if canUse(cid);
+        allow create, update: if canUse(cid)
+          && request.resource.data.present is bool
+          && request.resource.data.checkedBy == myEmail();
+        allow delete: if isAdmin();
+      }
+    }
+  }
+}
