@@ -397,6 +397,7 @@ function demoStore() {
   const members = new Map(raw.map(([id,name,role,group,gender,phone,household,relation,longAbsent]) =>
     [id, { id, name, role, group, gender, phone, household, relation, longAbsent }]));
   { const d = new Date(); d.setDate(d.getDate() + 2); members.get("P001").birthSolar = `1965-${d.getMonth() + 1}-${d.getDate()}`; }
+  members.get("P009").birthLunar = "2010-" + (() => { const p = new Intl.DateTimeFormat("ko-KR-u-ca-chinese", { month: "numeric", day: "numeric" }).formatToParts(new Date(Date.now() + 3 * 864e5)); return parseInt(p[0].value) + "-" + parseInt(p[2].value); })();
   members.get("P004").anniversary = `1990-${new Date().getMonth() + 1}-${new Date().getDate()}`;
   const att = new Map();
   // 지난 6주 주일낮 출석 예시 (강하늘은 계속 결석, 윤서연은 최근 3주 결석)
@@ -694,7 +695,7 @@ function eventsOn(days, withBaptism) {
     keys.forEach(([sol, lun], i) => {
       const d = days[i];
       if (m.birthSolar && md(m.birthSolar) === sol) items.push({ m, i, d, what: "생일" });
-      if (m.birthLunar && lun && md(m.birthLunar) === lun) items.push({ m, i, d, what: `생일(음력 ${lun.replace("-", "/")})` });
+      if (m.birthLunar && lun && md(m.birthLunar) === lun) items.push({ m, i, d, what: `생일 (음 ${lun.replace("-", ".")})` });
       if (m.anniversary && md(m.anniversary) === sol) items.push({ m, i, d, what: "결혼기념일" });
       if (withBaptism && m.baptism && md(m.baptism) === sol) items.push({ m, i, d, what: "세례일" });
     });
