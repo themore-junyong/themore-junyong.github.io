@@ -145,6 +145,14 @@ textarea.memo{min-height:60px;border:1px solid var(--line);background:var(--bg);
 .bday li small{color:var(--muted)}
 .bday li b.today{color:var(--warn)}
 .bday a,.bday button.call{border:1px solid var(--flow);background:transparent;color:var(--flow);border-radius:999px;padding:3px 10px;font-size:13px;text-decoration:none;white-space:nowrap}
+.bday-m{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.bday-m li{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--line);font-size:15px}
+.bday-m li:first-child{border-top:0}
+.bday-m li b{min-width:4.5em;font-variant-numeric:tabular-nums}
+.bday-m li b.today{color:var(--warn)}
+.bday-m li span{flex:1;min-width:0}
+.bday-m li small{color:var(--muted)}
+.bday-m .call{border:1px solid var(--flow);background:transparent;color:var(--flow);border-radius:999px;padding:3px 10px;font-size:13px;white-space:nowrap}
 .fab{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom));border:0;background:var(--ink);color:var(--bg);border-radius:999px;padding:12px 18px;font-weight:600;box-shadow:0 4px 14px rgb(0 0 0 / .18)}
 </style>
 </head>
@@ -227,6 +235,11 @@ textarea.memo{min-height:60px;border:1px solid var(--line);background:var(--bg);
       <section>
         <h2>최근 8주 출석 인원</h2>
         <div class="bars" id="statBars"></div>
+      </section>
+      <section id="evSec">
+        <h2>월별 생일·기념일</h2>
+        <div class="row"><button class="ghost" id="evPrev" aria-label="이전 달">◀</button><b id="evTitle" style="flex:1;text-align:center"></b><button class="ghost" id="evNext" aria-label="다음 달">▶</button></div>
+        <ul class="bday-m" id="evList"></ul>
       </section>
       <section>
         <h2>연속 결석</h2>
@@ -384,6 +397,7 @@ function demoStore() {
   const members = new Map(raw.map(([id,name,role,group,gender,phone,household,relation,longAbsent]) =>
     [id, { id, name, role, group, gender, phone, household, relation, longAbsent }]));
   { const d = new Date(); d.setDate(d.getDate() + 2); members.get("P001").birthSolar = `1965-${d.getMonth() + 1}-${d.getDate()}`; }
+  members.get("P009").birthLunar = "2010-" + (() => { const p = new Intl.DateTimeFormat("ko-KR-u-ca-chinese", { month: "numeric", day: "numeric" }).formatToParts(new Date(Date.now() + 3 * 864e5)); return parseInt(p[0].value) + "-" + parseInt(p[2].value); })();
   members.get("P004").anniversary = `1990-${new Date().getMonth() + 1}-${new Date().getDate()}`;
   const att = new Map();
   // 지난 6주 주일낮 출석 예시 (강하늘은 계속 결석, 윤서연은 최근 3주 결석)
@@ -669,27 +683,52 @@ function openCall(id) {
 // 이번 주 생일·결혼기념일: 오늘부터 7일 (음력 생일은 브라우저 음력 달력으로 양력 날짜를 찾음)
 const lunarFmt = (() => { try { return new Intl.DateTimeFormat("ko-KR-u-ca-chinese", { month: "numeric", day: "numeric" }); } catch { return null; } })();
 function md(v) { const n = String(v || "").match(/\d+/g); return n && n.length >= 2 ? `${+n[n.length - 2]}-${+n[n.length - 1]}` : ""; }
-function renderBdays() {
-  const days = [...Array(7)].map((_, i) => { const d = new Date(); d.setHours(12, 0, 0, 0); d.setDate(d.getDate() + i); return d; });
+// days에 들어 있는 날짜마다 그날의 생일·기념일을 찾음 (i = days 안의 순서)
+function eventsOn(days, withBaptism) {
   const items = [];
+  const keys = days.map(d => {
+    let lun = "";
+    if (lunarFmt) { const p = lunarFmt.formatToParts(d); lun = `${parseInt(p.find(x => x.type === "month").value)}-${parseInt(p.find(x => x.type === "day").value)}`; }
+    return [`${d.getMonth() + 1}-${d.getDate()}`, lun];
+  });
   for (const m of S.members) {
-    days.forEach((d, i) => {
-      const sol = `${d.getMonth() + 1}-${d.getDate()}`;
-      let lun = "";
-      if (lunarFmt) { const p = lunarFmt.formatToParts(d); lun = `${parseInt(p.find(x => x.type === "month").value)}-${parseInt(p.find(x => x.type === "day").value)}`; }
+    keys.forEach(([sol, lun], i) => {
+      const d = days[i];
       if (m.birthSolar && md(m.birthSolar) === sol) items.push({ m, i, d, what: "생일" });
-      if (m.birthLunar && lun && md(m.birthLunar) === lun) items.push({ m, i, d, what: "생일(음력)" });
+      if (m.birthLunar && lun && md(m.birthLunar) === lun) items.push({ m, i, d, what: `생일 (음 ${lun.replace("-", ".")})` });
       if (m.anniversary && md(m.anniversary) === sol) items.push({ m, i, d, what: "결혼기념일" });
+      if (withBaptism && m.baptism && md(m.baptism) === sol) items.push({ m, i, d, what: "세례일" });
     });
   }
-  items.sort((a, b) => a.i - b.i || a.m.name.localeCompare(b.m.name, "ko"));
+  return items.sort((a, b) => a.i - b.i || a.m.name.localeCompare(b.m.name, "ko"));
+}
+const W = "일월화수목금토";
+const eventLi = ({ m, d, what }, label) => `<li><b class="${label === "오늘" ? "today" : ""}">${label}</b>
+    <span>${esc(m.name)} ${esc(m.role || "")} <small>${esc(what)}</small></span>${m.phone ? `<button type="button" class="call" data-call="${esc(m.id)}">💬 연락</button>` : ""}</li>`;
+function renderBdays() {
+  const days = [...Array(7)].map((_, i) => { const d = new Date(); d.setHours(12, 0, 0, 0); d.setDate(d.getDate() + i); return d; });
+  const items = eventsOn(days);
   $("#bday").classList.toggle("hidden", !items.length);
   const today = items.filter(x => x.i === 0).length;
   $("#bdaySum").textContent = `🎂 이번 주 생일·기념일 ${items.length}명${today ? ` (오늘 ${today}명)` : ""}`;
-  const W = "일월화수목금토";
-  $("#bdayList").innerHTML = items.map(({ m, i, d, what }) => `<li><b class="${i ? "" : "today"}">${i ? `${d.getMonth() + 1}/${d.getDate()}(${W[d.getDay()]})` : "오늘"}</b>
-    <span>${esc(m.name)} ${esc(m.role || "")} <small>${what}</small></span>${m.phone ? `<button type="button" class="call" data-call="${esc(m.id)}">💬 연락</button>` : ""}</li>`).join("");
+  $("#bdayList").innerHTML = items.map(x => eventLi(x, x.i ? `${x.d.getMonth() + 1}/${x.d.getDate()}(${W[x.d.getDay()]})` : "오늘")).join("")
+    + `<li><button type="button" class="call" id="toMonth" style="margin-left:auto">월별로 보기 →</button></li>`;
 }
+// 월별 생일·기념일 (통계 화면)
+let evMonth = null;
+function renderMonth() {
+  const now = new Date();
+  evMonth ||= new Date(now.getFullYear(), now.getMonth(), 1, 12);
+  const y = evMonth.getFullYear(), mo = evMonth.getMonth();
+  const days = [...Array(new Date(y, mo + 1, 0).getDate())].map((_, i) => new Date(y, mo, i + 1, 12));
+  const items = eventsOn(days, true);
+  const today = ymd(now);
+  $("#evTitle").textContent = `${y}년 ${mo + 1}월 · ${items.length}건`;
+  $("#evList").innerHTML = items.length ? items.map(x => eventLi(x, ymd(x.d) === today ? "오늘" : `${x.d.getDate()}일(${W[x.d.getDay()]})`)).join("")
+    : `<li><small>이 달에는 생일·기념일이 없어요. 성도 정보에 생일을 넣으면 여기에 보여요.</small></li>`;
+}
+$("#evPrev").onclick = () => { evMonth.setMonth(evMonth.getMonth() - 1); renderMonth(); };
+$("#evNext").onclick = () => { evMonth.setMonth(evMonth.getMonth() + 1); renderMonth(); };
 let toastTimer = null, toastUndo = null;
 function showToast(msg, undo) {
   $("#toastMsg").textContent = msg; toastUndo = undo;
@@ -711,6 +750,7 @@ async function makeThumb(file, size = 112) {
 
 // ───────────── 이벤트 ─────────────
 document.addEventListener("click", (e) => {
+  if (e.target.closest("#toMonth")) { openStats(); setTimeout(() => $("#evSec").scrollIntoView(), 50); return; }
   const call = e.target.closest("[data-call]");
   if (call) { e.preventDefault(); return openCall(call.dataset.call); }
   const t = e.target.closest("button,[data-act]"); if (!t) return;
@@ -803,6 +843,7 @@ let statSvc = null, statRows = [];
 function ymd(d) { return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10); }
 async function openStats() {
   show("sStats");
+  renderMonth();
   const services = S.church.services?.length ? S.church.services : ["주일낮"];
   statSvc ||= S.service || services[0];
   $("#statSvc").innerHTML = services.map(x => `<button type="button" aria-pressed="${x === statSvc}" data-ss="${esc(x)}">${esc(x)}</button>`).join("");
