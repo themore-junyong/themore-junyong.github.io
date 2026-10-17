@@ -290,6 +290,11 @@ textarea.memo{min-height:60px;border:1px solid var(--line);background:var(--bg);
         <p class="hint">엑셀에서 바로 열리는 CSV 파일로 받아요. 교회가 데이터를 원하면 이 파일을 드리면 돼요.</p>
         <div class="row"><button class="btn line" id="aExpMembers">성도 명단</button><button class="btn line" id="aExpAtt">출석 기록 전체</button></div>
       </section>
+      <section>
+        <h2>교회 삭제</h2>
+        <p class="hint">위에서 고른 교회와 그 교회의 성도·출석 기록이 모두 지워지고 되돌릴 수 없어요. 먼저 내보내기로 파일을 받아 두세요.</p>
+        <div class="row"><button class="danger" id="aDel">이 교회 삭제</button><span id="aDelMsg" class="ok"></span></div>
+      </section>
     </div>
   </div>
 
@@ -439,6 +444,7 @@ function demoStore() {
     async importAttendance(cid, rows) { rows.forEach(r => att.set(attId(r.date, r.service, r.memberId), { ...r, checkedBy: email })); emitAtt(); return rows.length; },
     async allMembers() { return [...members.values()]; },
     async allAttendance() { return [...att.values()]; },
+    async deleteChurch() { members.clear(); att.clear(); emitMembers(); },
   };
 }
 
@@ -523,6 +529,18 @@ async function firebaseStore() {
     },
     async allMembers(cid) { const s = await F.getDocs(F.collection(db, "churches", cid, "members")); return s.docs.map(d => ({ ...d.data(), id: d.id })); },
     async allAttendance(cid) { const s = await F.getDocs(F.collection(db, "churches", cid, "attendance")); return s.docs.map(d => d.data()); },
+    // 성도·출석 문서를 400개씩 지운 뒤 교회 문서를 지움
+    async deleteChurch(cid, onProgress) {
+      let n = 0;
+      for (const sub of ["attendance", "members"]) {
+        const docs = (await F.getDocs(F.collection(db, "churches", cid, sub))).docs;
+        for (let i = 0; i < docs.length; i += 400) {
+          const b = F.writeBatch(db); docs.slice(i, i + 400).forEach(d => b.delete(d.ref));
+          await b.commit(); n += Math.min(400, docs.length - i); onProgress?.(n);
+        }
+      }
+      await F.deleteDoc(F.doc(db, "churches", cid));
+    },
   };
 }
 
@@ -915,6 +933,20 @@ $("#toAdmin").onclick = openAdmin;
 $("#backMain").onclick = () => S.church ? pickChurch(S.churches.find(c => c.id === S.church.id) || S.churches[0]) : (S.churches[0] && pickChurch(S.churches[0]));
 $("#aChurch").onchange = (e) => fillAdmin(S.churches.find(c => c.id === e.target.value));
 $("#aNew").onclick = () => { fillAdmin(null); $("#aName").focus(); };
+$("#aDel").onclick = async () => {
+  const c = S.churches.find(x => x.id === adminCid), msg = $("#aDelMsg");
+  if (!c) return (msg.textContent = "지울 교회를 먼저 골라 주세요.");
+  const typed = prompt(`'${c.name}'의 성도·출석 기록이 모두 지워지고 되돌릴 수 없어요.\n지우려면 교회 이름을 똑같이 입력하세요.`);
+  if (typed === null) return;
+  if (typed.trim() !== c.name) return (msg.textContent = "이름이 달라서 지우지 않았어요.");
+  try {
+    msg.textContent = "지우는 중…";
+    await S.store.deleteChurch(c.id, (n) => (msg.textContent = `${n}건 지우는 중…`));
+    S.churches = S.churches.filter(x => x.id !== c.id);
+    if (S.church?.id === c.id) { stopWatch(); S.church = S.churches[0] || null; }
+    openAdmin(); $("#aDelMsg").textContent = `${c.name}을(를) 지웠어요.`;
+  } catch (e) { msg.textContent = "삭제 실패: " + e.message; }
+};
 $("#aSave").onclick = async () => {
   const data = { name: $("#aName").value.trim(), services: $("#aServices").value.split(",").map(s => s.trim()).filter(Boolean), leaders: leaderList(), staff: emailList($("#aStaff")) };
   if (!data.name) return ($("#aMsg").textContent = "교회 이름을 넣어 주세요.");
