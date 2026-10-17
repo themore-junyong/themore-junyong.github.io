@@ -1,6 +1,6 @@
 rules_version = '2';
 
-// 교회 출석앱 보안 규칙
+// 교회 출석앱 + 회비 관리 보안 규칙 (Firestore 규칙은 프로젝트에 하나라 둘을 함께 둠)
 // - config/admins 문서의 emails 배열에 있는 사람 = 관리자(준용). 모든 교회를 만들고 고칠 수 있음.
 // - churches/{교회}.leaders 배열에 있는 사람 = 그 교회를 쓰는 사람. 출석 체크와 성도 정보 보기.
 // - churches/{교회}.staff 배열에 있는 사람 = 교역자. 위에 더해 성도 추가·수정·삭제. (앱이 staff도 leaders에 넣어 저장함)
@@ -57,6 +57,50 @@ service cloud.firestore {
           && request.resource.data.present is bool
           && request.resource.data.checkedBy == myEmail();
         allow delete: if isAdmin();
+      }
+    }
+
+    // ───────── 회비 관리 (dues/) ─────────
+    // dues/{단체}.managers = 총무: 회원·납부·장부 입력과 수정 / viewers = 보기만 / 관리자(config/admins)는 전부
+    function duesDoc(gid) {
+      return get(/databases/$(db)/documents/dues/$(gid)).data;
+    }
+    function isDuesManager(gid) {
+      return isAdmin() || (signedIn() && myEmail() in duesDoc(gid).get('managers', []));
+    }
+    function canSeeDues(gid) {
+      return isDuesManager(gid) || (signedIn() && myEmail() in duesDoc(gid).get('viewers', []));
+    }
+
+    match /dues/{gid} {
+      allow read: if isAdmin() || (signedIn() && (myEmail() in resource.data.get('managers', []) || myEmail() in resource.data.get('viewers', [])));
+      allow create, delete: if isAdmin();
+      // 총무는 시작 잔액 같은 값만 고칠 수 있고, 총무·보기 명단은 관리자만 바꿈
+      allow update: if isAdmin() || (isDuesManager(gid)
+        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['managers', 'viewers', 'name']));
+
+      match /members/{mid} {
+        allow read: if canSeeDues(gid);
+        allow write: if isDuesManager(gid);
+      }
+      match /payments/{pid} {
+        allow read: if canSeeDues(gid);
+        allow create, update: if isDuesManager(gid)
+          && request.resource.data.month is string
+          && request.resource.data.month.matches('^[0-9]{4}-[0-9]{2}$')
+          && request.resource.data.amount is number;
+        allow delete: if isDuesManager(gid);
+      }
+      match /ledger/{lid} {
+        allow read: if canSeeDues(gid);
+        allow create, update: if isDuesManager(gid)
+          && request.resource.data.kind in ['in', 'out']
+          && request.resource.data.amount is number;
+        allow delete: if isDuesManager(gid);
+      }
+      match /stats/{sid} {
+        allow read: if canSeeDues(gid);
+        allow write: if isDuesManager(gid);
       }
     }
   }
