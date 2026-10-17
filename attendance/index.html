@@ -137,6 +137,14 @@ textarea.memo{min-height:60px;border:1px solid var(--line);background:var(--bg);
 .photo .ghost{font-size:14px;padding:6px 12px}
 .contact{display:flex;gap:8px}
 .contact a{flex:1;text-align:center;text-decoration:none;border:1px solid var(--flow);color:var(--flow);border-radius:10px;padding:10px;font-weight:600}
+.bday{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:0 12px}
+.bday summary{padding:8px 0;font-size:14px;color:var(--ink)}
+.bday ul{list-style:none;margin:0 0 8px;padding:0;display:flex;flex-direction:column}
+.bday li{display:flex;align-items:center;gap:8px;padding:6px 0;border-top:1px solid var(--line);font-size:14px}
+.bday li span{flex:1;min-width:0}
+.bday li small{color:var(--muted)}
+.bday li b.today{color:var(--warn)}
+.bday a,.bday button.call{border:1px solid var(--flow);background:transparent;color:var(--flow);border-radius:999px;padding:3px 10px;font-size:13px;text-decoration:none;white-space:nowrap}
 .fab{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom));border:0;background:var(--ink);color:var(--bg);border-radius:999px;padding:12px 18px;font-weight:600;box-shadow:0 4px 14px rgb(0 0 0 / .18)}
 </style>
 </head>
@@ -198,6 +206,7 @@ textarea.memo{min-height:60px;border:1px solid var(--line);background:var(--bg);
         <button class="ghost" id="showDone" aria-pressed="false">출석한 사람 보기</button>
         <span class="sync" id="sync"></span>
       </div>
+      <details class="bday hidden" id="bday"><summary id="bdaySum"></summary><ul id="bdayList"></ul></details>
       <div class="chips" id="chips"></div>
     </div>
     <div class="list" id="list"></div>
@@ -374,6 +383,8 @@ function demoStore() {
   ];
   const members = new Map(raw.map(([id,name,role,group,gender,phone,household,relation,longAbsent]) =>
     [id, { id, name, role, group, gender, phone, household, relation, longAbsent }]));
+  { const d = new Date(); d.setDate(d.getDate() + 2); members.get("P001").birthSolar = `1965-${d.getMonth() + 1}-${d.getDate()}`; }
+  members.get("P004").anniversary = `1990-${new Date().getMonth() + 1}-${new Date().getDate()}`;
   const att = new Map();
   // 지난 6주 주일낮 출석 예시 (강하늘은 계속 결석, 윤서연은 최근 3주 결석)
   for (let w = 1; w <= 6; w++) {
@@ -555,7 +566,7 @@ function pickChurch(c) {
   $("#date").value = S.date;
   S.service = defaultService(services, S.date);
   renderServices(services);
-  S.unMembers = S.store.watchMembers(c.id, (ms) => { S.members = ms; renderChips(); render(); });
+  S.unMembers = S.store.watchMembers(c.id, (ms) => { S.members = ms; renderChips(); render(); renderBdays(); });
   watchAtt();
   show("sMain");
 }
@@ -654,6 +665,30 @@ function openCall(id) {
   $("#callNum").textContent = m.phone;
   $("#callTel").href = "tel:" + tel; $("#callSms").href = "sms:" + tel;
   $("#callDlg").showModal();
+}
+// 이번 주 생일·결혼기념일: 오늘부터 7일 (음력 생일은 브라우저 음력 달력으로 양력 날짜를 찾음)
+const lunarFmt = (() => { try { return new Intl.DateTimeFormat("ko-KR-u-ca-chinese", { month: "numeric", day: "numeric" }); } catch { return null; } })();
+function md(v) { const n = String(v || "").match(/\d+/g); return n && n.length >= 2 ? `${+n[n.length - 2]}-${+n[n.length - 1]}` : ""; }
+function renderBdays() {
+  const days = [...Array(7)].map((_, i) => { const d = new Date(); d.setHours(12, 0, 0, 0); d.setDate(d.getDate() + i); return d; });
+  const items = [];
+  for (const m of S.members) {
+    days.forEach((d, i) => {
+      const sol = `${d.getMonth() + 1}-${d.getDate()}`;
+      let lun = "";
+      if (lunarFmt) { const p = lunarFmt.formatToParts(d); lun = `${parseInt(p.find(x => x.type === "month").value)}-${parseInt(p.find(x => x.type === "day").value)}`; }
+      if (m.birthSolar && md(m.birthSolar) === sol) items.push({ m, i, d, what: "생일" });
+      if (m.birthLunar && lun && md(m.birthLunar) === lun) items.push({ m, i, d, what: "생일(음력)" });
+      if (m.anniversary && md(m.anniversary) === sol) items.push({ m, i, d, what: "결혼기념일" });
+    });
+  }
+  items.sort((a, b) => a.i - b.i || a.m.name.localeCompare(b.m.name, "ko"));
+  $("#bday").classList.toggle("hidden", !items.length);
+  const today = items.filter(x => x.i === 0).length;
+  $("#bdaySum").textContent = `🎂 이번 주 생일·기념일 ${items.length}명${today ? ` (오늘 ${today}명)` : ""}`;
+  const W = "일월화수목금토";
+  $("#bdayList").innerHTML = items.map(({ m, i, d, what }) => `<li><b class="${i ? "" : "today"}">${i ? `${d.getMonth() + 1}/${d.getDate()}(${W[d.getDay()]})` : "오늘"}</b>
+    <span>${esc(m.name)} ${esc(m.role || "")} <small>${what}</small></span>${m.phone ? `<button type="button" class="call" data-call="${esc(m.id)}">💬 연락</button>` : ""}</li>`).join("");
 }
 let toastTimer = null, toastUndo = null;
 function showToast(msg, undo) {
