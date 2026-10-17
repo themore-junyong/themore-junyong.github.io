@@ -98,7 +98,8 @@ dialog{max-height:calc(100dvh - 32px);overflow:auto}
 .ghost[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 .editing .p{border-style:dashed}
 .editing .p .box{display:none}
-.editbar{background:var(--warn-soft);border-radius:8px;padding:6px 10px;font-size:13px}
+.editbar{background:var(--warn-soft);border-radius:8px;padding:6px 10px;font-size:14px;margin:0;display:flex;align-items:center;gap:10px}
+.editbar span{flex:1}
 details summary{cursor:pointer;color:var(--flow);font-size:14px;padding:4px 0}
 details[open] summary{margin-bottom:8px}
 .check{flex-direction:row!important;align-items:center;gap:8px!important;color:var(--ink)!important}
@@ -184,7 +185,7 @@ textarea.memo{min-height:60px;border:1px solid var(--line);background:var(--bg);
         <button class="ghost hidden" id="toAdmin">관리</button>
         <button class="ghost" data-act="logout">로그아웃</button>
       </div>
-      <p class="editbar hidden" id="editBar">정보 고치기 중이에요. 성도를 누르면 정보 화면이 열려요. 출석 체크는 위 <b>✎ 정보</b>를 다시 눌러 끄고 하세요.</p>
+      <p class="editbar hidden" id="editBar"><span>이름을 누르면 정보·전화·문자가 열려요. 지금은 출석 체크가 안 돼요.</span><button type="button" class="ghost" id="editDone">끝내기</button></p>
       <div class="row">
         <input type="date" id="date" aria-label="날짜">
         <div class="seg" id="services" role="group" aria-label="예배"></div>
@@ -732,11 +733,13 @@ $("#dlgDel").onclick = async () => {
   if (!m || !confirm(`${m.name} 성도를 명단에서 지울까요? 출석 기록은 남아요.`)) return;
   try { await S.store.deleteMember(S.church.id, editingId); $("#dlg").close("cancel"); } catch (e) { toastErr("삭제 실패: " + e.message); }
 };
+$("#editDone").onclick = () => $("#editMode").click();
 $("#editMode").onclick = () => {
   S.edit = !S.edit;
   $("#editMode").setAttribute("aria-pressed", S.edit);
   $("#editBar").classList.toggle("hidden", !S.edit);
   $("#list").classList.toggle("editing", S.edit);
+  render();
 };
 
 // ───────────── 통계 ─────────────
