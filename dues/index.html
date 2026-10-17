@@ -1,0 +1,1236 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>회비 관리 · THE MORE</title>
+<meta name="theme-color" content="#1F6F78">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@700&family=IBM+Plex+Sans+KR:wght@400;500;600&display=swap">
+<style>
+:root{
+  --bg:#F3F5F4;--surface:#FFFFFF;--ink:#16222B;--muted:#5B6A72;--line:#D5DDDC;
+  --flow:#1F6F78;--flow-soft:#E1EEEE;--on-flow:#FFFFFF;--warn:#A15C07;--warn-soft:#FBEEDC;--bad:#B3261E;
+  --display:"Gowun Batang","Noto Serif KR",Georgia,serif;
+  --body:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0F171C;--surface:#16222A;--ink:#E7EEEE;--muted:#98A8AE;--line:#27363F;--flow:#6FC1C6;--flow-soft:#17333A;--on-flow:#0F171C;--warn:#F0B566;--warn-soft:#3A2C17;--bad:#F2B8B5;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0F171C;--surface:#16222A;--ink:#E7EEEE;--muted:#98A8AE;--line:#27363F;--flow:#6FC1C6;--flow-soft:#17333A;--on-flow:#0F171C;--warn:#F0B566;--warn-soft:#3A2C17;--bad:#F2B8B5;color-scheme:dark}
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.5;-webkit-tap-highlight-color:transparent}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+button:disabled{opacity:.45;cursor:default}
+:focus-visible{outline:2px solid var(--flow);outline-offset:2px;border-radius:6px}
+.hidden{display:none!important}
+.wrap{max-width:720px;margin:0 auto;padding:0 16px 96px}
+h1,h2{font-family:var(--display);margin:0;font-weight:700}
+.num{font-variant-numeric:tabular-nums}
+
+.top{position:sticky;top:0;z-index:5;background:var(--bg);padding:12px 0 10px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:10px}
+.bar{display:flex;align-items:center;gap:8px;min-width:0}
+.bar h1{font-size:20px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ghost{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 12px;font-size:13px;color:var(--muted);white-space:nowrap;text-decoration:none}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.seg{display:flex;gap:6px;flex-wrap:wrap}
+.seg button{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 14px;font-size:15px;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--flow);border-color:var(--flow);color:var(--on-flow);font-weight:600}
+.search{flex:1;min-width:140px;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:7px 10px;font-size:15px}
+.row input[type=month],.row select{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:6px 8px;font-size:15px}
+.sync{font-size:12px;color:var(--muted)}
+.sum{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:flex;flex-wrap:wrap;gap:4px 16px;align-items:baseline}
+.sum b{font-size:22px;color:var(--flow)}
+.sum .warn{color:var(--warn)}
+.sum small{color:var(--muted);font-size:13px;flex-basis:100%}
+
+.list{display:flex;flex-direction:column;gap:8px;padding-top:12px}
+.item{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 10px;align-items:center;text-align:left;width:100%}
+.item b{font-weight:600;font-size:17px}
+.item small{grid-column:1;color:var(--muted);font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.item .side{grid-row:1 / span 2;grid-column:2;display:flex;gap:6px;align-items:center}
+.item .amt{font-variant-numeric:tabular-nums;font-weight:600}
+.item .amt.out{color:var(--bad)}
+.tag{display:inline-block;font-size:11px;font-weight:600;color:var(--warn);background:var(--warn-soft);border-radius:4px;padding:0 5px;margin-left:4px;vertical-align:middle}
+.tag.ok{color:var(--flow);background:var(--flow-soft)}
+.pill{border:1px solid var(--flow);background:transparent;color:var(--flow);border-radius:999px;padding:5px 12px;font-size:14px;font-weight:600;text-decoration:none;white-space:nowrap}
+.pill.solid{background:var(--flow);color:var(--on-flow)}
+.pill.off{border-color:var(--line);color:var(--muted);pointer-events:none}
+.x{border:0;background:transparent;color:var(--muted);font-size:18px;padding:2px 6px}
+.empty{color:var(--muted);text-align:center;padding:40px 0}
+
+.screen{min-height:100dvh;display:flex;flex-direction:column;justify-content:center;gap:18px;padding:32px 0}
+.screen h1{font-size:32px}
+.screen p{margin:0;color:var(--muted)}
+.btn{border:0;background:var(--flow);color:var(--on-flow);border-radius:10px;padding:12px 18px;font-size:16px;font-weight:600;align-self:flex-start;text-decoration:none}
+.btn.line{background:transparent;border:1px solid var(--flow);color:var(--flow)}
+.note{background:var(--warn-soft);color:var(--ink);border-radius:10px;padding:12px 14px;font-size:14px;margin:0}
+.err{color:var(--bad);font-size:14px}
+.ok{color:var(--flow);font-size:14px}
+.foot{font-size:12px;color:var(--muted);text-align:center;padding:24px 0}
+.fab{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom));border:0;background:var(--ink);color:var(--bg);border-radius:999px;padding:12px 18px;font-weight:600;box-shadow:0 4px 14px rgb(0 0 0 / .18)}
+
+.panel{display:flex;flex-direction:column;gap:16px;padding-top:16px}
+.panel section{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:10px}
+.panel h2{font-size:18px}
+.panel label,dialog label{display:flex;flex-direction:column;gap:4px;font-size:14px;color:var(--muted);min-width:0}
+.panel input,.panel textarea,.panel select,dialog input,dialog select,dialog textarea{border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:8px 10px;font-size:15px;color:var(--ink);width:100%;min-width:0}
+.panel textarea{min-height:110px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px}
+.panel textarea.plain{font-family:inherit;font-size:15px;min-height:90px}
+.hint{font-size:13px;color:var(--muted);margin:0}
+.two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
+.danger{border:1px solid var(--bad);background:transparent;color:var(--bad);border-radius:10px;padding:10px 14px;font-size:15px}
+
+dialog{border:0;border-radius:14px;padding:18px;max-width:min(460px,calc(100vw - 32px));width:100%;max-height:calc(100dvh - 32px);overflow:auto;background:var(--surface);color:var(--ink)}
+dialog::backdrop{background:rgb(0 0 0 / .4)}
+dialog form{display:flex;flex-direction:column;gap:10px}
+dialog h2{font-size:20px}
+details summary{cursor:pointer;color:var(--flow);font-size:14px;padding:4px 0}
+.months{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px}
+.months button{border:1.5px solid var(--line);background:var(--bg);border-radius:8px;padding:6px 0;font-size:14px;display:flex;flex-direction:column;align-items:center;line-height:1.2}
+.months button small{font-size:11px;color:var(--muted)}
+.months button.paid{background:var(--flow-soft);border-color:var(--flow)}
+.months button.paid small{color:var(--flow);font-weight:600}
+.months button.due{border-color:var(--warn)}
+.months button.due small{color:var(--warn);font-weight:600}
+.months button.out{opacity:.45}
+.months button[aria-pressed="true"]{background:var(--flow);border-color:var(--flow);color:var(--on-flow)}
+.months button[aria-pressed="true"] small{color:var(--on-flow)}
+.plist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.plist li{display:flex;align-items:center;gap:8px;padding:6px 0;border-top:1px solid var(--line);font-size:14px}
+.plist li span{flex:1;min-width:0}
+.plist li:first-child{border-top:0}
+table.led{width:100%;border-collapse:collapse;font-size:14px;font-variant-numeric:tabular-nums}
+table.led th,table.led td{padding:6px 4px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+table.led th:first-child,table.led td:first-child{text-align:left}
+table.led th{color:var(--muted);font-weight:500;font-size:12px}
+table.led tr.pick td{background:var(--flow-soft)}
+table.led tbody tr{cursor:pointer}
+.scroll{overflow-x:auto}
+.bankin{width:100%;min-height:140px;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:10px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;color:var(--ink)}
+.brow{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:6px}
+.brow .l1{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+.brow .l1 b{font-size:16px}
+.brow .l1 .amt{margin-left:auto;font-variant-numeric:tabular-nums;font-weight:600}
+.brow small{color:var(--muted);font-size:12px;word-break:break-all}
+.brow .fix{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:6px}
+.brow select,.brow input{border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:6px 8px;font-size:14px;color:var(--ink);width:100%;min-width:0}
+.brow.warn{border-color:var(--warn)}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(76px + env(safe-area-inset-bottom));z-index:9;background:var(--ink);color:var(--bg);border-radius:999px;padding:8px 16px;font-size:14px;max-width:calc(100vw - 32px)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div id="sLoading" class="screen"><p>불러오는 중…</p></div>
+
+  <div id="sSetup" class="screen hidden">
+    <h1>회비 관리</h1>
+    <p>아직 Firebase 연결 값이 없어요. <code>firebase-config.js</code>를 채우면 실제로 쓸 수 있어요.</p>
+    <a class="btn" href="?demo">가짜 회원으로 미리 보기</a>
+  </div>
+
+  <div id="sInApp" class="screen hidden">
+    <h1>회비 관리</h1>
+    <p class="note">카카오톡·인스타 안에서 열면 구글 로그인이 막혀요. 크롬이나 사파리로 열어 주세요.</p>
+    <button class="btn" id="openExternal">다른 브라우저로 열기</button>
+    <p id="copyHint" class="hidden">주소를 복사했어요. 크롬이나 사파리 주소창에 붙여 넣어 주세요.</p>
+  </div>
+
+  <div id="sLogin" class="screen hidden">
+    <h1>회비 관리</h1>
+    <p>초대받은 구글 계정으로 로그인해 주세요.</p>
+    <button class="btn" id="login">구글로 로그인</button>
+    <p id="loginErr" class="err"></p>
+  </div>
+
+  <div id="sNoAccess" class="screen hidden">
+    <h1>아직 초대되지 않았어요</h1>
+    <p><b id="noAccessEmail"></b> 계정은 어느 단체의 총무 명단에도 없어요. 대표에게 이 이메일을 알려 주세요.</p>
+    <button class="btn line" data-act="logout">다른 계정으로 로그인</button>
+  </div>
+
+  <!-- 본 화면 -->
+  <div id="sMain" class="hidden">
+    <div class="top">
+      <div class="bar">
+        <h1 id="gName">단체</h1>
+        <select id="gPick" class="ghost hidden" aria-label="단체 선택"></select>
+        <button class="ghost hidden" id="toAdmin">관리</button>
+        <button class="ghost" data-act="logout">로그아웃</button>
+      </div>
+      <div class="seg" id="tabs" role="tablist">
+        <button data-tab="due" aria-pressed="true">미납자</button>
+        <button data-tab="bank" aria-pressed="false" class="edit-only">통장 정리</button>
+        <button data-tab="mem" aria-pressed="false">회원</button>
+        <button data-tab="pay" aria-pressed="false">납부 기록</button>
+        <button data-tab="led" aria-pressed="false">장부</button>
+      </div>
+      <span class="sync" id="sync"></span>
+    </div>
+
+    <!-- 미납자 -->
+    <div id="tDue">
+      <div class="list">
+        <div class="sum" id="dueSum"></div>
+        <div class="row"><div class="seg" id="dueSeg"><button data-min="1" aria-pressed="true">전체</button><button data-min="2" aria-pressed="false">2개월+</button><button data-min="3" aria-pressed="false">3개월+</button></div>
+          <input class="search" id="dueQ" type="search" placeholder="이름 찾기" autocomplete="off"><button class="pill" id="dueCopy">전체 현황 복사</button></div>
+        <div id="dueList" class="list" style="padding:0"></div>
+      </div>
+    </div>
+
+    <!-- 통장 정리 -->
+    <div id="tBank" class="hidden">
+      <div class="list">
+        <p class="hint">은행 앱이나 엑셀의 거래내역을 그대로 복사해 붙여 넣으세요. 회비는 회원·달별로, 지출과 회비 아닌 입금은 장부로 나눠요. 같은 내역을 다시 붙여도 두 번 들어가지 않아요.</p>
+        <textarea id="bankIn" class="bankin" placeholder="2026.10.01 09:25:54	입금	5,000	995,229	일반입금	조은혜 회비 10월"></textarea>
+        <div class="row"><button class="btn" id="bankRun">정리하기</button><span class="ok" id="bankMsg"></span></div>
+        <div id="bankOut" class="hidden" style="display:flex;flex-direction:column;gap:12px">
+          <div class="sum" id="bankSum"></div>
+          <h2 style="font-size:18px">회비 <span class="hint" id="bankOkN"></span></h2>
+          <div id="bankOk" class="list" style="padding:0"></div>
+          <h2 style="font-size:18px">확인 필요 <span class="hint" id="bankWarnN"></span></h2>
+          <p class="hint">누구 몇 월분인지 골라 주세요. 고르지 않으면 저장하지 않아요.</p>
+          <div id="bankWarn" class="list" style="padding:0"></div>
+          <h2 style="font-size:18px">장부 (지출·회비 아닌 입금) <span class="hint" id="bankLedN"></span></h2>
+          <div id="bankLed" class="list" style="padding:0"></div>
+          <details><summary id="bankSkipN">건너뛴 줄</summary><div id="bankSkip" class="list" style="padding:0"></div></details>
+          <div class="row"><button class="btn" id="bankSave">모두 저장</button><span class="ok" id="bankSaveMsg"></span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 회원 -->
+    <div id="tMem" class="hidden">
+      <div class="list">
+        <div class="row">
+          <div class="seg" id="memSeg"><button data-st="유지" aria-pressed="true">활동</button><button data-st="탈퇴" aria-pressed="false">탈퇴</button><button data-st="" aria-pressed="false">전체</button></div>
+          <input class="search" id="memQ" type="search" placeholder="이름·지역·전화 뒷자리" autocomplete="off">
+        </div>
+        <p class="hint" id="memCount"></p>
+        <div id="memList" class="list" style="padding:0"></div>
+      </div>
+      <button class="fab edit-only" id="addMember">+ 새 회원</button>
+    </div>
+
+    <!-- 납부 기록 -->
+    <div id="tPay" class="hidden">
+      <div class="list">
+        <div class="row">
+          <input type="month" id="payMonth" aria-label="달">
+          <div class="seg" id="payBy"><button data-by="paidDate" aria-pressed="true">낸 날짜로</button><button data-by="month" aria-pressed="false">회비 달로</button></div>
+        </div>
+        <div class="sum" id="paySum"></div>
+        <div id="payList" class="list" style="padding:0"></div>
+      </div>
+    </div>
+
+    <!-- 장부 -->
+    <div id="tLed" class="hidden">
+      <div class="list">
+        <div class="sum" id="ledSum"></div>
+        <div class="row"><select id="ledYear" aria-label="연도"></select><span class="hint">줄을 누르면 그 달 내역이 보여요.</span></div>
+        <div class="scroll"><table class="led"><thead><tr><th>월</th><th>회비</th><th>기타 입금</th><th>지출</th><th>월말 잔액</th></tr></thead><tbody id="ledRows"></tbody></table></div>
+        <h2 style="font-size:18px;margin-top:8px" id="ledMonthTitle"></h2>
+        <div id="ledList" class="list" style="padding:0"></div>
+      </div>
+      <button class="fab edit-only" id="addLed">+ 입금·지출</button>
+    </div>
+    <div class="toast hidden" id="toast" role="status"></div>
+  </div>
+
+  <!-- 관리 -->
+  <div id="sAdmin" class="hidden">
+    <div class="top">
+      <div class="bar"><h1>관리</h1><button class="ghost" id="backMain">회비로</button></div>
+    </div>
+    <div class="panel">
+      <section>
+        <h2>단체</h2>
+        <label>단체 고르기<select id="aGroup"></select></label>
+        <label>단체 이름<input id="aName" placeholder="도와줄래"></label>
+        <div class="two">
+          <label>기본 월회비 (원)<input id="aFee" inputmode="numeric" placeholder="5000"></label>
+          <label>미납 세기 시작 달<input id="aStart" type="month"></label>
+        </div>
+        <p class="hint">가입일이 이 달보다 앞이면 이 달부터 세요. 미납은 지난달까지만 세요.</p>
+        <label>총무 이메일 (한 줄에 하나) · 회원·납부·장부 입력과 수정<textarea id="aManagers" class="plain" placeholder="chongmu@gmail.com"></textarea></label>
+        <label>보기만 하는 이메일 (한 줄에 하나) · 감사·임원용<textarea id="aViewers" class="plain" placeholder=""></textarea></label>
+        <div class="row"><button class="btn" id="aSave">저장</button><button class="btn line" id="aNew">새 단체·지부</button><span id="aMsg" class="ok"></span></div>
+      </section>
+      <section>
+        <h2>미납 안내 문자</h2>
+        <label>입금 계좌<input id="aAccount" placeholder="OO은행 000-0000-0000 (예금주)"></label>
+        <label>문구 · {이름} {미납월} {개월} {금액} {계좌} {단체} 자리에 알아서 들어가요<textarea id="aSms" class="plain"></textarea></label>
+        <p class="hint" id="aSmsPreview"></p>
+      </section>
+      <section>
+        <h2>장부 시작 잔액</h2>
+        <p class="hint">통장 잔액을 한 번 맞춰 두면, 그 달부터 회비·입금·지출로 잔액을 계산해요. 통장 정리에 잔액 칸이 있으면 거기서 한 번에 맞출 수도 있어요.</p>
+        <div class="two">
+          <label>시작 달<input id="aOpenMonth" type="month"></label>
+          <label>그 달 1일 통장 잔액 (원)<input id="aOpenBal" inputmode="numeric"></label>
+        </div>
+      </section>
+      <section>
+        <h2>회원 가져오기</h2>
+        <p class="hint">구글 시트 '회원' 탭을 Ctrl+A로 전체 선택해 복사한 뒤 붙여 넣으세요. 회원ID가 같으면 덮어써서, 여러 번 가져와도 겹치지 않아요.</p>
+        <textarea id="aMemImport" placeholder="회원ID	이름	성별	생년월일	연락처	가입일자	…"></textarea>
+        <div class="row"><button class="btn" id="aMemImportBtn">가져오기</button><span id="aMemImportMsg" class="ok"></span></div>
+      </section>
+      <section>
+        <h2>납부 기록 가져오기</h2>
+        <p class="hint">회원을 먼저 가져온 뒤, '납부내역' 탭을 Ctrl+A로 복사해 붙여 넣으세요. 납부ID가 같으면 덮어써요.</p>
+        <textarea id="aPayImport" placeholder="납부ID	회원ID	이름	납부월	금액	납부일	방법	메모"></textarea>
+        <div class="row"><button class="btn" id="aPayImportBtn">가져오기</button><span id="aPayImportMsg" class="ok"></span></div>
+      </section>
+      <section>
+        <h2>다시 계산하기</h2>
+        <p class="hint">회원별 낸 달과 장부 합계를 전체 기록에서 처음부터 다시 맞춰요. 숫자가 이상할 때만 누르세요.</p>
+        <div class="row"><button class="btn line" id="aRebuild">다시 계산</button><span id="aRebuildMsg" class="ok"></span></div>
+      </section>
+      <section>
+        <h2>내보내기</h2>
+        <p class="hint">엑셀에서 바로 열리는 CSV 파일로 받아요.</p>
+        <div class="row"><button class="btn line" id="aExpMem">회원</button><button class="btn line" id="aExpPay">납부 기록</button><button class="btn line" id="aExpLed">장부</button></div>
+      </section>
+    </div>
+  </div>
+
+  <p class="foot">THE MORE 제공 · 무단 재배포 금지</p>
+</div>
+
+<!-- 회원 -->
+<dialog id="mDlg">
+  <form method="dialog" id="mForm">
+    <h2 id="mTitle">회원</h2>
+    <div class="row" id="mContact"></div>
+    <section id="mPaySec" class="hidden" style="display:flex;flex-direction:column;gap:8px">
+      <div class="row"><button type="button" class="ghost" id="mPrevY">◀</button><b id="mYear" class="num" style="flex:1;text-align:center"></b><button type="button" class="ghost" id="mNextY">▶</button></div>
+      <div class="months" id="mMonths"></div>
+      <p class="hint" id="mDueText"></p>
+      <div class="edit-only" style="display:flex;flex-direction:column;gap:8px">
+        <p class="hint">낸 달을 눌러 고른 뒤 저장하세요. 여러 달을 한 번에 낼 수 있어요.</p>
+        <div class="two">
+          <label>낸 날짜<input type="date" id="mPaidDate"></label>
+          <label>방법<select id="mMethod"><option>계좌이체</option><option>현금</option><option>기타</option></select></label>
+        </div>
+        <div class="row"><button type="button" class="btn" id="mPaySave" disabled>고른 달 납부 저장</button><span id="mPayMsg" class="ok"></span></div>
+      </div>
+      <details><summary id="mPlistSum">납부 기록</summary><ul class="plist" id="mPlist"></ul></details>
+    </section>
+    <details id="mInfo">
+      <summary>회원 정보</summary>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <label>이름<input name="name" required></label>
+        <div class="two">
+          <label>성별<select name="gender"><option value="">-</option><option>남성</option><option>여성</option></select></label>
+          <label>연락처<input name="phone" inputmode="tel" placeholder="010-"></label>
+        </div>
+        <div class="two">
+          <label>가입일<input name="joined" type="date"></label>
+          <label>생년월일<input name="birth" placeholder="1990-01-01"></label>
+        </div>
+        <div class="two">
+          <label>지역<input name="region"></label>
+          <label>월회비 (원)<input name="fee" inputmode="numeric"></label>
+        </div>
+        <div class="two">
+          <label>상태<select name="status"><option>유지</option><option>탈퇴</option></select></label>
+          <label>탈퇴일<input name="leftDate" type="date"></label>
+        </div>
+        <div class="two">
+          <label>1365 ID<input name="vid1365"></label>
+          <label>관심 분야<input name="interest"></label>
+        </div>
+        <label>메모<textarea name="memo" rows="2"></textarea></label>
+        <div class="row edit-only"><button class="btn" value="ok" id="mSave">저장</button><button class="btn line" value="cancel" formnovalidate>닫기</button><span id="mMsg" class="ok"></span></div>
+      </div>
+    </details>
+    <button class="btn line" value="cancel" formnovalidate style="align-self:stretch">닫기</button>
+  </form>
+</dialog>
+
+<!-- 입금·지출 -->
+<dialog id="lDlg">
+  <form method="dialog" id="lForm">
+    <h2>입금·지출 적기</h2>
+    <div class="seg" id="lKind"><button type="button" data-k="out" aria-pressed="true">지출</button><button type="button" data-k="in" aria-pressed="false">회비 아닌 입금</button></div>
+    <div class="two">
+      <label>날짜<input type="date" name="date" required></label>
+      <label>금액 (원)<input name="amount" inputmode="numeric" required></label>
+    </div>
+    <label>항목<input name="category" list="lCats" placeholder="봉사물품, 식비, 후원금…"></label>
+    <datalist id="lCats"></datalist>
+    <label>내용·받는 곳<input name="memo"></label>
+    <div class="row"><button class="btn" value="ok">저장</button><button class="btn line" value="cancel" formnovalidate>취소</button></div>
+  </form>
+</dialog>
+
+<script type="module">
+import { firebaseConfig } from "./firebase-config.js";
+
+const $ = (s) => document.querySelector(s);
+const $$ = (s) => [...document.querySelectorAll(s)];
+const SCREENS = ["sLoading","sSetup","sInApp","sLogin","sNoAccess","sMain","sAdmin"];
+const show = (id) => SCREENS.forEach(s => $("#"+s).classList.toggle("hidden", s !== id));
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const won = (n) => (Number(n) || 0).toLocaleString("ko-KR");
+const toNum = (v) => Number(String(v ?? "").replace(/[^\d.-]/g, "")) || 0;
+
+// 시트 제목 ↔ 앱 필드
+const MEM_COLS = [["id","회원ID"],["name","이름"],["gender","성별"],["birth","생년월일"],["phone","연락처"],["joined","가입일자"],
+  ["vid1365","1365ID"],["interest","관심과목"],["region","지역"],["faith","신앙여부"],["status","회원상태"],["fee","월회비"],["memo","메모"],["leftDate","탈퇴일"]];
+const PAY_COLS = [["id","납부ID"],["memberId","회원ID"],["name","이름"],["month","납부월"],["amount","금액"],["paidDate","납부일"],["method","방법"],["memo","메모"]];
+const DEFAULT_SMS = "[{단체}] {이름}님, 안녕하세요. {미납월} 회비 {금액}원({개월}개월)이 아직 확인되지 않았어요. {계좌}로 보내 주시면 감사하겠습니다. 이미 내셨다면 알려 주세요. 늘 함께해 주셔서 고맙습니다!";
+const OUT_CATS = ["봉사물품","식비","교통비","행사비","선물·경조사","수수료","기타"];
+const IN_CATS = ["후원금","행사 참가비","이자","기타"];
+
+// ───────────── 날짜·달 ─────────────
+function localToday() { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0, 10); }
+// 2026-05 / 2026.5 / 2026-05-01 / 2026년 5월 / 46143(시트 날짜 숫자) → 2026-05
+function normMonth(v) {
+  const s = String(v ?? "").trim(); if (!s) return "";
+  if (/^\d{5}(\.\d+)?$/.test(s)) { const d = new Date(Date.UTC(1899, 11, 30) + Math.floor(+s) * 864e5); return d.toISOString().slice(0, 7); }
+  const m = s.match(/^(\d{4})\s*[-./년]\s*(\d{1,2})/);
+  return m ? `${m[1]}-${String(m[2]).padStart(2, "0")}` : "";
+}
+function normDate(v) {
+  const s = String(v ?? "").trim(); if (!s) return "";
+  if (/^\d{5}(\.\d+)?$/.test(s)) return new Date(Date.UTC(1899, 11, 30) + Math.floor(+s) * 864e5).toISOString().slice(0, 10);
+  let m = s.match(/^(\d{4})\s*[-./년]\s*(\d{1,2})\s*[-./월]\s*(\d{1,2})/);
+  if (!m) { const k = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/); if (k) m = [0, k[3], k[1], k[2]]; }
+  if (m) return `${m[1]}-${String(m[2]).padStart(2, "0")}-${String(m[3]).padStart(2, "0")}`;
+  const ym = normMonth(s); return ym ? ym + "-01" : "";
+}
+const addMonth = (ym, n) => { const [y, m] = ym.split("-").map(Number); const d = new Date(Date.UTC(y, m - 1 + n, 1)); return d.toISOString().slice(0, 7); };
+const lastMonth = () => addMonth(localToday().slice(0, 7), -1);
+function monthRange(a, b) { const out = []; for (let m = a; m <= b && out.length < 600; m = addMonth(m, 1)) out.push(m); return out; }
+const monthLabel = (ym) => `${+ym.slice(5)}월`;
+function monthsText(list) {
+  // 같은 해면 "1·5·8월", 해가 바뀌면 "2026년 11·12월, 2027년 1월"
+  const by = {}; list.forEach(m => (by[m.slice(0, 4)] ||= []).push(+m.slice(5)));
+  const ys = Object.keys(by);
+  return ys.map(y => (ys.length > 1 || y !== localToday().slice(0, 4) ? `${y}년 ` : "") + by[y].join("·") + "월").join(", ");
+}
+
+// ───────────── 미납 계산 ─────────────
+// 활동 회원만. 가입한 달(시작 달보다 앞이면 시작 달)부터 지난달까지 중, 낸 기록이 없는 달.
+function dueMonths(m, g = S.group) {
+  if ((m.status || "유지") !== "유지") return [];
+  const start = g.startMonth || "2026-01";
+  const from = [normMonth(m.joined) || start, start].sort().pop();
+  const paid = new Set(m.paid || []);
+  return monthRange(from, lastMonth()).filter(x => !paid.has(x));
+}
+const feeOf = (m) => toNum(m.fee) || toNum(S.group.fee) || 5000;
+
+// ───────────── 시트 붙여넣기 ─────────────
+function parseTable(text) {
+  text = text.replace(/\r\n?/g, "\n");
+  const sep = text.includes("\t") ? "\t" : ",";
+  const rows = []; let row = [], cell = "", q = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (q) { if (ch === '"') { if (text[i + 1] === '"') { cell += '"'; i++; } else q = false; } else cell += ch; }
+    else if (ch === '"' && cell === "") q = true;
+    else if (ch === sep) { row.push(cell); cell = ""; }
+    else if (ch === "\n") { row.push(cell); rows.push(row); row = []; cell = ""; }
+    else cell += ch;
+  }
+  row.push(cell); rows.push(row);
+  return rows.map(r => r.map(c => c.trim())).filter(r => r.some(Boolean));
+}
+function byHeader(text, cols, need) {
+  const t = parseTable(text);
+  const hi = t.findIndex(r => need.every(h => r.includes(h)));
+  if (hi < 0) return { error: `제목 줄(${need.join(", ")})을 찾지 못했어요. 제목 줄까지 복사했는지 확인해 주세요.` };
+  const head = t[hi], idx = cols.map(([k, h]) => [k, head.indexOf(h)]);
+  return { rows: t.slice(hi + 1).map(c => Object.fromEntries(idx.filter(([, i]) => i >= 0).map(([k, i]) => [k, c[i] ?? ""]))) };
+}
+const safeId = (s) => String(s || "").trim().replace(/[\/.#$\[\]]/g, "-");
+function parseMembers(text) {
+  const r = byHeader(text, MEM_COLS, ["회원ID", "이름"]); if (r.error) return r;
+  return { rows: r.rows.filter(x => x.id && x.name).map(x => ({ ...x, id: safeId(x.id), joined: normDate(x.joined), leftDate: normDate(x.leftDate),
+    status: x.status === "탈퇴" ? "탈퇴" : "유지", fee: toNum(x.fee) || "" })) };
+}
+function parsePayments(text) {
+  const r = byHeader(text, PAY_COLS, ["회원ID", "납부월"]); if (r.error) return r;
+  const bad = [];
+  const rows = r.rows.filter(x => x.memberId).map((x, i) => {
+    const p = { ...x, id: safeId(x.id) || `IMP${i}`, memberId: safeId(x.memberId), month: normMonth(x.month), amount: toNum(x.amount), paidDate: normDate(x.paidDate) };
+    if (!p.month) bad.push(x.id || x.name);
+    if (!p.paidDate) p.paidDate = p.month + "-01";
+    return p;
+  }).filter(p => p.month);
+  return { rows, bad };
+}
+// ───────────── 저장소: 미리보기 ─────────────
+function demoStore() {
+  const email = "demo@example.com";
+  const ym = (n) => addMonth(localToday().slice(0, 7), n);
+  const group = { id: "demo", name: "미리보기 봉사단", fee: 5000, startMonth: ym(-9), account: "OO은행 123-456-7890 (도와줄래)", smsTemplate: DEFAULT_SMS,
+    managers: [email], viewers: [], openingMonth: ym(-3), openingBalance: 350000 };
+  const raw = [["M001","홍길동","남성","010-0000-0001",ym(-12)],["M002","김영희","여성","010-0000-0002",ym(-12)],["M003","이철수","남성","010-0000-0003",ym(-5)],
+    ["M004","박민지","여성","010-0000-0004",ym(-12)],["M005","정수아","여성","",ym(-2)],["M006","강하늘","남성","010-0000-0006",ym(-12)]];
+  const db = { members: new Map(), payments: new Map(), ledger: new Map() };
+  raw.forEach(([id, name, gender, phone, j]) => db.members.set(id, { id, name, gender, phone, joined: j + "-10", status: "유지", region: "수원" }));
+  db.members.set("M007", { id: "M007", name: "최탈퇴", status: "탈퇴", joined: ym(-12) + "-01", leftDate: ym(-4) + "-20" });
+  if (new URLSearchParams(location.search).has("empty")) db.members.clear(); // ?demo&empty = 빈 단체로 가져오기 시험
+  let n = 1;
+  const skip = { M002: [-1, -2], M004: [-5, -1], M006: [-1, -2, -3, -4, -6] };
+  for (const [id] of db.members.size ? raw : []) for (let k = -9; k <= -1; k++) {
+    if (skip[id]?.includes(k) || (id === "M003" && k < -5) || (id === "M005")) continue;
+    const pid = "PAY" + String(n++).padStart(4, "0");
+    db.payments.set(pid, { id: pid, memberId: id, name: db.members.get(id).name, month: ym(k), amount: 5000, paidDate: ym(k) + "-0" + (1 + (n % 9)), method: "계좌이체" });
+  }
+  [["out", -2, 48000, "봉사물품", "장갑·마스크"], ["out", -1, 120000, "식비", "봉사 후 점심"], ["in", -1, 100000, "후원금", "익명 후원"], ["out", 0, 30000, "교통비", "주유"]]
+    .forEach(([kind, k, amount, category, memo], i) => db.ledger.set("L" + i, { id: "L" + i, kind, date: ym(k) + "-15", amount, category, memo }));
+  const cbs = { members: null, stats: null };
+  const derive = () => {
+    for (const m of db.members.values()) m.paid = [...new Set([...db.payments.values()].filter(p => p.memberId === m.id).map(p => p.month))].sort();
+    return buildTotals([...db.payments.values()], [...db.ledger.values()]);
+  };
+  const emit = () => { const st = derive(); cbs.members?.([...db.members.values()].map(m => ({ ...m }))); cbs.stats?.(st); };
+  return {
+    demo: true,
+    onUser(cb) { setTimeout(() => cb({ email }), 0); },
+    async signIn() {}, async signOut() { location.href = location.pathname; },
+    async isAdmin() { return !new URLSearchParams(location.search).has("viewer"); },
+    async groups() { return [group]; },
+    async saveGroup(gid, data) { Object.assign(group, data); return "demo"; },
+    watchMembers(gid, cb) { cbs.members = cb; emit(); return () => { cbs.members = null; }; },
+    watchStats(gid, cb) { cbs.stats = cb; emit(); return () => { cbs.stats = null; }; },
+    async paymentsOf(gid, mid) { return [...db.payments.values()].filter(p => p.memberId === mid); },
+    async paymentsWhere(gid, field, from, to) { return [...db.payments.values()].filter(p => p[field] >= from && p[field] < to); },
+    async ledgerBetween(gid, from, to) { return [...db.ledger.values()].filter(e => e.date >= from && e.date < to); },
+    async all(gid, col) { return [...db[col].values()]; },
+    async saveMember(gid, id, data) { db.members.set(id, { ...db.members.get(id), ...data, id }); emit(); },
+    async addPayments(gid, list) { list.forEach(p => db.payments.set(p.id, { ...p, by: email })); emit(); },
+    async deletePayment(gid, p) { db.payments.delete(p.id); emit(); },
+    async addLedger(gid, e) { const id = "L" + Date.now(); db.ledger.set(id, { ...e, id, by: email }); emit(); },
+    async deleteLedger(gid, e) { db.ledger.delete(e.id); emit(); },
+    async importRows(gid, col, rows) { rows.forEach(r => db[col].set(r.id, { ...db[col].get(r.id), ...r })); emit(); return rows.length; },
+    async rebuild() { emit(); },
+    async existing(gid, col, ids) { return new Set(ids.filter(id => db[col].has(id))); },
+    async saveBank(gid, pays, leds) { pays.forEach(p => db.payments.set(p.id, { ...p, by: email })); leds.forEach(e => db.ledger.set(e.id, { ...e, by: email })); emit(); },
+  };
+}
+
+// 장부 합계: 낸 날짜가 속한 달 기준 { "2026-10": { dues, inn, out } }
+function buildTotals(payments, ledger) {
+  const months = {};
+  const add = (ym, k, v) => { const o = (months[ym] ||= { dues: 0, inn: 0, out: 0 }); o[k] += v; };
+  payments.forEach(p => add((p.paidDate || p.month + "-01").slice(0, 7), "dues", toNum(p.amount)));
+  ledger.forEach(e => add(e.date.slice(0, 7), e.kind === "in" ? "inn" : "out", toNum(e.amount)));
+  return { months };
+}
+
+// ───────────── 저장소: Firebase ─────────────
+async function firebaseStore() {
+  const V = "10.12.2";
+  const { initializeApp } = await import(`https://www.gstatic.com/firebasejs/${V}/firebase-app.js`);
+  const A = await import(`https://www.gstatic.com/firebasejs/${V}/firebase-auth.js`);
+  const F = await import(`https://www.gstatic.com/firebasejs/${V}/firebase-firestore.js`);
+  const app = initializeApp(firebaseConfig);
+  const auth = A.getAuth(app);
+  const db = F.initializeFirestore(app, { localCache: F.persistentLocalCache({ tabManager: F.persistentMultipleTabManager() }) });
+  let me = null;
+  const lc = (s) => String(s || "").trim().toLowerCase();
+  const col = (gid, c) => F.collection(db, "dues", gid, c);
+  const statsRef = (gid) => F.doc(db, "dues", gid, "stats", "totals");
+  const bump = (b, gid, ym, k, v) => b.set(statsRef(gid), { months: { [ym]: { [k]: F.increment(v) } } }, { merge: true });
+  const commitAll = async (ops, onProgress) => {
+    for (let i = 0; i < ops.length; i += 400) { const b = F.writeBatch(db); ops.slice(i, i + 400).forEach(f => f(b)); await b.commit(); onProgress?.(Math.min(i + 400, ops.length)); }
+  };
+  return {
+    demo: false,
+    onUser(cb) { A.onAuthStateChanged(auth, u => { me = u ? lc(u.email) : null; cb(u ? { email: me } : null); }); },
+    async signIn() {
+      const p = new A.GoogleAuthProvider(); p.setCustomParameters({ prompt: "select_account" });
+      try { await A.signInWithPopup(auth, p); }
+      catch (e) { if (e.code === "auth/popup-blocked" || e.code === "auth/operation-not-supported-in-this-environment") await A.signInWithRedirect(auth, p); else throw e; }
+    },
+    async signOut() { await A.signOut(auth); },
+    async isAdmin() {
+      try { const s = await F.getDoc(F.doc(db, "config", "admins")); return s.exists() && (s.data().emails || []).map(lc).includes(me); } catch { return false; }
+    },
+    async groups(admin) {
+      const c = F.collection(db, "dues");
+      const snaps = admin ? [await F.getDocs(c)] : await Promise.all(["managers", "viewers"].map(f => F.getDocs(F.query(c, F.where(f, "array-contains", me))).catch(() => ({ docs: [] }))));
+      const seen = new Map(); snaps.forEach(s => s.docs.forEach(d => seen.set(d.id, { id: d.id, ...d.data() })));
+      return [...seen.values()].sort((a, b) => a.name.localeCompare(b.name, "ko"));
+    },
+    async saveGroup(gid, data) {
+      if (gid) { await F.setDoc(F.doc(db, "dues", gid), data, { merge: true }); return gid; }
+      return (await F.addDoc(F.collection(db, "dues"), data)).id;
+    },
+    watchMembers(gid, cb) { return F.onSnapshot(col(gid, "members"), { includeMetadataChanges: true }, s => cb(s.docs.map(d => ({ ...d.data(), id: d.id })), s.metadata.hasPendingWrites)); },
+    watchStats(gid, cb) { return F.onSnapshot(statsRef(gid), s => cb(s.exists() ? s.data() : { months: {} })); },
+    async paymentsOf(gid, mid) { return (await F.getDocs(F.query(col(gid, "payments"), F.where("memberId", "==", mid)))).docs.map(d => ({ ...d.data(), id: d.id })); },
+    async paymentsWhere(gid, field, from, to) {
+      return (await F.getDocs(F.query(col(gid, "payments"), F.where(field, ">=", from), F.where(field, "<", to)))).docs.map(d => ({ ...d.data(), id: d.id }));
+    },
+    async ledgerBetween(gid, from, to) {
+      return (await F.getDocs(F.query(col(gid, "ledger"), F.where("date", ">=", from), F.where("date", "<", to)))).docs.map(d => ({ ...d.data(), id: d.id }));
+    },
+    async all(gid, c) { return (await F.getDocs(col(gid, c))).docs.map(d => ({ ...d.data(), id: d.id })); },
+    async saveMember(gid, id, data) { await F.setDoc(F.doc(db, "dues", gid, "members", id), data, { merge: true }); },
+    // 납부 문서 + 회원의 낸 달 목록 + 장부 합계를 한 번에
+    async addPayments(gid, list) {
+      const b = F.writeBatch(db);
+      list.forEach(p => {
+        b.set(F.doc(db, "dues", gid, "payments", p.id), { ...p, by: me, at: F.serverTimestamp() });
+        b.set(F.doc(db, "dues", gid, "members", p.memberId), { paid: F.arrayUnion(p.month) }, { merge: true });
+        bump(b, gid, p.paidDate.slice(0, 7), "dues", p.amount);
+      });
+      await b.commit();
+    },
+    async deletePayment(gid, p, monthStillPaid) {
+      const b = F.writeBatch(db);
+      b.delete(F.doc(db, "dues", gid, "payments", p.id));
+      if (!monthStillPaid) b.set(F.doc(db, "dues", gid, "members", p.memberId), { paid: F.arrayRemove(p.month) }, { merge: true });
+      bump(b, gid, (p.paidDate || p.month + "-01").slice(0, 7), "dues", -toNum(p.amount));
+      await b.commit();
+    },
+    async addLedger(gid, e) {
+      const b = F.writeBatch(db);
+      b.set(F.doc(col(gid, "ledger")), { ...e, by: me, at: F.serverTimestamp() });
+      bump(b, gid, e.date.slice(0, 7), e.kind === "in" ? "inn" : "out", e.amount);
+      await b.commit();
+    },
+    async deleteLedger(gid, e) {
+      const b = F.writeBatch(db);
+      b.delete(F.doc(db, "dues", gid, "ledger", e.id));
+      bump(b, gid, e.date.slice(0, 7), e.kind === "in" ? "inn" : "out", -toNum(e.amount));
+      await b.commit();
+    },
+    async importRows(gid, c, rows, onProgress) {
+      await commitAll(rows.map(r => (b) => { const { id, ...rest } = r; b.set(F.doc(db, "dues", gid, c, id), { ...rest, by: me }, { merge: true }); }), onProgress);
+      return rows.length;
+    },
+    async existing(gid, c, ids) {
+      const snaps = await Promise.all(ids.map(id => F.getDoc(F.doc(db, "dues", gid, c, id)).catch(() => null)));
+      return new Set(snaps.filter(x => x?.exists()).map(x => x.id));
+    },
+    // 통장 정리 결과: 납부(회원 낸 달·합계 포함)와 장부를 함께 저장
+    async saveBank(gid, pays, leds, onProgress) {
+      const ops = [
+        ...pays.map(p => (b) => {
+          b.set(F.doc(db, "dues", gid, "payments", p.id), { ...p, by: me, at: F.serverTimestamp() });
+          b.set(F.doc(db, "dues", gid, "members", p.memberId), { paid: F.arrayUnion(p.month) }, { merge: true });
+          bump(b, gid, p.paidDate.slice(0, 7), "dues", p.amount);
+        }),
+        ...leds.map(e => (b) => {
+          const { id, ...rest } = e;
+          b.set(F.doc(db, "dues", gid, "ledger", id), { ...rest, by: me, at: F.serverTimestamp() });
+          bump(b, gid, e.date.slice(0, 7), e.kind === "in" ? "inn" : "out", e.amount);
+        }),
+      ];
+      for (let i = 0; i < ops.length; i += 150) { const b = F.writeBatch(db); ops.slice(i, i + 150).forEach(f => f(b)); await b.commit(); onProgress?.(Math.min(i + 150, ops.length)); }
+    },
+    // 전체 기록에서 회원별 낸 달과 장부 합계를 다시 만듦 (가져오기 뒤, 숫자가 어긋났을 때)
+    async rebuild(gid, onProgress) {
+      const [members, payments, ledger] = await Promise.all(["members", "payments", "ledger"].map(c => this.all(gid, c)));
+      const paid = new Map(); payments.forEach(p => (paid.get(p.memberId) || paid.set(p.memberId, new Set()).get(p.memberId)).add(p.month));
+      const ops = members.map(m => (b) => b.set(F.doc(db, "dues", gid, "members", m.id), { paid: [...(paid.get(m.id) || [])].sort() }, { merge: true }));
+      ops.push((b) => b.set(statsRef(gid), buildTotals(payments, ledger)));
+      await commitAll(ops, onProgress);
+      return { members: members.length, payments: payments.length, ledger: ledger.length, orphans: payments.filter(p => !members.some(m => m.id === p.memberId)).length };
+    },
+  };
+}
+
+// ───────────── 상태 ─────────────
+const S = { store: null, email: null, admin: false, role: "viewer", groups: [], group: null, members: [], stats: { months: {} },
+  tab: "due", dueMin: 1, memSt: "유지", payBy: "paidDate", ledYear: localToday().slice(0, 4), ledMonth: null, un: [] };
+const canEdit = () => S.admin || S.role === "manager";
+function safeGet(k) { try { return localStorage.getItem("dues." + k); } catch { return null; } }
+function safeSet(k, v) { try { localStorage.setItem("dues." + k, v); } catch {} }
+function toast(msg) { const t = $("#toast"); t.textContent = msg; t.classList.remove("hidden"); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.add("hidden"), 2600); }
+const isInAppBrowser = () => /KAKAOTALK|Instagram|FBAN|FBAV|NAVER\(inapp|Line\//i.test(navigator.userAgent);
+
+async function boot() {
+  const demo = new URLSearchParams(location.search).has("demo");
+  if (!demo && !firebaseConfig.apiKey) return show("sSetup");
+  if (!demo && isInAppBrowser()) return showInApp();
+  try { S.store = demo ? demoStore() : await firebaseStore(); }
+  catch { show("sLogin"); $("#loginErr").textContent = "연결에 실패했어요. 인터넷을 확인해 주세요."; return; }
+  S.store.onUser(async (u) => {
+    if (!u) { stopWatch(); return show("sLogin"); }
+    S.email = u.email;
+    S.admin = await S.store.isAdmin();
+    S.groups = await S.store.groups(S.admin).catch(() => []);
+    if (!S.groups.length && !S.admin) { $("#noAccessEmail").textContent = u.email; return show("sNoAccess"); }
+    if (!S.groups.length) return openAdmin();
+    pickGroup(S.groups.find(g => g.id === safeGet("group")) || S.groups[0]);
+  });
+}
+function showInApp() {
+  show("sInApp");
+  $("#openExternal").onclick = async () => {
+    const url = location.href;
+    if (/KAKAOTALK/i.test(navigator.userAgent)) { location.href = "kakaotalk://web/openExternal?url=" + encodeURIComponent(url); return; }
+    if (/Android/i.test(navigator.userAgent)) { location.href = "intent://" + url.replace(/^https?:\/\//, "") + "#Intent;scheme=https;package=com.android.chrome;end"; return; }
+    try { await navigator.clipboard.writeText(url); } catch {}
+    $("#copyHint").classList.remove("hidden");
+  };
+}
+function stopWatch() { S.un.forEach(f => f?.()); S.un = []; }
+
+function pickGroup(g) {
+  stopWatch();
+  S.group = g; safeSet("group", g.id);
+  S.role = S.admin || (g.managers || []).includes(S.email) ? "manager" : "viewer";
+  document.body.classList.toggle("ro", !canEdit());
+  $$(".edit-only").forEach(el => el.classList.toggle("hidden", !canEdit()));
+  $("#gName").textContent = g.name;
+  $("#toAdmin").classList.toggle("hidden", !S.admin);
+  const pick = $("#gPick"); pick.classList.toggle("hidden", S.groups.length < 2);
+  pick.innerHTML = S.groups.map(x => `<option value="${esc(x.id)}"${x.id === g.id ? " selected" : ""}>${esc(x.name)}</option>`).join("");
+  show("sMain");
+  S.un.push(S.store.watchMembers(g.id, (ms, pending) => {
+    S.members = ms.sort((a, b) => a.name.localeCompare(b.name, "ko"));
+    $("#sync").textContent = S.store.demo ? "미리보기 · 저장 안 됨" : pending ? "저장 중…" : "";
+    renderTab();
+  }));
+  S.un.push(S.store.watchStats(g.id, (st) => { S.stats = st || { months: {} }; if (S.tab === "led") renderLedger(); }));
+}
+$("#gPick").onchange = (e) => pickGroup(S.groups.find(g => g.id === e.target.value));
+$("#login").onclick = async () => { $("#loginErr").textContent = ""; try { await S.store.signIn(); } catch (e) { $("#loginErr").textContent = "로그인 실패: " + e.message; } };
+document.addEventListener("click", (e) => { if (e.target.closest("[data-act=logout]")) S.store.signOut(); });
+
+// ───────────── 탭 ─────────────
+$("#tabs").onclick = (e) => {
+  const b = e.target.closest("button"); if (!b) return;
+  S.tab = b.dataset.tab;
+  $$("#tabs button").forEach(x => x.setAttribute("aria-pressed", x === b));
+  renderTab();
+};
+function renderTab() {
+  ["due", "bank", "mem", "pay", "led"].forEach(t => $("#t" + t[0].toUpperCase() + t.slice(1)).classList.toggle("hidden", S.tab !== t));
+  ({ due: renderDue, bank: () => {}, mem: renderMembers, pay: renderPayments, led: renderLedger })[S.tab]();
+}
+
+// 미납자
+function smsText(m, due) {
+  const g = S.group, amt = due.length * feeOf(m);
+  return (g.smsTemplate || DEFAULT_SMS).replace(/\{이름\}/g, m.name).replace(/\{미납월\}/g, monthsText(due)).replace(/\{개월\}/g, due.length)
+    .replace(/\{금액\}/g, won(amt)).replace(/\{계좌\}/g, g.account || "회비 계좌").replace(/\{단체\}/g, g.name);
+}
+function smsHref(phone, body) {
+  const num = String(phone || "").replace(/[^\d+]/g, "");
+  return `sms:${num}${/iPhone|iPad|Mac/.test(navigator.userAgent) ? "&" : "?"}body=${encodeURIComponent(body)}`;
+}
+function dueRows() {
+  return S.members.map(m => ({ m, due: dueMonths(m) })).filter(r => r.due.length)
+    .sort((a, b) => b.due.length - a.due.length || a.m.name.localeCompare(b.m.name, "ko"));
+}
+function renderDue() {
+  const rows = dueRows(), q = $("#dueQ").value.trim();
+  const months = rows.reduce((s, r) => s + r.due.length, 0), amt = rows.reduce((s, r) => s + r.due.length * feeOf(r.m), 0);
+  const end = lastMonth();
+  $("#dueSum").innerHTML = `<span>미납 <b class="warn">${rows.length}</b>명</span><span class="num">${months}개월 · ${won(amt)}원</span>
+    <small>${end.slice(0, 4)}년 ${+end.slice(5)}월까지 · 활동 회원 ${S.members.filter(m => (m.status || "유지") === "유지").length}명 기준. 이번 달은 다음 달부터 세요.</small>`;
+  const list = rows.filter(r => r.due.length >= S.dueMin && (!q || r.m.name.includes(q)));
+  $("#dueList").innerHTML = list.map(({ m, due }) => `
+    <div class="item"${due.length >= 3 ? ' style="border-color:var(--warn)"' : ""}><b>${esc(m.name)} <span class="tag">${due.length}개월</span>${m.lastNotice ? ` <span class="tag ok">안내 ${esc(m.lastNotice.slice(5).replace("-", "/"))}</span>` : ""}</b>
+      <small>${esc(monthsText(due))} · ${won(due.length * feeOf(m))}원</small>
+      <span class="side">
+        ${m.phone ? `<a class="pill solid" data-notice="${esc(m.id)}" href="${esc(smsHref(m.phone, smsText(m, due)))}">💬 문자</a>` : `<span class="pill off">번호 없음</span>`}
+        <button class="pill" data-open="${esc(m.id)}">${canEdit() ? "납부" : "보기"}</button>
+      </span></div>`).join("") || `<p class="empty">${S.members.length ? "미납자가 없어요." : "회원이 아직 없어요. 관리에서 가져오기를 해 주세요."}</p>`;
+}
+$("#dueQ").oninput = renderDue;
+$("#dueSeg").onclick = (e) => { const b = e.target.closest("button"); if (!b) return; S.dueMin = +b.dataset.min; $$("#dueSeg button").forEach(x => x.setAttribute("aria-pressed", x === b)); renderDue(); };
+// 문자 버튼을 누르면 안내한 날을 회원에 남겨, 누구에게 언제 안내했는지 미납자 목록에 보여요
+$("#dueList").addEventListener("click", (e) => {
+  const a = e.target.closest("[data-notice]"); if (!a || !canEdit()) return;
+  S.store.saveMember(S.group.id, a.dataset.notice, { lastNotice: localToday() }).catch(() => {});
+});
+$("#dueCopy").onclick = async () => {
+  const rows = dueRows(), end = lastMonth();
+  const lines = rows.map(({ m, due }) => `${m.name}  ${monthsText(due)} (${due.length}개월) ${won(due.length * feeOf(m))}원`);
+  const months = rows.reduce((s, r) => s + r.due.length, 0), amt = rows.reduce((s, r) => s + r.due.length * feeOf(r.m), 0);
+  const text = `[${S.group.name} 회비 미납 현황] ${end.slice(0, 4)}년 ${+end.slice(5)}월까지\n\n${lines.join("\n")}\n\n총 ${rows.length}명 / ${months}개월 / ${won(amt)}원`;
+  try { await navigator.clipboard.writeText(text); toast("복사했어요. 단톡방에 붙여 넣으면 돼요."); } catch { prompt("아래 글을 복사하세요", text); }
+};
+
+// 회원
+$("#memSeg").onclick = (e) => { const b = e.target.closest("button"); if (!b) return; S.memSt = b.dataset.st; $$("#memSeg button").forEach(x => x.setAttribute("aria-pressed", x === b)); renderMembers(); };
+$("#memQ").oninput = () => renderMembers();
+function renderMembers() {
+  const q = $("#memQ").value.trim();
+  const list = S.members.filter(m => (!S.memSt || (m.status || "유지") === S.memSt) && (!q || [m.name, m.region, String(m.phone || "").slice(-4)].some(v => String(v || "").includes(q))));
+  $("#memCount").textContent = `${list.length}명`;
+  $("#memList").innerHTML = list.map(m => { const d = dueMonths(m); return `
+    <button class="item" data-open="${esc(m.id)}"><b>${esc(m.name)}${m.status === "탈퇴" ? ' <span class="tag">탈퇴</span>' : d.length ? ` <span class="tag">미납 ${d.length}</span>` : ' <span class="tag ok">완납</span>'}</b>
+      <small>${esc([m.region, m.phone, m.joined && "가입 " + m.joined].filter(Boolean).join(" · "))}</small>
+      <span class="side hint">${esc(m.id)}</span></button>`; }).join("") || `<p class="empty">회원이 없어요.</p>`;
+}
+document.addEventListener("click", (e) => { const b = e.target.closest("[data-open]"); if (b) openMember(b.dataset.open); });
+
+// 회원 창
+const M = { id: null, year: null, pays: [], pick: new Set() };
+async function openMember(id) {
+  const m = id ? S.members.find(x => x.id === id) : null;
+  M.id = id; M.pick.clear(); M.pays = [];
+  const f = $("#mForm");
+  $("#mTitle").textContent = m ? m.name : "새 회원";
+  ["name","gender","phone","joined","birth","region","fee","status","leftDate","vid1365","interest","memo"].forEach(k => { if (f[k]) f[k].value = m?.[k] ?? (k === "status" ? "유지" : ""); });
+  $("#mContact").innerHTML = m?.phone ? `<a class="pill" href="tel:${esc(m.phone)}">📞 ${esc(m.phone)}</a><a class="pill" href="${esc(smsHref(m.phone, ""))}">💬 문자</a>` : "";
+  $("#mPaySec").classList.toggle("hidden", !m);
+  $("#mInfo").open = !m; $("#mMsg").textContent = ""; $("#mPayMsg").textContent = "";
+  $("#mPaidDate").value = localToday();
+  $$("#mForm input, #mForm select, #mForm textarea").forEach(el => el.disabled = !canEdit() && el.id !== "mPrevY");
+  if (m) { M.year = (dueMonths(m)[0] || lastMonth()).slice(0, 4); renderMonths(); }
+  $("#mDlg").showModal();
+  if (m) { M.pays = await S.store.paymentsOf(S.group.id, id).catch(() => []); renderMonths(); }
+}
+function renderMonths() {
+  const m = S.members.find(x => x.id === M.id); if (!m) return;
+  const paid = new Set(m.paid || []), due = new Set(dueMonths(m)), end = lastMonth();
+  $("#mYear").textContent = M.year + "년";
+  $("#mMonths").innerHTML = Array.from({ length: 12 }, (_, i) => {
+    const ym = `${M.year}-${String(i + 1).padStart(2, "0")}`;
+    const cls = paid.has(ym) ? "paid" : due.has(ym) ? "due" : ym > end ? "" : "out";
+    const lab = paid.has(ym) ? "냄" : due.has(ym) ? "미납" : ym > end ? "" : "-";
+    return `<button type="button" class="${cls}" data-ym="${ym}" aria-pressed="${M.pick.has(ym)}">${i + 1}월<small>${lab || "&nbsp;"}</small></button>`;
+  }).join("");
+  const d = [...due];
+  $("#mDueText").textContent = m.status === "탈퇴" ? `탈퇴 회원이에요${m.leftDate ? " (" + m.leftDate + ")" : ""}. 미납으로 세지 않아요.` :
+    d.length ? `미납 ${d.length}개월: ${monthsText(d)} · ${won(d.length * feeOf(m))}원` : "밀린 회비가 없어요.";
+  const ps = [...M.pays].sort((a, b) => a.month.localeCompare(b.month) || a.paidDate.localeCompare(b.paidDate));
+  const cnt = {}; ps.forEach(p => cnt[p.month] = (cnt[p.month] || 0) + 1);
+  $("#mPlistSum").textContent = `납부 기록 ${ps.length}건 · ${won(ps.reduce((s, p) => s + toNum(p.amount), 0))}원`;
+  $("#mPlist").innerHTML = ps.map(p => `<li><span><b>${esc(p.month)}</b> ${won(p.amount)}원${cnt[p.month] > 1 ? ' <span class="tag">같은 달 2번</span>' : ""}<br><small class="hint">${esc(p.paidDate)} · ${esc(p.method || "")} · ${esc(p.id)}</small></span>${canEdit() ? `<button type="button" class="x" data-delpay="${esc(p.id)}" aria-label="삭제">✕</button>` : ""}</li>`).join("") || `<li class="hint">아직 없어요.</li>`;
+  $("#mPaySave").disabled = !M.pick.size;
+  $("#mPaySave").textContent = M.pick.size ? `${M.pick.size}개월 ${won(M.pick.size * feeOf(m))}원 납부 저장` : "고른 달 납부 저장";
+}
+$("#mPrevY").onclick = () => { M.year = String(+M.year - 1); renderMonths(); };
+$("#mNextY").onclick = () => { M.year = String(+M.year + 1); renderMonths(); };
+$("#mMonths").onclick = (e) => {
+  const b = e.target.closest("[data-ym]"); if (!b || !canEdit()) return;
+  const ym = b.dataset.ym, m = S.members.find(x => x.id === M.id);
+  if ((m.paid || []).includes(ym) && !M.pick.has(ym) && !confirm(`${monthLabel(ym)}은 이미 냈어요. 한 번 더 기록할까요?`)) return;
+  M.pick.has(ym) ? M.pick.delete(ym) : M.pick.add(ym); renderMonths();
+};
+function nextId(prefix, ids, width) {
+  const max = ids.reduce((mx, id) => { const n = String(id).startsWith(prefix) ? parseInt(String(id).slice(prefix.length), 10) : NaN; return Number.isFinite(n) && n > mx ? n : mx; }, 0);
+  return (k) => prefix + String(max + 1 + k).padStart(width, "0");
+}
+$("#mPaySave").onclick = async () => {
+  const m = S.members.find(x => x.id === M.id); if (!m || !M.pick.size) return;
+  const paidDate = $("#mPaidDate").value || localToday(), method = $("#mMethod").value;
+  // 납부ID는 날짜+시각+회원으로 겹치지 않게 (여러 총무가 동시에 넣어도 안전)
+  const stamp = new Date().toISOString().replace(/\D/g, "").slice(2, 14);
+  const list = [...M.pick].sort().map((month, k) => ({ id: `P${stamp}_${m.id}_${k}`, memberId: m.id, name: m.name, month, amount: feeOf(m), paidDate, method, memo: "" }));
+  $("#mPaySave").disabled = true;
+  try {
+    await S.store.addPayments(S.group.id, list);
+    M.pays.push(...list); M.pick.clear(); $("#mPayMsg").textContent = `${list.length}개월 저장했어요.`;
+  } catch (e) { $("#mPayMsg").textContent = "저장 실패: " + e.message; }
+  renderMonths();
+};
+$("#mPlist").onclick = async (e) => {
+  const b = e.target.closest("[data-delpay]"); if (!b) return;
+  const p = M.pays.find(x => x.id === b.dataset.delpay); if (!p || !confirm(`${p.month} ${won(p.amount)}원 기록을 지울까요?`)) return;
+  const still = M.pays.some(x => x !== p && x.month === p.month);
+  try { await S.store.deletePayment(S.group.id, p, still); M.pays = M.pays.filter(x => x !== p); renderMonths(); } catch (err) { alert("삭제 실패: " + err.message); }
+};
+$("#mForm").addEventListener("submit", async (e) => {
+  if (e.submitter?.value !== "ok") return;
+  e.preventDefault();
+  const f = $("#mForm"), data = {};
+  ["name","gender","phone","joined","birth","region","status","leftDate","vid1365","interest","memo"].forEach(k => data[k] = f[k].value.trim());
+  data.fee = toNum(f.fee.value) || "";
+  if (data.status === "탈퇴" && !data.leftDate) data.leftDate = localToday();
+  const id = M.id || nextId("M", S.members.map(m => m.id), 3)(0);
+  try {
+    await S.store.saveMember(S.group.id, id, M.id ? data : { ...data, paid: [] });
+    if (!M.id) { $("#mDlg").close(); toast(`${data.name}님을 ${id}로 추가했어요.`); return; }
+    $("#mMsg").textContent = "저장했어요."; $("#mTitle").textContent = data.name; renderMonths();
+  } catch (err) { $("#mMsg").textContent = "저장 실패: " + err.message; }
+});
+$("#addMember").onclick = () => openMember(null);
+
+// 납부 기록
+$("#payMonth").value = localToday().slice(0, 7);
+$("#payMonth").onchange = renderPayments;
+$("#payBy").onclick = (e) => { const b = e.target.closest("button"); if (!b) return; S.payBy = b.dataset.by; $$("#payBy button").forEach(x => x.setAttribute("aria-pressed", x === b)); renderPayments(); };
+let payReq = 0;
+async function renderPayments() {
+  const ym = $("#payMonth").value || localToday().slice(0, 7), req = ++payReq;
+  const [from, to] = S.payBy === "month" ? [ym, addMonth(ym, 1)] : [ym + "-01", addMonth(ym, 1) + "-01"];
+  $("#payList").innerHTML = `<p class="empty">불러오는 중…</p>`;
+  const ps = await S.store.paymentsWhere(S.group.id, S.payBy, from, to).catch(e => { $("#payList").innerHTML = `<p class="err">${esc(e.message)}</p>`; return null; });
+  if (!ps || req !== payReq) return;
+  ps.sort((a, b) => b.paidDate.localeCompare(a.paidDate) || a.name.localeCompare(b.name, "ko"));
+  $("#paySum").innerHTML = `<span><b>${ps.length}</b>건</span><span class="num">${won(ps.reduce((s, p) => s + toNum(p.amount), 0))}원</span><small>${S.payBy === "month" ? `${monthLabel(ym)}분 회비로 들어온 기록` : `${monthLabel(ym)}에 들어온 돈`}이에요.</small>`;
+  $("#payList").innerHTML = ps.map(p => `<button class="item" data-open="${esc(p.memberId)}"><b>${esc(p.name)} <span class="tag ok">${esc(monthLabel(p.month))}분</span></b>
+    <small>${esc(p.paidDate)} · ${esc(p.method || "")}</small><span class="side amt">${won(p.amount)}원</span></button>`).join("") || `<p class="empty">기록이 없어요.</p>`;
+}
+
+// 장부
+function ledgerMonths() {
+  const g = S.group, ms = S.stats.months || {};
+  const keys = Object.keys(ms).sort();
+  const open = g.openingMonth || keys[0] || localToday().slice(0, 7);
+  const end = [localToday().slice(0, 7), keys[keys.length - 1] || ""].sort().pop();
+  let bal = toNum(g.openingBalance);
+  return monthRange(open, end).map(ym => { const o = ms[ym] || { dues: 0, inn: 0, out: 0 }; bal += (o.dues || 0) + (o.inn || 0) - (o.out || 0); return { ym, ...o, bal }; });
+}
+function renderLedger() {
+  const rows = ledgerMonths(), g = S.group, cur = rows[rows.length - 1];
+  const years = [...new Set([...rows.map(r => r.ym.slice(0, 4)), localToday().slice(0, 4)])].sort().reverse();
+  if (!years.includes(S.ledYear)) S.ledYear = years[0];
+  $("#ledYear").innerHTML = years.map(y => `<option${y === S.ledYear ? " selected" : ""}>${y}</option>`).join("");
+  const thisM = (S.stats.months || {})[localToday().slice(0, 7)] || {};
+  $("#ledSum").innerHTML = g.openingMonth ? `<span>지금 잔액 <b>${won(cur?.bal ?? g.openingBalance)}</b>원</span>
+    <span class="num">이번 달 들어옴 ${won((thisM.dues || 0) + (thisM.inn || 0))} · 나감 ${won(thisM.out || 0)}</span>
+    <small>${g.openingMonth} 시작 잔액 ${won(g.openingBalance)}원에서 계산했어요. 통장과 다르면 관리에서 시작 잔액을 맞춰 주세요.</small>`
+    : `<span>잔액을 보려면 관리 → 장부 시작 잔액을 넣어 주세요.</span><small>그 전까지는 달마다 들어오고 나간 돈만 보여요.</small>`;
+  const yr = rows.filter(r => r.ym.startsWith(S.ledYear)).reverse();
+  $("#ledRows").innerHTML = yr.map(r => `<tr data-ym="${r.ym}" class="${r.ym === S.ledMonth ? "pick" : ""}"><td>${+r.ym.slice(5)}월</td><td>${won(r.dues)}</td><td>${won(r.inn)}</td><td>${r.out ? "-" + won(r.out) : "0"}</td><td>${g.openingMonth ? won(r.bal) : ""}</td></tr>`).join("")
+    || `<tr><td colspan="5" class="hint">기록이 없어요.</td></tr>`;
+  if (!S.ledMonth) S.ledMonth = localToday().slice(0, 7);
+  renderLedMonth();
+}
+$("#ledYear").onchange = (e) => { S.ledYear = e.target.value; renderLedger(); };
+$("#ledRows").onclick = (e) => { const tr = e.target.closest("tr[data-ym]"); if (!tr) return; S.ledMonth = tr.dataset.ym; renderLedger(); };
+let ledReq = 0, ledItems = [];
+async function renderLedMonth() {
+  const ym = S.ledMonth, req = ++ledReq;
+  $("#ledMonthTitle").textContent = `${ym.slice(0, 4)}년 ${+ym.slice(5)}월 회비 아닌 입금·지출`;
+  const es = await S.store.ledgerBetween(S.group.id, ym + "-01", addMonth(ym, 1) + "-01").catch(() => []);
+  if (req !== ledReq) return;
+  ledItems = es.sort((a, b) => b.date.localeCompare(a.date));
+  const dues = ((S.stats.months || {})[ym] || {}).dues || 0;
+  $("#ledList").innerHTML = (dues ? `<div class="item"><b>회비 입금</b><small>납부 기록 탭에서 자세히 볼 수 있어요.</small><span class="side amt">+${won(dues)}원</span></div>` : "") +
+    (ledItems.map(e => `<div class="item"><b>${esc(e.category || (e.kind === "in" ? "입금" : "지출"))}</b><small>${esc(e.date)} · ${esc(e.memo || "")}</small>
+      <span class="side"><span class="amt ${e.kind === "out" ? "out" : ""}">${e.kind === "out" ? "-" : "+"}${won(e.amount)}원</span>${canEdit() ? `<button class="x" data-delled="${esc(e.id)}" aria-label="삭제">✕</button>` : ""}</span></div>`).join("")
+    || (dues ? "" : `<p class="empty">이 달은 기록이 없어요.</p>`));
+}
+$("#ledList").onclick = async (e) => {
+  const b = e.target.closest("[data-delled]"); if (!b) return;
+  const it = ledItems.find(x => x.id === b.dataset.delled); if (!it || !confirm(`${it.date} ${it.category} ${won(it.amount)}원을 지울까요?`)) return;
+  try { await S.store.deleteLedger(S.group.id, it); renderLedMonth(); } catch (err) { alert("삭제 실패: " + err.message); }
+};
+let lKind = "out";
+function setKind(k) { lKind = k; $$("#lKind button").forEach(b => b.setAttribute("aria-pressed", b.dataset.k === k)); $("#lCats").innerHTML = (k === "out" ? OUT_CATS : IN_CATS).map(c => `<option value="${c}">`).join(""); }
+$("#lKind").onclick = (e) => { const b = e.target.closest("button"); if (b) setKind(b.dataset.k); };
+$("#addLed").onclick = () => { $("#lForm").reset(); $("#lForm").date.value = localToday(); setKind("out"); $("#lDlg").showModal(); };
+$("#lForm").addEventListener("submit", async (e) => {
+  if (e.submitter?.value !== "ok") return;
+  e.preventDefault();
+  const f = $("#lForm"), amount = toNum(f.amount.value);
+  if (!amount) { f.amount.focus(); return; }
+  const entry = { date: f.date.value, kind: lKind, amount, category: f.category.value.trim() || "기타", memo: f.memo.value.trim() };
+  try { await S.store.addLedger(S.group.id, entry); $("#lDlg").close(); S.ledMonth = entry.date.slice(0, 7); S.ledYear = entry.date.slice(0, 4); toast("장부에 적었어요."); renderLedger(); }
+  catch (err) { alert("저장 실패: " + err.message); }
+});
+
+
+// ───────────── 통장 정리 ─────────────
+// 줄마다: 출금 → 장부 지출 / 이자·후원 → 장부 입금 / 회원 이름이 있는 입금 → 회비(적요의 달, 없으면 안 낸 달부터)
+// 애매한 건 '확인 필요'로 빼서 사람이 고르게 함. 줄 내용으로 ID를 만들어 같은 내역을 다시 붙여도 두 번 저장되지 않음.
+function hash(str) { let h = 0x811c9dc5; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0).toString(36); }
+function findMonths(t) {
+  const set = new Set(), add = (v) => { v = +v; if (v >= 1 && v <= 12) set.add(v); };
+  let m;
+  const range = /(\d{1,2})\s*월?\s*(?:[-~∼]|부터)\s*(\d{1,2})\s*월/g;
+  while ((m = range.exec(t))) { const a = +m[1], b = +m[2]; if (a <= b) for (let i = a; i <= b; i++) add(i); else { for (let i = a; i <= 12; i++) add(i); for (let j = 1; j <= b; j++) add(j); } }
+  const list = /(\d{1,2}(?:\s*[,.\/·+]\s*\d{1,2})+)\s*월/g;
+  while ((m = list.exec(t))) m[1].split(/[^\d]+/).forEach(add);
+  const single = /(\d{1,2})\s*월/g;
+  while ((m = single.exec(t))) add(m[1]);
+  return [...set].sort((a, b) => a - b);
+}
+// '월' 없이 숫자만 적은 적요: 7-10, 7,8,9 (금액과 달 수가 맞을 때만)
+function bareMonths(t, n) {
+  t = String(t || "").replace(/\d{3,}/g, " ");
+  let m;
+  const range = /(?:^|[^\d])(\d{1,2})\s*[-~∼]\s*(\d{1,2})(?!\d)/g;
+  while ((m = range.exec(t))) { const a = +m[1], b = +m[2]; if (a >= 1 && b <= 12 && a < b && b - a + 1 === n) return Array.from({ length: b - a + 1 }, (_, i) => a + i); }
+  const list = /(?:^|[^\d])(\d{1,2}(?:\s*[,.\/·+\s]\s*\d{1,2})+)(?!\d)/g;
+  while ((m = list.exec(t))) { const out = m[1].split(/[^\d]+/).filter(Boolean).map(Number); if (out.every(v => v >= 1 && v <= 12) && out.length === n) return out.sort((a, b) => a - b); }
+  if (n === 1) { const v = (t.match(/(?:^|[^\d])(\d{1,2})(?!\d)/g) || []).map(x => +x.replace(/\D/g, "")).filter(v => v >= 1 && v <= 12); if (v.length === 1) return v; }
+  return [];
+}
+// 달 숫자 → YYYY-MM. 낸 날보다 4달 넘게 뒤면 작년 몫으로 봄 (1월에 낸 "12월"분)
+function toYm(mo, date) { const y = +date.slice(0, 4), tm = +date.slice(5, 7); return `${mo - tm > 3 ? y - 1 : y}-${String(mo).padStart(2, "0")}`; }
+function guessCat(t) {
+  return /식|밥|카페|커피|음식|마트|편의점|배달|치킨|피자/.test(t) ? "식비" : /주유|교통|택시|버스|톨|하이패스|주차/.test(t) ? "교통비"
+    : /수수료/.test(t) ? "수수료" : /물품|다이소|쿠팡|구입|구매/.test(t) ? "봉사물품" : /축의|조의|부의|화환|선물/.test(t) ? "선물·경조사" : "기타";
+}
+function parseBankText(raw) {
+  const names = S.members.map(m => m.name).filter(Boolean).sort((a, b) => b.length - a.length);
+  const byName = new Map(); S.members.forEach(m => { if (!byName.has(m.name) || m.status !== "탈퇴") byName.set(m.name, m); });
+  const R = { ok: [], warn: [], led: [], skip: [], lastBal: null, firstBal: null };
+  const seenLine = {}, taken = new Map(); // 이번 붙여넣기 안에서 회원·달 겹침
+  let H = null; // 제목 줄이 있으면 입금·출금·잔액 칸 위치를 씀 (빈 칸이 있어도 정확함)
+  raw.replace(/\r/g, "").split("\n").forEach((line0) => {
+    const line = line0.trim(); if (!line) return;
+    const cells = line0.split("\t").map(x => x.trim());
+    const isDate = (c) => /\d{4}\s*[-./년]\s*\d{1,2}\s*[-./월]\s*\d{1,2}/.test(c || "");
+    if (!H && cells.length > 2 && !cells.slice(0, 3).some(isDate)) {
+      const f = (re) => cells.findIndex(c => re.test(c));
+      const h = { date: f(/거래일|일시|날짜|일자/), inn: f(/^(입금|입금액|맡기신금액|입금\(원\))$/), out: f(/^(출금|출금액|찾으신금액|출금\(원\)|지급)$/), bal: f(/잔액/) };
+      if (h.inn >= 0 && h.out >= 0) { H = h; return; }
+    }
+    let parts = line.split(/\t+/); if (parts.length < 2) parts = line.split(/\s{2,}/);
+    // 날짜 칸: 제목 줄에서 찾은 칸, 없으면 앞쪽 세 칸 중 날짜처럼 생긴 칸 (앞에 '번호' 칸이 있는 통장도 있음)
+    const di = H?.date >= 0 && isDate(cells[H.date]) ? -1 : parts.slice(0, 3).findIndex(isDate);
+    const dateCell = di < 0 ? (H?.date >= 0 ? cells[H.date] : "") : parts[di];
+    if (di > 0) parts = parts.slice(di);
+    const date = normDate(String(dateCell).trim().split(/\s+/)[0]);
+    if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) { if (/\d/.test(line)) R.skip.push({ line, why: "날짜를 못 읽음" }); return; }
+    const rest = parts.slice(1).join("\t").replace(/\d{4}[.\-\/]\d{1,2}[.\-\/]\d{1,2}/g, " ").replace(/\d{1,2}:\d{2}(:\d{2})?/g, " ");
+    // 숫자만 있는 칸(금액·잔액)을 먼저 쓰고, 없으면 글 속 세 자리 이상 숫자
+    const numCells = parts.slice(1).map(x => x.trim()).filter(x => /^-?[\d,]+(\.\d+)?$/.test(x));
+    const nums = (numCells.length ? numCells : rest.match(/-?\d[\d,]{2,}/g) || []).map(x => toNum(x)).filter(n => n > 0);
+    let amount = nums[0] || 0, bal = nums.length > 1 ? nums[1] : null, colOut = null;
+    if (H) { const i = toNum(cells[H.inn]), o = toNum(cells[H.out]); colOut = o > 0 && !(i > 0); amount = colOut ? o : i; bal = H.bal >= 0 ? toNum(cells[H.bal]) || null : bal; }
+    const words = parts.slice(1).map(x => x.trim()).filter(x => x && !/^-?[\d,]+(\.\d+)?$/.test(x) && !isDate(x) && !/^(입금|출금|일반입금|일반출금)$/.test(x));
+    const memo = words.join(" ");
+    const k = (seenLine[line] = (seenLine[line] || 0) + 1);
+    const key = date.replace(/-/g, "") + "_" + hash(line + "#" + k);
+    const isOut = colOut ?? (/출금|지급|이체출금|체크카드|카드결제/.test(parts.slice(1).join(" ")) && !/^\s*입금/.test(parts[1] || ""));
+    if (!amount) { R.skip.push({ line, why: "금액 없음" }); return; }
+    if (bal != null) { if (R.firstBal == null) R.firstBal = { date, bal, amount, isOut }; R.lastBal = { date, bal }; }
+    if (isOut) { R.led.push({ id: "B" + key, date, kind: "out", amount, category: guessCat(memo), memo }); return; }
+    const nameText = memo.replace(/\d+/g, " ");
+    const nm = names.find(n => nameText.includes(n));
+    if (/이자|결산/.test(memo) && !nm) { R.led.push({ id: "B" + key, date, kind: "in", amount, category: "이자", memo }); return; }
+    if (!nm) {
+      const guess = /후원|헌금|기부|찬조/.test(memo) ? "led" : "";
+      R.warn.push({ key, date, amount, memo, why: "회원 명단에 없는 이름", pick: guess, months: [] }); return;
+    }
+    const m = byName.get(nm), fee = feeOf(m);
+    const n = amount % fee === 0 ? amount / fee : 0;
+    let mos = findMonths(memo); if (!mos.length) mos = bareMonths(memo.split(nm).join(" "), n);
+    let yms = mos.map(mo => toYm(mo, date)), note = "";
+    const W = (why) => R.warn.push({ key, date, amount, memo, why, pick: m.id, months: yms });
+    if (m.status === "탈퇴") return W("탈퇴한 회원의 입금");
+    if (!yms.length) {
+      if (!n) return W(`금액이 회비(${won(fee)}원)로 나눠지지 않음`);
+      // 적요에 달이 없으면: 안 낸 달부터 채우고, 남으면 다음 달들(선납)
+      const owed = dueMonths(m).filter(x => !(taken.get(m.id) || new Set()).has(x));
+      yms = owed.slice(0, n);
+      let next = [lastMonth(), ...(m.paid || [])].sort().pop();
+      while (yms.length < n) { next = addMonth(next, 1); if (!(m.paid || []).includes(next)) yms.push(next); }
+      note = owed.length ? "적요에 달 없음 · 안 낸 달부터 채움" : "적요에 달 없음 · 밀린 달이 없어 이번 달부터 넣음";
+    } else if (amount !== fee * yms.length) return W(`적요는 ${yms.length}개월인데 금액은 ${won(amount)}원`);
+    if (yms.some(x => x > addMonth(date.slice(0, 7), 6))) return W("반년 넘게 앞선 달 · 달을 확인해 주세요");
+    const dupe = yms.filter(x => (taken.get(m.id) || new Set()).has(x));
+    if (dupe.length) return W(`${monthsText(dupe)}이 이번 내역에 이미 있음`);
+    (taken.get(m.id) || taken.set(m.id, new Set()).get(m.id)) && yms.forEach(x => taken.get(m.id).add(x));
+    R.ok.push({ key, date, amount, memo, member: m, months: yms, fee, note });
+  });
+  return R;
+}
+const B = { r: null, existPay: new Set(), existLed: new Set() };
+const payIdOf = (key, i) => `B${key}_${i}`; // 줄 + 몇 번째 달. 다시 붙이면 같은 ID라 건너뜀
+$("#bankRun").onclick = async () => {
+  const raw = $("#bankIn").value; if (!raw.trim()) { $("#bankMsg").textContent = "통장 내역을 붙여 넣어 주세요."; return; }
+  if (!S.members.length) { $("#bankMsg").textContent = "회원이 아직 없어요. 관리에서 회원부터 가져와 주세요."; return; }
+  $("#bankMsg").textContent = "정리하는 중…"; $("#bankSaveMsg").textContent = "";
+  const r = parseBankText(raw);
+  // 이미 저장한 줄인지 확인 (같은 내역을 다시 붙인 경우)
+  const pIds = r.ok.flatMap(o => o.months.map((ym, i) => payIdOf(o.key, i)));
+  [B.existPay, B.existLed] = await Promise.all([S.store.existing(S.group.id, "payments", pIds), S.store.existing(S.group.id, "ledger", r.led.map(e => e.id))]).catch(() => [new Set(), new Set()]);
+  r.ok = r.ok.filter(o => { if (o.months.every((ym, i) => B.existPay.has(payIdOf(o.key, i)))) { r.skip.push({ line: `${o.date} ${o.member.name} ${won(o.amount)}원`, why: "이미 저장한 내역" }); return false; } return true; });
+  r.led = r.led.filter(e => { if (B.existLed.has(e.id)) { r.skip.push({ line: `${e.date} ${e.memo} ${won(e.amount)}원`, why: "이미 저장한 내역" }); return false; } return true; });
+  // 확인 필요였던 줄도 이미 저장했으면 건너뜀
+  const wp = await S.store.existing(S.group.id, "payments", r.warn.map(w => payIdOf(w.key, 0))).catch(() => new Set());
+  const wl = await S.store.existing(S.group.id, "ledger", r.warn.map(w => "B" + w.key)).catch(() => new Set());
+  r.warn = r.warn.filter(w => { if (wp.has(payIdOf(w.key, 0)) || wl.has("B" + w.key)) { r.skip.push({ line: `${w.date} ${w.memo} ${won(w.amount)}원`, why: "이미 저장한 내역" }); return false; } return true; });
+  // 이미 낸 달과 겹치면 두 번 낸 건지 확인 필요
+  r.ok = r.ok.filter(o => { const dup = o.months.filter(ym => (o.member.paid || []).includes(ym)); if (dup.length) { r.warn.push({ key: o.key, date: o.date, amount: o.amount, memo: o.memo, why: `${monthsText(dup)}은 이미 낸 기록이 있음 · 두 번 낸 건지 확인`, pick: o.member.id, months: o.months }); return false; } return true; });
+  B.r = r; $("#bankMsg").textContent = ""; renderBank();
+};
+function memberOptions(sel) {
+  const act = S.members.filter(m => m.status !== "탈퇴"), out = S.members.filter(m => m.status === "탈퇴");
+  const o = (m) => `<option value="${esc(m.id)}"${m.id === sel ? " selected" : ""}>${esc(m.name)} (${esc(m.id)})</option>`;
+  return `<option value="">건너뛰기 (저장 안 함)</option><option value="led"${sel === "led" ? " selected" : ""}>회비 아닌 입금 → 장부</option>
+    <optgroup label="회비로 넣기">${act.map(o).join("")}</optgroup>${out.length ? `<optgroup label="탈퇴 회원">${out.map(o).join("")}</optgroup>` : ""}`;
+}
+function renderBank() {
+  const r = B.r; $("#bankOut").classList.remove("hidden");
+  const okN = r.ok.reduce((s, o) => s + o.months.length, 0), outSum = r.led.filter(e => e.kind === "out").reduce((s, e) => s + e.amount, 0);
+  $("#bankSum").innerHTML = `<span>회비 <b>${okN}</b>개월</span><span>확인 필요 <b class="warn">${r.warn.length}</b>건</span><span class="num">장부 ${r.led.length}건 · 지출 ${won(outSum)}원</span>` +
+    (r.lastBal ? `<small>통장 잔액 ${r.lastBal.date} 기준 ${won(r.lastBal.bal)}원 · 저장한 뒤 장부 잔액과 맞는지 보여 드려요.</small>` : "");
+  $("#bankOkN").textContent = `${r.ok.length}건`;
+  $("#bankOk").innerHTML = r.ok.map(o => `<div class="brow"><div class="l1"><b>${esc(o.member.name)}</b><span class="tag ok">${esc(monthsText(o.months))}</span>${o.note ? `<span class="tag">${esc(o.note)}</span>` : ""}<span class="amt">${won(o.amount)}원</span></div><small>${esc(o.date)} · ${esc(o.memo)}</small></div>`).join("") || `<p class="hint">없어요.</p>`;
+  $("#bankWarnN").textContent = `${r.warn.length}건`;
+  $("#bankWarn").innerHTML = r.warn.map((w, i) => `<div class="brow warn" data-w="${i}"><div class="l1"><b>${esc(w.memo || "(적요 없음)")}</b><span class="amt">${won(w.amount)}원</span></div>
+    <small>${esc(w.date)} · <span style="color:var(--warn)">${esc(w.why)}</span></small>
+    <div class="fix"><select data-wf="pick" aria-label="누구">${memberOptions(w.pick)}</select><input data-wf="months" placeholder="몇 월분 (예: 8,9)" value="${esc(w.months.map(x => +x.slice(5)).join(","))}" aria-label="몇 월분"></div></div>`).join("") || `<p class="hint">없어요.</p>`;
+  $("#bankLedN").textContent = `${r.led.length}건`;
+  $("#bankLed").innerHTML = r.led.map((e, i) => `<div class="brow"><div class="l1"><b>${e.kind === "out" ? "지출" : "입금"}</b><span class="amt" style="color:${e.kind === "out" ? "var(--bad)" : "inherit"}">${e.kind === "out" ? "-" : "+"}${won(e.amount)}원</span></div>
+    <small>${esc(e.date)} · ${esc(e.memo)}</small><div class="fix"><input data-led="${i}" list="lCats2" value="${esc(e.category)}" aria-label="항목"><span></span></div></div>`).join("") +
+    `<datalist id="lCats2">${[...OUT_CATS, ...IN_CATS].map(c => `<option value="${c}">`).join("")}</datalist>` || "";
+  $("#bankSkipN").textContent = `건너뛴 줄 ${r.skip.length}건`;
+  $("#bankSkip").innerHTML = r.skip.map(k => `<div class="brow"><small>${esc(k.line)}</small><small>${esc(k.why)}</small></div>`).join("");
+}
+$("#bankWarn").addEventListener("change", (e) => {
+  const row = e.target.closest("[data-w]"); if (!row) return;
+  const w = B.r.warn[+row.dataset.w];
+  if (e.target.dataset.wf === "pick") w.pick = e.target.value;
+  if (e.target.dataset.wf === "months") w.months = e.target.value.split(/[^\d]+/).filter(Boolean).map(Number).filter(v => v >= 1 && v <= 12).map(mo => toYm(mo, w.date));
+});
+$("#bankLed").addEventListener("change", (e) => { const i = e.target.dataset.led; if (i != null) B.r.led[+i].category = e.target.value.trim() || "기타"; });
+$("#bankSave").onclick = async () => {
+  const r = B.r; if (!r) return;
+  const el = $("#bankSaveMsg");
+  const pays = r.ok.flatMap(o => o.months.map((ym, i) => ({ id: payIdOf(o.key, i), memberId: o.member.id, name: o.member.name, month: ym, amount: o.fee, paidDate: o.date, method: "계좌이체", memo: o.memo })));
+  const leds = [...r.led];
+  const skipped = [];
+  for (const w of r.warn) {
+    if (w.pick === "led") { leds.push({ id: "B" + w.key, date: w.date, kind: "in", amount: w.amount, category: /후원|기부|찬조/.test(w.memo) ? "후원금" : "기타", memo: w.memo }); continue; }
+    const m = S.members.find(x => x.id === w.pick);
+    if (!m || !w.months.length) { skipped.push(w); continue; }
+    const each = Math.round(w.amount / w.months.length);
+    w.months.forEach((ym, i) => pays.push({ id: payIdOf(w.key, i), memberId: m.id, name: m.name, month: ym, amount: each, paidDate: w.date, method: "계좌이체", memo: w.memo }));
+  }
+  if (!pays.length && !leds.length) { el.textContent = "저장할 게 없어요."; return; }
+  if (skipped.length && !confirm(`확인 필요 ${skipped.length}건은 고르지 않아서 저장하지 않아요. 나머지를 저장할까요?`)) return;
+  $("#bankSave").disabled = true; el.textContent = "저장 중…";
+  try {
+    await S.store.saveBank(S.group.id, pays, leds, (k) => el.textContent = `저장 중… ${k}`);
+    el.textContent = `회비 ${pays.length}개월, 장부 ${leds.length}건을 저장했어요.` + (skipped.length ? ` 확인 필요 ${skipped.length}건은 남겨 뒀어요.` : "");
+    B.r.ok = []; B.r.led = []; B.r.warn = skipped; renderBank(); $("#bankIn").value = skipped.length ? $("#bankIn").value : "";
+    if (r.lastBal) setTimeout(checkBalance, 1500, r);
+  } catch (e) { el.textContent = "저장 실패: " + e.message; }
+  $("#bankSave").disabled = false;
+};
+// 통장의 마지막 잔액과 장부 잔액 비교. 시작 잔액이 없으면 첫 줄 잔액으로 맞출지 물어봄
+async function checkBalance(r) {
+  const g = S.group, el = $("#bankSaveMsg");
+  if (!g.openingMonth && r.firstBal && canEdit() && S.admin) {
+    const f = r.firstBal, open = f.bal - (f.isOut ? -f.amount : f.amount);
+    if (confirm(`장부 시작 잔액이 아직 없어요. 통장 첫 줄 기준으로 ${f.date.slice(0, 7)}월 1일 잔액을 ${won(open)}원으로 맞출까요?\n(그 달 1일부터 첫 거래 전까지 다른 거래가 있었다면 관리에서 고쳐 주세요.)`)) {
+      await S.store.saveGroup(g.id, { openingMonth: f.date.slice(0, 7), openingBalance: open }); Object.assign(g, { openingMonth: f.date.slice(0, 7), openingBalance: open });
+    }
+  }
+  if (!g.openingMonth) return;
+  const rows = ledgerMonths(), me = rows.find(x => x.ym === r.lastBal.date.slice(0, 7));
+  if (!me || r.lastBal.date.slice(0, 7) !== localToday().slice(0, 7) && rows[rows.length - 1].ym !== me.ym) return;
+  const diff = me.bal - r.lastBal.bal;
+  el.textContent += diff === 0 ? " 통장 잔액과 장부 잔액이 딱 맞아요." : ` 통장 잔액(${won(r.lastBal.bal)})과 장부 잔액(${won(me.bal)})이 ${won(Math.abs(diff))}원 달라요. 빠진 내역이 없는지 확인해 주세요.`;
+}
+
+// ───────────── 관리 ─────────────
+let adminGid = null;
+const emailList = (el) => [...new Set(el.value.split(/[\s,;]+/).map(s => s.trim().toLowerCase()).filter(s => s.includes("@")))];
+function openAdmin() {
+  show("sAdmin");
+  $("#aGroup").innerHTML = S.groups.map(g => `<option value="${esc(g.id)}">${esc(g.name)}</option>`).join("") || `<option value="">(새 단체)</option>`;
+  const g = S.groups.find(x => x.id === S.group?.id) || S.groups[0];
+  fillAdmin(g || null);
+}
+function fillAdmin(g) {
+  adminGid = g?.id || null;
+  if (g) $("#aGroup").value = g.id;
+  $("#aName").value = g?.name || (S.groups.length ? "" : "도와줄래");
+  $("#aFee").value = g?.fee ?? 5000;
+  $("#aStart").value = g?.startMonth || `${localToday().slice(0, 4)}-01`;
+  $("#aManagers").value = (g?.managers || []).join("\n");
+  $("#aViewers").value = (g?.viewers || []).join("\n");
+  $("#aAccount").value = g?.account || "";
+  $("#aSms").value = g?.smsTemplate || DEFAULT_SMS;
+  $("#aOpenMonth").value = g?.openingMonth || "";
+  $("#aOpenBal").value = g?.openingBalance ?? "";
+  ["aMsg","aMemImportMsg","aPayImportMsg","aRebuildMsg"].forEach(id => $("#" + id).textContent = "");
+  smsPreview();
+}
+function smsPreview() {
+  const g = { name: $("#aName").value || "단체", account: $("#aAccount").value, smsTemplate: $("#aSms").value, fee: toNum($("#aFee").value) };
+  const prev = S.group; S.group = g;
+  $("#aSmsPreview").textContent = "미리보기: " + smsText({ name: "홍길동" }, [addMonth(lastMonth(), -1), lastMonth()]);
+  S.group = prev;
+}
+["#aSms", "#aAccount", "#aName", "#aFee"].forEach(s => $(s).addEventListener("input", smsPreview));
+$("#aGroup").onchange = (e) => fillAdmin(S.groups.find(g => g.id === e.target.value));
+$("#aNew").onclick = () => { fillAdmin(null); $("#aName").value = ""; $("#aName").focus(); };
+$("#toAdmin").onclick = openAdmin;
+$("#backMain").onclick = () => S.group ? pickGroup(S.groups.find(g => g.id === S.group.id) || S.groups[0]) : S.groups.length && pickGroup(S.groups[0]);
+async function saveAdmin() {
+  const name = $("#aName").value.trim(); if (!name) { $("#aMsg").textContent = "단체 이름을 넣어 주세요."; return null; }
+  const data = { name, fee: toNum($("#aFee").value) || 5000, startMonth: $("#aStart").value || `${localToday().slice(0, 4)}-01`,
+    managers: emailList($("#aManagers")), viewers: emailList($("#aViewers")), account: $("#aAccount").value.trim(),
+    smsTemplate: $("#aSms").value.trim() || DEFAULT_SMS, openingMonth: $("#aOpenMonth").value || "", openingBalance: toNum($("#aOpenBal").value) };
+  const id = await S.store.saveGroup(adminGid, data);
+  const g = { ...(S.groups.find(x => x.id === id) || {}), ...data, id };
+  S.groups = [...S.groups.filter(x => x.id !== id), g].sort((a, b) => a.name.localeCompare(b.name, "ko"));
+  S.group = g; adminGid = id;
+  $("#aGroup").innerHTML = S.groups.map(x => `<option value="${esc(x.id)}"${x.id === id ? " selected" : ""}>${esc(x.name)}</option>`).join("");
+  return id;
+}
+$("#aSave").onclick = async () => { try { if (await saveAdmin()) $("#aMsg").textContent = "저장했어요."; } catch (e) { $("#aMsg").textContent = "저장 실패: " + e.message; } };
+async function ensureGroup(msgEl) {
+  if (adminGid) return adminGid;
+  try { return await saveAdmin(); } catch (e) { msgEl.textContent = "단체 저장 실패: " + e.message; return null; }
+}
+async function rebuildAndReport(gid, el, prefix) {
+  el.textContent = prefix + " 다시 계산 중…";
+  const r = await S.store.rebuild(gid, (k) => el.textContent = `${prefix} 다시 계산 중… ${k}`);
+  return r;
+}
+$("#aMemImportBtn").onclick = async () => {
+  const el = $("#aMemImportMsg"), r = parseMembers($("#aMemImport").value);
+  if (r.error) { el.textContent = r.error; return; }
+  if (!r.rows.length) { el.textContent = "가져올 회원이 없어요."; return; }
+  const gid = await ensureGroup(el); if (!gid) return;
+  try {
+    el.textContent = "저장 중…";
+    await S.store.importRows(gid, "members", r.rows, (k) => el.textContent = `${k}/${r.rows.length}명 저장 중…`);
+    const act = r.rows.filter(x => x.status === "유지").length;
+    el.textContent = `${r.rows.length}명을 가져왔어요 (활동 ${act}, 탈퇴 ${r.rows.length - act}).`; $("#aMemImport").value = "";
+  } catch (e) { el.textContent = "실패: " + e.message; }
+};
+$("#aPayImportBtn").onclick = async () => {
+  const el = $("#aPayImportMsg"), r = parsePayments($("#aPayImport").value);
+  if (r.error) { el.textContent = r.error; return; }
+  if (!r.rows.length) { el.textContent = "가져올 기록이 없어요."; return; }
+  const gid = await ensureGroup(el); if (!gid) return;
+  try {
+    await S.store.importRows(gid, "payments", r.rows, (k) => el.textContent = `${k}/${r.rows.length}건 저장 중…`);
+    const st = await rebuildAndReport(gid, el, `${r.rows.length}건 저장함.`);
+    el.textContent = `${r.rows.length}건을 가져왔어요.` + (r.bad.length ? ` 납부월을 못 읽은 ${r.bad.length}줄은 뺐어요: ${r.bad.slice(0, 5).join(", ")}` : "") +
+      (st?.orphans ? ` 회원 명단에 없는 회원ID 기록이 ${st.orphans}건 있어요.` : "");
+    $("#aPayImport").value = "";
+  } catch (e) { el.textContent = "실패: " + e.message; }
+};
+$("#aRebuild").onclick = async () => {
+  const el = $("#aRebuildMsg"); if (!adminGid) return;
+  try { const r = await rebuildAndReport(adminGid, el, ""); el.textContent = `회원 ${r.members}명 · 납부 ${r.payments}건 · 장부 ${r.ledger}건으로 다시 맞췄어요.`; }
+  catch (e) { el.textContent = "실패: " + e.message; }
+};
+function downloadCsv(name, header, rows) {
+  const cell = (v) => { const s = v?.toDate ? v.toDate().toISOString() : Array.isArray(v) ? v.join(" ") : String(v ?? ""); return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
+  const csv = "﻿" + [header, ...rows].map(r => r.map(cell).join(",")).join("\r\n");
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+  a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+const expName = (what) => `${$("#aName").value || "회비"}_${what}_${localToday()}.csv`;
+$("#aExpMem").onclick = async () => { if (!adminGid) return; const ms = await S.store.all(adminGid, "members"); downloadCsv(expName("회원"), [...MEM_COLS.map(c => c[1]), "낸달"], ms.map(m => [...MEM_COLS.map(([k]) => m[k]), m.paid])); };
+$("#aExpPay").onclick = async () => {
+  if (!adminGid) return;
+  const ps = (await S.store.all(adminGid, "payments")).sort((a, b) => a.paidDate.localeCompare(b.paidDate) || a.id.localeCompare(b.id));
+  downloadCsv(expName("납부"), [...PAY_COLS.map(c => c[1]), "입력한사람"], ps.map(p => [...PAY_COLS.map(([k]) => p[k]), p.by]));
+};
+$("#aExpLed").onclick = async () => {
+  if (!adminGid) return;
+  const es = (await S.store.all(adminGid, "ledger")).sort((a, b) => a.date.localeCompare(b.date));
+  downloadCsv(expName("장부"), ["날짜", "구분", "금액", "항목", "내용", "입력한사람"], es.map(e => [e.date, e.kind === "in" ? "입금" : "지출", e.amount, e.category, e.memo, e.by]));
+};
+
+boot();
+</script>
+</body>
+</html>
