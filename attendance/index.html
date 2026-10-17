@@ -263,7 +263,8 @@ textarea.memo{min-height:60px;border:1px solid var(--line);background:var(--bg);
         <label>교회 고르기<select id="aChurch"></select></label>
         <label>교회 이름<input id="aName" placeholder="OO교회"></label>
         <label>예배 종류 (쉼표로 구분)<input id="aServices" placeholder="주일낮, 주일저녁, 수요, 금요"></label>
-        <label>리더 이메일 (한 줄에 하나) <span id="aLeaderCount" class="hint"></span><textarea id="aLeaders" placeholder="leader1@gmail.com"></textarea></label>
+        <label>교역자 이메일 (한 줄에 하나) · 출석 + 성도 추가·수정·삭제<textarea id="aStaff" placeholder="pastor@gmail.com"></textarea></label>
+        <label>리더 이메일 (한 줄에 하나) · 출석 체크 + 정보 보기만 <span id="aLeaderCount" class="hint"></span><textarea id="aLeaders" placeholder="leader1@gmail.com"></textarea></label>
         <div class="row"><button class="btn" id="aSave">저장</button><button class="btn line" id="aNew">새 교회</button><span id="aMsg" class="ok"></span></div>
       </section>
       <section>
@@ -336,7 +337,7 @@ textarea.memo{min-height:60px;border:1px solid var(--line);background:var(--bg);
       </div>
     </details>
     <div class="row"><button class="btn" value="ok" id="dlgOk">추가</button><button class="btn line" value="cancel" formnovalidate>취소</button></div>
-    <button type="button" class="danger hidden" id="dlgDel">이 성도 삭제 (관리자)</button>
+    <button type="button" class="danger hidden" id="dlgDel">이 성도 삭제</button>
   </form>
 </dialog>
 
@@ -421,7 +422,7 @@ function demoStore() {
     demo: true,
     onUser(cb) { setTimeout(() => cb({ email }), 0); },
     async signIn() {}, async signOut() { location.href = location.pathname; },
-    async isAdmin() { return true; },
+    async isAdmin() { return !new URLSearchParams(location.search).has("leader"); }, // ?demo&leader = 리더 화면 미리보기,
     async churches() { return [church]; },
     watchMembers(cid, cb) { memberCb = cb; emitMembers(); return () => { memberCb = null; }; },
     watchAttendance(cid, date, service, cb) { attCb = cb; attKey = [date, service]; emitAtt(); return () => { attCb = null; }; },
@@ -576,6 +577,9 @@ function pickChurch(c) {
   pick.classList.toggle("hidden", S.churches.length < 2);
   pick.innerHTML = S.churches.map(x => `<option value="${esc(x.id)}" ${x.id === c.id ? "selected" : ""}>${esc(x.name)}</option>`).join("");
   $("#toAdmin").classList.toggle("hidden", !S.admin);
+  S.canEdit = S.admin || (c.staff || []).includes((S.email || "").toLowerCase());
+  $("#addBtn").classList.toggle("hidden", !S.canEdit);
+  $("#editMode").textContent = S.canEdit ? "✎ 정보" : "정보 보기";
   const services = c.services?.length ? c.services : ["주일낮"];
   $("#date").value = S.date;
   S.service = defaultService(services, S.date);
@@ -804,13 +808,18 @@ function openMember(id) {
   $("#cTel").href = "tel:" + tel; $("#cSms").href = "sms:" + tel;
   $("#dlgTitle").textContent = m ? `${m.name} 정보` : "새 성도";
   $("#dlgOk").textContent = m ? "저장" : "추가";
-  $("#dlgDel").classList.toggle("hidden", !(m && S.admin));
+  $("#dlgDel").classList.toggle("hidden", !(m && S.canEdit));
+  // 리더는 보기만: 칸을 잠그고 저장·사진 버튼을 숨김
+  for (const el of f.querySelectorAll("input,select,textarea")) if (el.id !== "phFile") el.disabled = !S.canEdit;
+  $("#dlgOk").classList.toggle("hidden", !S.canEdit);
+  $("#phFile").closest("label").classList.toggle("hidden", !S.canEdit);
+  if (!S.canEdit) $("#phDel").classList.add("hidden");
   $("#more").open = !!m;
   $("#dlg").showModal();
 }
 $("#addBtn").onclick = () => openMember(null);
 $("#dlg").addEventListener("close", async () => {
-  if ($("#dlg").returnValue !== "ok") return;
+  if ($("#dlg").returnValue !== "ok" || !S.canEdit) return;
   const f = $("#addForm");
   const data = {};
   for (const k of TEXT_FIELDS) if (f[k]) data[k] = f[k].value.trim();
@@ -826,7 +835,7 @@ $("#dlg").addEventListener("close", async () => {
 });
 $("#dlgDel").onclick = async () => {
   const m = S.members.find(x => x.id === editingId);
-  if (!m || !confirm(`${m.name} 성도를 명단에서 지울까요? 출석 기록은 남아요.`)) return;
+  if (!m || !S.canEdit || !confirm(`${m.name} 성도를 명단에서 지울까요? 출석 기록은 남아요.`)) return;
   try { await S.store.deleteMember(S.church.id, editingId); $("#dlg").close("cancel"); } catch (e) { toastErr("삭제 실패: " + e.message); }
 };
 $("#editDone").onclick = () => $("#editMode").click();
@@ -891,19 +900,23 @@ function fillAdmin(c) {
   adminCid = c?.id || null;
   $("#aName").value = c?.name || "";
   $("#aServices").value = (c?.services || ["주일낮","주일저녁","수요","금요"]).join(", ");
-  $("#aLeaders").value = (c?.leaders || []).join("\n");
+  const staff = c?.staff || [];
+  $("#aStaff").value = staff.join("\n");
+  $("#aLeaders").value = (c?.leaders || []).filter(e => !staff.includes(e)).join("\n");
   $("#aMsg").textContent = ""; $("#aImportMsg").textContent = "";
   countLeaders();
 }
-function leaderList() { return [...new Set($("#aLeaders").value.split(/[\s,;]+/).map(s => s.trim().toLowerCase()).filter(s => s.includes("@")))]; }
-function countLeaders() { $("#aLeaderCount").textContent = `(${leaderList().length}명)`; }
-$("#aLeaders").oninput = countLeaders;
+const emailList = (el) => [...new Set(el.value.split(/[\s,;]+/).map(s => s.trim().toLowerCase()).filter(s => s.includes("@")))];
+// leaders = 이 교회를 쓰는 모든 사람(교역자 포함), staff = 그중 성도 정보를 고칠 수 있는 사람
+function leaderList() { return [...new Set([...emailList($("#aStaff")), ...emailList($("#aLeaders"))])]; }
+function countLeaders() { $("#aLeaderCount").textContent = `(교역자 ${emailList($("#aStaff")).length}명 · 전체 ${leaderList().length}명)`; }
+$("#aLeaders").oninput = $("#aStaff").oninput = countLeaders;
 $("#toAdmin").onclick = openAdmin;
 $("#backMain").onclick = () => S.church ? pickChurch(S.churches.find(c => c.id === S.church.id) || S.churches[0]) : (S.churches[0] && pickChurch(S.churches[0]));
 $("#aChurch").onchange = (e) => fillAdmin(S.churches.find(c => c.id === e.target.value));
 $("#aNew").onclick = () => { fillAdmin(null); $("#aName").focus(); };
 $("#aSave").onclick = async () => {
-  const data = { name: $("#aName").value.trim(), services: $("#aServices").value.split(",").map(s => s.trim()).filter(Boolean), leaders: leaderList() };
+  const data = { name: $("#aName").value.trim(), services: $("#aServices").value.split(",").map(s => s.trim()).filter(Boolean), leaders: leaderList(), staff: emailList($("#aStaff")) };
   if (!data.name) return ($("#aMsg").textContent = "교회 이름을 넣어 주세요.");
   try {
     const id = await S.store.saveChurch(adminCid, data);
