@@ -120,6 +120,20 @@ textarea.memo{min-height:60px;border:1px solid var(--line);background:var(--bg);
 .absent small{grid-column:1;color:var(--muted);font-size:13px}
 .absent .n{grid-row:1 / span 2;grid-column:2;color:var(--warn);font-weight:600;font-size:15px;white-space:nowrap}
 .absent a{color:var(--flow);text-decoration:none}
+.p .ph{flex:none;width:38px;height:38px;border-radius:50%;object-fit:cover;background:var(--flow-soft);display:grid;place-items:center;font-size:15px;font-weight:600;color:var(--flow)}
+.p .tel{font-variant-numeric:tabular-nums}
+.p .box{display:none}
+.p.on .ph{outline:2.5px solid var(--flow);outline-offset:1px}
+.p .av{position:relative;flex:none}
+.p.on .av::after{content:"✓";position:absolute;right:-4px;bottom:-4px;width:20px;height:20px;border-radius:50%;background:var(--flow);color:var(--on-flow);font-size:13px;font-weight:700;display:grid;place-items:center;border:2px solid var(--surface)}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(76px + env(safe-area-inset-bottom));z-index:9;display:flex;gap:12px;align-items:center;background:var(--ink);color:var(--bg);border-radius:999px;padding:8px 8px 8px 16px;font-size:14px;max-width:calc(100vw - 32px);box-shadow:0 4px 14px rgb(0 0 0 / .25)}
+.toast span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.toast button{flex:none;border:0;background:var(--flow);color:var(--on-flow);border-radius:999px;padding:5px 12px;font-weight:600;font-size:14px}
+.photo{display:flex;align-items:center;gap:12px}
+.photo img,.photo .ph{width:64px;height:64px;border-radius:50%;object-fit:cover;background:var(--flow-soft);display:grid;place-items:center;color:var(--flow);font-weight:600;font-size:22px}
+.photo .ghost{font-size:14px;padding:6px 12px}
+.contact{display:flex;gap:8px}
+.contact a{flex:1;text-align:center;text-decoration:none;border:1px solid var(--flow);color:var(--flow);border-radius:10px;padding:10px;font-weight:600}
 .fab{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom));border:0;background:var(--ink);color:var(--bg);border-radius:999px;padding:12px 18px;font-weight:600;box-shadow:0 4px 14px rgb(0 0 0 / .18)}
 </style>
 </head>
@@ -174,16 +188,18 @@ textarea.memo{min-height:60px;border:1px solid var(--line);background:var(--bg);
       <div class="row">
         <input type="date" id="date" aria-label="날짜">
         <div class="seg" id="services" role="group" aria-label="예배"></div>
-        <div class="count">출석 <b id="cnt">0</b>명</div>
+        <div class="count">출석 <b id="cnt">0</b> · 남음 <span id="left">0</span></div>
       </div>
       <div class="row">
         <input class="search" id="q" type="search" placeholder="이름·전화 뒷자리 찾기" autocomplete="off">
+        <button class="ghost" id="showDone" aria-pressed="false">출석한 사람 보기</button>
         <span class="sync" id="sync"></span>
       </div>
       <div class="chips" id="chips"></div>
     </div>
     <div class="list" id="list"></div>
     <button class="fab" id="addBtn">+ 새 성도</button>
+    <div class="toast hidden" id="toast" role="status"><span id="toastMsg"></span><button type="button" id="toastUndo">되돌리기</button></div>
   </div>
 
   <!-- 통계 -->
@@ -238,6 +254,12 @@ textarea.memo{min-height:60px;border:1px solid var(--line);background:var(--bg);
         <div class="row"><button class="btn" id="aAttImportBtn">가져오기</button><span id="aAttImportMsg" class="ok"></span></div>
       </section>
       <section>
+        <h2>사진 가져오기</h2>
+        <p class="hint">앱시트 사진 폴더(구글 드라이브 '성도_Images' 등)를 PC로 내려받아 압축을 푼 뒤, 아래에서 사진들을 한꺼번에 고르세요. 시트의 '사진' 칸 파일 이름, 성도ID, 이름 순으로 짝을 찾아요. 사진은 작게 줄여서 저장해요.</p>
+        <div class="row"><label class="btn line" style="cursor:pointer">사진 고르기<input type="file" id="aPhotos" accept="image/*" multiple hidden></label><label class="btn line" style="cursor:pointer">폴더째 고르기<input type="file" id="aPhotoDir" webkitdirectory multiple hidden></label></div>
+        <span id="aPhotoMsg" class="ok"></span>
+      </section>
+      <section>
         <h2>내보내기</h2>
         <p class="hint">엑셀에서 바로 열리는 CSV 파일로 받아요. 교회가 데이터를 원하면 이 파일을 드리면 돼요.</p>
         <div class="row"><button class="btn line" id="aExpMembers">성도 명단</button><button class="btn line" id="aExpAtt">출석 기록 전체</button></div>
@@ -251,6 +273,10 @@ textarea.memo{min-height:60px;border:1px solid var(--line);background:var(--bg);
 <dialog id="dlg">
   <form method="dialog" id="addForm">
     <h2 style="font-size:18px" id="dlgTitle">새 성도</h2>
+    <div class="contact hidden" id="contact"><a id="cTel" href="#">📞 전화</a><a id="cSms" href="#">💬 문자</a></div>
+    <div class="photo"><span id="phView"></span>
+      <label class="ghost" style="cursor:pointer">사진 찍기·고르기<input type="file" id="phFile" accept="image/*" hidden></label>
+      <button type="button" class="ghost hidden" id="phDel">사진 지우기</button></div>
     <label>이름<input name="name" required></label>
     <div class="two">
       <label>직분<input name="role" placeholder="성도"></label>
@@ -464,7 +490,7 @@ async function firebaseStore() {
 
 // ───────────── 상태 ─────────────
 const S = { store: null, email: null, admin: false, churches: [], church: null, members: [], att: new Map(),
-  date: localToday(), service: null, q: "", chip: "전체", unMembers: null, unAtt: null };
+  date: localToday(), service: null, q: "", chip: "전체", unMembers: null, unAtt: null, showDone: false };
 
 function toastErr(msg) { const el = $("#sync"); el.textContent = msg; el.className = "sync off"; }
 
@@ -558,9 +584,12 @@ function visibleMembers() {
 
 function render() {
   if (!S.church) return;
-  const present = [...S.att.values()].filter(r => r.present).length;
+  const present = S.members.filter(m => S.att.get(m.id)?.present).length;
   $("#cnt").textContent = present;
-  const ms = visibleMembers();
+  $("#left").textContent = S.members.length - present;
+  // 출석한 사람은 목록에서 빠짐 (✎ 정보 중이거나 '출석한 사람 보기'를 켜면 모두 보임)
+  const hideDone = !S.showDone && !S.edit;
+  const ms = visibleMembers().filter(m => !hideDone || !S.att.get(m.id)?.present);
   // 가족(세대ID)끼리 한 카드로
   const cards = new Map();
   for (const m of ms) {
@@ -572,11 +601,12 @@ function render() {
   const relRank = (m) => ({ "세대주": 0, "배우자": 1 }[m.relation] ?? 2);
   const list = [...cards.values()].map(g => g.sort((a, b) => relRank(a) - relRank(b) || (a.name || "").localeCompare(b.name || "", "ko")))
     .sort((a, b) => rank(a[0]) - rank(b[0]) || (a[0].name || "").localeCompare(b[0].name || "", "ko"));
-  if (!list.length) { $("#list").innerHTML = `<p class="empty">${S.members.length ? "찾는 성도가 없어요." : "아직 성도가 없어요. 관리 화면에서 가져오거나 + 새 성도로 추가해 주세요."}</p>`; return; }
+  if (!list.length) { $("#list").innerHTML = `<p class="empty">${hideDone && present && !S.q && visibleMembers().length ? "이 목록은 모두 출석했어요." : S.members.length ? "찾는 성도가 없어요." : "아직 성도가 없어요. 관리 화면에서 가져오거나 + 새 성도로 추가해 주세요."}</p>`; return; }
   $("#list").innerHTML = list.map(g => {
     const fam = g.length > 1;
     const allOn = g.every(m => S.att.get(m.id)?.present);
-    return `<div class="card">${fam ? `<div class="head"><span>${esc(g[0].name)} 가족 ${g.length}명</span><button type="button" class="all" data-fam="${esc(g.map(m => m.id).join(","))}" data-on="${allOn ? 0 : 1}">${allOn ? "가족 모두 취소" : "가족 모두 출석"}</button></div>` : ""}
+    const famIds = g.map(m => m.id);
+    return `<div class="card">${fam ? `<div class="head"><span>${esc(g[0].name)} 가족 ${g.length}명</span><button type="button" class="all" data-fam="${esc(famIds.join(","))}" data-on="${allOn ? 0 : 1}">${allOn ? "가족 모두 취소" : "가족 모두 출석"}</button></div>` : ""}
       <div class="people">${g.map(personBtn).join("")}</div></div>`;
   }).join("");
 }
@@ -586,7 +616,10 @@ function personBtn(m) {
   const on = !!r?.present;
   const sub = [m.role, m.relation && m.household ? m.relation : "", m.district].filter(Boolean).join(" · ");
   return `<button type="button" class="p ${on ? "on" : ""} ${r?._pending ? "pending" : ""}" data-m="${esc(m.id)}" aria-pressed="${on}">
-    <span class="box">✓</span><span class="nm"><b>${esc(m.name)}${m.longAbsent ? '<span class="tag">장결</span>' : ""}</b><small>${esc(sub)}</small></span></button>`;
+    <span class="av">${avatar(m)}</span><span class="nm"><b>${esc(m.name)}${m.longAbsent ? '<span class="tag">장결</span>' : ""}</b><small>${esc(sub)}</small>${m.phone ? `<small class="tel">${esc(m.phone)}</small>` : ""}</span></button>`;
+}
+function avatar(m) {
+  return /^data:image\//.test(m.thumb || "") ? `<img class="ph" src="${esc(m.thumb)}" alt="">` : `<span class="ph" aria-hidden="true">${esc((m.name || "?")[0])}</span>`;
 }
 
 function toggle(ids, present) {
@@ -597,6 +630,28 @@ function toggle(ids, present) {
     S.store.setPresent(S.church.id, S.date, S.service, m, p);
   }
   render();
+  if (present !== false && !S.showDone && !S.edit) {
+    const ms = ids.map(id => S.members.find(x => x.id === id)).filter(m => m && S.att.get(m.id)?.present);
+    if (ms.length) showToast(`${ms.length > 1 ? `${ms[0].name} 외 ${ms.length - 1}명` : ms[0].name} 출석`, () => toggle(ms.map(m => m.id), false));
+  }
+}
+let toastTimer = null, toastUndo = null;
+function showToast(msg, undo) {
+  $("#toastMsg").textContent = msg; toastUndo = undo;
+  $("#toast").classList.remove("hidden");
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => $("#toast").classList.add("hidden"), 4000);
+}
+$("#toastUndo").onclick = () => { $("#toast").classList.add("hidden"); toastUndo?.(); toastUndo = null; };
+$("#showDone").onclick = () => { S.showDone = !S.showDone; $("#showDone").setAttribute("aria-pressed", S.showDone); render(); };
+
+// 사진: 가운데를 정사각형으로 잘라 작게 줄임 (성도 문서에 바로 저장, 장당 수 KB)
+async function makeThumb(file, size = 112) {
+  const bmp = await createImageBitmap(file);
+  const c = document.createElement("canvas"); c.width = c.height = size;
+  const k = Math.min(bmp.width, bmp.height);
+  c.getContext("2d").drawImage(bmp, (bmp.width - k) / 2, (bmp.height - k) / 2, k, k, 0, 0, size, size);
+  bmp.close?.();
+  return c.toDataURL("image/jpeg", 0.75);
 }
 
 // ───────────── 이벤트 ─────────────
@@ -617,7 +672,16 @@ $("#churchPick").onchange = (e) => pickChurch(S.churches.find(c => c.id === e.ta
 
 // 성도 추가·정보
 const TEXT_FIELDS = ["name","role","group","gender","phone","household","relation","district","regDate","birthSolar","birthLunar","anniversary","baptism","memo"];
-let editingId = null;
+let editingId = null, dlgThumb = "";
+function showDlgPhoto(name) {
+  $("#phView").innerHTML = dlgThumb ? `<img src="${esc(dlgThumb)}" alt="">` : `<span class="ph">${esc(name?.[0] || "?")}</span>`;
+  $("#phDel").classList.toggle("hidden", !dlgThumb);
+}
+$("#phFile").onchange = async (e) => {
+  const f = e.target.files[0]; e.target.value = ""; if (!f) return;
+  try { dlgThumb = await makeThumb(f); showDlgPhoto(); } catch { alert("이 사진은 열 수 없어요. 다른 사진을 골라 주세요."); }
+};
+$("#phDel").onclick = () => { dlgThumb = ""; showDlgPhoto($("#addForm").name.value); };
 function openMember(id) {
   editingId = id;
   const m = id ? S.members.find(x => x.id === id) : null;
@@ -636,6 +700,11 @@ function openMember(id) {
     }
     f.longAbsent.checked = !!m.longAbsent; f.noTrack.checked = !!m.noTrack;
   } else f.regDate.value = localToday();
+  dlgThumb = m?.thumb || "";
+  showDlgPhoto(m?.name);
+  const tel = (m?.phone || "").replace(/[^\d+]/g, "");
+  $("#contact").classList.toggle("hidden", !tel);
+  $("#cTel").href = "tel:" + tel; $("#cSms").href = "sms:" + tel;
   $("#dlgTitle").textContent = m ? `${m.name} 정보` : "새 성도";
   $("#dlgOk").textContent = m ? "저장" : "추가";
   $("#dlgDel").classList.toggle("hidden", !(m && S.admin));
@@ -649,6 +718,7 @@ $("#dlg").addEventListener("close", async () => {
   const data = {};
   for (const k of TEXT_FIELDS) if (f[k]) data[k] = f[k].value.trim();
   data.longAbsent = f.longAbsent.checked; data.noTrack = f.noTrack.checked;
+  data.thumb = dlgThumb;
   if (!data.role) data.role = "성도";
   if (data.household === "__new") { data.household = "H" + Date.now().toString(36); data.relation ||= "세대주"; }
   if (!data.name) return;
@@ -702,7 +772,7 @@ function renderStats() {
   $("#statAbsent").innerHTML = recent.length < 3 ? `<li><small>기록이 3번 이상 쌓이면 보여 드려요.</small></li>`
     : list.length ? list.map(({ m, n, last }) => `<li><span><b>${esc(m.name)}</b> ${esc(m.role || "")}${m.longAbsent ? '<span class="tag">장결</span>' : ""}</span>
       <span class="n">${n === recent.length ? `${n}번 이상` : `${n}번`} 연속</span>
-      <small>${last ? `마지막 출석 ${last.slice(5).replace("-", "/")}` : "최근 8주 출석 없음"}${m.phone ? ` · <a href="tel:${esc(m.phone.replace(/[^\d+]/g, ""))}">${esc(m.phone)}</a>` : ""}</small></li>`).join("")
+      <small>${last ? `마지막 출석 ${last.slice(5).replace("-", "/")}` : "최근 8주 출석 없음"}${m.phone ? ` · <a href="tel:${esc(m.phone.replace(/[^\d+]/g, ""))}">📞 ${esc(m.phone)}</a> · <a href="sms:${esc(m.phone.replace(/[^\d+]/g, ""))}">💬 문자</a>` : ""}</small></li>`).join("")
     : `<li><small>3번 이상 연달아 빠진 성도가 없어요.</small></li>`;
 }
 $("#toStats").onclick = openStats;
@@ -826,6 +896,30 @@ $("#aImportBtn").onclick = async () => {
   try { const n = await S.store.importMembers(adminCid, rows); $("#aImportMsg").textContent = `${n}명을 가져왔어요.`; $("#aImport").value = ""; }
   catch (e) { $("#aImportMsg").textContent = "가져오기 실패: " + e.message; }
 };
+
+async function importPhotos(files) {
+  const msg = $("#aPhotoMsg");
+  if (!adminCid) return (msg.textContent = "먼저 교회를 저장해 주세요.");
+  files = [...files].filter(f => /^image\//.test(f.type) || /\.(jpe?g|png|heic|webp|gif)$/i.test(f.name));
+  if (!files.length) return (msg.textContent = "사진 파일이 없어요.");
+  const ms = await S.store.allMembers(adminCid);
+  const base = (p) => String(p || "").split(/[\\/]/).pop().toLowerCase();
+  const stem = (p) => base(p).replace(/\.[^.]+$/, "");
+  const byPhoto = new Map(ms.filter(m => m.photo).map(m => [base(m.photo), m]));
+  const byId = new Map(ms.map(m => [String(m.id).toLowerCase(), m]));
+  const byName = new Map(); ms.forEach(m => byName.set(m.name, byName.has(m.name) ? null : m)); // 같은 이름 두 명이면 이름으로는 안 맞춤
+  let ok = 0; const miss = [];
+  for (const [i, f] of files.entries()) {
+    const n = base(f.name);
+    const m = byPhoto.get(n) || byId.get(stem(n)) || byId.get(stem(n).split(/[._\s-]/)[0]) || byName.get(stem(f.name).normalize("NFC"));
+    if (!m) { miss.push(f.name); continue; }
+    msg.textContent = `${i + 1}/${files.length}장 줄이는 중…`;
+    try { await S.store.updateMember(adminCid, m.id, { thumb: await makeThumb(f) }); ok++; } catch { miss.push(f.name); }
+  }
+  msg.textContent = `${ok}장을 넣었어요.` + (miss.length ? ` 짝을 못 찾은 ${miss.length}장: ${miss.slice(0, 5).join(", ")}${miss.length > 5 ? " …" : ""}` : "");
+}
+$("#aPhotos").onchange = (e) => { importPhotos(e.target.files); e.target.value = ""; };
+$("#aPhotoDir").onchange = (e) => { importPhotos(e.target.files); e.target.value = ""; };
 
 function downloadCsv(name, header, rows) {
   const cell = (v) => { const s = v instanceof Date ? v.toISOString() : v?.toDate ? v.toDate().toISOString() : String(v ?? ""); return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
