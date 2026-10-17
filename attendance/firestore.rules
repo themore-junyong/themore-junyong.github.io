@@ -2,7 +2,8 @@ rules_version = '2';
 
 // 교회 출석앱 보안 규칙
 // - config/admins 문서의 emails 배열에 있는 사람 = 관리자(준용). 모든 교회를 만들고 고칠 수 있음.
-// - churches/{교회}.leaders 배열에 있는 사람 = 그 교회 리더. 그 교회 성도·출석만 보고 쓸 수 있음.
+// - churches/{교회}.leaders 배열에 있는 사람 = 그 교회를 쓰는 사람. 출석 체크와 성도 정보 보기.
+// - churches/{교회}.staff 배열에 있는 사람 = 교역자. 위에 더해 성도 추가·수정·삭제. (앱이 staff도 leaders에 넣어 저장함)
 // - 그 밖의 사람은 아무것도 볼 수 없음.
 service cloud.firestore {
   match /databases/{db}/documents {
@@ -22,6 +23,13 @@ service cloud.firestore {
       return signedIn()
         && myEmail() in get(/databases/$(db)/documents/churches/$(cid)).data.leaders;
     }
+    function isStaff(cid) {
+      return signedIn()
+        && myEmail() in get(/databases/$(db)/documents/churches/$(cid)).data.get('staff', []);
+    }
+    function canEdit(cid) {
+      return isAdmin() || isStaff(cid);
+    }
     function canUse(cid) {
       return isAdmin() || isLeader(cid);
     }
@@ -37,10 +45,10 @@ service cloud.firestore {
 
       match /members/{mid} {
         allow read: if canUse(cid);
-        allow create, update: if canUse(cid)
+        allow create, update: if canEdit(cid)
           && request.resource.data.name is string
           && request.resource.data.name.size() > 0;
-        allow delete: if isAdmin();
+        allow delete: if canEdit(cid);
       }
 
       match /attendance/{aid} {
