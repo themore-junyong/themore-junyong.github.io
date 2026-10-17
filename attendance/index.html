@@ -232,6 +232,12 @@ textarea.memo{min-height:60px;border:1px solid var(--line);background:var(--bg);
         <div class="row"><button class="btn" id="aImportBtn">가져오기</button><span id="aImportMsg" class="ok"></span></div>
       </section>
       <section>
+        <h2>출석 기록 가져오기</h2>
+        <p class="hint">구글 시트 '출석' 탭에서 Ctrl+A로 전체 선택해 복사한 뒤 붙여 넣으세요. 성도를 먼저 가져온 뒤 하세요. 같은 날짜·예배·성도는 덮어써서, 여러 번 가져와도 겹치지 않아요.</p>
+        <textarea id="aAttImport" placeholder="출석ID	날짜	예배종류	성도ID	이름	출석	체크한사람	메모"></textarea>
+        <div class="row"><button class="btn" id="aAttImportBtn">가져오기</button><span id="aAttImportMsg" class="ok"></span></div>
+      </section>
+      <section>
         <h2>내보내기</h2>
         <p class="hint">엑셀에서 바로 열리는 CSV 파일로 받아요. 교회가 데이터를 원하면 이 파일을 드리면 돼요.</p>
         <div class="row"><button class="btn line" id="aExpMembers">성도 명단</button><button class="btn line" id="aExpAtt">출석 기록 전체</button></div>
@@ -366,6 +372,7 @@ function demoStore() {
     async attendanceSince(cid, from) { return [...att.values()].filter(r => r.date >= from); },
     async saveChurch(cid, data) { Object.assign(church, data); return "demo"; },
     async importMembers(cid, rows) { rows.forEach(r => members.set(r.id, r)); emitMembers(); return rows.length; },
+    async importAttendance(cid, rows) { rows.forEach(r => att.set(attId(r.date, r.service, r.memberId), { ...r, checkedBy: email })); emitAtt(); return rows.length; },
     async allMembers() { return [...members.values()]; },
     async allAttendance() { return [...att.values()]; },
   };
@@ -433,6 +440,14 @@ async function firebaseStore() {
     async saveChurch(cid, data) {
       if (cid) { await F.setDoc(F.doc(db, "churches", cid), data, { merge: true }); return cid; }
       const r = await F.addDoc(F.collection(db, "churches"), data); return r.id;
+    },
+    async importAttendance(cid, rows, onProgress) {
+      for (let i = 0; i < rows.length; i += 400) {
+        const b = F.writeBatch(db);
+        rows.slice(i, i + 400).forEach(r => b.set(F.doc(db, "churches", cid, "attendance", attId(r.date, r.service, r.memberId)), { ...r, checkedBy: me }));
+        await b.commit(); onProgress?.(Math.min(i + 400, rows.length));
+      }
+      return rows.length;
     },
     async importMembers(cid, rows) {
       for (let i = 0; i < rows.length; i += 400) {
@@ -728,26 +743,82 @@ $("#aSave").onclick = async () => {
   } catch (e) { $("#aMsg").textContent = "저장 실패: " + e.message; }
 };
 
+// 시트에서 복사한 글(탭) 또는 CSV를 표로. 따옴표 안의 줄바꿈도 처리
+function parseTable(text) {
+  text = text.replace(/\r\n?/g, "\n");
+  const first = text.split("\n", 1)[0];
+  const sep = first.includes("\t") ? "\t" : ",";
+  const rows = []; let row = [], cell = "", q = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (q) {
+      if (ch === '"') { if (text[i + 1] === '"') { cell += '"'; i++; } else q = false; }
+      else cell += ch;
+    } else if (ch === '"' && cell === "") q = true;
+    else if (ch === sep) { row.push(cell); cell = ""; }
+    else if (ch === "\n") { row.push(cell); rows.push(row); row = []; cell = ""; }
+    else cell += ch;
+  }
+  row.push(cell); rows.push(row);
+  return rows.map(r => r.map(c => c.trim())).filter(r => r.some(Boolean));
+}
+// 2026. 10. 12 / 2026/10/12 / 10/12/2026 / 2026-10-12 → 2026-10-12
+function normDate(v) {
+  v = String(v || "").trim(); if (!v) return "";
+  let m = v.match(/^(\d{4})\s*[-./년]\s*(\d{1,2})\s*[-./월]\s*(\d{1,2})/);
+  if (!m) { const k = v.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/); if (k) m = [0, k[3], k[1], k[2]]; }
+  return m ? `${m[1]}-${String(m[2]).padStart(2, "0")}-${String(m[3]).padStart(2, "0")}` : v;
+}
+const DATE_FIELDS = new Set(["regDate","birthSolar","anniversary","baptism"]);
+const TRUE_RE = /^(true|y|yes|o|1|예|출석|✓|v)$/i;
 function parseSheet(text) {
-  const lines = text.replace(/\r/g, "").split("\n").filter(l => l.trim());
-  if (lines.length < 2) return { error: "제목 줄과 성도 줄을 함께 붙여 넣어 주세요." };
-  const sep = lines[0].includes("\t") ? "\t" : ",";
-  const head = lines[0].split(sep).map(h => h.trim());
+  const t = parseTable(text);
+  if (t.length < 2) return { error: "제목 줄과 성도 줄을 함께 붙여 넣어 주세요." };
+  const head = t[0];
   const idx = Object.fromEntries(COLS.map(([k, h]) => [k, head.indexOf(h)]));
   if (idx.name < 0) return { error: "'이름' 칸을 찾지 못했어요. 제목 줄까지 복사했는지 확인해 주세요." };
-  const rows = lines.slice(1).map((l, i) => {
-    const c = l.split(sep);
+  const rows = t.slice(1).map((c, i) => {
     const r = {};
     for (const [k] of COLS) {
       if (idx[k] < 0) continue;
-      let v = (c[idx[k]] ?? "").trim();
-      r[k] = BOOL_FIELDS.has(k) ? /^(true|y|yes|o|1|예)$/i.test(v) : v;
+      const v = c[idx[k]] ?? "";
+      r[k] = BOOL_FIELDS.has(k) ? TRUE_RE.test(v) : DATE_FIELDS.has(k) ? normDate(v) : v;
     }
     r.id = (r.id || "").replace(/[\/.#$\[\]]/g, "-") || "R" + Date.now().toString(36) + i;
     return r;
   }).filter(r => r.name);
   return { rows };
 }
+function parseAttendance(text) {
+  const t = parseTable(text);
+  if (t.length < 2) return { error: "제목 줄과 출석 줄을 함께 붙여 넣어 주세요." };
+  const h = t[0], at = (n) => h.indexOf(n);
+  const I = { date: at("날짜"), service: at("예배종류"), mid: at("성도ID"), name: at("이름"), present: at("출석"), by: at("체크한사람"), memo: at("메모") };
+  if (I.date < 0 || I.service < 0 || I.mid < 0) return { error: "'날짜', '예배종류', '성도ID' 칸을 찾지 못했어요. 제목 줄까지 복사했는지 확인해 주세요." };
+  let skipped = 0;
+  const rows = [];
+  for (const c of t.slice(1)) {
+    const date = normDate(c[I.date]), service = c[I.service] || "", memberId = (c[I.mid] || "").replace(/[\/.#$\[\]]/g, "-");
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !service || !memberId) { skipped++; continue; }
+    rows.push({ date, service, memberId, name: I.name >= 0 ? c[I.name] || "" : "",
+      present: I.present >= 0 ? TRUE_RE.test(c[I.present] || "") : true,
+      origChecker: I.by >= 0 ? c[I.by] || "" : "", memo: I.memo >= 0 ? c[I.memo] || "" : "", imported: true });
+  }
+  return { rows, skipped };
+}
+$("#aAttImportBtn").onclick = async () => {
+  const msg = $("#aAttImportMsg");
+  if (!adminCid) return (msg.textContent = "먼저 교회를 저장해 주세요.");
+  const { rows, skipped, error } = parseAttendance($("#aAttImport").value);
+  if (error) return (msg.textContent = error);
+  if (!rows.length) return (msg.textContent = `가져올 줄이 없어요. (건너뜀 ${skipped}줄)`);
+  const services = new Set(rows.map(r => r.service));
+  try {
+    const n = await S.store.importAttendance(adminCid, rows, (k) => (msg.textContent = `${k}/${rows.length}줄 저장 중…`));
+    msg.textContent = `${n}줄을 가져왔어요.${skipped ? ` 날짜·예배·성도ID가 비어 ${skipped}줄은 건너뛰었어요.` : ""} 예배: ${[...services].join(", ")}`;
+    $("#aAttImport").value = "";
+  } catch (e) { msg.textContent = "가져오기 실패: " + e.message; }
+};
 $("#aImportBtn").onclick = async () => {
   if (!adminCid) return ($("#aImportMsg").textContent = "먼저 교회를 저장해 주세요.");
   const { rows, error } = parseSheet($("#aImport").value);
@@ -772,7 +843,7 @@ $("#aExpAtt").onclick = async () => {
   if (!adminCid) return;
   const rs = (await S.store.allAttendance(adminCid)).sort((a, b) => (a.date + a.service).localeCompare(b.date + b.service));
   downloadCsv(`${$("#aName").value}_출석_${localToday()}.csv`, ["날짜","예배종류","성도ID","이름","출석","체크한사람","체크시각"],
-    rs.map(r => [r.date, r.service, r.memberId, r.name, r.present ? "TRUE" : "FALSE", r.checkedBy, r.checkedAt]));
+    rs.map(r => [r.date, r.service, r.memberId, r.name, r.present ? "TRUE" : "FALSE", r.origChecker || r.checkedBy, r.checkedAt]));
 };
 
 window.addEventListener("online", () => watchAtt && S.church && watchAtt());
