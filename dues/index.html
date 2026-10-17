@@ -142,8 +142,18 @@ table.led tbody tr{cursor:pointer}
 
   <div id="sLogin" class="screen hidden">
     <h1>회비 관리</h1>
-    <p>초대받은 구글 계정으로 로그인해 주세요.</p>
+    <p>초대받은 이메일로 로그인해 주세요.</p>
     <button class="btn" id="login">구글로 로그인</button>
+    <p class="note hidden" id="inAppNote">카카오톡·네이버 앱 안에서는 구글 로그인이 막혀요. 아래 이메일 로그인을 쓰거나 <button type="button" class="ghost" id="openExternal2">다른 브라우저로 열기</button></p>
+    <div class="panel" style="padding:0">
+      <section>
+        <h2>이메일로 로그인 (네이버 메일 등)</h2>
+        <p class="hint">초대받은 이메일을 넣으면 로그인 링크를 보내 드려요. 메일함에서 링크를 누르면 바로 들어와요. 비밀번호는 없어요.</p>
+        <input id="linkEmail" type="email" inputmode="email" autocomplete="email" placeholder="chongmu@naver.com">
+        <div class="row"><button class="btn line" id="linkSend">로그인 링크 받기</button></div>
+        <p class="ok" id="linkMsg"></p>
+      </section>
+    </div>
     <p id="loginErr" class="err"></p>
   </div>
 
@@ -528,6 +538,7 @@ function demoStore() {
     demo: true,
     onUser(cb) { setTimeout(() => cb({ email }), 0); },
     async signIn() {}, async signOut() { location.href = location.pathname; },
+    async sendLink() {}, async completeLink() { return false; },
     async isAdmin() { return !new URLSearchParams(location.search).has("viewer"); },
     async groups() { return [group]; },
     async saveGroup(gid, data) { Object.assign(group, data); return "demo"; },
@@ -584,6 +595,21 @@ async function firebaseStore() {
       catch (e) { if (e.code === "auth/popup-blocked" || e.code === "auth/operation-not-supported-in-this-environment") await A.signInWithRedirect(auth, p); else throw e; }
     },
     async signOut() { await A.signOut(auth); },
+    // 이메일 링크 로그인 (비밀번호 없음). 링크를 받은 기기와 누른 기기가 다르면 이메일을 한 번 더 물어봄
+    async sendLink(email) {
+      await A.sendSignInLinkToEmail(auth, email, { url: location.origin + location.pathname, handleCodeInApp: true });
+      try { localStorage.setItem("dues.linkEmail", email); } catch {}
+    },
+    async completeLink() {
+      if (!A.isSignInWithEmailLink(auth, location.href)) return false;
+      let email = null; try { email = localStorage.getItem("dues.linkEmail"); } catch {}
+      if (!email) email = prompt("로그인 링크를 받은 이메일을 한 번 더 넣어 주세요.");
+      if (!email) return false;
+      await A.signInWithEmailLink(auth, email.trim(), location.href);
+      try { localStorage.removeItem("dues.linkEmail"); } catch {}
+      history.replaceState(null, "", location.pathname);
+      return true;
+    },
     async isAdmin() {
       try { const s = await F.getDoc(F.doc(db, "config", "admins")); return s.exists() && (s.data().emails || []).map(lc).includes(me); } catch { return false; }
     },
@@ -685,9 +711,14 @@ const isInAppBrowser = () => /KAKAOTALK|Instagram|FBAN|FBAV|NAVER\(inapp|Line\//
 async function boot() {
   const demo = new URLSearchParams(location.search).has("demo");
   if (!demo && !firebaseConfig.apiKey) return show("sSetup");
-  if (!demo && isInAppBrowser()) return showInApp();
+  // 앱 안 브라우저(카톡·네이버)에서는 구글 로그인만 숨기고 이메일 링크 로그인은 그대로 씀
+  const inApp = !demo && isInAppBrowser();
+  $("#login").classList.toggle("hidden", inApp); $("#inAppNote").classList.toggle("hidden", !inApp);
+  if (inApp) showInApp(true);
   try { S.store = demo ? demoStore() : await firebaseStore(); }
   catch { show("sLogin"); $("#loginErr").textContent = "연결에 실패했어요. 인터넷을 확인해 주세요."; return; }
+  try { await S.store.completeLink(); }
+  catch (e) { $("#loginErr").textContent = e.code === "auth/invalid-action-code" ? "로그인 링크가 만료됐거나 이미 썼어요. 새 링크를 받아 주세요." : "로그인 실패: " + e.message; }
   S.store.onUser(async (u) => {
     if (!u) { stopWatch(); return show("sLogin"); }
     S.email = u.email;
@@ -698,14 +729,14 @@ async function boot() {
     pickGroup(S.groups.find(g => g.id === safeGet("group")) || S.groups[0]);
   });
 }
-function showInApp() {
-  show("sInApp");
-  $("#openExternal").onclick = async () => {
+function showInApp(onlyButton) {
+  if (!onlyButton) show("sInApp");
+  $("#openExternal").onclick = $("#openExternal2").onclick = async () => {
     const url = location.href;
     if (/KAKAOTALK/i.test(navigator.userAgent)) { location.href = "kakaotalk://web/openExternal?url=" + encodeURIComponent(url); return; }
     if (/Android/i.test(navigator.userAgent)) { location.href = "intent://" + url.replace(/^https?:\/\//, "") + "#Intent;scheme=https;package=com.android.chrome;end"; return; }
     try { await navigator.clipboard.writeText(url); } catch {}
-    $("#copyHint").classList.remove("hidden");
+    $("#copyHint").classList.remove("hidden"); if (onlyButton) $("#inAppNote").textContent = "주소를 복사했어요. 크롬이나 사파리 주소창에 붙여 넣어 주세요.";
   };
 }
 function stopWatch() { S.un.forEach(f => f?.()); S.un = []; }
@@ -729,6 +760,14 @@ function pickGroup(g) {
   S.un.push(S.store.watchStats(g.id, (st) => { S.stats = st || { months: {} }; if (S.tab === "led") renderLedger(); }));
 }
 $("#gPick").onchange = (e) => pickGroup(S.groups.find(g => g.id === e.target.value));
+$("#linkSend").onclick = async () => {
+  const email = $("#linkEmail").value.trim().toLowerCase();
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { $("#linkMsg").textContent = "이메일 주소를 확인해 주세요."; return; }
+  $("#linkSend").disabled = true; $("#linkMsg").textContent = "보내는 중…";
+  try { await S.store.sendLink(email); $("#linkMsg").textContent = `${email}로 로그인 링크를 보냈어요. 메일함(스팸함도)에서 링크를 눌러 주세요.`; }
+  catch (e) { $("#linkMsg").textContent = e.code === "auth/operation-not-allowed" ? "이메일 로그인이 아직 꺼져 있어요. 대표에게 알려 주세요." : "보내기 실패: " + e.message; }
+  $("#linkSend").disabled = false;
+};
 $("#login").onclick = async () => { $("#loginErr").textContent = ""; try { await S.store.signIn(); } catch (e) { $("#loginErr").textContent = "로그인 실패: " + e.message; } };
 document.addEventListener("click", (e) => { if (e.target.closest("[data-act=logout]")) S.store.signOut(); });
 
