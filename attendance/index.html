@@ -91,7 +91,35 @@ dialog::backdrop{background:rgb(0 0 0 / .4)}
 dialog form{display:flex;flex-direction:column;gap:10px}
 dialog label{display:flex;flex-direction:column;gap:4px;font-size:14px;color:var(--muted)}
 dialog input,dialog select{border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:8px 10px;font-size:15px;color:var(--ink)}
-.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
+.two label{min-width:0}
+dialog input,dialog select,dialog textarea{width:100%;min-width:0}
+dialog{max-height:calc(100dvh - 32px);overflow:auto}
+.ghost[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.editing .p{border-style:dashed}
+.editing .p .box{display:none}
+.editbar{background:var(--warn-soft);border-radius:8px;padding:6px 10px;font-size:13px}
+details summary{cursor:pointer;color:var(--flow);font-size:14px;padding:4px 0}
+details[open] summary{margin-bottom:8px}
+.check{flex-direction:row!important;align-items:center;gap:8px!important;color:var(--ink)!important}
+.check input{width:18px;height:18px}
+textarea.memo{min-height:60px;border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:8px 10px;font:inherit;font-size:15px;color:var(--ink)}
+.danger{border:1px solid var(--bad);background:transparent;color:var(--bad);border-radius:10px;padding:12px 14px;font-size:15px}
+.stats{display:flex;flex-direction:column;gap:16px;padding-top:16px}
+.stats section{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:10px}
+.stats h2{font-size:18px}
+.stats .hint{font-size:13px;color:var(--muted);margin:0}
+.bars{display:flex;flex-direction:column;gap:6px}
+.bars .b{display:grid;grid-template-columns:5.5em minmax(0,1fr) 3em;gap:8px;align-items:center;font-size:14px}
+.bars .b span:first-child{color:var(--muted);font-variant-numeric:tabular-nums}
+.bars .b i{display:block;height:14px;border-radius:0 4px 4px 0;background:var(--flow);min-width:2px}
+.bars .b b{text-align:right;font-variant-numeric:tabular-nums}
+.absent{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.absent li{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;padding:10px 0;border-bottom:1px solid var(--line);align-items:center}
+.absent li:last-child{border-bottom:0}
+.absent small{grid-column:1;color:var(--muted);font-size:13px}
+.absent .n{grid-row:1 / span 2;grid-column:2;color:var(--warn);font-weight:600;font-size:15px;white-space:nowrap}
+.absent a{color:var(--flow);text-decoration:none}
 .fab{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom));border:0;background:var(--ink);color:var(--bg);border-radius:999px;padding:12px 18px;font-weight:600;box-shadow:0 4px 14px rgb(0 0 0 / .18)}
 </style>
 </head>
@@ -137,9 +165,12 @@ dialog input,dialog select{border:1px solid var(--line);background:var(--bg);bor
       <div class="bar">
         <h1 id="churchName">교회</h1>
         <select id="churchPick" class="ghost hidden" aria-label="교회 선택"></select>
+        <button class="ghost" id="editMode" aria-pressed="false">✎ 정보</button>
+        <button class="ghost" id="toStats">통계</button>
         <button class="ghost hidden" id="toAdmin">관리</button>
         <button class="ghost" data-act="logout">로그아웃</button>
       </div>
+      <p class="editbar hidden" id="editBar">정보 고치기 중이에요. 성도를 누르면 정보 화면이 열려요. 출석 체크는 위 <b>✎ 정보</b>를 다시 눌러 끄고 하세요.</p>
       <div class="row">
         <input type="date" id="date" aria-label="날짜">
         <div class="seg" id="services" role="group" aria-label="예배"></div>
@@ -153,6 +184,28 @@ dialog input,dialog select{border:1px solid var(--line);background:var(--bg);bor
     </div>
     <div class="list" id="list"></div>
     <button class="fab" id="addBtn">+ 새 성도</button>
+  </div>
+
+  <!-- 통계 -->
+  <div id="sStats" class="hidden">
+    <div class="top">
+      <div class="bar">
+        <h1>통계</h1>
+        <button class="ghost" id="statsBack">출석으로</button>
+      </div>
+      <div class="seg" id="statSvc" role="group" aria-label="예배"></div>
+    </div>
+    <div class="stats">
+      <section>
+        <h2>최근 8주 출석 인원</h2>
+        <div class="bars" id="statBars"></div>
+      </section>
+      <section>
+        <h2>연속 결석</h2>
+        <p class="hint">이 예배를 최근 3번 이상 연달아 빠진 성도예요. '추적제외'로 표시한 성도는 빠져요.</p>
+        <ul class="absent" id="statAbsent"></ul>
+      </section>
+    </div>
   </div>
 
   <!-- 관리자 -->
@@ -191,7 +244,7 @@ dialog input,dialog select{border:1px solid var(--line);background:var(--bg);bor
 
 <dialog id="dlg">
   <form method="dialog" id="addForm">
-    <h2 style="font-size:18px">새 성도</h2>
+    <h2 style="font-size:18px" id="dlgTitle">새 성도</h2>
     <label>이름<input name="name" required></label>
     <div class="two">
       <label>직분<input name="role" placeholder="성도"></label>
@@ -201,9 +254,32 @@ dialog input,dialog select{border:1px solid var(--line);background:var(--bg);bor
       <label>성별<select name="gender"><option value="">-</option><option>남성</option><option>여성</option></select></label>
       <label>연락처<input name="phone" inputmode="tel" placeholder="010-"></label>
     </div>
-    <label>같은 가족 (선택)<select name="household"></select></label>
-    <label>가족관계<input name="relation" placeholder="세대주, 배우자, 자녀…"></label>
-    <div class="row"><button class="btn" value="ok">추가</button><button class="btn line" value="cancel" formnovalidate>취소</button></div>
+    <div class="two">
+      <label>같은 가족<select name="household"></select></label>
+      <label>가족관계<input name="relation" placeholder="세대주, 배우자…"></label>
+    </div>
+    <details id="more">
+      <summary>더 보기 (구역·생일·메모)</summary>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div class="two">
+          <label>구역<input name="district" placeholder="1구역"></label>
+          <label>등록일<input name="regDate" type="date"></label>
+        </div>
+        <div class="two">
+          <label>생일 (양력)<input name="birthSolar" type="date"></label>
+          <label>생일 (음력)<input name="birthLunar" placeholder="03-15"></label>
+        </div>
+        <div class="two">
+          <label>결혼기념일<input name="anniversary" type="date"></label>
+          <label>세례일<input name="baptism" type="date"></label>
+        </div>
+        <label class="check"><input type="checkbox" name="longAbsent"> 장기결석자</label>
+        <label class="check"><input type="checkbox" name="noTrack"> 결석 추적 안 함 (교역자·타지 등)</label>
+        <label>메모<textarea class="memo" name="memo"></textarea></label>
+      </div>
+    </details>
+    <div class="row"><button class="btn" value="ok" id="dlgOk">추가</button><button class="btn line" value="cancel" formnovalidate>취소</button></div>
+    <button type="button" class="danger hidden" id="dlgDel">이 성도 삭제 (관리자)</button>
   </form>
 </dialog>
 
@@ -211,7 +287,7 @@ dialog input,dialog select{border:1px solid var(--line);background:var(--bg);bor
 import { firebaseConfig } from "./firebase-config.js";
 
 const $ = (s) => document.querySelector(s);
-const SCREENS = ["sLoading","sSetup","sInApp","sLogin","sNoAccess","sMain","sAdmin"];
+const SCREENS = ["sLoading","sSetup","sInApp","sLogin","sNoAccess","sMain","sStats","sAdmin"];
 const show = (id) => SCREENS.forEach(s => $("#"+s).classList.toggle("hidden", s !== id));
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const GROUP_ORDER = ["교역자","성도","새가족","청년","청소년"];
@@ -255,6 +331,15 @@ function demoStore() {
   const members = new Map(raw.map(([id,name,role,group,gender,phone,household,relation,longAbsent]) =>
     [id, { id, name, role, group, gender, phone, household, relation, longAbsent }]));
   const att = new Map();
+  // 지난 6주 주일낮 출석 예시 (강하늘은 계속 결석, 윤서연은 최근 3주 결석)
+  for (let w = 1; w <= 6; w++) {
+    const d = new Date(); d.setDate(d.getDate() - d.getDay() - 7 * (w - 1) - (d.getDay() === 0 ? 7 : 0));
+    const date = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+    for (const [id, m] of members) {
+      if (id === "P008" || (id === "P009" && w <= 3) || (id === "P006" && w % 2)) continue;
+      att.set(attId(date, "주일낮", id), { date, service: "주일낮", memberId: id, name: m.name, present: true, checkedBy: email });
+    }
+  }
   let memberCb = null, attCb = null, attKey = null;
   const emitMembers = () => memberCb && memberCb([...members.values()]);
   const emitAtt = () => {
@@ -276,6 +361,9 @@ function demoStore() {
       emitAtt();
     },
     async addMember(cid, data) { const id = "N" + Date.now().toString(36); members.set(id, { ...data, id }); emitMembers(); },
+    async updateMember(cid, id, data) { members.set(id, { ...members.get(id), ...data, id }); emitMembers(); },
+    async deleteMember(cid, id) { members.delete(id); emitMembers(); },
+    async attendanceSince(cid, from) { return [...att.values()].filter(r => r.date >= from); },
     async saveChurch(cid, data) { Object.assign(church, data); return "demo"; },
     async importMembers(cid, rows) { rows.forEach(r => members.set(r.id, r)); emitMembers(); return rows.length; },
     async allMembers() { return [...members.values()]; },
@@ -336,6 +424,12 @@ async function firebaseStore() {
       }).catch(e => toastErr("저장 실패: " + e.message));
     },
     async addMember(cid, data) { await F.addDoc(F.collection(db, "churches", cid, "members"), { ...data, createdAt: F.serverTimestamp() }); },
+    async updateMember(cid, id, data) { await F.setDoc(F.doc(db, "churches", cid, "members", id), data, { merge: true }); },
+    async deleteMember(cid, id) { await F.deleteDoc(F.doc(db, "churches", cid, "members", id)); },
+    async attendanceSince(cid, from) {
+      const q = F.query(F.collection(db, "churches", cid, "attendance"), F.where("date", ">=", from));
+      return (await F.getDocs(q)).docs.map(d => d.data());
+    },
     async saveChurch(cid, data) {
       if (cid) { await F.setDoc(F.doc(db, "churches", cid), data, { merge: true }); return cid; }
       const r = await F.addDoc(F.collection(db, "churches"), data); return r.id;
@@ -432,7 +526,8 @@ function watchAtt() {
 function renderChips() {
   const groups = [...new Set(S.members.map(m => m.group).filter(Boolean))]
     .sort((a, b) => (GROUP_ORDER.indexOf(a) + 99) % 99 - (GROUP_ORDER.indexOf(b) + 99) % 99);
-  const chips = ["전체", ...groups, "장결자"];
+  const districts = [...new Set(S.members.map(m => m.district).filter(Boolean))].sort((a, b) => a.localeCompare(b, "ko", { numeric: true }));
+  const chips = ["전체", ...groups, ...districts.filter(d => !groups.includes(d)), "장결자"];
   if (!chips.includes(S.chip)) S.chip = "전체";
   $("#chips").innerHTML = chips.map(c => `<button type="button" aria-pressed="${c === S.chip}" data-c="${esc(c)}">${esc(c)}</button>`).join("");
 }
@@ -440,7 +535,7 @@ function renderChips() {
 function visibleMembers() {
   const q = S.q.trim();
   return S.members.filter(m => {
-    if (S.chip === "장결자" ? !m.longAbsent : S.chip !== "전체" && m.group !== S.chip) return false;
+    if (S.chip === "장결자" ? !m.longAbsent : S.chip !== "전체" && m.group !== S.chip && m.district !== S.chip) return false;
     if (q && !(m.name || "").includes(q) && !(m.phone || "").replace(/\D/g, "").endsWith(q.replace(/\D/g, "") || "\u0000")) return false;
     return true;
   });
@@ -493,7 +588,9 @@ function toggle(ids, present) {
 document.addEventListener("click", (e) => {
   const t = e.target.closest("button,[data-act]"); if (!t) return;
   if (t.dataset.act === "logout") return S.store?.signOut();
-  if (t.dataset.m) return toggle([t.dataset.m]);
+  if (t.dataset.m) return S.edit ? openMember(t.dataset.m) : toggle([t.dataset.m]);
+  if (t.dataset.ss) { statSvc = t.dataset.ss; document.querySelectorAll("#statSvc button").forEach(b => b.setAttribute("aria-pressed", b.dataset.ss === statSvc)); return renderStats(); }
+  if (t.dataset.fam && S.edit) return;
   if (t.dataset.fam) return toggle(t.dataset.fam.split(","), t.dataset.on === "1");
   if (t.dataset.s) { S.service = t.dataset.s; renderServices(S.church.services || []); return watchAtt(); }
   if (t.dataset.c) { S.chip = t.dataset.c; renderChips(); return render(); }
@@ -503,22 +600,98 @@ $("#date").onchange = (e) => { S.date = e.target.value || localToday(); watchAtt
 $("#q").oninput = (e) => { S.q = e.target.value; render(); };
 $("#churchPick").onchange = (e) => pickChurch(S.churches.find(c => c.id === e.target.value));
 
-// 새 성도
-$("#addBtn").onclick = () => {
+// 성도 추가·정보
+const TEXT_FIELDS = ["name","role","group","gender","phone","household","relation","district","regDate","birthSolar","birthLunar","anniversary","baptism","memo"];
+let editingId = null;
+function openMember(id) {
+  editingId = id;
+  const m = id ? S.members.find(x => x.id === id) : null;
+  const f = $("#addForm");
   const hh = new Map();
-  S.members.filter(m => m.household).forEach(m => { if (!hh.has(m.household) || m.relation === "세대주") hh.set(m.household, m.name); });
-  $("#addForm").household.innerHTML = `<option value="">따로 (가족 없음)</option>` +
-    [...hh].sort((a, b) => a[1].localeCompare(b[1], "ko")).map(([id, n]) => `<option value="${esc(id)}">${esc(n)} 가족</option>`).join("");
-  $("#addForm").reset(); $("#dlg").showModal();
-};
+  S.members.filter(x => x.household).forEach(x => { if (!hh.has(x.household) || x.relation === "세대주") hh.set(x.household, x.name); });
+  f.household.innerHTML = `<option value="">따로 (가족 없음)</option>` +
+    [...hh].sort((a, b) => a[1].localeCompare(b[1], "ko")).map(([h, n]) => `<option value="${esc(h)}">${esc(n)} 가족</option>`).join("") +
+    `<option value="__new">새 가족 만들기 (이 사람이 세대주)</option>`;
+  f.reset();
+  if (m) {
+    for (const k of TEXT_FIELDS) {
+      const el = f[k]; if (!el) continue;
+      if (el.tagName === "SELECT" && m[k] && ![...el.options].some(o => o.value === m[k])) el.add(new Option(m[k], m[k]));
+      el.value = m[k] ?? "";
+    }
+    f.longAbsent.checked = !!m.longAbsent; f.noTrack.checked = !!m.noTrack;
+  } else f.regDate.value = localToday();
+  $("#dlgTitle").textContent = m ? `${m.name} 정보` : "새 성도";
+  $("#dlgOk").textContent = m ? "저장" : "추가";
+  $("#dlgDel").classList.toggle("hidden", !(m && S.admin));
+  $("#more").open = !!m;
+  $("#dlg").showModal();
+}
+$("#addBtn").onclick = () => openMember(null);
 $("#dlg").addEventListener("close", async () => {
   if ($("#dlg").returnValue !== "ok") return;
   const f = $("#addForm");
-  const data = { name: f.name.value.trim(), role: f.role.value.trim() || "성도", group: f.group.value, gender: f.gender.value,
-    phone: f.phone.value.trim(), household: f.household.value, relation: f.relation.value.trim(), longAbsent: false, regDate: localToday() };
+  const data = {};
+  for (const k of TEXT_FIELDS) if (f[k]) data[k] = f[k].value.trim();
+  data.longAbsent = f.longAbsent.checked; data.noTrack = f.noTrack.checked;
+  if (!data.role) data.role = "성도";
+  if (data.household === "__new") { data.household = "H" + Date.now().toString(36); data.relation ||= "세대주"; }
   if (!data.name) return;
-  try { await S.store.addMember(S.church.id, data); } catch (e) { toastErr("추가 실패: " + e.message); }
+  try {
+    if (editingId) await S.store.updateMember(S.church.id, editingId, data);
+    else await S.store.addMember(S.church.id, data);
+  } catch (e) { toastErr("저장 실패: " + e.message); }
 });
+$("#dlgDel").onclick = async () => {
+  const m = S.members.find(x => x.id === editingId);
+  if (!m || !confirm(`${m.name} 성도를 명단에서 지울까요? 출석 기록은 남아요.`)) return;
+  try { await S.store.deleteMember(S.church.id, editingId); $("#dlg").close("cancel"); } catch (e) { toastErr("삭제 실패: " + e.message); }
+};
+$("#editMode").onclick = () => {
+  S.edit = !S.edit;
+  $("#editMode").setAttribute("aria-pressed", S.edit);
+  $("#editBar").classList.toggle("hidden", !S.edit);
+  $("#list").classList.toggle("editing", S.edit);
+};
+
+// ───────────── 통계 ─────────────
+let statSvc = null, statRows = [];
+function ymd(d) { return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10); }
+async function openStats() {
+  show("sStats");
+  const services = S.church.services?.length ? S.church.services : ["주일낮"];
+  statSvc ||= S.service || services[0];
+  $("#statSvc").innerHTML = services.map(x => `<button type="button" aria-pressed="${x === statSvc}" data-ss="${esc(x)}">${esc(x)}</button>`).join("");
+  $("#statBars").innerHTML = `<p class="hint">불러오는 중…</p>`; $("#statAbsent").innerHTML = "";
+  const from = new Date(); from.setDate(from.getDate() - 7 * 8);
+  try { statRows = await S.store.attendanceSince(S.church.id, ymd(from)); }
+  catch (e) { $("#statBars").innerHTML = `<p class="err">불러오지 못했어요: ${esc(e.message)}</p>`; return; }
+  renderStats();
+}
+function renderStats() {
+  const rows = statRows.filter(r => r.service === statSvc);
+  const byDate = new Map();
+  for (const r of rows) { if (!byDate.has(r.date)) byDate.set(r.date, new Set()); if (r.present) byDate.get(r.date).add(r.memberId); }
+  const dates = [...byDate.keys()].sort();
+  const max = Math.max(1, ...dates.map(d => byDate.get(d).size));
+  $("#statBars").innerHTML = dates.length
+    ? dates.map(d => `<div class="b"><span>${d.slice(5).replace("-", "/")}</span><i style="width:${byDate.get(d).size / max * 100}%"></i><b>${byDate.get(d).size}명</b></div>`).join("")
+    : `<p class="hint">최근 8주 동안 이 예배의 출석 기록이 없어요.</p>`;
+  // 연속 결석: 기록이 있는 예배 날짜만 '드린 예배'로 봄
+  const recent = dates.slice().reverse();
+  const list = S.members.filter(m => !m.noTrack).map(m => {
+    let n = 0; for (const d of recent) { if (byDate.get(d).has(m.id)) break; n++; }
+    const last = dates.slice().reverse().find(d => byDate.get(d).has(m.id));
+    return { m, n, last };
+  }).filter(x => x.n >= 3).sort((a, b) => b.n - a.n || a.m.name.localeCompare(b.m.name, "ko"));
+  $("#statAbsent").innerHTML = recent.length < 3 ? `<li><small>기록이 3번 이상 쌓이면 보여 드려요.</small></li>`
+    : list.length ? list.map(({ m, n, last }) => `<li><span><b>${esc(m.name)}</b> ${esc(m.role || "")}${m.longAbsent ? '<span class="tag">장결</span>' : ""}</span>
+      <span class="n">${n === recent.length ? `${n}번 이상` : `${n}번`} 연속</span>
+      <small>${last ? `마지막 출석 ${last.slice(5).replace("-", "/")}` : "최근 8주 출석 없음"}${m.phone ? ` · <a href="tel:${esc(m.phone.replace(/[^\d+]/g, ""))}">${esc(m.phone)}</a>` : ""}</small></li>`).join("")
+    : `<li><small>3번 이상 연달아 빠진 성도가 없어요.</small></li>`;
+}
+$("#toStats").onclick = openStats;
+$("#statsBack").onclick = () => show("sMain");
 
 // ───────────── 관리자 ─────────────
 let adminCid = null;
