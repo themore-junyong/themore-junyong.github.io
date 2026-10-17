@@ -916,8 +916,7 @@ $("#aSave").onclick = async () => {
 // 시트에서 복사한 글(탭) 또는 CSV를 표로. 따옴표 안의 줄바꿈도 처리
 function parseTable(text) {
   text = text.replace(/\r\n?/g, "\n");
-  const first = text.split("\n", 1)[0];
-  const sep = first.includes("\t") ? "\t" : ",";
+  const sep = text.includes("\t") ? "\t" : ",";
   const rows = []; let row = [], cell = "", q = false;
   for (let i = 0; i < text.length; i++) {
     const ch = text[i];
@@ -959,15 +958,40 @@ function parseSheet(text) {
   }).filter(r => r.name);
   return { rows };
 }
-function parseAttendance(text) {
+// 제목 줄(날짜·예배종류·성도ID)을 찾고, 없으면 내용을 보고 칸을 짐작함
+const ATT_HEAD = { date: ["날짜","일자","출석일"], service: ["예배종류","예배","예배구분"], mid: ["성도ID","성도아이디","성도"], name: ["이름","성명"], present: ["출석","출석여부"], by: ["체크한사람","체크자"], memo: ["메모","비고"] };
+function guessCols(rows, memberIds) {
+  const n = Math.max(...rows.map(r => r.length)), sample = rows.slice(0, 200);
+  const share = (j, f) => sample.filter(r => r[j] && f(r[j])).length / sample.length;
+  const pick = (f, not = []) => { let best = -1, bs = 0.6; for (let j = 0; j < n; j++) { if (not.includes(j)) continue; const v = share(j, f); if (v > bs) { bs = v; best = j; } } return best; };
+  const I = {};
+  I.date = pick(v => /^\d{4}-\d{2}-\d{2}$/.test(normDate(v)));
+  I.mid = pick(v => memberIds.has(v), [I.date]);
+  I.present = pick(v => /^(true|false)$/i.test(v), [I.date, I.mid]);
+  // 예배: 글자로 된 짧은 값이 몇 가지(20개 이하)만 반복되는 칸
+  I.service = -1;
+  let fewest = 21;
+  for (let j = 0; j < n; j++) {
+    if ([I.date, I.mid, I.present].includes(j)) continue;
+    const vals = sample.map(r => r[j]).filter(Boolean), kinds = new Set(vals).size;
+    if (vals.length / sample.length > 0.6 && kinds < fewest && vals.every(v => v.length <= 10 && !/^[\d.\-\/]+$/.test(v) && !/^(true|false)$/i.test(v))) { fewest = kinds; I.service = j; }
+  }
+  I.name = I.by = I.memo = -1;
+  return I;
+}
+function parseAttendance(text, memberIds = new Set()) {
   const t = parseTable(text);
-  if (t.length < 2) return { error: "제목 줄과 출석 줄을 함께 붙여 넣어 주세요." };
-  const h = t[0], at = (n) => h.indexOf(n);
-  const I = { date: at("날짜"), service: at("예배종류"), mid: at("성도ID"), name: at("이름"), present: at("출석"), by: at("체크한사람"), memo: at("메모") };
-  if (I.date < 0 || I.service < 0 || I.mid < 0) return { error: "'날짜', '예배종류', '성도ID' 칸을 찾지 못했어요. 제목 줄까지 복사했는지 확인해 주세요." };
+  if (!t.length) return { error: "붙여 넣은 내용이 없어요." };
+  let hi = t.slice(0, 5).findIndex(r => ATT_HEAD.date.some(n => r.includes(n)) && ATT_HEAD.mid.some(n => r.includes(n)));
+  let I;
+  if (hi >= 0) {
+    const h = t[hi]; I = {};
+    for (const [k, names] of Object.entries(ATT_HEAD)) I[k] = names.map(x => h.indexOf(x)).find(i => i >= 0) ?? -1;
+  } else I = guessCols(t, memberIds);
+  if (I.date < 0 || I.service < 0 || I.mid < 0) return { error: "날짜·예배·성도ID 칸을 찾지 못했어요. 시트 '출석' 탭에서 Ctrl+A로 다시 복사해 주세요." };
   let skipped = 0;
   const rows = [];
-  for (const c of t.slice(1)) {
+  for (const c of t.slice(hi + 1)) {
     const date = normDate(c[I.date]), service = c[I.service] || "", memberId = (c[I.mid] || "").replace(/[\/.#$\[\]]/g, "-");
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !service || !memberId) { skipped++; continue; }
     rows.push({ date, service, memberId, name: I.name >= 0 ? c[I.name] || "" : "",
@@ -979,7 +1003,9 @@ function parseAttendance(text) {
 $("#aAttImportBtn").onclick = async () => {
   const msg = $("#aAttImportMsg");
   if (!adminCid) return (msg.textContent = "먼저 교회를 저장해 주세요.");
-  const { rows, skipped, error } = parseAttendance($("#aAttImport").value);
+  msg.textContent = "읽는 중…";
+  const ids = new Set((await S.store.allMembers(adminCid)).map(m => String(m.id)));
+  const { rows, skipped, error } = parseAttendance($("#aAttImport").value, ids);
   if (error) return (msg.textContent = error);
   if (!rows.length) return (msg.textContent = `가져올 줄이 없어요. (건너뜀 ${skipped}줄)`);
   const services = new Set(rows.map(r => r.service));
