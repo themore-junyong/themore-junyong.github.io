@@ -444,21 +444,50 @@ function parseTable(text) {
   row.push(cell); rows.push(row);
   return rows.map(r => r.map(c => c.trim())).filter(r => r.some(Boolean));
 }
+const normH = (h) => String(h || "").replace(/[\s\uFEFF\u200B]/g, "");
 function byHeader(text, cols, need) {
   const t = parseTable(text);
-  const hi = t.findIndex(r => need.every(h => r.includes(h)));
-  if (hi < 0) return { error: `제목 줄(${need.join(", ")})을 찾지 못했어요. 제목 줄까지 복사했는지 확인해 주세요.` };
-  const head = t[hi], idx = cols.map(([k, h]) => [k, head.indexOf(h)]);
+  const hi = t.findIndex(r => need.every(h => r.map(normH).includes(h)));
+  if (hi < 0) return { error: `제목 줄(${need.join(", ")})을 찾지 못했어요. 제목 줄까지 복사했는지 확인해 주세요.`, table: t };
+  const head = t[hi].map(normH), idx = cols.map(([k, h]) => [k, head.indexOf(h)]);
   return { rows: t.slice(hi + 1).map(c => Object.fromEntries(idx.filter(([, i]) => i >= 0).map(([k, i]) => [k, c[i] ?? ""]))) };
 }
 const safeId = (s) => String(s || "").trim().replace(/[\/.#$\[\]]/g, "-");
+// 제목 줄이 없거나 칸이 공백으로 붙어 온 경우: 줄마다 내용 모양으로 칸을 알아봄
+const tokensOf = (text) => text.replace(/\r/g, "").split("\n").map(l => l.split(/\t|\s+/).map(x => x.trim()).filter(Boolean)).filter(r => r.length);
+const isYmd = (x) => /^\d{4}[-./]\d{1,2}[-./]\d{1,2}$/.test(x);
+function guessMembers(text) {
+  return tokensOf(text).filter(r => /^M\d+$/.test(r[0]) && r[1]).map(r => {
+    const x = { id: r[0], name: r[1] }, rest = r.slice(2);
+    const dates = rest.filter(isYmd).map(normDate).sort();
+    x.gender = rest.find(v => /^(남성|여성|남|여)$/.test(v)) || "";
+    x.phone = rest.find(v => /^01\d[-\d]{7,}$/.test(v)) || "";
+    x.status = rest.includes("탈퇴") ? "탈퇴" : "유지";
+    x.fee = rest.map(toNum).find((n, i) => /^[\d,]+$/.test(rest[i]) && n >= 1000 && n < 1e6) || "";
+    // 날짜가 둘이면 앞이 생년월일, 뒤가 가입일 (가입일은 2000년 이후)
+    x.joined = dates.filter(d => d >= "2000").pop() || ""; x.birth = dates.find(d => d !== x.joined) || "";
+    x.faith = rest.find(v => /^[OX]$/.test(v)) || "";
+    return x;
+  });
+}
+function guessPayments(text) {
+  return tokensOf(text).map(r => {
+    const mi = r.findIndex(v => /^M\d+$/.test(v)), ym = r.find(v => /^\d{4}[-./]\d{1,2}$/.test(v) || /^\d{4}년\s*\d{1,2}월?$/.test(v));
+    if (mi < 0 || !ym) return null;
+    const yi = r.indexOf(ym), amt = r.slice(yi + 1).find(v => /^[\d,]+$/.test(v));
+    return { id: /^PAY\d+$/i.test(r[0]) ? r[0] : "", memberId: r[mi], name: r[mi + 1] && !/^\d/.test(r[mi + 1]) ? r[mi + 1] : "", month: ym,
+      amount: amt || "", paidDate: r.filter(isYmd).pop() || "", method: r.find(v => /이체|현금|카드|기타/.test(v)) || "" };
+  }).filter(Boolean);
+}
 function parseMembers(text) {
-  const r = byHeader(text, MEM_COLS, ["회원ID", "이름"]); if (r.error) return r;
+  let r = byHeader(text, MEM_COLS, ["회원ID", "이름"]);
+  if (r.error) { const g = guessMembers(text); if (!g.length) return { error: "회원 줄(M001 같은 회원ID로 시작)을 찾지 못했어요." }; r = { rows: g }; }
   return { rows: r.rows.filter(x => x.id && x.name).map(x => ({ ...x, id: safeId(x.id), joined: normDate(x.joined), leftDate: normDate(x.leftDate),
     status: x.status === "탈퇴" ? "탈퇴" : "유지", fee: toNum(x.fee) || "" })) };
 }
 function parsePayments(text) {
-  const r = byHeader(text, PAY_COLS, ["회원ID", "납부월"]); if (r.error) return r;
+  let r = byHeader(text, PAY_COLS, ["회원ID", "납부월"]);
+  if (r.error) { const g = guessPayments(text); if (!g.length) return { error: "납부 줄(회원ID와 납부월이 있는 줄)을 찾지 못했어요." }; r = { rows: g }; }
   const bad = [];
   const rows = r.rows.filter(x => x.memberId).map((x, i) => {
     const p = { ...x, id: safeId(x.id) || `IMP${i}`, memberId: safeId(x.memberId), month: normMonth(x.month), amount: toNum(x.amount), paidDate: normDate(x.paidDate) };
