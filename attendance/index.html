@@ -1,0 +1,609 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>교회 출석 · THE MORE</title>
+<meta name="theme-color" content="#1F6F78">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@700&family=IBM+Plex+Sans+KR:wght@400;500;600&display=swap">
+<style>
+:root{
+  --bg:#F3F5F4;--surface:#FFFFFF;--ink:#16222B;--muted:#5B6A72;--line:#D5DDDC;
+  --flow:#1F6F78;--flow-soft:#E1EEEE;--on-flow:#FFFFFF;--warn:#A15C07;--warn-soft:#FBEEDC;--bad:#B3261E;
+  --display:"Gowun Batang","Noto Serif KR",Georgia,serif;
+  --body:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0F171C;--surface:#16222A;--ink:#E7EEEE;--muted:#98A8AE;--line:#27363F;--flow:#6FC1C6;--flow-soft:#17333A;--on-flow:#0F171C;--warn:#F0B566;--warn-soft:#3A2C17;--bad:#F2B8B5;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0F171C;--surface:#16222A;--ink:#E7EEEE;--muted:#98A8AE;--line:#27363F;--flow:#6FC1C6;--flow-soft:#17333A;--on-flow:#0F171C;--warn:#F0B566;--warn-soft:#3A2C17;--bad:#F2B8B5;color-scheme:dark}
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.5;-webkit-tap-highlight-color:transparent}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--flow);outline-offset:2px;border-radius:6px}
+.hidden{display:none!important}
+.wrap{max-width:720px;margin:0 auto;padding:0 16px 96px}
+h1,h2{font-family:var(--display);margin:0;font-weight:700}
+
+/* 상단 */
+.top{position:sticky;top:0;z-index:5;background:var(--bg);padding:12px 0 10px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:10px}
+.bar{display:flex;align-items:center;gap:10px;min-width:0}
+.bar h1{font-size:20px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ghost{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 12px;font-size:13px;color:var(--muted);white-space:nowrap}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.row input[type=date],.row select{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:6px 8px;font-size:15px}
+.seg{display:flex;gap:6px;flex-wrap:wrap}
+.seg button{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 14px;font-size:15px;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--flow);border-color:var(--flow);color:var(--on-flow);font-weight:600}
+.count{margin-left:auto;font-size:15px;color:var(--muted);white-space:nowrap}
+.count b{color:var(--flow);font-size:20px}
+.search{flex:1;min-width:140px;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:7px 10px;font-size:15px}
+.chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}
+.chips button{flex:none;border:0;background:var(--flow-soft);color:var(--ink);border-radius:999px;padding:4px 12px;font-size:14px}
+.chips button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.sync{font-size:12px;color:var(--muted)}
+.sync.off{color:var(--warn)}
+
+/* 명단 */
+.list{display:flex;flex-direction:column;gap:10px;padding-top:12px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:8px}
+.card .head{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
+.card .head span{flex:1}
+.card .all{border:1px solid var(--flow);background:transparent;color:var(--flow);border-radius:999px;padding:3px 12px;font-size:13px;font-weight:600}
+.people{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.p{position:relative;display:flex;align-items:center;gap:10px;min-height:52px;border:1.5px solid var(--line);background:var(--bg);border-radius:10px;padding:8px 10px;text-align:left;transition:background .08s,border-color .08s}
+.p .box{flex:none;width:24px;height:24px;border-radius:6px;border:2px solid var(--line);display:grid;place-items:center;font-size:15px;font-weight:700;color:transparent}
+.p .nm{display:flex;flex-direction:column;min-width:0}
+.p .nm b{font-weight:600;font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.p .nm small{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.p.on{background:var(--flow-soft);border-color:var(--flow)}
+.p.on .box{background:var(--flow);border-color:var(--flow);color:var(--on-flow)}
+.p.pending::after{content:"";position:absolute;top:6px;right:6px;width:7px;height:7px;border-radius:50%;background:var(--warn)}
+.tag{display:inline-block;font-size:11px;font-weight:600;color:var(--warn);background:var(--warn-soft);border-radius:4px;padding:0 5px;margin-left:4px;vertical-align:middle}
+.empty{color:var(--muted);text-align:center;padding:40px 0}
+
+/* 화면 */
+.screen{min-height:100dvh;display:flex;flex-direction:column;justify-content:center;gap:18px;padding:32px 0}
+.screen h1{font-size:32px}
+.screen p{margin:0;color:var(--muted)}
+.btn{border:0;background:var(--flow);color:var(--on-flow);border-radius:10px;padding:12px 18px;font-size:16px;font-weight:600;align-self:flex-start}
+.btn.line{background:transparent;border:1px solid var(--flow);color:var(--flow)}
+.note{background:var(--warn-soft);color:var(--ink);border-radius:10px;padding:12px 14px;font-size:14px}
+.err{color:var(--bad);font-size:14px}
+.foot{font-size:12px;color:var(--muted);text-align:center;padding:24px 0}
+
+/* 관리 */
+.panel{display:flex;flex-direction:column;gap:16px;padding-top:16px}
+.panel section{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:10px}
+.panel h2{font-size:18px}
+.panel label{display:flex;flex-direction:column;gap:4px;font-size:14px;color:var(--muted)}
+.panel input,.panel textarea,.panel select{border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:8px 10px;font-size:15px;color:var(--ink)}
+.panel textarea{min-height:110px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px}
+.panel .hint{font-size:13px;color:var(--muted)}
+.ok{color:var(--flow);font-size:14px}
+
+dialog{border:0;border-radius:14px;padding:18px;max-width:min(420px,calc(100vw - 32px));width:100%;background:var(--surface);color:var(--ink)}
+dialog::backdrop{background:rgb(0 0 0 / .4)}
+dialog form{display:flex;flex-direction:column;gap:10px}
+dialog label{display:flex;flex-direction:column;gap:4px;font-size:14px;color:var(--muted)}
+dialog input,dialog select{border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:8px 10px;font-size:15px;color:var(--ink)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.fab{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom));border:0;background:var(--ink);color:var(--bg);border-radius:999px;padding:12px 18px;font-weight:600;box-shadow:0 4px 14px rgb(0 0 0 / .18)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- 로딩 -->
+  <div id="sLoading" class="screen"><p>불러오는 중…</p></div>
+
+  <!-- 설정 전 -->
+  <div id="sSetup" class="screen hidden">
+    <h1>교회 출석</h1>
+    <p>아직 Firebase 연결 값이 없어요. <code>firebase-config.js</code>를 채우면 실제로 쓸 수 있어요.</p>
+    <a class="btn" href="?demo">가짜 성도 9명으로 미리 보기</a>
+  </div>
+
+  <!-- 카카오톡 등 앱 안 브라우저 -->
+  <div id="sInApp" class="screen hidden">
+    <h1>교회 출석</h1>
+    <p class="note">카카오톡·인스타 안에서 열면 구글 로그인이 막혀요. 크롬이나 사파리로 열어 주세요.</p>
+    <button class="btn" id="openExternal">다른 브라우저로 열기</button>
+    <p id="copyHint" class="hidden">주소를 복사했어요. 크롬이나 사파리 주소창에 붙여 넣어 주세요.</p>
+  </div>
+
+  <!-- 로그인 -->
+  <div id="sLogin" class="screen hidden">
+    <h1>교회 출석</h1>
+    <p>초대받은 구글 계정으로 로그인해 주세요.</p>
+    <button class="btn" id="login">구글로 로그인</button>
+    <p id="loginErr" class="err"></p>
+  </div>
+
+  <!-- 권한 없음 -->
+  <div id="sNoAccess" class="screen hidden">
+    <h1>아직 초대되지 않았어요</h1>
+    <p><b id="noAccessEmail"></b> 계정은 어느 교회 리더명단에도 없어요. 교회 담당자에게 이 이메일을 알려 주세요.</p>
+    <button class="btn line" data-act="logout">다른 계정으로 로그인</button>
+  </div>
+
+  <!-- 출석 -->
+  <div id="sMain" class="hidden">
+    <div class="top">
+      <div class="bar">
+        <h1 id="churchName">교회</h1>
+        <select id="churchPick" class="ghost hidden" aria-label="교회 선택"></select>
+        <button class="ghost hidden" id="toAdmin">관리</button>
+        <button class="ghost" data-act="logout">로그아웃</button>
+      </div>
+      <div class="row">
+        <input type="date" id="date" aria-label="날짜">
+        <div class="seg" id="services" role="group" aria-label="예배"></div>
+        <div class="count">출석 <b id="cnt">0</b>명</div>
+      </div>
+      <div class="row">
+        <input class="search" id="q" type="search" placeholder="이름·전화 뒷자리 찾기" autocomplete="off">
+        <span class="sync" id="sync"></span>
+      </div>
+      <div class="chips" id="chips"></div>
+    </div>
+    <div class="list" id="list"></div>
+    <button class="fab" id="addBtn">+ 새 성도</button>
+  </div>
+
+  <!-- 관리자 -->
+  <div id="sAdmin" class="hidden">
+    <div class="top">
+      <div class="bar">
+        <h1>관리</h1>
+        <button class="ghost" id="backMain">출석으로</button>
+      </div>
+    </div>
+    <div class="panel">
+      <section>
+        <h2>교회</h2>
+        <label>교회 고르기<select id="aChurch"></select></label>
+        <label>교회 이름<input id="aName" placeholder="OO교회"></label>
+        <label>예배 종류 (쉼표로 구분)<input id="aServices" placeholder="주일낮, 주일저녁, 수요, 금요"></label>
+        <label>리더 이메일 (한 줄에 하나) <span id="aLeaderCount" class="hint"></span><textarea id="aLeaders" placeholder="leader1@gmail.com"></textarea></label>
+        <div class="row"><button class="btn" id="aSave">저장</button><button class="btn line" id="aNew">새 교회</button><span id="aMsg" class="ok"></span></div>
+      </section>
+      <section>
+        <h2>성도 가져오기</h2>
+        <p class="hint">구글 시트 '성도' 탭에서 제목 줄까지 모두 선택해 복사(Ctrl+C)한 뒤 아래에 붙여 넣으세요. 성도ID가 같으면 덮어써요.</p>
+        <textarea id="aImport" placeholder="성도ID	이름	직분	분류	…"></textarea>
+        <div class="row"><button class="btn" id="aImportBtn">가져오기</button><span id="aImportMsg" class="ok"></span></div>
+      </section>
+      <section>
+        <h2>내보내기</h2>
+        <p class="hint">엑셀에서 바로 열리는 CSV 파일로 받아요. 교회가 데이터를 원하면 이 파일을 드리면 돼요.</p>
+        <div class="row"><button class="btn line" id="aExpMembers">성도 명단</button><button class="btn line" id="aExpAtt">출석 기록 전체</button></div>
+      </section>
+    </div>
+  </div>
+
+  <p class="foot">THE MORE 제공 · 무단 재배포 금지</p>
+</div>
+
+<dialog id="dlg">
+  <form method="dialog" id="addForm">
+    <h2 style="font-size:18px">새 성도</h2>
+    <label>이름<input name="name" required></label>
+    <div class="two">
+      <label>직분<input name="role" placeholder="성도"></label>
+      <label>분류<select name="group"><option>성도</option><option>청년</option><option>청소년</option><option>교역자</option><option>새가족</option></select></label>
+    </div>
+    <div class="two">
+      <label>성별<select name="gender"><option value="">-</option><option>남성</option><option>여성</option></select></label>
+      <label>연락처<input name="phone" inputmode="tel" placeholder="010-"></label>
+    </div>
+    <label>같은 가족 (선택)<select name="household"></select></label>
+    <label>가족관계<input name="relation" placeholder="세대주, 배우자, 자녀…"></label>
+    <div class="row"><button class="btn" value="ok">추가</button><button class="btn line" value="cancel" formnovalidate>취소</button></div>
+  </form>
+</dialog>
+
+<script type="module">
+import { firebaseConfig } from "./firebase-config.js";
+
+const $ = (s) => document.querySelector(s);
+const SCREENS = ["sLoading","sSetup","sInApp","sLogin","sNoAccess","sMain","sAdmin"];
+const show = (id) => SCREENS.forEach(s => $("#"+s).classList.toggle("hidden", s !== id));
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const GROUP_ORDER = ["교역자","성도","새가족","청년","청소년"];
+
+// 시트 제목 ↔ 앱 필드
+const COLS = [
+  ["id","성도ID"],["name","이름"],["role","직분"],["group","분류"],["gender","성별"],["phone","연락처"],
+  ["regDate","등록일"],["birthSolar","생일_양력"],["birthLunar","생일_음력"],["anniversary","결혼기념일"],
+  ["district","구역"],["baptism","세례일"],["household","세대ID"],["relation","가족관계"],["photo","사진"],
+  ["isLeader","리더여부"],["longAbsent","장결자"],["memo","메모"],["noTrack","추적제외"]
+];
+const BOOL_FIELDS = new Set(["isLeader","longAbsent","noTrack"]);
+
+function localToday() {
+  const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+  return d.toISOString().slice(0, 10);
+}
+function defaultService(services, dateStr) {
+  const wd = new Date(dateStr + "T12:00:00").getDay();
+  const h = new Date().getHours();
+  const want = wd === 0 ? (h < 15 ? "주일낮" : "주일저녁") : wd === 3 ? "수요" : wd === 5 ? "금요" : null;
+  return services.includes(want) ? want : services[0];
+}
+const attId = (date, service, mid) => `${date}_${service}_${mid}`.replace(/\//g, "-");
+
+// ───────────── 저장소: 미리보기(가짜 데이터) ─────────────
+function demoStore() {
+  const email = "demo@example.com";
+  const church = { id: "demo", name: "미리보기교회", services: ["주일낮","주일저녁","수요","금요"], leaders: [email] };
+  const raw = [
+    ["P001","홍길동","담임목사","교역자","남성","010-0000-0001","H001","세대주",false],
+    ["P002","김영희","사모","교역자","여성","010-0000-0002","H001","배우자",false],
+    ["P003","이철수","장로","성도","남성","010-0000-0003","H002","세대주",false],
+    ["P004","박민지","권사","성도","여성","010-0000-0004","H002","배우자",false],
+    ["P005","이하윤","성도","성도","여성","010-0000-0005","H002","자녀",false],
+    ["P006","최준호","집사","성도","남성","010-0000-0006","H003","세대주",false],
+    ["P007","정수아","청년","청년","여성","010-0000-0007","","",false],
+    ["P008","강하늘","청년","청년","남성","010-0000-0008","","",true],
+    ["P009","윤서연","학생","청소년","여성","010-0000-0009","","",false],
+  ];
+  const members = new Map(raw.map(([id,name,role,group,gender,phone,household,relation,longAbsent]) =>
+    [id, { id, name, role, group, gender, phone, household, relation, longAbsent }]));
+  const att = new Map();
+  let memberCb = null, attCb = null, attKey = null;
+  const emitMembers = () => memberCb && memberCb([...members.values()]);
+  const emitAtt = () => {
+    if (!attCb) return;
+    const out = new Map();
+    for (const r of att.values()) if (r.date === attKey[0] && r.service === attKey[1]) out.set(r.memberId, r);
+    attCb(out, { pending: 0, fromCache: false });
+  };
+  return {
+    demo: true,
+    onUser(cb) { setTimeout(() => cb({ email }), 0); },
+    async signIn() {}, async signOut() { location.href = location.pathname; },
+    async isAdmin() { return true; },
+    async churches() { return [church]; },
+    watchMembers(cid, cb) { memberCb = cb; emitMembers(); return () => { memberCb = null; }; },
+    watchAttendance(cid, date, service, cb) { attCb = cb; attKey = [date, service]; emitAtt(); return () => { attCb = null; }; },
+    setPresent(cid, date, service, m, present) {
+      att.set(attId(date, service, m.id), { date, service, memberId: m.id, name: m.name, present, checkedBy: email, checkedAt: new Date() });
+      emitAtt();
+    },
+    async addMember(cid, data) { const id = "N" + Date.now().toString(36); members.set(id, { ...data, id }); emitMembers(); },
+    async saveChurch(cid, data) { Object.assign(church, data); return "demo"; },
+    async importMembers(cid, rows) { rows.forEach(r => members.set(r.id, r)); emitMembers(); return rows.length; },
+    async allMembers() { return [...members.values()]; },
+    async allAttendance() { return [...att.values()]; },
+  };
+}
+
+// ───────────── 저장소: Firebase ─────────────
+async function firebaseStore() {
+  const V = "10.12.2";
+  const { initializeApp } = await import(`https://www.gstatic.com/firebasejs/${V}/firebase-app.js`);
+  const A = await import(`https://www.gstatic.com/firebasejs/${V}/firebase-auth.js`);
+  const F = await import(`https://www.gstatic.com/firebasejs/${V}/firebase-firestore.js`);
+  const app = initializeApp(firebaseConfig);
+  const auth = A.getAuth(app);
+  // 폰에 저장해 두고 연결되면 자동으로 올림 → 인터넷이 잠깐 끊겨도 체크 가능
+  const db = F.initializeFirestore(app, { localCache: F.persistentLocalCache({ tabManager: F.persistentMultipleTabManager() }) });
+  let me = null;
+  const lc = (s) => String(s || "").trim().toLowerCase();
+
+  return {
+    demo: false,
+    onUser(cb) { A.onAuthStateChanged(auth, u => { me = u ? lc(u.email) : null; cb(u ? { email: me } : null); }); },
+    async signIn() {
+      const p = new A.GoogleAuthProvider(); p.setCustomParameters({ prompt: "select_account" });
+      try { await A.signInWithPopup(auth, p); }
+      catch (e) {
+        if (e.code === "auth/popup-blocked" || e.code === "auth/operation-not-supported-in-this-environment") await A.signInWithRedirect(auth, p);
+        else throw e;
+      }
+    },
+    async signOut() { await A.signOut(auth); },
+    async isAdmin() {
+      try { const s = await F.getDoc(F.doc(db, "config", "admins")); return s.exists() && (s.data().emails || []).map(lc).includes(me); }
+      catch { return false; }
+    },
+    async churches(admin) {
+      const col = F.collection(db, "churches");
+      const q = admin ? col : F.query(col, F.where("leaders", "array-contains", me));
+      const snap = await F.getDocs(q);
+      return snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => a.name.localeCompare(b.name, "ko"));
+    },
+    watchMembers(cid, cb) {
+      return F.onSnapshot(F.collection(db, "churches", cid, "members"), s => cb(s.docs.map(d => ({ ...d.data(), id: d.id }))));
+    },
+    watchAttendance(cid, date, service, cb) {
+      const q = F.query(F.collection(db, "churches", cid, "attendance"), F.where("date", "==", date), F.where("service", "==", service));
+      return F.onSnapshot(q, { includeMetadataChanges: true }, s => {
+        const out = new Map(); let pending = 0;
+        s.docs.forEach(d => { const r = d.data(); r._pending = d.metadata.hasPendingWrites; if (r._pending) pending++; out.set(r.memberId, r); });
+        cb(out, { pending, fromCache: s.metadata.fromCache });
+      });
+    },
+    setPresent(cid, date, service, m, present) {
+      // 기다리지 않음: 화면은 즉시 바뀌고 저장은 뒤에서
+      F.setDoc(F.doc(db, "churches", cid, "attendance", attId(date, service, m.id)), {
+        date, service, memberId: m.id, name: m.name, present, checkedBy: me, checkedAt: F.serverTimestamp()
+      }).catch(e => toastErr("저장 실패: " + e.message));
+    },
+    async addMember(cid, data) { await F.addDoc(F.collection(db, "churches", cid, "members"), { ...data, createdAt: F.serverTimestamp() }); },
+    async saveChurch(cid, data) {
+      if (cid) { await F.setDoc(F.doc(db, "churches", cid), data, { merge: true }); return cid; }
+      const r = await F.addDoc(F.collection(db, "churches"), data); return r.id;
+    },
+    async importMembers(cid, rows) {
+      for (let i = 0; i < rows.length; i += 400) {
+        const b = F.writeBatch(db);
+        rows.slice(i, i + 400).forEach(r => { const { id, ...rest } = r; b.set(F.doc(db, "churches", cid, "members", id), rest); });
+        await b.commit();
+      }
+      return rows.length;
+    },
+    async allMembers(cid) { const s = await F.getDocs(F.collection(db, "churches", cid, "members")); return s.docs.map(d => ({ ...d.data(), id: d.id })); },
+    async allAttendance(cid) { const s = await F.getDocs(F.collection(db, "churches", cid, "attendance")); return s.docs.map(d => d.data()); },
+  };
+}
+
+// ───────────── 상태 ─────────────
+const S = { store: null, email: null, admin: false, churches: [], church: null, members: [], att: new Map(),
+  date: localToday(), service: null, q: "", chip: "전체", unMembers: null, unAtt: null };
+
+function toastErr(msg) { const el = $("#sync"); el.textContent = msg; el.className = "sync off"; }
+
+function isInAppBrowser() { return /KAKAOTALK|Instagram|FBAN|FBAV|NAVER\(inapp|Line\//i.test(navigator.userAgent); }
+
+async function boot() {
+  const demo = new URLSearchParams(location.search).has("demo");
+  const configured = !!firebaseConfig.apiKey;
+  if (!demo && !configured) return show("sSetup");
+  if (!demo && isInAppBrowser()) return showInApp();
+  try { S.store = demo ? demoStore() : await firebaseStore(); }
+  catch (e) { show("sLogin"); $("#loginErr").textContent = "연결에 실패했어요. 인터넷을 확인해 주세요."; return; }
+  S.store.onUser(async (u) => {
+    if (!u) { stopWatch(); return show("sLogin"); }
+    S.email = u.email;
+    S.admin = await S.store.isAdmin();
+    S.churches = await S.store.churches(S.admin).catch(() => []);
+    if (!S.churches.length && !S.admin) { $("#noAccessEmail").textContent = u.email; return show("sNoAccess"); }
+    if (!S.churches.length && S.admin) return openAdmin();
+    const last = safeGet("church");
+    pickChurch(S.churches.find(c => c.id === last) || S.churches[0]);
+  });
+}
+
+function showInApp() {
+  show("sInApp");
+  $("#openExternal").onclick = async () => {
+    const url = location.href;
+    if (/KAKAOTALK/i.test(navigator.userAgent)) { location.href = "kakaotalk://web/openExternal?url=" + encodeURIComponent(url); return; }
+    if (/Android/i.test(navigator.userAgent)) { location.href = "intent://" + url.replace(/^https?:\/\//, "") + "#Intent;scheme=https;package=com.android.chrome;end"; return; }
+    try { await navigator.clipboard.writeText(url); } catch {}
+    $("#copyHint").classList.remove("hidden");
+  };
+}
+
+function safeGet(k) { try { return localStorage.getItem("att." + k); } catch { return null; } }
+function safeSet(k, v) { try { localStorage.setItem("att." + k, v); } catch {} }
+
+function stopWatch() { S.unMembers?.(); S.unAtt?.(); S.unMembers = S.unAtt = null; }
+
+function pickChurch(c) {
+  stopWatch();
+  S.church = c; safeSet("church", c.id);
+  $("#churchName").textContent = c.name;
+  const pick = $("#churchPick");
+  pick.classList.toggle("hidden", S.churches.length < 2);
+  pick.innerHTML = S.churches.map(x => `<option value="${esc(x.id)}" ${x.id === c.id ? "selected" : ""}>${esc(x.name)}</option>`).join("");
+  $("#toAdmin").classList.toggle("hidden", !S.admin);
+  const services = c.services?.length ? c.services : ["주일낮"];
+  $("#date").value = S.date;
+  S.service = defaultService(services, S.date);
+  renderServices(services);
+  S.unMembers = S.store.watchMembers(c.id, (ms) => { S.members = ms; renderChips(); render(); });
+  watchAtt();
+  show("sMain");
+}
+
+function renderServices(services) {
+  $("#services").innerHTML = services.map(s => `<button type="button" aria-pressed="${s === S.service}" data-s="${esc(s)}">${esc(s)}</button>`).join("");
+}
+
+function watchAtt() {
+  S.unAtt?.();
+  S.att = new Map(); render();
+  S.unAtt = S.store.watchAttendance(S.church.id, S.date, S.service, (m, meta) => {
+    S.att = m; render();
+    const el = $("#sync");
+    if (meta.pending && !navigator.onLine) { el.textContent = `인터넷 끊김 · ${meta.pending}건은 연결되면 자동 저장`; el.className = "sync off"; }
+    else if (meta.pending) { el.textContent = `저장 중 ${meta.pending}건`; el.className = "sync"; }
+    else { el.textContent = S.store.demo ? "미리보기 · 저장 안 됨" : "모두 저장됨"; el.className = "sync"; }
+  });
+}
+
+function renderChips() {
+  const groups = [...new Set(S.members.map(m => m.group).filter(Boolean))]
+    .sort((a, b) => (GROUP_ORDER.indexOf(a) + 99) % 99 - (GROUP_ORDER.indexOf(b) + 99) % 99);
+  const chips = ["전체", ...groups, "장결자"];
+  if (!chips.includes(S.chip)) S.chip = "전체";
+  $("#chips").innerHTML = chips.map(c => `<button type="button" aria-pressed="${c === S.chip}" data-c="${esc(c)}">${esc(c)}</button>`).join("");
+}
+
+function visibleMembers() {
+  const q = S.q.trim();
+  return S.members.filter(m => {
+    if (S.chip === "장결자" ? !m.longAbsent : S.chip !== "전체" && m.group !== S.chip) return false;
+    if (q && !(m.name || "").includes(q) && !(m.phone || "").replace(/\D/g, "").endsWith(q.replace(/\D/g, "") || "\u0000")) return false;
+    return true;
+  });
+}
+
+function render() {
+  if (!S.church) return;
+  const present = [...S.att.values()].filter(r => r.present).length;
+  $("#cnt").textContent = present;
+  const ms = visibleMembers();
+  // 가족(세대ID)끼리 한 카드로
+  const cards = new Map();
+  for (const m of ms) {
+    const key = m.household ? "H:" + m.household : "M:" + m.id;
+    if (!cards.has(key)) cards.set(key, []);
+    cards.get(key).push(m);
+  }
+  const rank = (m) => { const i = GROUP_ORDER.indexOf(m.group); return i < 0 ? 99 : i; };
+  const relRank = (m) => ({ "세대주": 0, "배우자": 1 }[m.relation] ?? 2);
+  const list = [...cards.values()].map(g => g.sort((a, b) => relRank(a) - relRank(b) || (a.name || "").localeCompare(b.name || "", "ko")))
+    .sort((a, b) => rank(a[0]) - rank(b[0]) || (a[0].name || "").localeCompare(b[0].name || "", "ko"));
+  if (!list.length) { $("#list").innerHTML = `<p class="empty">${S.members.length ? "찾는 성도가 없어요." : "아직 성도가 없어요. 관리 화면에서 가져오거나 + 새 성도로 추가해 주세요."}</p>`; return; }
+  $("#list").innerHTML = list.map(g => {
+    const fam = g.length > 1;
+    const allOn = g.every(m => S.att.get(m.id)?.present);
+    return `<div class="card">${fam ? `<div class="head"><span>${esc(g[0].name)} 가족 ${g.length}명</span><button type="button" class="all" data-fam="${esc(g.map(m => m.id).join(","))}" data-on="${allOn ? 0 : 1}">${allOn ? "가족 모두 취소" : "가족 모두 출석"}</button></div>` : ""}
+      <div class="people">${g.map(personBtn).join("")}</div></div>`;
+  }).join("");
+}
+
+function personBtn(m) {
+  const r = S.att.get(m.id);
+  const on = !!r?.present;
+  const sub = [m.role, m.relation && m.household ? m.relation : "", m.district].filter(Boolean).join(" · ");
+  return `<button type="button" class="p ${on ? "on" : ""} ${r?._pending ? "pending" : ""}" data-m="${esc(m.id)}" aria-pressed="${on}">
+    <span class="box">✓</span><span class="nm"><b>${esc(m.name)}${m.longAbsent ? '<span class="tag">장결</span>' : ""}</b><small>${esc(sub)}</small></span></button>`;
+}
+
+function toggle(ids, present) {
+  for (const id of ids) {
+    const m = S.members.find(x => x.id === id); if (!m) continue;
+    const p = present ?? !S.att.get(id)?.present;
+    S.att.set(id, { ...(S.att.get(id) || {}), memberId: id, present: p, _pending: !S.store.demo }); // 즉시 화면 반영
+    S.store.setPresent(S.church.id, S.date, S.service, m, p);
+  }
+  render();
+}
+
+// ───────────── 이벤트 ─────────────
+document.addEventListener("click", (e) => {
+  const t = e.target.closest("button,[data-act]"); if (!t) return;
+  if (t.dataset.act === "logout") return S.store?.signOut();
+  if (t.dataset.m) return toggle([t.dataset.m]);
+  if (t.dataset.fam) return toggle(t.dataset.fam.split(","), t.dataset.on === "1");
+  if (t.dataset.s) { S.service = t.dataset.s; renderServices(S.church.services || []); return watchAtt(); }
+  if (t.dataset.c) { S.chip = t.dataset.c; renderChips(); return render(); }
+});
+$("#login").onclick = async () => { $("#loginErr").textContent = ""; try { await S.store.signIn(); } catch (e) { $("#loginErr").textContent = "로그인하지 못했어요. (" + (e.code || e.message) + ")"; } };
+$("#date").onchange = (e) => { S.date = e.target.value || localToday(); watchAtt(); };
+$("#q").oninput = (e) => { S.q = e.target.value; render(); };
+$("#churchPick").onchange = (e) => pickChurch(S.churches.find(c => c.id === e.target.value));
+
+// 새 성도
+$("#addBtn").onclick = () => {
+  const hh = new Map();
+  S.members.filter(m => m.household).forEach(m => { if (!hh.has(m.household) || m.relation === "세대주") hh.set(m.household, m.name); });
+  $("#addForm").household.innerHTML = `<option value="">따로 (가족 없음)</option>` +
+    [...hh].sort((a, b) => a[1].localeCompare(b[1], "ko")).map(([id, n]) => `<option value="${esc(id)}">${esc(n)} 가족</option>`).join("");
+  $("#addForm").reset(); $("#dlg").showModal();
+};
+$("#dlg").addEventListener("close", async () => {
+  if ($("#dlg").returnValue !== "ok") return;
+  const f = $("#addForm");
+  const data = { name: f.name.value.trim(), role: f.role.value.trim() || "성도", group: f.group.value, gender: f.gender.value,
+    phone: f.phone.value.trim(), household: f.household.value, relation: f.relation.value.trim(), longAbsent: false, regDate: localToday() };
+  if (!data.name) return;
+  try { await S.store.addMember(S.church.id, data); } catch (e) { toastErr("추가 실패: " + e.message); }
+});
+
+// ───────────── 관리자 ─────────────
+let adminCid = null;
+function openAdmin() {
+  show("sAdmin");
+  const sel = $("#aChurch");
+  sel.innerHTML = S.churches.map(c => `<option value="${esc(c.id)}">${esc(c.name)}</option>`).join("") || `<option value="">(교회 없음)</option>`;
+  if (S.church) sel.value = S.church.id;
+  fillAdmin(S.churches.find(c => c.id === sel.value) || null);
+}
+function fillAdmin(c) {
+  adminCid = c?.id || null;
+  $("#aName").value = c?.name || "";
+  $("#aServices").value = (c?.services || ["주일낮","주일저녁","수요","금요"]).join(", ");
+  $("#aLeaders").value = (c?.leaders || []).join("\n");
+  $("#aMsg").textContent = ""; $("#aImportMsg").textContent = "";
+  countLeaders();
+}
+function leaderList() { return [...new Set($("#aLeaders").value.split(/[\s,;]+/).map(s => s.trim().toLowerCase()).filter(s => s.includes("@")))]; }
+function countLeaders() { $("#aLeaderCount").textContent = `(${leaderList().length}명)`; }
+$("#aLeaders").oninput = countLeaders;
+$("#toAdmin").onclick = openAdmin;
+$("#backMain").onclick = () => S.church ? pickChurch(S.churches.find(c => c.id === S.church.id) || S.churches[0]) : (S.churches[0] && pickChurch(S.churches[0]));
+$("#aChurch").onchange = (e) => fillAdmin(S.churches.find(c => c.id === e.target.value));
+$("#aNew").onclick = () => { fillAdmin(null); $("#aName").focus(); };
+$("#aSave").onclick = async () => {
+  const data = { name: $("#aName").value.trim(), services: $("#aServices").value.split(",").map(s => s.trim()).filter(Boolean), leaders: leaderList() };
+  if (!data.name) return ($("#aMsg").textContent = "교회 이름을 넣어 주세요.");
+  try {
+    const id = await S.store.saveChurch(adminCid, data);
+    const c = { id, ...(S.churches.find(x => x.id === id) || {}), ...data };
+    S.churches = [...S.churches.filter(x => x.id !== id), c].sort((a, b) => a.name.localeCompare(b.name, "ko"));
+    S.church = c; openAdmin(); $("#aMsg").textContent = "저장했어요.";
+  } catch (e) { $("#aMsg").textContent = "저장 실패: " + e.message; }
+};
+
+function parseSheet(text) {
+  const lines = text.replace(/\r/g, "").split("\n").filter(l => l.trim());
+  if (lines.length < 2) return { error: "제목 줄과 성도 줄을 함께 붙여 넣어 주세요." };
+  const sep = lines[0].includes("\t") ? "\t" : ",";
+  const head = lines[0].split(sep).map(h => h.trim());
+  const idx = Object.fromEntries(COLS.map(([k, h]) => [k, head.indexOf(h)]));
+  if (idx.name < 0) return { error: "'이름' 칸을 찾지 못했어요. 제목 줄까지 복사했는지 확인해 주세요." };
+  const rows = lines.slice(1).map((l, i) => {
+    const c = l.split(sep);
+    const r = {};
+    for (const [k] of COLS) {
+      if (idx[k] < 0) continue;
+      let v = (c[idx[k]] ?? "").trim();
+      r[k] = BOOL_FIELDS.has(k) ? /^(true|y|yes|o|1|예)$/i.test(v) : v;
+    }
+    r.id = (r.id || "").replace(/[\/.#$\[\]]/g, "-") || "R" + Date.now().toString(36) + i;
+    return r;
+  }).filter(r => r.name);
+  return { rows };
+}
+$("#aImportBtn").onclick = async () => {
+  if (!adminCid) return ($("#aImportMsg").textContent = "먼저 교회를 저장해 주세요.");
+  const { rows, error } = parseSheet($("#aImport").value);
+  if (error) return ($("#aImportMsg").textContent = error);
+  try { const n = await S.store.importMembers(adminCid, rows); $("#aImportMsg").textContent = `${n}명을 가져왔어요.`; $("#aImport").value = ""; }
+  catch (e) { $("#aImportMsg").textContent = "가져오기 실패: " + e.message; }
+};
+
+function downloadCsv(name, header, rows) {
+  const cell = (v) => { const s = v instanceof Date ? v.toISOString() : v?.toDate ? v.toDate().toISOString() : String(v ?? ""); return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
+  const csv = "﻿" + [header, ...rows].map(r => r.map(cell).join(",")).join("\r\n");
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+  a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+$("#aExpMembers").onclick = async () => {
+  if (!adminCid) return;
+  const ms = await S.store.allMembers(adminCid);
+  downloadCsv(`${$("#aName").value}_성도_${localToday()}.csv`, COLS.map(c => c[1]), ms.map(m => COLS.map(([k]) => m[k])));
+};
+$("#aExpAtt").onclick = async () => {
+  if (!adminCid) return;
+  const rs = (await S.store.allAttendance(adminCid)).sort((a, b) => (a.date + a.service).localeCompare(b.date + b.service));
+  downloadCsv(`${$("#aName").value}_출석_${localToday()}.csv`, ["날짜","예배종류","성도ID","이름","출석","체크한사람","체크시각"],
+    rs.map(r => [r.date, r.service, r.memberId, r.name, r.present ? "TRUE" : "FALSE", r.checkedBy, r.checkedAt]));
+};
+
+window.addEventListener("online", () => watchAtt && S.church && watchAtt());
+boot();
+</script>
+</body>
+</html>
