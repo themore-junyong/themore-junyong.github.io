@@ -149,6 +149,7 @@ const CHIPS = {
 function writeTable_(sh, cols, rows, opt) {
   opt = opt || {};
   const n = cols.length, extra = opt.plain ? 0 : 50; // 새 줄을 적을 아래 50줄도 같은 모양
+  const fresh = String(sh.getRange(1, 1).getValue()) !== cols[0][1]; // 처음 만드는 탭이면 칸 너비를 맞추고, 아니면 사람이 정한 너비를 그대로 둠
   sh.clear();
   sh.getProtections(SpreadsheetApp.ProtectionType.RANGE).forEach(p => p.remove());
   sh.getBandings().forEach(b => b.remove());
@@ -187,8 +188,9 @@ function writeTable_(sh, cols, rows, opt) {
   (opt.rules || []).forEach(f => rules.push(f(sh, all.length - 1 + extra)));
   if (rules.length) sh.setConditionalFormatRules(rules);
 
+  if (!fresh) { if (opt.note) sh.getRange(1, n + 2).setValue(opt.note).setFontColor("#5B6A72").setFontSize(10); return; }
   sh.autoResizeColumns(1, n);
-  cols.forEach(([k], i) => { const w = sh.getColumnWidth(i + 1) + 16; sh.setColumnWidth(i + 1, Math.max(k === "id" ? 80 : 70, Math.min(w, k === "memo" || k === "detail" || k === "months" ? 320 : 200))); });
+  cols.forEach(([k], i) => { const w = sh.getColumnWidth(i + 1) + 16; sh.setColumnWidth(i + 1, Math.max(k === "id" ? 80 : 70, Math.min(w, k === "memo" || k === "detail" || k === "months" || k === "interest" ? 320 : 200))); });
   if (opt.note) sh.getRange(1, n + 2).setValue(opt.note).setFontColor("#5B6A72").setFontSize(10);
 }
 // 탈퇴 회원 줄은 흐리게, 3개월 이상 미납은 주황
