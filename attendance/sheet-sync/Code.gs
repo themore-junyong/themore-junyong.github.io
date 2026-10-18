@@ -128,7 +128,34 @@ function writeTable_(sh, rows) {
       r.setNumberFormat("General").setValues(rows.map(x => [x[c - 1] === true])).insertCheckboxes();
     }
   });
-  sh.getRange(1, 1, 1, head.length).setFontWeight("bold").setBackground("#eef2ff");
+  if (sh.getName() === SHEET) dress_(sh, all.length, head.length);
+  else sh.getRange(1, 1, 1, head.length).setFontWeight("bold");
+}
+// 보기 좋게: 칸 너비, 제목 줄 색, 줄무늬, 필터. 값은 건드리지 않아 저장 비교에는 영향 없다.
+const WIDTH = { id: 60, name: 80, role: 60, group: 60, gender: 45, phone: 115, regDate: 95, birthSolar: 95, birthLunar: 95,
+  anniversary: 95, district: 70, baptism: 95, household: 60, relation: 70, isLeader: 60, longAbsent: 55, memo: 220, noTrack: 60 };
+const CENTER = ["id", "role", "group", "gender", "phone", "regDate", "birthSolar", "birthLunar", "anniversary", "district", "baptism", "household", "relation", "isLeader", "longAbsent", "noTrack"];
+function dress_(sh, nRows, nCols) {
+  if (sh.getFilter()) sh.getFilter().remove();
+  sh.getBandings().forEach(b => b.remove());
+  const all = sh.getRange(1, 1, nRows, nCols);
+  all.setFontFamily("Malgun Gothic").setFontSize(10).setVerticalAlignment("middle")
+    .setBorder(true, true, true, true, true, true, "#d9dee8", SpreadsheetApp.BorderStyle.SOLID);
+  all.applyRowBanding(SpreadsheetApp.BandingTheme.LIGHT_GREY, true, false)
+    .setHeaderRowColor("#3b5bdb").setFirstRowColor("#ffffff").setSecondRowColor("#f4f6fb");
+  sh.getRange(1, 1, 1, nCols).setFontColor("#ffffff").setFontWeight("bold").setHorizontalAlignment("center").setWrap(true);
+  sh.setRowHeight(1, 34);
+  if (nRows > 1) sh.setRowHeights(2, nRows - 1, 24);
+  COLS.forEach(([k], i) => {
+    sh.setColumnWidth(i + 1, WIDTH[k] || 90);
+    if (nRows < 2) return;
+    const body = sh.getRange(2, i + 1, nRows - 1, 1);
+    if (CENTER.indexOf(k) >= 0) body.setHorizontalAlignment("center");
+    if (k === "id" || k === "household") body.setFontColor("#8a94a6").setFontSize(9);
+    if (k === "name") body.setFontWeight("bold");
+    if (k === "memo") body.setWrap(false);
+  });
+  all.createFilter();
   sh.setFrozenRows(1);
   sh.setFrozenColumns(2);
 }
