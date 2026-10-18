@@ -4,6 +4,7 @@
 // 처음 불러올 때 값을 숨은 탭 '_불러온값'에 보관해 두고, 그와 다른 칸만 '바뀐 칸'으로 본다.
 
 const PROJECT = "themore-attendance";
+const API_KEY = "AIzaSyCyiKN_E00J9kSIC6Kjw2dMyvh-t2k652I"; // 앱 firebase-config.js 와 같은 공개 값
 const BASE = "https://firestore.googleapis.com/v1/projects/" + PROJECT + "/databases/(default)/documents";
 const SHEET = "성도", SNAP = "_불러온값", SETUP = "설정";
 
@@ -28,13 +29,32 @@ function onOpen() {
 }
 
 // ---------- Firestore REST ----------
+// 시트를 쓰는 사람의 구글 계정으로 출석앱에 로그인한 것처럼 접속한다.
+// 그래서 앱 '관리'에 교역자로 등록된 사람이면 누구든(준용님이 아니어도) 자기 교회 성도를 불러오고 저장할 수 있다.
+// 로그인 교환이 안 되면 예전처럼 Firebase 프로젝트 주인 권한으로 접속한다.
+function me_() { return (Session.getEffectiveUser().getEmail() || "").toLowerCase(); }
+function fbToken_() {
+  const cache = CacheService.getUserCache();
+  const hit = cache.get("fbIdToken");
+  if (hit) return hit;
+  const res = UrlFetchApp.fetch("https://identitytoolkit.googleapis.com/v1/accounts:signInWithIdp?key=" + API_KEY, {
+    method: "post", contentType: "application/json", muteHttpExceptions: true,
+    payload: JSON.stringify({ postBody: "access_token=" + ScriptApp.getOAuthToken() + "&providerId=google.com", requestUri: "http://localhost", returnSecureToken: true })
+  });
+  if (res.getResponseCode() >= 300) return null;
+  const t = JSON.parse(res.getContentText()).idToken;
+  if (t) cache.put("fbIdToken", t, 50 * 60);
+  return t || null;
+}
 function api_(method, url, body) {
+  const fb = fbToken_();
   const res = UrlFetchApp.fetch(url, {
     method: method, contentType: "application/json", muteHttpExceptions: true,
-    headers: { Authorization: "Bearer " + ScriptApp.getOAuthToken(), "x-goog-user-project": PROJECT },
+    headers: fb ? { Authorization: "Bearer " + fb } : { Authorization: "Bearer " + ScriptApp.getOAuthToken(), "x-goog-user-project": PROJECT },
     payload: body ? JSON.stringify(body) : undefined
   });
   const code = res.getResponseCode(), text = res.getContentText();
+  if (code === 403 || code === 401) throw new Error(me_() + " 계정은 이 교회 성도를 " + (method === "get" ? "볼" : "저장할") + " 권한이 없어요.\n앱 '관리'에서 이 이메일을 교역자로 넣어 주세요. (응답 " + code + ")");
   if (code >= 300) throw new Error("앱 서버 응답 " + code + ": " + text.slice(0, 300));
   return text ? JSON.parse(text) : {};
 }
@@ -72,7 +92,15 @@ function church_() {
   }
   const name = String(sh.getRange("B1").getValue()).trim();
   if (!name) throw new Error("'설정' 탭 B1 칸에 교회 이름을 적어 주세요.");
-  const found = listDocs_("churches").filter(d => fromValue_((d.fields || {}).name) === name);
+  // 관리자(준용)는 교회 전체를, 교역자·리더는 자기가 들어 있는 교회만 볼 수 있다
+  let docs;
+  try { docs = listDocs_("churches"); }
+  catch (e) {
+    const r = api_("post", BASE + ":runQuery", { structuredQuery: { from: [{ collectionId: "churches" }],
+      where: { fieldFilter: { field: { fieldPath: "leaders" }, op: "ARRAY_CONTAINS", value: { stringValue: me_() } } } } });
+    docs = r.filter(x => x.document).map(x => x.document);
+  }
+  const found = docs.filter(d => fromValue_((d.fields || {}).name) === name);
   if (!found.length) throw new Error("앱에서 '" + name + "' 교회를 찾지 못했어요. 이름이 앱과 똑같은지 확인해 주세요.");
   return { id: docId_(found[0]), name: name };
 }
