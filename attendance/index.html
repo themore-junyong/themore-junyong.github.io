@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<meta name="build" content="2026-10-18.5">
+<meta name="build" content="2026-10-18.6">
 <title>교회 출석 · THE MORE</title>
 <meta name="theme-color" content="#1F6F78">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -312,6 +312,12 @@ textarea.memo{min-height:60px;border:1px solid var(--line);background:var(--bg);
         <div id="aHeadMsg" class="ok" style="white-space:pre-line;font-size:14px"></div>
       </section>
       <section>
+        <h2>성도 번호 정리</h2>
+        <p class="hint">P001처럼 생기지 않은 성도 번호(앱에서 새로 넣은 사람 등)를 다음 P번호로 바꿔요. 출석 기록도 함께 옮겨요. 구글 시트를 쓰면 바꾼 뒤 시트에서 '① 앱에서 성도 불러오기'를 한 번 눌러 주세요.</p>
+        <div class="row"><button class="btn line" id="aIdCheck">바뀔 내용 보기</button><button class="btn hidden" id="aIdApply">이대로 저장</button></div>
+        <div id="aIdMsg" class="ok" style="white-space:pre-line;font-size:14px"></div>
+      </section>
+      <section>
         <h2>내보내기</h2>
         <p class="hint">엑셀에서 바로 열리는 CSV 파일로 받아요. 교회가 데이터를 원하면 이 파일을 드리면 돼요.</p>
         <div class="row"><button class="btn line" id="aExpMembers">성도 명단</button><button class="btn line" id="aExpAtt">출석 기록 전체</button></div>
@@ -410,6 +416,12 @@ function defaultService(services, dateStr) {
   return services.includes(want) ? want : services[0];
 }
 const attId = (date, service, mid) => `${date}_${service}_${mid}`.replace(/\//g, "-");
+// 새 성도 번호: 지금 있는 P번호 중 가장 큰 수 다음 (P185 → P186, P187…)
+function nextPids(ids, n = 1) {
+  let max = 0, w = 3;
+  for (const id of ids) { const m = /^P(\d+)$/.exec(id || ""); if (m) { max = Math.max(max, +m[1]); w = Math.max(w, m[1].length); } }
+  return Array.from({ length: n }, (_, i) => "P" + String(max + 1 + i).padStart(w, "0"));
+}
 
 // ───────────── 저장소: 미리보기(가짜 데이터) ─────────────
 function demoStore() {
@@ -462,7 +474,13 @@ function demoStore() {
       att.set(attId(date, service, m.id), { date, service, memberId: m.id, name: m.name, present, checkedBy: email, checkedAt: new Date() });
       emitAtt();
     },
-    async addMember(cid, data) { const id = "N" + Date.now().toString(36); members.set(id, { ...data, id }); emitMembers(); },
+    async addMember(cid, data, id) { members.set(id, { ...data, id }); emitMembers(); },
+    async renameMember(cid, from, to) {
+      const m = members.get(from); if (!m || members.has(to)) throw new Error(to + " 번호가 이미 있어요.");
+      members.delete(from); members.set(to, { ...m, id: to });
+      for (const [k, r] of [...att]) if (r.memberId === from) { att.delete(k); att.set(attId(r.date, r.service, to), { ...r, memberId: to }); }
+      emitMembers(); emitAtt();
+    },
     async updateMember(cid, id, data) { members.set(id, { ...members.get(id), ...data, id }); emitMembers(); },
     async deleteMember(cid, id) { members.delete(id); emitMembers(); },
     async attendanceSince(cid, from) { return [...att.values()].filter(r => r.date >= from); },
@@ -541,7 +559,24 @@ async function firebaseStore() {
         date, service, memberId: m.id, name: m.name, present, checkedBy: me, checkedAt: F.serverTimestamp()
       }).catch(e => toastErr("저장 실패: " + e.message));
     },
-    async addMember(cid, data) { await F.addDoc(F.collection(db, "churches", cid, "members"), { ...data, createdAt: F.serverTimestamp() }); },
+    async addMember(cid, data, id) {
+      const ref = F.doc(db, "churches", cid, "members", id);
+      if ((await F.getDoc(ref)).exists()) throw new Error(id + " 번호가 이미 있어요. 다시 저장해 주세요.");
+      await F.setDoc(ref, { ...data, createdAt: F.serverTimestamp() });
+    },
+    // 성도 번호 바꾸기: 새 번호로 옮기고 출석 기록도 새 번호로 옮긴 뒤 옛 것을 지움
+    async renameMember(cid, from, to) {
+      const col = (sub) => F.collection(db, "churches", cid, sub);
+      const old = await F.getDoc(F.doc(col("members"), from));
+      if (!old.exists()) return;
+      if ((await F.getDoc(F.doc(col("members"), to))).exists()) throw new Error(to + " 번호가 이미 있어요.");
+      const recs = (await F.getDocs(F.query(col("attendance"), F.where("memberId", "==", from)))).docs;
+      const b = F.writeBatch(db);
+      b.set(F.doc(col("members"), to), old.data());
+      recs.forEach(d => { const r = d.data(); b.set(F.doc(col("attendance"), attId(r.date, r.service, to)), { ...r, memberId: to, checkedBy: me }); b.delete(d.ref); });
+      b.delete(old.ref);
+      await b.commit();
+    },
     async updateMember(cid, id, data) { await F.setDoc(F.doc(db, "churches", cid, "members", id), data, { merge: true }); },
     async deleteMember(cid, id) { await F.deleteDoc(F.doc(db, "churches", cid, "members", id)); },
     async attendanceSince(cid, from) {
@@ -917,7 +952,7 @@ $("#dlg").addEventListener("close", async () => {
   if (!data.name) return;
   try {
     if (editingId) await S.store.updateMember(S.church.id, editingId, data);
-    else await S.store.addMember(S.church.id, data);
+    else await S.store.addMember(S.church.id, data, nextPids(S.members.map(m => m.id))[0]);
   } catch (e) { toastErr("저장 실패: " + e.message); }
 });
 $("#dlgDel").onclick = async () => {
@@ -1054,7 +1089,7 @@ function normDate(v) {
 }
 const DATE_FIELDS = new Set(["regDate","birthSolar","anniversary","baptism"]);
 const TRUE_RE = /^(true|y|yes|o|1|예|출석|✓|v)$/i;
-function parseSheet(text) {
+function parseSheet(text, knownIds = []) {
   const t = parseTable(text);
   if (t.length < 2) return { error: "제목 줄과 성도 줄을 함께 붙여 넣어 주세요." };
   const head = t[0];
@@ -1067,9 +1102,11 @@ function parseSheet(text) {
       const v = c[idx[k]] ?? "";
       r[k] = BOOL_FIELDS.has(k) ? TRUE_RE.test(v) : DATE_FIELDS.has(k) ? normDate(v) : v;
     }
-    r.id = (r.id || "").replace(/[\/.#$\[\]]/g, "-") || "R" + Date.now().toString(36) + i;
+    r.id = (r.id || "").replace(/[\/.#$\[\]]/g, "-");
     return r;
   }).filter(r => r.name);
+  const blank = rows.filter(r => !r.id), ids = nextPids([...knownIds, ...rows.map(r => r.id)], blank.length);
+  blank.forEach((r, i) => { r.id = ids[i]; });
   return { rows };
 }
 // 제목 줄(날짜·예배종류·성도ID)을 찾고, 없으면 내용을 보고 칸을 짐작함
@@ -1131,7 +1168,7 @@ $("#aAttImportBtn").onclick = async () => {
 };
 $("#aImportBtn").onclick = async () => {
   if (!adminCid) return ($("#aImportMsg").textContent = "먼저 교회를 저장해 주세요.");
-  const { rows, error } = parseSheet($("#aImport").value);
+  const { rows, error } = parseSheet($("#aImport").value, (await S.store.allMembers(adminCid)).map(m => m.id));
   if (error) return ($("#aImportMsg").textContent = error);
   try { const n = await S.store.importMembers(adminCid, rows); $("#aImportMsg").textContent = `${n}명을 가져왔어요.`; $("#aImport").value = ""; }
   catch (e) { $("#aImportMsg").textContent = "가져오기 실패: " + e.message; }
@@ -1265,6 +1302,28 @@ $("#aHeadApply").onclick = async () => {
     await S.store.importMembers(adminCid, headPlan.map(c => ({ id: c.id, relation: c.to })));
     msg.textContent = `${headPlan.length}명의 가족관계를 저장했어요.`; headPlan = []; $("#aHeadApply").classList.add("hidden");
   } catch (e) { msg.textContent = "저장 실패: " + e.message; }
+};
+
+// 성도 번호 정리: P번호가 아닌 성도를 다음 P번호로
+let idPlan = [];
+$("#aIdCheck").onclick = async () => {
+  const msg = $("#aIdMsg"); if (!adminCid) return (msg.textContent = "먼저 교회를 골라 주세요.");
+  msg.textContent = "살펴보는 중…";
+  const ms = await S.store.allMembers(adminCid);
+  const odd = ms.filter(m => !/^P\d+$/.test(m.id)).sort((a, b) => (a.createdAt?.seconds || 0) - (b.createdAt?.seconds || 0) || a.name.localeCompare(b.name, "ko"));
+  const ids = nextPids(ms.map(m => m.id), odd.length);
+  idPlan = odd.map((m, i) => ({ from: m.id, to: ids[i], name: m.name }));
+  $("#aIdApply").classList.toggle("hidden", !idPlan.length);
+  msg.textContent = idPlan.length ? `${idPlan.length}명의 번호를 바꿔요.\n` + idPlan.map(c => `· ${c.name}: ${c.from} → ${c.to}`).join("\n") : "모두 P번호예요. 바꿀 것이 없어요.";
+};
+$("#aIdApply").onclick = async () => {
+  const msg = $("#aIdMsg"); if (!idPlan.length) return;
+  let n = 0;
+  try {
+    for (const c of idPlan) { await S.store.renameMember(adminCid, c.from, c.to); n++; }
+    msg.textContent = `${n}명의 번호를 바꿨어요.`;
+  } catch (e) { msg.textContent = `${n}명까지 바꾸고 멈췄어요: ` + e.message; }
+  idPlan = []; $("#aIdApply").classList.add("hidden");
 };
 </script>
 </body>

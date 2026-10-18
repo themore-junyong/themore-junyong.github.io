@@ -146,6 +146,9 @@ function pullMembers() {
 function diff_(rows, snapRows) {
   const before = {};
   snapRows.forEach(r => { if (r.id) before[r.id] = r; });
+  // 새 성도 번호는 지금 있는 P번호 다음으로 (P185 → P186, P187…)
+  let maxP = 0, w = 3;
+  snapRows.concat(rows).forEach(r => { const m = /^P(\d+)$/.exec(r.id || ""); if (m) { maxP = Math.max(maxP, +m[1]); w = Math.max(w, m[1].length); } });
   const changes = [];
   rows.forEach((r, i) => {
     if (!r.name) return;
@@ -157,7 +160,7 @@ function diff_(rows, snapRows) {
       const was = old ? (k in old ? old[k] : (BOOL_FIELDS.indexOf(k) >= 0 ? false : "")) : undefined;
       if (!old ? (v !== "" && v !== false) : v !== was) fields[k] = v;
     });
-    if (!old && !r.id) r.id = "R" + Date.now().toString(36) + i;
+    if (!old && !r.id) r.id = "P" + String(++maxP).padStart(w, "0");
     if (Object.keys(fields).length) changes.push({ id: r.id.replace(/[\/.#$\[\]]/g, "-"), isNew: !old, name: r.name, fields: fields });
   });
   return changes;
