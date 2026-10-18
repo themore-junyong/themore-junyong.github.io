@@ -451,7 +451,7 @@ function demoStore() {
     async deleteMember(cid, id) { members.delete(id); emitMembers(); },
     async attendanceSince(cid, from) { return [...att.values()].filter(r => r.date >= from); },
     async saveChurch(cid, data) { Object.assign(church, data); return "demo"; },
-    async importMembers(cid, rows) { rows.forEach(r => members.set(r.id, r)); emitMembers(); return rows.length; },
+    async importMembers(cid, rows) { rows.forEach(r => members.set(r.id, { ...(members.get(r.id) || {}), ...r })); emitMembers(); return rows.length; },
     async importAttendance(cid, rows) { rows.forEach(r => att.set(attId(r.date, r.service, r.memberId), { ...r, checkedBy: email })); emitAtt(); return rows.length; },
     async allMembers() { return [...members.values()]; },
     async allAttendance() { return [...att.values()]; },
@@ -547,7 +547,7 @@ async function firebaseStore() {
     async importMembers(cid, rows) {
       for (let i = 0; i < rows.length; i += 400) {
         const b = F.writeBatch(db);
-        rows.slice(i, i + 400).forEach(r => { const { id, ...rest } = r; b.set(F.doc(db, "churches", cid, "members", id), rest); });
+        rows.slice(i, i + 400).forEach(r => { const { id, ...rest } = r; b.set(F.doc(db, "churches", cid, "members", id), rest, { merge: true }); });
         await b.commit();
       }
       return rows.length;
