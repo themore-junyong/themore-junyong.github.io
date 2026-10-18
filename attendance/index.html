@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<meta name="build" content="2026-10-18.1">
+<meta name="build" content="2026-10-18.2">
 <title>교회 출석 · THE MORE</title>
 <meta name="theme-color" content="#1F6F78">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -688,10 +688,10 @@ function render() {
   $("#left").textContent = S.members.length - present;
   // 출석한 사람은 목록에서 빠짐 (✎ 정보 중이거나 '출석한 사람 보기'를 켜면 모두 보임)
   const hideDone = !S.showDone && !S.edit;
-  const ms = visibleMembers().filter(m => !hideDone || !S.att.get(m.id)?.present);
-  // 가족(세대ID)끼리 한 카드로
+  const shown = (m) => !hideDone || !S.att.get(m.id)?.present;
+  // 가족(세대ID)끼리 한 카드로. 순서·가족 칸은 출석 전 전체 가족 기준이라, 한 명이 출석해도 남은 가족이 제자리에 남음
   const cards = new Map();
-  for (const m of ms) {
+  for (const m of visibleMembers()) {
     const key = m.household ? "H:" + m.household : "M:" + m.id;
     if (!cards.has(key)) cards.set(key, []);
     cards.get(key).push(m);
@@ -699,13 +699,15 @@ function render() {
   const rank = (m) => { const i = GROUP_ORDER.indexOf(m.group); return i < 0 ? 99 : i; };
   const relRank = (m) => ({ "세대주": 0, "배우자": 1 }[m.relation] ?? 2);
   const list = [...cards.values()].map(g => g.sort((a, b) => relRank(a) - relRank(b) || (a.name || "").localeCompare(b.name || "", "ko")))
-    .sort((a, b) => rank(a[0]) - rank(b[0]) || (a[0].name || "").localeCompare(b[0].name || "", "ko"));
+    .sort((a, b) => rank(a[0]) - rank(b[0]) || (a[0].name || "").localeCompare(b[0].name || "", "ko"))
+    .map(g => ({ head: g[0], size: g.length, people: g.filter(shown) }))
+    .filter(c => c.people.length);
   if (!list.length) { $("#list").innerHTML = `<p class="empty">${hideDone && present && !S.q && visibleMembers().length ? "이 목록은 모두 출석했어요." : S.members.length ? "찾는 성도가 없어요." : "아직 성도가 없어요. 관리 화면에서 가져오거나 + 새 성도로 추가해 주세요."}</p>`; return; }
-  $("#list").innerHTML = list.map(g => {
-    const fam = g.length > 1;
+  $("#list").innerHTML = list.map(({ head, size, people: g }) => {
+    const fam = size > 1;
     const allOn = g.every(m => S.att.get(m.id)?.present);
     const famIds = g.map(m => m.id);
-    return `<div class="card">${fam ? `<div class="head"><span>${esc(g[0].name)} 가족 ${g.length}명</span><button type="button" class="all" data-fam="${esc(famIds.join(","))}" data-on="${allOn ? 0 : 1}">${allOn ? "가족 모두 취소" : "가족 모두 출석"}</button></div>` : ""}
+    return `<div class="card">${fam ? `<div class="head"><span>${esc(head.name)} 가족 ${size}명${g.length < size ? ` · ${g.length}명 남음` : ""}</span><button type="button" class="all" data-fam="${esc(famIds.join(","))}" data-on="${allOn ? 0 : 1}">${allOn ? "가족 모두 취소" : "가족 모두 출석"}</button></div>` : ""}
       <div class="people">${g.map(personBtn).join("")}</div></div>`;
   }).join("");
 }
