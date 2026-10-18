@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<meta name="build" content="2026-10-18.9">
+<meta name="build" content="2026-10-18.10">
 <title>교회 출석 · THE MORE</title>
 <meta name="theme-color" content="#1F6F78">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -36,8 +36,8 @@ h1,h2{font-family:var(--display);margin:0;font-weight:700}
 
 /* 상단 */
 .top{position:sticky;top:0;z-index:5;background:var(--bg);padding:12px 0 10px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:10px}
-.bar{display:flex;align-items:center;gap:10px;min-width:0}
-.bar h1{font-size:20px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bar{display:flex;align-items:center;gap:8px;min-width:0;flex-wrap:wrap}
+.bar h1{font-size:20px;flex:1;min-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ghost{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 12px;font-size:13px;color:var(--muted);white-space:nowrap}
 .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .row input[type=date],.row select{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:6px 8px;font-size:15px}
@@ -219,11 +219,12 @@ textarea.memo{min-height:60px;border:1px solid var(--line);background:var(--bg);
         <h1 id="churchName">교회</h1>
         <select id="churchPick" class="ghost hidden" aria-label="교회 선택"></select>
         <button class="ghost" id="editMode" aria-pressed="false">✎ 정보</button>
+        <button class="ghost" id="histMode" aria-pressed="false">출석이력</button>
         <button class="ghost" id="toStats">통계</button>
         <button class="ghost hidden" id="toAdmin">관리</button>
         <button class="ghost" data-act="logout">로그아웃</button>
       </div>
-      <p class="editbar hidden" id="editBar"><span>이름을 누르면 정보·전화·문자가 열려요. 지금은 출석 체크가 안 돼요.</span><button type="button" class="ghost" id="editDone">끝내기</button></p>
+      <p class="editbar hidden" id="editBar"><span id="editMsg"></span><button type="button" class="ghost" id="editDone">끝내기</button></p>
       <div class="row">
         <input type="date" id="date" aria-label="날짜">
         <div class="seg" id="services" role="group" aria-label="예배"></div>
@@ -383,6 +384,14 @@ textarea.memo{min-height:60px;border:1px solid var(--line);background:var(--bg);
     </details>
     <div class="row"><button class="btn" value="ok" id="dlgOk">추가</button><button class="btn line" value="cancel" formnovalidate>취소</button></div>
     <button type="button" class="danger hidden" id="dlgDel">이 성도 삭제</button>
+  </form>
+</dialog>
+
+<dialog id="histDlg">
+  <form method="dialog">
+    <h2 style="font-size:18px" id="histName"></h2>
+    <div id="histDlgBody" style="font-size:14px;line-height:1.6;max-height:60vh;overflow-y:auto"></div>
+    <div class="row"><button class="btn line" value="cancel">닫기</button></div>
   </form>
 </dialog>
 
@@ -876,7 +885,7 @@ document.addEventListener("click", (e) => {
   if (call) { e.preventDefault(); return openCall(call.dataset.call); }
   const t = e.target.closest("button,[data-act]"); if (!t) return;
   if (t.dataset.act === "logout") return S.store?.signOut();
-  if (t.dataset.m) return S.edit ? openMember(t.dataset.m) : toggle([t.dataset.m]);
+  if (t.dataset.m) return S.edit === "hist" ? openHist(t.dataset.m) : S.edit ? openMember(t.dataset.m) : toggle([t.dataset.m]);
   if (t.dataset.ss) { statSvc = t.dataset.ss; document.querySelectorAll("#statSvc button").forEach(b => b.setAttribute("aria-pressed", b.dataset.ss === statSvc)); return renderStats(); }
   if (t.dataset.fam && S.edit) return;
   if (t.dataset.fam) return toggle(t.dataset.fam.split(","), t.dataset.on === "1");
@@ -956,14 +965,17 @@ function openMember(id) {
 }
 $("#addBtn").onclick = () => openMember(null);
 // 한 성도의 출석 기록: 최근 3개월 예배별 횟수 + 달마다 온 날짜
-$("#hist").addEventListener("toggle", async () => {
+$("#hist").addEventListener("toggle", () => {
   const body = $("#histBody"), id = editingId;
   if (!$("#hist").open || !id || body.dataset.for === id) return;
+  showHistory(id, body);
+});
+async function showHistory(id, body) {
   body.dataset.for = id; body.textContent = "불러오는 중…";
   let rows;
   try { rows = (await S.store.memberAttendance(S.church.id, id)).filter(r => r.present && /^\d{4}-\d{2}-\d{2}$/.test(r.date)); }
   catch (e) { body.textContent = "불러오지 못했어요: " + e.message; delete body.dataset.for; return; }
-  if (editingId !== id) return;
+  if (body.dataset.for !== id) return;
   if (!rows.length) { body.textContent = "아직 출석 기록이 없어요."; return; }
   rows.sort((a, b) => b.date.localeCompare(a.date) || a.service.localeCompare(b.service, "ko"));
   const d3 = new Date(); d3.setMonth(d3.getMonth() - 3); const from = ymd(d3);
@@ -973,7 +985,7 @@ $("#hist").addEventListener("toggle", async () => {
   const W = "일월화수목금토", day = (v) => { const d = new Date(v + "T12:00"); return `${d.getMonth() + 1}/${d.getDate()}(${W[d.getDay()]})`; };
   body.innerHTML = `<p style="margin:6px 0"><b>최근 3개월</b> ${cnt.size ? [...cnt].map(([s, n]) => `${esc(s)} ${n}번`).join(" · ") : "출석 없음"}<br><small style="color:var(--muted)">마지막 출석 ${day(rows[0].date)} · 전체 기록 ${rows.length}번</small></p>`
     + [...months].map(([k, list]) => `<p style="margin:4px 0"><b>${+k.slice(0, 4)}년 ${+k.slice(5)}월</b> ${list.length}번<br>${list.map(r => `${day(r.date)} ${esc(r.service)}`).join(", ")}</p>`).join("");
-});
+}
 $("#dlg").addEventListener("close", async () => {
   if ($("#dlg").returnValue !== "ok" || !S.canEdit) return;
   const f = $("#addForm");
@@ -994,14 +1006,25 @@ $("#dlgDel").onclick = async () => {
   if (!m || !S.canEdit || !confirm(`${m.name} 성도를 명단에서 지울까요? 출석 기록은 남아요.`)) return;
   try { await S.store.deleteMember(S.church.id, editingId); $("#dlg").close("cancel"); } catch (e) { toastErr("삭제 실패: " + e.message); }
 };
-$("#editDone").onclick = () => $("#editMode").click();
-$("#editMode").onclick = () => {
-  S.edit = !S.edit;
-  $("#editMode").setAttribute("aria-pressed", S.edit);
+// 이름을 누르면 출석 체크 대신 정보(info) 또는 출석 이력(hist)이 열리는 모드
+function setMode(mode) {
+  S.edit = S.edit === mode ? false : mode;
+  $("#editMode").setAttribute("aria-pressed", S.edit === "info");
+  $("#histMode").setAttribute("aria-pressed", S.edit === "hist");
+  $("#editMsg").textContent = S.edit === "hist" ? "이름을 누르면 그 성도가 언제 왔는지 보여요. 지금은 출석 체크가 안 돼요." : "이름을 누르면 정보·전화·문자가 열려요. 지금은 출석 체크가 안 돼요.";
   $("#editBar").classList.toggle("hidden", !S.edit);
   $("#list").classList.toggle("editing", S.edit);
   render();
-};
+}
+$("#editDone").onclick = () => setMode(S.edit);
+$("#editMode").onclick = () => setMode("info");
+$("#histMode").onclick = () => setMode("hist");
+function openHist(id) {
+  const m = S.members.find(x => x.id === id); if (!m) return;
+  $("#histName").textContent = `${m.name} 출석 이력`;
+  $("#histDlg").showModal();
+  showHistory(id, $("#histDlgBody"));
+}
 
 // ───────────── 통계 ─────────────
 let statSvc = null, statRows = [];
