@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<meta name="build" content="2026-10-18.4">
+<meta name="build" content="2026-10-18.5">
 <title>교회 출석 · THE MORE</title>
 <meta name="theme-color" content="#1F6F78">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1148,15 +1148,26 @@ async function importPhotos(files) {
   const byPhoto = new Map(ms.filter(m => m.photo).map(m => [base(m.photo), m]));
   const byId = new Map(ms.map(m => [String(m.id).toLowerCase(), m]));
   const byName = new Map(); ms.forEach(m => byName.set(m.name, byName.has(m.name) ? null : m)); // 같은 이름 두 명이면 이름으로는 안 맞춤
-  let ok = 0; const miss = [];
+  // 이름이 긴 것부터 찾아 겹치지 않게 (같은 이름이 두 명이면 건너뜀)
+  const names = [...byName.entries()].filter(([k, v]) => v && k && k.length >= 2).sort((a, b) => b[0].length - a[0].length);
+  const exact = (f) => { const n = base(f.name); return byPhoto.has(n) || byId.has(stem(n)) || byId.has(stem(n).split(/[._\s-]/)[0]) || !!byName.get(stem(f.name).normalize("NFC")) ? 1 : 0; };
+  const namesIn = (t) => { const out = []; for (const [k, v] of names) if (t.includes(k)) { out.push(v); t = t.split(k).join("\u0000"); } return out; };
+  let ok = 0; const miss = [], had = [], own = new Set();
+  // 정확히 맞는 사진을 먼저 처리해야 부부 사진이 개인 사진을 덮지 않음
+  files.sort((a, b) => exact(b) - exact(a));
   for (const [i, f] of files.entries()) {
     const n = base(f.name);
     const m = byPhoto.get(n) || byId.get(stem(n)) || byId.get(stem(n).split(/[._\s-]/)[0]) || byName.get(stem(f.name).normalize("NFC"));
-    if (!m) { miss.push(f.name); continue; }
+    // 정확히 안 맞으면 파일 이름 안에 든 성도 이름으로 찾음: "김미숙A", "김성순 권사", 부부 사진 "강두원김보람"(두 사람 모두)
+    // (이름으로 찾은 사진은 이미 자기 사진이 있는 사람에겐 넣지 않음)
+    const named = m ? [m] : namesIn(stem(f.name).normalize("NFC").replace(/\s+/g, ""));
+    const found = m ? named : named.filter(x => !x.thumb && !own.has(x.id));
+    if (!found.length) { (named.length ? had : miss).push(f.name); continue; }
+    if (m) own.add(m.id);
     msg.textContent = `${i + 1}/${files.length}장 줄이는 중…`;
-    try { await S.store.updateMember(adminCid, m.id, { thumb: await makeThumb(f) }); ok++; } catch { miss.push(f.name); }
+    try { const thumb = await makeThumb(f); for (const x of found) { await S.store.updateMember(adminCid, x.id, { thumb }); ok++; } } catch { miss.push(f.name); }
   }
-  msg.textContent = `${ok}장을 넣었어요.` + (miss.length ? ` 짝을 못 찾은 ${miss.length}장: ${miss.slice(0, 5).join(", ")}${miss.length > 5 ? " …" : ""}` : "");
+  msg.innerHTML = esc(`${ok}명에게 사진을 넣었어요.` + (had.length ? ` 이미 사진이 있어 건너뛴 ${had.length}장.` : "")) + (miss.length ? `<details><summary>짝을 못 찾은 ${miss.length}장 보기</summary>${miss.map(esc).join("<br>")}</details>` : "");
 }
 $("#aPhotos").onchange = (e) => { importPhotos(e.target.files); e.target.value = ""; };
 $("#aPhotoDir").onchange = (e) => { importPhotos(e.target.files); e.target.value = ""; };
