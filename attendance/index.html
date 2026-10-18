@@ -325,7 +325,7 @@ textarea.memo{min-height:60px;border:1px solid var(--line);background:var(--bg);
     </div>
     <div class="two">
       <label>성별<select name="gender"><option value="">-</option><option>남성</option><option>여성</option></select></label>
-      <label>연락처<input name="phone" inputmode="tel" placeholder="010-"></label>
+      <label>연락처<input name="phone" inputmode="numeric" placeholder="숫자만 누르면 - 자동" autocomplete="off"></label>
     </div>
     <div class="two">
       <label>같은 가족<select name="household"></select></label>
@@ -829,6 +829,16 @@ $("#churchPick").onchange = (e) => pickChurch(S.churches.find(c => c.id === e.ta
 
 // 성도 추가·정보
 const TEXT_FIELDS = ["name","role","group","gender","phone","household","relation","district","regDate","birthSolar","birthLunar","anniversary","baptism","memo"];
+// 숫자만 눌러도 010-1234-5678 / 02-123-4567 / 031-123-4567 모양으로
+function fmtPhone(v) {
+  const d = String(v).replace(/\D/g, "").slice(0, 11);
+  if (d.startsWith("02")) return d.length < 3 ? d : d.length < 6 ? `02-${d.slice(2)}` : d.length < 10 ? `02-${d.slice(2, -4)}-${d.slice(-4)}`.replace(/-$/, "") : `02-${d.slice(2, 6)}-${d.slice(6, 10)}`;
+  if (d.length < 4) return d;
+  if (d.length < 8) return `${d.slice(0, 3)}-${d.slice(3)}`;
+  if (d.length < 11) return `${d.slice(0, 3)}-${d.slice(3, 6)}-${d.slice(6)}`;
+  return `${d.slice(0, 3)}-${d.slice(3, 7)}-${d.slice(7)}`;
+}
+document.querySelector('input[name="phone"]').addEventListener("input", (e) => { e.target.value = fmtPhone(e.target.value); });
 let editingId = null, dlgThumb = "";
 function showDlgPhoto(name) {
   $("#phView").innerHTML = dlgThumb ? `<img src="${esc(dlgThumb)}" alt="">` : `<span class="ph">${esc(name?.[0] || "?")}</span>`;
