@@ -138,22 +138,66 @@ function monthsText_(list) {
 }
 
 // ---------- 시트 읽기·쓰기 ----------
+// 예전 앱시트 시트처럼: 진한 초록 제목줄 + 흰 굵은 글씨, 줄무늬, 테두리, 드롭다운과 값별 색
+const HEAD_BG = "#356856", BAND = "#F2F7F4", GRID = "#D5DDDC";
+const CHIPS = {
+  gender: { "남성": ["#DDF0D5", "#2E6B1F"], "여성": ["#DCEBFA", "#1F5FA8"] },
+  status: { "유지": ["#E6DDF8", "#5B3FA0"], "탈퇴": ["#E3E7EC", "#5B6A72"] },
+  kind: { "입금": ["#DDF0D5", "#2E6B1F"], "지출": ["#FBE3E1", "#B3261E"] },
+  method: { "계좌이체": ["#E1EEEE", "#1F6F78"], "현금": ["#FBEEDC", "#A15C07"] },
+};
 function writeTable_(sh, cols, rows, opt) {
   opt = opt || {};
+  const n = cols.length, extra = opt.plain ? 0 : 50; // 새 줄을 적을 아래 50줄도 같은 모양
   sh.clear();
   sh.getProtections(SpreadsheetApp.ProtectionType.RANGE).forEach(p => p.remove());
+  sh.getBandings().forEach(b => b.remove());
+  sh.clearConditionalFormatRules();
+  sh.getRange(1, 1, sh.getMaxRows(), sh.getMaxColumns()).clearDataValidations();
   const head = cols.map(c => c[1]);
   const all = [head].concat(rows.map(r => cols.map(([k]) => r[k] == null ? "" : r[k])));
-  const range = sh.getRange(1, 1, all.length, head.length);
+  if (sh.getMaxRows() < all.length + extra) sh.insertRowsAfter(sh.getMaxRows(), all.length + extra - sh.getMaxRows());
+  const range = sh.getRange(1, 1, all.length, n);
   range.setNumberFormat("@"); // 010…, 2026-10, 2026-10-12 가 숫자·날짜로 바뀌지 않게
   range.setValues(all.map(r => r.map(v => typeof v === "number" ? v : String(v))));
-  cols.forEach(([k], i) => { if (opt.numbers && opt.numbers.indexOf(k) >= 0 && rows.length) sh.getRange(2, i + 1, rows.length, 1).setNumberFormat("#,##0"); });
-  sh.getRange(1, 1, 1, head.length).setFontWeight("bold").setBackground("#E1EEEE");
+  if (extra) sh.getRange(all.length + 1, 1, extra, n).setNumberFormat("@");
+  cols.forEach(([k], i) => { if (opt.numbers && opt.numbers.indexOf(k) >= 0) sh.getRange(2, i + 1, rows.length + extra || 1, 1).setNumberFormat("#,##0").setHorizontalAlignment("right"); });
   sh.setFrozenRows(1);
   if (opt.lock && rows.length) { // 이미 앱에 있는 줄은 고치면 경고 (새 줄은 아래에 자유롭게)
-    sh.getRange(2, 1, rows.length, head.length).protect().setDescription(opt.lock).setWarningOnly(true);
+    sh.getRange(2, 1, rows.length, n).protect().setDescription(opt.lock).setWarningOnly(true);
   }
-  if (opt.note) sh.getRange(1, head.length + 2).setValue(opt.note).setFontColor("#5B6A72");
+  if (opt.plain) return;
+
+  const body = sh.getRange(1, 1, all.length + extra, n);
+  body.applyRowBanding(SpreadsheetApp.BandingTheme.GREEN, true, false)
+    .setHeaderRowColor(HEAD_BG).setFirstRowColor("#FFFFFF").setSecondRowColor(BAND);
+  body.setBorder(true, true, true, true, true, true, GRID, SpreadsheetApp.BorderStyle.SOLID).setVerticalAlignment("middle").setFontSize(10);
+  sh.getRange(1, 1, 1, n).setFontWeight("bold").setFontColor("#FFFFFF").setHorizontalAlignment("center");
+  sh.setRowHeights(1, all.length + extra, 28);
+  if (opt.freezeCols) sh.setFrozenColumns(opt.freezeCols);
+
+  // 드롭다운 + 값별 색 (성별·회원상태·구분·방법)
+  const rules = [];
+  cols.forEach(([k], i) => {
+    const chip = CHIPS[k]; if (!chip || opt.readOnly) return;
+    const col = sh.getRange(2, i + 1, all.length - 1 + extra, 1);
+    col.setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(Object.keys(chip), true).setAllowInvalid(true).build()).setHorizontalAlignment("center");
+    Object.keys(chip).forEach(v => rules.push(SpreadsheetApp.newConditionalFormatRule().whenTextEqualTo(v).setBackground(chip[v][0]).setFontColor(chip[v][1]).setRanges([col]).build()));
+  });
+  (opt.rules || []).forEach(f => rules.push(f(sh, all.length - 1 + extra)));
+  if (rules.length) sh.setConditionalFormatRules(rules);
+
+  sh.autoResizeColumns(1, n);
+  cols.forEach(([k], i) => { const w = sh.getColumnWidth(i + 1) + 16; sh.setColumnWidth(i + 1, Math.max(k === "id" ? 80 : 70, Math.min(w, k === "memo" || k === "detail" || k === "months" ? 320 : 200))); });
+  if (opt.note) sh.getRange(1, n + 2).setValue(opt.note).setFontColor("#5B6A72").setFontSize(10);
+}
+// 탈퇴 회원 줄은 흐리게, 3개월 이상 미납은 주황
+function inactiveRow_(sh, rows) {
+  const c = String.fromCharCode(64 + MEM_COLS.findIndex(x => x[0] === "status") + 1);
+  return SpreadsheetApp.newConditionalFormatRule().whenFormulaSatisfied("=$" + c + "2=\"탈퇴\"").setFontColor("#9AA5AB").setRanges([sh.getRange(2, 1, rows, MEM_COLS.length)]).build();
+}
+function manyDue_(sh, rows) {
+  return SpreadsheetApp.newConditionalFormatRule().whenFormulaSatisfied("=$D2>=3").setBackground("#FBEEDC").setFontColor("#A15C07").setRanges([sh.getRange(2, 1, rows, 7)]).build();
 }
 function readTable_(sh, cols) {
   if (!sh) return [];
@@ -186,14 +230,14 @@ function load_(g) {
 function writeAll_(g, d) {
   const ss = SpreadsheetApp.getActive();
   const memRows = d.members.map(m => { const o = {}; MEM_COLS.forEach(([k]) => { o[k] = m[k] == null ? "" : m[k]; }); return o; });
-  writeTable_(sheet_(T_MEM, 0), MEM_COLS, memRows, { note: "고친 칸·새 줄은 메뉴 ② 저장으로 앱에 들어가요. 회원ID 칸은 비워 두면 새 회원이에요." });
-  const snap = sheet_(SNAP); writeTable_(snap, MEM_COLS, memRows); snap.hideSheet();
+  writeTable_(sheet_(T_MEM, 0), MEM_COLS, memRows, { numbers: ["fee"], freezeCols: 2, rules: [inactiveRow_], note: "고친 칸·새 줄은 메뉴 ② 저장으로 앱에 들어가요. 회원ID 칸은 비워 두면 새 회원이에요." });
+  const snap = sheet_(SNAP); writeTable_(snap, MEM_COLS, memRows, { plain: true }); snap.hideSheet();
 
-  writeTable_(sheet_(T_PAY, 1), PAY_COLS, d.payments, { numbers: ["amount"], lock: "이미 앱에 있는 납부 기록 (고치거나 지울 때는 앱에서)",
+  writeTable_(sheet_(T_PAY, 1), PAY_COLS, d.payments, { numbers: ["amount"], freezeCols: 3, lock: "이미 앱에 있는 납부 기록 (고치거나 지울 때는 앱에서)",
     note: "새 납부는 맨 아래 줄에 납부ID를 비우고 회원ID(또는 이름)·납부월(2026-10)·금액을 적은 뒤 ② 저장. 납부일·방법은 비우면 오늘·계좌이체." });
 
   const ledRows = d.ledger.map(e => ({ id: e.id, date: e.date, kind: e.kind === "in" ? "입금" : "지출", amount: e.amount, category: e.category, memo: e.memo, receipts: (e.receipts || []).length ? (e.receipts || []).length + "장" : "", by: e.by }));
-  writeTable_(sheet_(T_LED, 2), LED_COLS, ledRows, { numbers: ["amount"], lock: "이미 앱에 있는 장부 (고치거나 지울 때는 앱에서)",
+  writeTable_(sheet_(T_LED, 2), LED_COLS, ledRows, { numbers: ["amount"], freezeCols: 2, lock: "이미 앱에 있는 장부 (고치거나 지울 때는 앱에서)",
     note: "회비 아닌 입금·지출만 적어요. 새 줄은 장부ID를 비우고 날짜·구분(입금/지출)·금액·항목을 적은 뒤 ② 저장. 영수증 사진은 앱에서 붙여요." });
 
   const due = d.members.map(m => ({ m: m, due: dueMonths_(m, g) })).filter(x => x.due.length)
@@ -201,7 +245,7 @@ function writeAll_(g, d) {
   const fee = (m) => toNum_(m.fee) || toNum_(g.fee) || 5000;
   const DUE_COLS = [["id", "회원ID"], ["name", "이름"], ["phone", "연락처"], ["n", "미납개월"], ["months", "미납월"], ["amount", "미납금액"], ["notice", "마지막안내"]];
   writeTable_(sheet_(T_DUE, 3), DUE_COLS, due.map(x => ({ id: x.m.id, name: x.m.name, phone: x.m.phone, n: x.due.length, months: monthsText_(x.due), amount: x.due.length * fee(x.m), notice: x.m.lastNotice || "" })),
-    { numbers: ["n", "amount"], note: lastMonth_() + "까지 · 활동 회원만 · " + due.length + "명 " + won_(due.reduce((s, x) => s + x.due.length * fee(x.m), 0)) + "원 (보기 전용)" });
+    { numbers: ["n", "amount"], freezeCols: 2, rules: [manyDue_], note: lastMonth_() + "까지 · 활동 회원만 · " + due.length + "명 " + won_(due.reduce((s, x) => s + x.due.length * fee(x.m), 0)) + "원 (보기 전용)" });
 
   const keys = Object.keys(d.totals).sort();
   const open = g.openingMonth || keys[0] || today_().slice(0, 7);
@@ -211,7 +255,7 @@ function writeAll_(g, d) {
     const o = d.totals[ym] || {}; bal += toNum_(o.dues) + toNum_(o.inn) - toNum_(o.out);
     return { ym: ym, dues: toNum_(o.dues), inn: toNum_(o.inn), out: toNum_(o.out), bal: g.openingMonth ? bal : "" };
   }).reverse();
-  writeTable_(sheet_(T_SUM, 4), SUM_COLS, sumRows, { numbers: ["dues", "inn", "out", "bal"], note: g.openingMonth ? g.openingMonth + " 시작 잔액 " + won_(g.openingBalance) + "원 기준 (보기 전용)" : "앱 관리에서 장부 시작 잔액을 넣으면 잔액도 보여요." });
+  writeTable_(sheet_(T_SUM, 4), SUM_COLS, sumRows, { numbers: ["dues", "inn", "out", "bal"], freezeCols: 1, note: g.openingMonth ? g.openingMonth + " 시작 잔액 " + won_(g.openingBalance) + "원 기준 (보기 전용)" : "앱 관리에서 장부 시작 잔액을 넣으면 잔액도 보여요." });
 
   const LOG_COLS = [["at", "시각"], ["by", "누가"], ["action", "무엇을"], ["detail", "내용"]];
   writeTable_(sheet_(T_LOG, 5), LOG_COLS, d.logs.map(x => ({ at: x.at instanceof Date ? Utilities.formatDate(x.at, "Asia/Seoul", "yyyy-MM-dd HH:mm") : "", by: x.by, action: x.action, detail: x.detail })),
@@ -248,7 +292,8 @@ function memberChanges_(rows, snapRows, members) {
     MEM_COLS.forEach(([k]) => {
       if (k === "id" || !(k in r)) return;
       const was = old ? String(old[k] == null ? "" : old[k]) : "";
-      if (old ? r[k] !== was : r[k] !== "") f[k] = k === "fee" ? (toNum_(r[k]) || "") : k === "status" ? (r[k] === "탈퇴" ? "탈퇴" : "유지") : r[k];
+      const same = k === "fee" ? toNum_(r[k]) === toNum_(was) : r[k] === was;
+      if (old ? !same : r[k] !== "") f[k] = k === "fee" ? (toNum_(r[k]) || "") : k === "status" ? (r[k] === "탈퇴" ? "탈퇴" : "유지") : r[k];
     });
     if (!old) {
       if (!r.id || ids.indexOf(r.id) >= 0 && !before[r.id]) r.id = "M" + ("00" + (++next)).slice(-3);
