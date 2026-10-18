@@ -102,6 +102,22 @@ service cloud.firestore {
         allow read: if canSeeDues(gid);
         allow write: if isDuesManager(gid);
       }
+      // 영수증 사진 (줄인 JPEG, 문서 한도 1MB 안)
+      match /receipts/{rid} {
+        allow read: if canSeeDues(gid);
+        allow create, update: if isDuesManager(gid)
+          && request.resource.data.img is string
+          && request.resource.data.img.size() < 1000000;
+        allow delete: if isDuesManager(gid);
+      }
+      // 수정 기록: 쓴 사람·시각을 속일 수 없고, 아무도 고치거나 지울 수 없음
+      match /log/{lid} {
+        allow read: if canSeeDues(gid);
+        allow create: if isDuesManager(gid)
+          && request.resource.data.by == myEmail()
+          && request.resource.data.at == request.time;
+        allow update, delete: if false;
+      }
     }
   }
 }
