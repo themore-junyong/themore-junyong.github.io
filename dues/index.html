@@ -55,6 +55,7 @@ h1,h2{font-family:var(--display);margin:0;font-weight:700}
 .item .amt{font-variant-numeric:tabular-nums;font-weight:600}
 .item .amt.out{color:var(--bad)}
 .tag{display:inline-block;font-size:11px;font-weight:600;color:var(--warn);background:var(--warn-soft);border-radius:4px;padding:0 5px;margin-left:4px;vertical-align:middle}
+.link{cursor:pointer}
 .tag.ok{color:var(--flow);background:var(--flow-soft)}
 .pill{border:1px solid var(--flow);background:transparent;color:var(--flow);border-radius:999px;padding:5px 12px;font-size:14px;font-weight:600;text-decoration:none;white-space:nowrap}
 .pill.solid{background:var(--flow);color:var(--on-flow)}
@@ -913,8 +914,8 @@ function renderDue() {
     <small>${end.slice(0, 4)}년 ${+end.slice(5)}월까지 · 활동 회원 ${S.members.filter(m => (m.status || "유지") === "유지").length}명 기준. 이번 달은 다음 달부터 세요.</small>`;
   const list = rows.filter(r => r.due.length >= S.dueMin && (!q || r.m.name.includes(q)));
   $("#dueList").innerHTML = list.map(({ m, due }) => `
-    <div class="item"${due.length >= 3 ? ' style="border-color:var(--warn)"' : ""}><b>${esc(m.name)} <span class="tag">${due.length}개월</span>${m.lastNotice ? ` <span class="tag ok">안내 ${esc(m.lastNotice.slice(5).replace("-", "/"))}</span>` : ""}</b>
-      <small>${esc(monthsText(due))} · ${won(due.length * feeOf(m))}원</small>
+    <div class="item"${due.length >= 3 ? ' style="border-color:var(--warn)"' : ""}><b class="link" data-open="${esc(m.id)}">${esc(m.name)} <span class="tag">${due.length}개월</span>${m.lastNotice ? ` <span class="tag ok">안내 ${esc(m.lastNotice.slice(5).replace("-", "/"))}</span>` : ""}</b>
+      <small class="link" data-open="${esc(m.id)}">${esc(monthsText(due))} · ${won(due.length * feeOf(m))}원</small>
       <span class="side">
         ${m.phone ? `<a class="pill solid" data-notice="${esc(m.id)}" href="${esc(smsHref(m.phone, smsText(m, due)))}">💬 문자</a>` : `<span class="pill off">번호 없음</span>`}
         <button class="pill" data-open="${esc(m.id)}">${canEdit() ? "납부" : "보기"}</button>
