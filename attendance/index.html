@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<meta name="build" content="2026-10-18.7">
+<meta name="build" content="2026-10-18.8">
 <title>교회 출석 · THE MORE</title>
 <meta name="theme-color" content="#1F6F78">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -310,6 +310,13 @@ textarea.memo{min-height:60px;border:1px solid var(--line);background:var(--bg);
         <p class="hint">같은 세대ID로 묶인 가족마다 아빠를 세대주로, 엄마를 배우자로 맞춰요. 아빠가 없으면 엄마가 세대주예요. 먼저 바뀔 내용을 보여 드리고, 확인을 눌러야 저장돼요.</p>
         <div class="row"><button class="btn line" id="aHeadCheck">바뀔 내용 보기</button><button class="btn hidden" id="aHeadApply">이대로 저장</button></div>
         <div id="aHeadMsg" class="ok" style="white-space:pre-line;font-size:14px"></div>
+      </section>
+      <section>
+        <h2>구역(셀) 한꺼번에 넣기</h2>
+        <p class="hint">한 줄에 한 구역씩 "구역이름: 이름 이름 이름"처럼 붙여 넣으세요. 이름으로 성도를 찾아 구역 칸을 채워요. 여기 없는 성도의 구역은 그대로 둬요.</p>
+        <textarea id="aDist" placeholder="은혜: 홍길동 김영희 이철수&#10;다윗: 최준호 강하늘"></textarea>
+        <div class="row"><button class="btn line" id="aDistCheck">바뀔 내용 보기</button><button class="btn hidden" id="aDistApply">이대로 저장</button></div>
+        <div id="aDistMsg" class="ok" style="white-space:pre-line;font-size:14px"></div>
       </section>
       <section>
         <h2>성도 번호 정리</h2>
@@ -1302,6 +1309,49 @@ $("#aHeadApply").onclick = async () => {
   try {
     await S.store.importMembers(adminCid, headPlan.map(c => ({ id: c.id, relation: c.to })));
     msg.textContent = `${headPlan.length}명의 가족관계를 저장했어요.`; headPlan = []; $("#aHeadApply").classList.add("hidden");
+  } catch (e) { msg.textContent = "저장 실패: " + e.message; }
+};
+
+// 구역(셀) 한꺼번에 넣기: "구역: 이름 이름…" 줄을 읽어 이름으로 성도를 찾음
+// 이름이 딱 맞는 사람이 없으면 끝의 A/B/C를 떼거나 붙인 이름이 한 명뿐일 때 그 사람으로 짐작
+let distPlan = [];
+function planDistricts(text, members) {
+  const byName = new Map();
+  members.forEach(m => { const k = (m.name || "").replace(/\s/g, ""); if (!byName.has(k)) byName.set(k, []); byName.get(k).push(m); });
+  const base = (n) => n.replace(/[A-Za-z]$/, "");
+  const plan = new Map(), missing = [], twins = [], guessed = [], cells = [];
+  for (const line of text.split(/\n/)) {
+    const m = line.match(/^\s*([^:\t]+?)\s*[:\t]\s*(.+)$/); if (!m) continue;
+    const dist = m[1].trim(); cells.push(dist);
+    for (const raw of m[2].split(/[\s,·]+/).filter(Boolean)) {
+      let hit = byName.get(raw) || [];
+      if (!hit.length) {
+        const cand = members.filter(x => { const n = (x.name || "").replace(/\s/g, ""); return n !== raw && (base(n) === raw || n === base(raw)); });
+        if (cand.length === 1) { hit = cand; guessed.push(`${raw} → ${cand[0].name}`); }
+      }
+      if (!hit.length) { missing.push(`${raw}(${dist})`); continue; }
+      if (hit.length > 1) { twins.push(`${raw}(${dist}) ${hit.length}명`); continue; }
+      plan.set(hit[0].id, { id: hit[0].id, name: hit[0].name, from: hit[0].district || "", to: dist });
+    }
+  }
+  return { changes: [...plan.values()].filter(c => c.from !== c.to), same: [...plan.values()].filter(c => c.from === c.to).length, missing, twins, guessed, cells };
+}
+$("#aDistCheck").onclick = async () => {
+  const msg = $("#aDistMsg"); if (!adminCid) return (msg.textContent = "먼저 교회를 골라 주세요.");
+  msg.textContent = "살펴보는 중…";
+  const r = planDistricts($("#aDist").value, await S.store.allMembers(adminCid));
+  distPlan = r.changes;
+  $("#aDistApply").classList.toggle("hidden", !distPlan.length);
+  msg.textContent = `구역 ${r.cells.length}개 · ${distPlan.length}명의 구역을 넣어요.${r.same ? ` (이미 맞는 ${r.same}명)` : ""}`
+    + (r.missing.length ? `\n\n명단에서 못 찾은 이름 ${r.missing.length}명 (성도 정보에서 직접 넣어 주세요):\n` + r.missing.join(", ") : "")
+    + (r.twins.length ? `\n\n같은 이름이 여러 명이라 건너뛴 이름:\n` + r.twins.join(", ") : "")
+    + (r.guessed.length ? `\n\n비슷한 이름으로 짐작한 사람:\n` + r.guessed.join(", ") : "");
+};
+$("#aDistApply").onclick = async () => {
+  const msg = $("#aDistMsg"); if (!distPlan.length) return;
+  try {
+    await S.store.importMembers(adminCid, distPlan.map(c => ({ id: c.id, district: c.to })));
+    msg.textContent = `${distPlan.length}명의 구역을 저장했어요. 첫 화면 위쪽에 구역별 버튼이 생겨요.`; distPlan = []; $("#aDistApply").classList.add("hidden");
   } catch (e) { msg.textContent = "저장 실패: " + e.message; }
 };
 
