@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<meta name="build" content="2026-10-18.2">
+<meta name="build" content="2026-10-18.3">
 <title>교회 출석 · THE MORE</title>
 <meta name="theme-color" content="#1F6F78">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -696,10 +696,11 @@ function render() {
     if (!cards.has(key)) cards.set(key, []);
     cards.get(key).push(m);
   }
-  const rank = (m) => { const i = GROUP_ORDER.indexOf(m.group); return i < 0 ? 99 : i; };
+  // 순서: 교역자 → 가족(세대ID로 묶인 2명 이상) → 그 밖의 성도 가나다 → 청년 → 청소년
+  const tier = (g) => g[0].group === "교역자" ? 0 : g.length > 1 ? 1 : g[0].group === "청년" ? 3 : g[0].group === "청소년" ? 4 : 2;
   const relRank = (m) => ({ "세대주": 0, "배우자": 1 }[m.relation] ?? 2);
   const list = [...cards.values()].map(g => g.sort((a, b) => relRank(a) - relRank(b) || (a.name || "").localeCompare(b.name || "", "ko")))
-    .sort((a, b) => rank(a[0]) - rank(b[0]) || (a[0].name || "").localeCompare(b[0].name || "", "ko"))
+    .sort((a, b) => tier(a) - tier(b) || (a[0].name || "").localeCompare(b[0].name || "", "ko"))
     .map(g => ({ head: g[0], size: g.length, people: g.filter(shown) }))
     .filter(c => c.people.length);
   if (!list.length) { $("#list").innerHTML = `<p class="empty">${hideDone && present && !S.q && visibleMembers().length ? "이 목록은 모두 출석했어요." : S.members.length ? "찾는 성도가 없어요." : "아직 성도가 없어요. 관리 화면에서 가져오거나 + 새 성도로 추가해 주세요."}</p>`; return; }
