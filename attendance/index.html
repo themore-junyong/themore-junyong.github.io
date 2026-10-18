@@ -26,6 +26,10 @@ button,input,select,textarea{font:inherit;color:inherit}
 button{cursor:pointer}
 :focus-visible{outline:2px solid var(--flow);outline-offset:2px;border-radius:6px}
 .hidden{display:none!important}
+html,body{overscroll-behavior-y:contain}
+#ptr{position:fixed;left:50%;top:0;z-index:20;transform:translate(-50%,-48px);width:40px;height:40px;border-radius:50%;background:var(--surface);border:1px solid var(--line);box-shadow:0 2px 8px rgb(0 0 0 / .15);display:flex;align-items:center;justify-content:center;font-size:20px;color:var(--flow);pointer-events:none;transition:transform .15s}
+#ptr.go{animation:spin .8s linear infinite}
+@keyframes spin{to{rotate:360deg}}
 .wrap{max-width:720px;margin:0 auto;padding:0 16px 96px}
 h1,h2{font-family:var(--display);margin:0;font-weight:700}
 
@@ -161,6 +165,7 @@ textarea.memo{min-height:60px;border:1px solid var(--line);background:var(--bg);
 </style>
 </head>
 <body>
+<div id="ptr" aria-hidden="true">↻</div>
 <div class="wrap">
 
   <!-- 로딩 -->
@@ -1166,6 +1171,23 @@ $("#aExpAtt").onclick = async () => {
 
 window.addEventListener("online", () => watchAtt && S.church && watchAtt());
 boot();
+
+// 화면 맨 위에서 밑으로 당기면 새로고침 (홈 화면 앱·일부 브라우저는 기본 기능이 없어서 직접 넣음)
+(() => {
+  const ptr = document.getElementById("ptr"); let y0 = null, d = 0;
+  const blocked = () => document.querySelector("dialog[open]");
+  addEventListener("touchstart", (e) => { y0 = (scrollY <= 0 && !blocked() && e.touches.length === 1) ? e.touches[0].clientY : null; d = 0; }, { passive: true });
+  addEventListener("touchmove", (e) => {
+    if (y0 === null) return;
+    d = Math.max(0, Math.min(120, (e.touches[0].clientY - y0) * 0.5));
+    ptr.style.transform = `translate(-50%, ${d - 48}px) rotate(${d * 3}deg)`;
+  }, { passive: true });
+  addEventListener("touchend", () => {
+    if (y0 === null) return; y0 = null;
+    if (d >= 70) { ptr.style.transform = "translate(-50%, 24px)"; ptr.classList.add("go"); setTimeout(() => location.reload(), 150); }
+    else ptr.style.transform = "";
+  });
+})();
 </script>
 </body>
 </html>
