@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<meta name="build" content="2026-10-18.10">
+<meta name="build" content="2026-10-18.11">
 <title>교회 출석 · THE MORE</title>
 <meta name="theme-color" content="#1F6F78">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -735,13 +735,17 @@ function renderChips() {
   $("#chips").innerHTML = chips.map(c => `<button type="button" aria-pressed="${c === S.chip}" data-c="${esc(c)}">${esc(c)}</button>`).join("");
 }
 
+// 검색하면 찾은 사람의 가족(같은 세대ID)도 함께 보여 줌
 function visibleMembers() {
   const q = S.q.trim();
-  return S.members.filter(m => {
+  const list = S.members.filter(m => {
     if (S.chip === "장결자" ? !m.longAbsent : S.chip !== "전체" && m.group !== S.chip && m.district !== S.chip) return false;
     if (q && !(m.name || "").includes(q) && !(m.phone || "").replace(/\D/g, "").endsWith(q.replace(/\D/g, "") || "\u0000")) return false;
     return true;
   });
+  if (!q) return list;
+  const homes = new Set(list.map(m => m.household).filter(Boolean));
+  return S.members.filter(m => list.includes(m) || homes.has(m.household));
 }
 
 function render() {
