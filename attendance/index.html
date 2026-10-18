@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<meta name="build" content="2026-10-18.8">
+<meta name="build" content="2026-10-18.9">
 <title>교회 출석 · THE MORE</title>
 <meta name="theme-color" content="#1F6F78">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -344,6 +344,7 @@ textarea.memo{min-height:60px;border:1px solid var(--line);background:var(--bg);
   <form method="dialog" id="addForm">
     <h2 style="font-size:18px" id="dlgTitle">새 성도</h2>
     <div class="contact hidden" id="contact"><a id="cTel" href="#">📞 전화</a><a id="cSms" href="#">💬 문자</a></div>
+    <details id="hist" class="hidden"><summary>📅 출석 기록 보기</summary><div id="histBody" style="font-size:14px;line-height:1.6"></div></details>
     <div class="photo"><span id="phView"></span>
       <label class="ghost" style="cursor:pointer">사진 찍기·고르기<input type="file" id="phFile" accept="image/*" hidden></label>
       <button type="button" class="ghost hidden" id="phDel">사진 지우기</button></div>
@@ -491,6 +492,7 @@ function demoStore() {
     async updateMember(cid, id, data) { members.set(id, { ...members.get(id), ...data, id }); emitMembers(); },
     async deleteMember(cid, id) { members.delete(id); emitMembers(); },
     async attendanceSince(cid, from) { return [...att.values()].filter(r => r.date >= from); },
+    async memberAttendance(cid, mid) { return [...att.values()].filter(r => r.memberId === mid); },
     async saveChurch(cid, data) { Object.assign(church, data); return "demo"; },
     async importMembers(cid, rows) { rows.forEach(r => members.set(r.id, { ...(members.get(r.id) || {}), ...r })); emitMembers(); return rows.length; },
     async importAttendance(cid, rows) { rows.forEach(r => att.set(attId(r.date, r.service, r.memberId), { ...r, checkedBy: email })); emitAtt(); return rows.length; },
@@ -586,6 +588,10 @@ async function firebaseStore() {
     },
     async updateMember(cid, id, data) { await F.setDoc(F.doc(db, "churches", cid, "members", id), data, { merge: true }); },
     async deleteMember(cid, id) { await F.deleteDoc(F.doc(db, "churches", cid, "members", id)); },
+    async memberAttendance(cid, mid) {
+      const q = F.query(F.collection(db, "churches", cid, "attendance"), F.where("memberId", "==", mid));
+      return (await F.getDocs(q)).docs.map(d => d.data());
+    },
     async attendanceSince(cid, from) {
       const q = F.query(F.collection(db, "churches", cid, "attendance"), F.where("date", ">=", from));
       return (await F.getDocs(q)).docs.map(d => d.data());
@@ -945,9 +951,29 @@ function openMember(id) {
   $("#phFile").closest("label").classList.toggle("hidden", !S.canEdit);
   if (!S.canEdit) $("#phDel").classList.add("hidden");
   $("#more").open = !!m;
+  $("#hist").classList.toggle("hidden", !m); $("#hist").open = false; $("#histBody").textContent = ""; delete $("#histBody").dataset.for;
   $("#dlg").showModal();
 }
 $("#addBtn").onclick = () => openMember(null);
+// 한 성도의 출석 기록: 최근 3개월 예배별 횟수 + 달마다 온 날짜
+$("#hist").addEventListener("toggle", async () => {
+  const body = $("#histBody"), id = editingId;
+  if (!$("#hist").open || !id || body.dataset.for === id) return;
+  body.dataset.for = id; body.textContent = "불러오는 중…";
+  let rows;
+  try { rows = (await S.store.memberAttendance(S.church.id, id)).filter(r => r.present && /^\d{4}-\d{2}-\d{2}$/.test(r.date)); }
+  catch (e) { body.textContent = "불러오지 못했어요: " + e.message; delete body.dataset.for; return; }
+  if (editingId !== id) return;
+  if (!rows.length) { body.textContent = "아직 출석 기록이 없어요."; return; }
+  rows.sort((a, b) => b.date.localeCompare(a.date) || a.service.localeCompare(b.service, "ko"));
+  const d3 = new Date(); d3.setMonth(d3.getMonth() - 3); const from = ymd(d3);
+  const cnt = new Map(); rows.filter(r => r.date >= from).forEach(r => cnt.set(r.service, (cnt.get(r.service) || 0) + 1));
+  const months = new Map();
+  rows.forEach(r => { const k = r.date.slice(0, 7); if (!months.has(k)) months.set(k, []); months.get(k).push(r); });
+  const W = "일월화수목금토", day = (v) => { const d = new Date(v + "T12:00"); return `${d.getMonth() + 1}/${d.getDate()}(${W[d.getDay()]})`; };
+  body.innerHTML = `<p style="margin:6px 0"><b>최근 3개월</b> ${cnt.size ? [...cnt].map(([s, n]) => `${esc(s)} ${n}번`).join(" · ") : "출석 없음"}<br><small style="color:var(--muted)">마지막 출석 ${day(rows[0].date)} · 전체 기록 ${rows.length}번</small></p>`
+    + [...months].map(([k, list]) => `<p style="margin:4px 0"><b>${+k.slice(0, 4)}년 ${+k.slice(5)}월</b> ${list.length}번<br>${list.map(r => `${day(r.date)} ${esc(r.service)}`).join(", ")}</p>`).join("");
+});
 $("#dlg").addEventListener("close", async () => {
   if ($("#dlg").returnValue !== "ok" || !S.canEdit) return;
   const f = $("#addForm");
