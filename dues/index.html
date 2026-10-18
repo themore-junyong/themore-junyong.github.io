@@ -116,6 +116,12 @@ table.led tbody tr{cursor:pointer}
 .brow .l1 b{font-size:16px}
 .brow .l1 .amt{margin-left:auto;font-variant-numeric:tabular-nums;font-weight:600}
 .brow small{color:var(--muted);font-size:12px;word-break:break-all}
+.rclist{display:flex;flex-direction:column;gap:10px}
+.rclist figure{margin:0;display:flex;flex-direction:column;gap:4px}
+.rclist img,.rpimg{width:100%;border:1px solid var(--line);border-radius:8px;background:#fff}
+.filebtn{cursor:pointer}
+label.chk{flex-direction:row;align-items:center;gap:6px;align-self:end;padding-bottom:8px}
+label.chk input{width:auto}
 .brow .fix{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:6px}
 .brow select,.brow input{border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:6px 8px;font-size:14px;color:var(--ink);width:100%;min-width:0}
 .brow.warn{border-color:var(--warn)}
@@ -242,6 +248,7 @@ table.led tbody tr{cursor:pointer}
     <div id="tLed" class="hidden">
       <div class="list">
         <div class="sum" id="ledSum"></div>
+        <div class="row"><button class="btn" id="openReport">📊 월 회계 보고서</button><button class="btn line" id="openLog">🕘 수정 기록</button></div>
         <div class="row"><select id="ledYear" aria-label="연도"></select><span class="hint">줄을 누르면 그 달 내역이 보여요.</span></div>
         <div class="scroll"><table class="led"><thead><tr><th>월</th><th>회비</th><th>기타 입금</th><th>지출</th><th>월말 잔액</th></tr></thead><tbody id="ledRows"></tbody></table></div>
         <h2 style="font-size:18px;margin-top:8px" id="ledMonthTitle"></h2>
@@ -376,7 +383,43 @@ table.led tbody tr{cursor:pointer}
     <label>항목<input name="category" list="lCats" placeholder="봉사물품, 식비, 후원금…"></label>
     <datalist id="lCats"></datalist>
     <label>내용·받는 곳<input name="memo"></label>
+    <label>영수증 사진 (지출이면 꼭)<input name="receipt" type="file" accept="image/*"></label>
     <div class="row"><button class="btn" value="ok">저장</button><button class="btn line" value="cancel" formnovalidate>취소</button></div>
+  </form>
+</dialog>
+
+<!-- 영수증 보기 -->
+<dialog id="rcDlg">
+  <form method="dialog">
+    <h2 id="rcTitle">영수증</h2>
+    <div id="rcList" class="rclist"></div>
+    <p class="ok" id="rcMsg"></p>
+    <div class="row"><label class="btn line edit-only filebtn">＋ 사진 더 붙이기<input type="file" accept="image/*" id="rcAdd" hidden></label><button class="btn" value="cancel">닫기</button></div>
+  </form>
+</dialog>
+
+<!-- 월 회계 보고서 -->
+<dialog id="rpDlg">
+  <form method="dialog">
+    <h2>월 회계 보고서</h2>
+    <div class="two">
+      <label>달<input type="month" id="rpMonth"></label>
+      <label class="chk"><input type="checkbox" id="rpNames"> 미납자 이름도 넣기</label>
+    </div>
+    <p class="hint">회원 단톡방에 올리는 용도예요. 기본은 미납 인원만 넣고 이름은 빼요.</p>
+    <img id="rpImg" alt="보고서 미리보기" class="rpimg">
+    <div class="row"><button type="button" class="btn" id="rpShare">공유·저장</button><button type="button" class="btn line" id="rpCopy">글로 복사</button><button class="btn line" value="cancel">닫기</button></div>
+    <p class="ok" id="rpMsg"></p>
+  </form>
+</dialog>
+
+<!-- 수정 기록 -->
+<dialog id="lgDlg">
+  <form method="dialog">
+    <h2>수정 기록</h2>
+    <p class="hint">누가 언제 무엇을 넣고 고치고 지웠는지 남아요. 이 기록은 아무도 고치거나 지울 수 없어요.</p>
+    <ul id="lgList" class="plist"></ul>
+    <div class="row"><button type="button" class="btn line hidden" id="lgMore">더 보기</button><button class="btn" value="cancel">닫기</button></div>
   </form>
 </dialog>
 
@@ -515,7 +558,8 @@ function demoStore() {
     managers: [email], viewers: [], openingMonth: ym(-3), openingBalance: 350000 };
   const raw = [["M001","홍길동","남성","010-0000-0001",ym(-12)],["M002","김영희","여성","010-0000-0002",ym(-12)],["M003","이철수","남성","010-0000-0003",ym(-5)],
     ["M004","박민지","여성","010-0000-0004",ym(-12)],["M005","정수아","여성","",ym(-2)],["M006","강하늘","남성","010-0000-0006",ym(-12)]];
-  const db = { members: new Map(), payments: new Map(), ledger: new Map() };
+  const db = { members: new Map(), payments: new Map(), ledger: new Map(), receipts: new Map(), log: [] };
+  const log = (action, detail) => db.log.unshift({ id: "G" + db.log.length, at: new Date(), by: email, action, detail });
   raw.forEach(([id, name, gender, phone, j]) => db.members.set(id, { id, name, gender, phone, joined: j + "-10", status: "유지", region: "수원" }));
   db.members.set("M007", { id: "M007", name: "최탈퇴", status: "탈퇴", joined: ym(-12) + "-01", leftDate: ym(-4) + "-20" });
   if (new URLSearchParams(location.search).has("empty")) db.members.clear(); // ?demo&empty = 빈 단체로 가져오기 시험
@@ -541,24 +585,37 @@ function demoStore() {
     async sendLink() {}, async completeLink() { return false; },
     async isAdmin() { return !new URLSearchParams(location.search).has("viewer"); },
     async groups() { return [group]; },
-    async saveGroup(gid, data) { Object.assign(group, data); return "demo"; },
+    async saveGroup(gid, data, note) { Object.assign(group, data); if (note) log("설정 변경", note); return "demo"; },
+    async log(gid, a, d) { log(a, d); },
+    async logs() { return { rows: db.log.slice(0, 50), next: null }; },
+    async receipt(gid, rid) { return db.receipts.get(rid) || null; },
+    async addReceipt(gid, e, img) { const rid = e.id + "_" + Date.now(); db.receipts.set(rid, img); const x = db.ledger.get(e.id); x.receipts = [...(x.receipts || []), rid]; log("영수증 붙임", ledText(e)); return rid; },
+    async deleteReceipt(gid, e, rid) { db.receipts.delete(rid); const x = db.ledger.get(e.id); x.receipts = (x.receipts || []).filter(r => r !== rid); log("영수증 지움", ledText(e)); },
     watchMembers(gid, cb) { cbs.members = cb; emit(); return () => { cbs.members = null; }; },
     watchStats(gid, cb) { cbs.stats = cb; emit(); return () => { cbs.stats = null; }; },
     async paymentsOf(gid, mid) { return [...db.payments.values()].filter(p => p.memberId === mid); },
     async paymentsWhere(gid, field, from, to) { return [...db.payments.values()].filter(p => p[field] >= from && p[field] < to); },
     async ledgerBetween(gid, from, to) { return [...db.ledger.values()].filter(e => e.date >= from && e.date < to); },
     async all(gid, col) { return [...db[col].values()]; },
-    async saveMember(gid, id, data) { db.members.set(id, { ...db.members.get(id), ...data, id }); emit(); },
-    async addPayments(gid, list) { list.forEach(p => db.payments.set(p.id, { ...p, by: email })); emit(); },
-    async deletePayment(gid, p) { db.payments.delete(p.id); emit(); },
-    async addLedger(gid, e) { const id = "L" + Date.now(); db.ledger.set(id, { ...e, id, by: email }); emit(); },
-    async deleteLedger(gid, e) { db.ledger.delete(e.id); emit(); },
+    async saveMember(gid, id, data, note) { db.members.set(id, { ...db.members.get(id), ...data, id }); if (note) log(...note); emit(); },
+    async addPayments(gid, list) { list.forEach(p => db.payments.set(p.id, { ...p, by: email })); log("납부 추가", payText(list)); emit(); },
+    async deletePayment(gid, p) { db.payments.delete(p.id); log("납부 삭제", payText([p])); emit(); },
+    async addLedger(gid, e, img) {
+      const id = "L" + Date.now(), receipts = img ? [id + "_r"] : [];
+      if (img) db.receipts.set(id + "_r", img);
+      db.ledger.set(id, { ...e, id, by: email, receipts }); log("장부 추가", ledText(e)); emit(); return id;
+    },
+    async deleteLedger(gid, e) { db.ledger.delete(e.id); log("장부 삭제", ledText(e)); emit(); },
     async importRows(gid, col, rows) { rows.forEach(r => db[col].set(r.id, { ...db[col].get(r.id), ...r })); emit(); return rows.length; },
     async rebuild() { emit(); },
     async existing(gid, col, ids) { return new Set(ids.filter(id => db[col].has(id))); },
     async saveBank(gid, pays, leds) { pays.forEach(p => db.payments.set(p.id, { ...p, by: email })); leds.forEach(e => db.ledger.set(e.id, { ...e, by: email })); emit(); },
   };
 }
+
+// 수정 기록에 남길 한 줄
+const payText = (list) => { const by = {}; list.forEach(p => (by[p.name || p.memberId] ||= []).push(p.month)); return Object.entries(by).map(([n, ms]) => `${n} ${monthsText(ms)}`).join(", ") + ` · ${won(list.reduce((s, p) => s + toNum(p.amount), 0))}원`; };
+const ledText = (e) => `${e.date} ${e.kind === "in" ? "입금" : "지출"} ${e.category || ""} ${won(e.amount)}원${e.memo ? " · " + e.memo : ""}`;
 
 // 장부 합계: 낸 날짜가 속한 달 기준 { "2026-10": { dues, inn, out } }
 function buildTotals(payments, ledger) {
@@ -583,6 +640,8 @@ async function firebaseStore() {
   const col = (gid, c) => F.collection(db, "dues", gid, c);
   const statsRef = (gid) => F.doc(db, "dues", gid, "stats", "totals");
   const bump = (b, gid, ym, k, v) => b.set(statsRef(gid), { months: { [ym]: { [k]: F.increment(v) } } }, { merge: true });
+  // 수정 기록: 같은 배치에 한 줄씩. 규칙에서 고치거나 지울 수 없게 막음
+  const logTo = (b, gid, action, detail) => b.set(F.doc(col(gid, "log")), { at: F.serverTimestamp(), by: me, action, detail: String(detail || "").slice(0, 500) });
   const commitAll = async (ops, onProgress) => {
     for (let i = 0; i < ops.length; i += 400) { const b = F.writeBatch(db); ops.slice(i, i + 400).forEach(f => f(b)); await b.commit(); onProgress?.(Math.min(i + 400, ops.length)); }
   };
@@ -619,9 +678,39 @@ async function firebaseStore() {
       const seen = new Map(); snaps.forEach(s => s.docs.forEach(d => seen.set(d.id, { id: d.id, ...d.data() })));
       return [...seen.values()].sort((a, b) => a.name.localeCompare(b.name, "ko"));
     },
-    async saveGroup(gid, data) {
-      if (gid) { await F.setDoc(F.doc(db, "dues", gid), data, { merge: true }); return gid; }
-      return (await F.addDoc(F.collection(db, "dues"), data)).id;
+    async saveGroup(gid, data, note) {
+      if (gid) {
+        const b = F.writeBatch(db);
+        b.set(F.doc(db, "dues", gid), data, { merge: true });
+        if (note) logTo(b, gid, "설정 변경", note);
+        await b.commit(); return gid;
+      }
+      const id = (await F.addDoc(F.collection(db, "dues"), data)).id;
+      await this.log(id, "단체 만듦", data.name).catch(() => {});
+      return id;
+    },
+    async log(gid, action, detail) { const b = F.writeBatch(db); logTo(b, gid, action, detail); await b.commit(); },
+    async logs(gid, after) {
+      const q = [F.orderBy("at", "desc"), F.limit(50)];
+      if (after) q.splice(1, 0, F.startAfter(after));
+      const s = await F.getDocs(F.query(col(gid, "log"), ...q));
+      return { rows: s.docs.map(d => ({ ...d.data(), id: d.id, at: d.data().at?.toDate?.() || null })), next: s.docs.length === 50 ? s.docs[s.docs.length - 1] : null };
+    },
+    // 영수증 사진: 장부 줄마다 receipts/{ID} 문서에 줄인 JPEG를 담고, 장부 줄에는 ID 목록만 둠 (장부를 읽을 때 사진까지 받지 않게)
+    async receipt(gid, rid) { const s = await F.getDoc(F.doc(db, "dues", gid, "receipts", rid)); return s.exists() ? s.data().img : null; },
+    async addReceipt(gid, e, img) {
+      const rid = `${e.id}_${Date.now().toString(36)}`, b = F.writeBatch(db);
+      b.set(F.doc(db, "dues", gid, "receipts", rid), { img, ledgerId: e.id, by: me, at: F.serverTimestamp() });
+      b.set(F.doc(db, "dues", gid, "ledger", e.id), { receipts: F.arrayUnion(rid) }, { merge: true });
+      logTo(b, gid, "영수증 붙임", ledText(e));
+      await b.commit(); return rid;
+    },
+    async deleteReceipt(gid, e, rid) {
+      const b = F.writeBatch(db);
+      b.delete(F.doc(db, "dues", gid, "receipts", rid));
+      b.set(F.doc(db, "dues", gid, "ledger", e.id), { receipts: F.arrayRemove(rid) }, { merge: true });
+      logTo(b, gid, "영수증 지움", ledText(e));
+      await b.commit();
     },
     watchMembers(gid, cb) { return F.onSnapshot(col(gid, "members"), { includeMetadataChanges: true }, s => cb(s.docs.map(d => ({ ...d.data(), id: d.id })), s.metadata.hasPendingWrites)); },
     watchStats(gid, cb) { return F.onSnapshot(statsRef(gid), s => cb(s.exists() ? s.data() : { months: {} })); },
@@ -633,7 +722,12 @@ async function firebaseStore() {
       return (await F.getDocs(F.query(col(gid, "ledger"), F.where("date", ">=", from), F.where("date", "<", to)))).docs.map(d => ({ ...d.data(), id: d.id }));
     },
     async all(gid, c) { return (await F.getDocs(col(gid, c))).docs.map(d => ({ ...d.data(), id: d.id })); },
-    async saveMember(gid, id, data) { await F.setDoc(F.doc(db, "dues", gid, "members", id), data, { merge: true }); },
+    async saveMember(gid, id, data, note) {
+      const b = F.writeBatch(db);
+      b.set(F.doc(db, "dues", gid, "members", id), data, { merge: true });
+      if (note) logTo(b, gid, note[0], note[1]);
+      await b.commit();
+    },
     // 납부 문서 + 회원의 낸 달 목록 + 장부 합계를 한 번에
     async addPayments(gid, list) {
       const b = F.writeBatch(db);
@@ -642,6 +736,7 @@ async function firebaseStore() {
         b.set(F.doc(db, "dues", gid, "members", p.memberId), { paid: F.arrayUnion(p.month) }, { merge: true });
         bump(b, gid, p.paidDate.slice(0, 7), "dues", p.amount);
       });
+      logTo(b, gid, "납부 추가", payText(list));
       await b.commit();
     },
     async deletePayment(gid, p, monthStillPaid) {
@@ -649,22 +744,33 @@ async function firebaseStore() {
       b.delete(F.doc(db, "dues", gid, "payments", p.id));
       if (!monthStillPaid) b.set(F.doc(db, "dues", gid, "members", p.memberId), { paid: F.arrayRemove(p.month) }, { merge: true });
       bump(b, gid, (p.paidDate || p.month + "-01").slice(0, 7), "dues", -toNum(p.amount));
+      logTo(b, gid, "납부 삭제", payText([p]) + ` (${p.id})`);
       await b.commit();
     },
-    async addLedger(gid, e) {
-      const b = F.writeBatch(db);
-      b.set(F.doc(col(gid, "ledger")), { ...e, by: me, at: F.serverTimestamp() });
+    async addLedger(gid, e, img) {
+      const b = F.writeBatch(db), ref = F.doc(col(gid, "ledger")), data = { ...e, by: me, at: F.serverTimestamp() };
+      if (img) {
+        const rid = `${ref.id}_${Date.now().toString(36)}`;
+        b.set(F.doc(db, "dues", gid, "receipts", rid), { img, ledgerId: ref.id, by: me, at: F.serverTimestamp() });
+        data.receipts = [rid];
+      }
+      b.set(ref, data);
       bump(b, gid, e.date.slice(0, 7), e.kind === "in" ? "inn" : "out", e.amount);
+      logTo(b, gid, "장부 추가", ledText(e) + (img ? " · 영수증" : ""));
       await b.commit();
+      return ref.id;
     },
     async deleteLedger(gid, e) {
       const b = F.writeBatch(db);
       b.delete(F.doc(db, "dues", gid, "ledger", e.id));
       bump(b, gid, e.date.slice(0, 7), e.kind === "in" ? "inn" : "out", -toNum(e.amount));
+      (e.receipts || []).forEach(rid => b.delete(F.doc(db, "dues", gid, "receipts", rid)));
+      logTo(b, gid, "장부 삭제", ledText(e));
       await b.commit();
     },
     async importRows(gid, c, rows, onProgress) {
       await commitAll(rows.map(r => (b) => { const { id, ...rest } = r; b.set(F.doc(db, "dues", gid, c, id), { ...rest, by: me }, { merge: true }); }), onProgress);
+      await this.log(gid, "가져오기", `${c === "members" ? "회원" : "납부 기록"} ${rows.length}건`).catch(() => {});
       return rows.length;
     },
     async existing(gid, c, ids) {
@@ -686,6 +792,7 @@ async function firebaseStore() {
         }),
       ];
       for (let i = 0; i < ops.length; i += 150) { const b = F.writeBatch(db); ops.slice(i, i + 150).forEach(f => f(b)); await b.commit(); onProgress?.(Math.min(i + 150, ops.length)); }
+      await this.log(gid, "통장 정리", `회비 ${pays.length}개월 ${won(pays.reduce((s, p) => s + p.amount, 0))}원 · 장부 ${leds.length}건`).catch(() => {});
     },
     // 전체 기록에서 회원별 낸 달과 장부 합계를 다시 만듦 (가져오기 뒤, 숫자가 어긋났을 때)
     async rebuild(gid, onProgress) {
@@ -694,6 +801,7 @@ async function firebaseStore() {
       const ops = members.map(m => (b) => b.set(F.doc(db, "dues", gid, "members", m.id), { paid: [...(paid.get(m.id) || [])].sort() }, { merge: true }));
       ops.push((b) => b.set(statsRef(gid), buildTotals(payments, ledger)));
       await commitAll(ops, onProgress);
+      await this.log(gid, "다시 계산", `회원 ${members.length} · 납부 ${payments.length} · 장부 ${ledger.length}`).catch(() => {});
       return { members: members.length, payments: payments.length, ledger: ledger.length, orphans: payments.filter(p => !members.some(m => m.id === p.memberId)).length };
     },
   };
@@ -817,7 +925,8 @@ $("#dueSeg").onclick = (e) => { const b = e.target.closest("button"); if (!b) re
 // 문자 버튼을 누르면 안내한 날을 회원에 남겨, 누구에게 언제 안내했는지 미납자 목록에 보여요
 $("#dueList").addEventListener("click", (e) => {
   const a = e.target.closest("[data-notice]"); if (!a || !canEdit()) return;
-  S.store.saveMember(S.group.id, a.dataset.notice, { lastNotice: localToday() }).catch(() => {});
+  const m = S.members.find(x => x.id === a.dataset.notice);
+  S.store.saveMember(S.group.id, a.dataset.notice, { lastNotice: localToday() }, ["미납 안내 문자", `${m?.name || ""} ${monthsText(dueMonths(m || {}))}`]).catch(() => {});
 });
 $("#dueCopy").onclick = async () => {
   const rows = dueRows(), end = lastMonth();
@@ -917,8 +1026,13 @@ $("#mForm").addEventListener("submit", async (e) => {
   data.fee = toNum(f.fee.value) || "";
   if (data.status === "탈퇴" && !data.leftDate) data.leftDate = localToday();
   const id = M.id || nextId("M", S.members.map(m => m.id), 3)(0);
+  const old = S.members.find(x => x.id === M.id);
+  const label = Object.fromEntries(MEM_COLS);
+  const changed = old ? Object.keys(data).filter(k => String(old[k] ?? "") !== String(data[k] ?? "")).map(k => `${label[k] || k} ${old[k] || "(빈칸)"}→${data[k] || "(빈칸)"}`) : [];
+  if (old && !changed.length) { $("#mMsg").textContent = "바뀐 칸이 없어요."; return; }
+  const note = old ? ["회원 수정", `${data.name}: ${changed.join(", ")}`] : ["회원 추가", `${data.name} (${id})`];
   try {
-    await S.store.saveMember(S.group.id, id, M.id ? data : { ...data, paid: [] });
+    await S.store.saveMember(S.group.id, id, M.id ? data : { ...data, paid: [] }, note);
     if (!M.id) { $("#mDlg").close(); toast(`${data.name}님을 ${id}로 추가했어요.`); return; }
     $("#mMsg").textContent = "저장했어요."; $("#mTitle").textContent = data.name; renderMonths();
   } catch (err) { $("#mMsg").textContent = "저장 실패: " + err.message; }
@@ -978,11 +1092,14 @@ async function renderLedMonth() {
   ledItems = es.sort((a, b) => b.date.localeCompare(a.date));
   const dues = ((S.stats.months || {})[ym] || {}).dues || 0;
   $("#ledList").innerHTML = (dues ? `<div class="item"><b>회비 입금</b><small>납부 기록 탭에서 자세히 볼 수 있어요.</small><span class="side amt">+${won(dues)}원</span></div>` : "") +
-    (ledItems.map(e => `<div class="item"><b>${esc(e.category || (e.kind === "in" ? "입금" : "지출"))}</b><small>${esc(e.date)} · ${esc(e.memo || "")}</small>
-      <span class="side"><span class="amt ${e.kind === "out" ? "out" : ""}">${e.kind === "out" ? "-" : "+"}${won(e.amount)}원</span>${canEdit() ? `<button class="x" data-delled="${esc(e.id)}" aria-label="삭제">✕</button>` : ""}</span></div>`).join("")
+    (ledItems.map(e => { const n = (e.receipts || []).length; return `<div class="item"><b>${esc(e.category || (e.kind === "in" ? "입금" : "지출"))}${e.kind === "out" && !n ? ' <span class="tag">영수증 없음</span>' : ""}</b><small>${esc(e.date)} · ${esc(e.memo || "")}</small>
+      <span class="side"><span class="amt ${e.kind === "out" ? "out" : ""}">${e.kind === "out" ? "-" : "+"}${won(e.amount)}원</span>
+        ${n ? `<button class="pill" data-rc="${esc(e.id)}">🧾 ${n > 1 ? n + "장" : "영수증"}</button>` : canEdit() && e.kind === "out" ? `<button class="pill" data-rc="${esc(e.id)}">🧾 붙이기</button>` : ""}
+        ${canEdit() ? `<button class="x" data-delled="${esc(e.id)}" aria-label="삭제">✕</button>` : ""}</span></div>`; }).join("")
     || (dues ? "" : `<p class="empty">이 달은 기록이 없어요.</p>`));
 }
 $("#ledList").onclick = async (e) => {
+  const rc = e.target.closest("[data-rc]"); if (rc) return openReceipts(ledItems.find(x => x.id === rc.dataset.rc));
   const b = e.target.closest("[data-delled]"); if (!b) return;
   const it = ledItems.find(x => x.id === b.dataset.delled); if (!it || !confirm(`${it.date} ${it.category} ${won(it.amount)}원을 지울까요?`)) return;
   try { await S.store.deleteLedger(S.group.id, it); renderLedMonth(); } catch (err) { alert("삭제 실패: " + err.message); }
@@ -997,9 +1114,185 @@ $("#lForm").addEventListener("submit", async (e) => {
   const f = $("#lForm"), amount = toNum(f.amount.value);
   if (!amount) { f.amount.focus(); return; }
   const entry = { date: f.date.value, kind: lKind, amount, category: f.category.value.trim() || "기타", memo: f.memo.value.trim() };
-  try { await S.store.addLedger(S.group.id, entry); $("#lDlg").close(); S.ledMonth = entry.date.slice(0, 7); S.ledYear = entry.date.slice(0, 4); toast("장부에 적었어요."); renderLedger(); }
+  const file = f.receipt.files[0];
+  if (lKind === "out" && !file && !confirm("영수증 사진 없이 저장할까요? 나중에 장부에서 붙일 수도 있어요.")) return;
+  try {
+    const img = file ? await shrinkImage(file) : null;
+    await S.store.addLedger(S.group.id, entry, img); $("#lDlg").close(); S.ledMonth = entry.date.slice(0, 7); S.ledYear = entry.date.slice(0, 4); toast("장부에 적었어요."); renderLedger(); }
   catch (err) { alert("저장 실패: " + err.message); }
 });
+
+// ───────────── 영수증 ─────────────
+// 사진을 긴 쪽 1600px JPEG로 줄여 문서 하나(1MB 한도)에 들어가게. 글씨가 읽히는 선에서 화질을 낮춰 감
+async function shrinkImage(file) {
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => no(new Error("사진을 열지 못했어요.")); i.src = url; });
+    for (const [side, q] of [[1600, 0.72], [1400, 0.6], [1200, 0.5], [1000, 0.45]]) {
+      const k = Math.min(1, side / Math.max(img.naturalWidth, img.naturalHeight));
+      const c = document.createElement("canvas"); c.width = Math.round(img.naturalWidth * k); c.height = Math.round(img.naturalHeight * k);
+      const x = c.getContext("2d"); x.fillStyle = "#fff"; x.fillRect(0, 0, c.width, c.height); x.drawImage(img, 0, 0, c.width, c.height);
+      const d = c.toDataURL("image/jpeg", q);
+      if (d.length < 850000) return d;
+    }
+    throw new Error("사진이 너무 커요. 영수증 부분만 잘라서 다시 올려 주세요.");
+  } finally { URL.revokeObjectURL(url); }
+}
+let rcEntry = null;
+async function openReceipts(e) {
+  if (!e) return;
+  rcEntry = e; $("#rcMsg").textContent = "";
+  $("#rcTitle").textContent = `영수증 · ${e.date} ${e.category || ""} ${won(e.amount)}원`;
+  $("#rcAdd").closest("label").classList.toggle("hidden", !canEdit());
+  $("#rcDlg").showModal();
+  const ids = e.receipts || [];
+  $("#rcList").innerHTML = ids.length ? ids.map(rid => `<figure data-rid="${esc(rid)}"><p class="hint">불러오는 중…</p></figure>`).join("") : `<p class="empty">아직 영수증이 없어요. 아래에서 사진을 붙여 주세요.</p>`;
+  for (const rid of ids) {
+    const img = await S.store.receipt(S.group.id, rid).catch(() => null), fig = $(`#rcList figure[data-rid="${CSS.escape(rid)}"]`);
+    if (!fig) continue;
+    fig.innerHTML = img ? `<a href="${img}" target="_blank" download="영수증_${esc(e.date)}.jpg"><img src="${img}" alt="영수증"></a>${canEdit() ? `<button type="button" class="ghost" data-delrc="${esc(rid)}">이 사진 지우기</button>` : ""}` : `<p class="hint">사진을 찾지 못했어요.</p>`;
+  }
+}
+$("#rcAdd").onchange = async (ev) => {
+  const file = ev.target.files[0]; ev.target.value = ""; if (!file || !rcEntry) return;
+  $("#rcMsg").textContent = "올리는 중…";
+  try {
+    const rid = await S.store.addReceipt(S.group.id, rcEntry, await shrinkImage(file));
+    rcEntry.receipts = [...(rcEntry.receipts || []), rid]; openReceipts(rcEntry); renderLedMonth(); $("#rcMsg").textContent = "붙였어요.";
+  } catch (err) { $("#rcMsg").textContent = "실패: " + err.message; }
+};
+$("#rcList").onclick = async (ev) => {
+  const b = ev.target.closest("[data-delrc]"); if (!b || !confirm("이 영수증 사진을 지울까요?")) return;
+  try { await S.store.deleteReceipt(S.group.id, rcEntry, b.dataset.delrc); rcEntry.receipts = rcEntry.receipts.filter(r => r !== b.dataset.delrc); openReceipts(rcEntry); renderLedMonth(); }
+  catch (err) { $("#rcMsg").textContent = "실패: " + err.message; }
+};
+
+// ───────────── 수정 기록 ─────────────
+let lgNext = null;
+const fmtAt = (d) => d ? `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}` : "방금";
+async function loadLogs(more) {
+  if (!more) { $("#lgList").innerHTML = `<li class="hint">불러오는 중…</li>`; lgNext = null; }
+  try {
+    const r = await S.store.logs(S.group.id, more ? lgNext : null); lgNext = r.next;
+    const html = r.rows.map(x => `<li><span><b>${esc(x.action)}</b> ${esc(x.detail || "")}<br><small class="hint">${esc(fmtAt(x.at))} · ${esc(x.by || "")}</small></span></li>`).join("");
+    $("#lgList").innerHTML = (more ? $("#lgList").innerHTML : "") + html || `<li class="hint">아직 기록이 없어요. 이번 버전부터 남아요.</li>`;
+  } catch (e) { $("#lgList").innerHTML = `<li class="err">${esc(e.message)}</li>`; }
+  $("#lgMore").classList.toggle("hidden", !lgNext);
+}
+$("#openLog").onclick = () => { $("#lgDlg").showModal(); loadLogs(false); };
+$("#lgMore").onclick = () => loadLogs(true);
+
+// ───────────── 월 회계 보고서 ─────────────
+// 단톡방에 올릴 1080px 세로 이미지. 지난달 잔액 → 들어온 돈 → 나간 돈(항목별) → 이번 달 잔액 → 미납 현황
+async function reportData(ym) {
+  const g = S.group, rows = ledgerMonths(), r = rows.find(x => x.ym === ym) || { ym, dues: 0, inn: 0, out: 0, bal: null };
+  const [es, ps] = await Promise.all([
+    S.store.ledgerBetween(g.id, ym + "-01", addMonth(ym, 1) + "-01").catch(() => []),
+    S.store.paymentsWhere(g.id, "paidDate", ym + "-01", addMonth(ym, 1) + "-01").catch(() => []),
+  ]);
+  const sumBy = (k) => { const o = {}; es.filter(e => e.kind === k).forEach(e => o[e.category || "기타"] = (o[e.category || "기타"] || 0) + toNum(e.amount)); return Object.entries(o).sort((a, b) => b[1] - a[1]); };
+  const outs = es.filter(e => e.kind === "out");
+  const due = dueRows();
+  return { g, ym, r, hasBal: !!g.openingMonth && ym >= g.openingMonth && r.bal != null, prev: r.bal == null ? null : r.bal - (r.dues || 0) - (r.inn || 0) + (r.out || 0),
+    payers: new Set(ps.map(p => p.memberId)).size, inCats: sumBy("in"), outCats: sumBy("out"), outN: outs.length, rcN: outs.filter(e => (e.receipts || []).length).length,
+    due, dueMonths: due.reduce((s, x) => s + x.due.length, 0), dueAmt: due.reduce((s, x) => s + x.due.length * feeOf(x.m), 0),
+    active: S.members.filter(m => (m.status || "유지") === "유지").length };
+}
+function reportText(d, names) {
+  const y = d.ym.slice(0, 4), mo = +d.ym.slice(5), L = [];
+  L.push(`[${d.g.name}] ${y}년 ${mo}월 회계 보고`, "");
+  if (d.hasBal) L.push(`지난달 남은 돈 ${won(d.prev)}원`);
+  L.push(`들어온 돈 ${won((d.r.dues || 0) + (d.r.inn || 0))}원`, `  회비 ${won(d.r.dues)}원 (${d.payers}명)`, ...d.inCats.map(([c, v]) => `  ${c} ${won(v)}원`));
+  L.push(`나간 돈 ${won(d.r.out)}원`, ...d.outCats.map(([c, v]) => `  ${c} ${won(v)}원`));
+  if (d.outN) L.push(`  영수증 ${d.rcN}/${d.outN}건 보관`);
+  if (d.hasBal) L.push(`이번 달 남은 돈 ${won(d.r.bal)}원`);
+  L.push("", `회비 미납 ${d.due.length}명 · ${d.dueMonths}개월 · ${won(d.dueAmt)}원 (활동 회원 ${d.active}명, 지난달까지)`);
+  if (names && d.due.length) L.push(d.due.map(x => `${x.m.name} ${x.due.length}개월`).join(", "));
+  if (d.g.account) L.push(`회비 계좌 ${d.g.account}`);
+  L.push("", "함께해 주셔서 고맙습니다.");
+  return L.join("\n");
+}
+async function reportImage(d, names) {
+  const W = 1080, P = 72, ink = "#16222B", mute = "#5B6A72", flow = "#1F6F78", warn = "#A15C07", bad = "#B3261E", line = "#D5DDDC";
+  const sans = '"IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif', serif = '"Gowun Batang", serif';
+  await Promise.all(["600 40px \"IBM Plex Sans KR\"", "400 32px \"IBM Plex Sans KR\"", "700 56px \"Gowun Batang\""].map(f => document.fonts?.load(f).catch(() => {})));
+  // 먼저 줄 목록을 만든 뒤 높이를 정함
+  const R = []; // [kind, left, right, color]
+  if (d.hasBal) R.push(["row", "지난달 남은 돈", won(d.prev) + "원", ink]);
+  R.push(["head", "들어온 돈", "+" + won((d.r.dues || 0) + (d.r.inn || 0)) + "원", flow], ["sub", `회비 (${d.payers}명)`, won(d.r.dues) + "원"], ...d.inCats.map(([c, v]) => ["sub", c, won(v) + "원"]));
+  R.push(["head", "나간 돈", "-" + won(d.r.out) + "원", bad], ...(d.outCats.length ? d.outCats.map(([c, v]) => ["sub", c, won(v) + "원"]) : [["sub", "없음", ""]]));
+  if (d.outN) R.push(["note", `영수증 ${d.rcN}/${d.outN}건 보관 중`]);
+  if (d.hasBal) R.push(["total", "이번 달 남은 돈", won(d.r.bal) + "원", ink]);
+  const nameLines = [];
+  const c = document.createElement("canvas"), x = c.getContext("2d");
+  if (names && d.due.length) {
+    x.font = `400 30px ${sans}`; let cur = "";
+    d.due.map(q => `${q.m.name} ${q.due.length}`).forEach(t => { const n = cur ? cur + " · " + t : t; if (x.measureText(n).width > W - P * 2 - 40) { nameLines.push(cur); cur = t; } else cur = n; });
+    if (cur) nameLines.push(cur);
+  }
+  const H = { row: 76, head: 84, sub: 58, note: 56, total: 110 };
+  const height = 300 + R.reduce((s, r) => s + H[r[0]], 0) + 60 + 200 + nameLines.length * 44 + (d.g.account ? 70 : 0) + 120;
+  c.width = W; c.height = height;
+  x.fillStyle = "#F3F5F4"; x.fillRect(0, 0, W, height);
+  x.fillStyle = flow; x.fillRect(0, 0, W, 16);
+  x.textBaseline = "alphabetic";
+  const txt = (t, X, Y, font, color, align = "left") => { x.font = font; x.fillStyle = color; x.textAlign = align; x.fillText(t, X, Y); };
+  txt(d.g.name, P, 118, `600 34px ${sans}`, flow);
+  txt(`${d.ym.slice(0, 4)}년 ${+d.ym.slice(5)}월 회계 보고`, P, 196, `700 60px ${serif}`, ink);
+  // 카드
+  let y = 250; const cardTop = y;
+  const cardH = R.reduce((s, r) => s + H[r[0]], 0) + 40;
+  x.fillStyle = "#FFFFFF"; x.strokeStyle = line; x.lineWidth = 2; x.beginPath(); x.roundRect ? x.roundRect(P - 24, cardTop, W - (P - 24) * 2, cardH, 24) : x.rect(P - 24, cardTop, W - (P - 24) * 2, cardH); x.fill(); x.stroke();
+  y += 20;
+  for (const [k, a, b, col] of R) {
+    const h = H[k];
+    if (k === "row") { txt(a, P, y + 52, `400 34px ${sans}`, mute); txt(b, W - P, y + 52, `600 38px ${sans}`, col, "right"); }
+    if (k === "head") { x.fillStyle = line; x.fillRect(P, y + 6, W - P * 2, 2); txt(a, P, y + 62, `600 38px ${sans}`, col); txt(b, W - P, y + 62, `600 40px ${sans}`, col, "right"); }
+    if (k === "sub") { txt(a, P + 32, y + 42, `400 30px ${sans}`, mute); txt(b, W - P, y + 42, `400 30px ${sans}`, mute, "right"); }
+    if (k === "note") txt(a, P + 32, y + 40, `400 26px ${sans}`, mute);
+    if (k === "total") { x.fillStyle = ink; x.fillRect(P, y + 14, W - P * 2, 3); txt(a, P, y + 84, `600 40px ${sans}`, ink); txt(b, W - P, y + 86, `700 54px ${sans}`, ink, "right"); }
+    y += h;
+  }
+  y = cardTop + cardH + 60;
+  // 미납
+  txt("회비 미납 현황", P, y + 10, `600 36px ${sans}`, ink);
+  txt(d.due.length ? `${d.due.length}명 · ${d.dueMonths}개월 · ${won(d.dueAmt)}원` : "미납 없음 🎉", P, y + 80, `600 46px ${sans}`, d.due.length ? warn : flow);
+  txt(`활동 회원 ${d.active}명 중 · ${+lastMonth().slice(5)}월까지 · ${localToday().replace(/-/g, ".")} 기준`, P, y + 130, `400 26px ${sans}`, mute);
+  y += 170;
+  nameLines.forEach(l => { txt(l, P, y + 10, `400 30px ${sans}`, ink); y += 44; });
+  if (d.g.account) { txt("회비 계좌  " + d.g.account, P, y + 40, `400 30px ${sans}`, ink); y += 70; }
+  txt("함께해 주셔서 고맙습니다.", P, height - 56, `400 28px ${sans}`, mute);
+  return c;
+}
+let rpCanvas = null, rpData = null;
+async function drawReport() {
+  const ym = $("#rpMonth").value; if (!ym) return;
+  $("#rpMsg").textContent = "만드는 중…";
+  rpData = await reportData(ym);
+  rpCanvas = await reportImage(rpData, $("#rpNames").checked);
+  $("#rpImg").src = rpCanvas.toDataURL("image/png");
+  $("#rpMsg").textContent = rpData.hasBal ? "" : "관리에서 장부 시작 잔액을 넣으면 남은 돈도 보여요.";
+}
+$("#openReport").onclick = () => {
+  // 보통 지난달을 마감해서 올리니 기본은 지난달, 장부에서 더 이전 달을 골라 뒀으면 그 달
+  $("#rpMonth").value = S.ledMonth && S.ledMonth < lastMonth() ? S.ledMonth : lastMonth(); $("#rpImg").removeAttribute("src"); $("#rpDlg").showModal(); drawReport();
+};
+$("#rpMonth").onchange = drawReport;
+$("#rpNames").onchange = drawReport;
+$("#rpShare").onclick = async () => {
+  if (!rpCanvas) return;
+  const name = `${S.group.name}_${$("#rpMonth").value}_회계보고.png`;
+  const blob = await new Promise(ok => rpCanvas.toBlob(ok, "image/png"));
+  const file = new File([blob], name, { type: "image/png" });
+  if (navigator.canShare?.({ files: [file] })) { try { await navigator.share({ files: [file], text: `${S.group.name} ${+$("#rpMonth").value.slice(5)}월 회계 보고` }); return; } catch (e) { if (e.name === "AbortError") return; } }
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  $("#rpMsg").textContent = "이미지를 저장했어요. 단톡방에 사진으로 올리면 돼요.";
+};
+$("#rpCopy").onclick = async () => {
+  if (!rpData) return;
+  const t = reportText(rpData, $("#rpNames").checked);
+  try { await navigator.clipboard.writeText(t); $("#rpMsg").textContent = "복사했어요. 단톡방에 붙여 넣으면 돼요."; } catch { prompt("아래 글을 복사하세요", t); }
+};
 
 
 // ───────────── 통장 정리 ─────────────
@@ -1181,7 +1474,7 @@ async function checkBalance(r) {
   if (!g.openingMonth && r.firstBal && canEdit() && S.admin) {
     const f = r.firstBal, open = f.bal - (f.isOut ? -f.amount : f.amount);
     if (confirm(`장부 시작 잔액이 아직 없어요. 통장 첫 줄 기준으로 ${f.date.slice(0, 7)}월 1일 잔액을 ${won(open)}원으로 맞출까요?\n(그 달 1일부터 첫 거래 전까지 다른 거래가 있었다면 관리에서 고쳐 주세요.)`)) {
-      await S.store.saveGroup(g.id, { openingMonth: f.date.slice(0, 7), openingBalance: open }); Object.assign(g, { openingMonth: f.date.slice(0, 7), openingBalance: open });
+      await S.store.saveGroup(g.id, { openingMonth: f.date.slice(0, 7), openingBalance: open }, `시작 잔액 ${f.date.slice(0, 7)} ${won(open)}원 (통장 첫 줄로)`); Object.assign(g, { openingMonth: f.date.slice(0, 7), openingBalance: open });
     }
   }
   if (!g.openingMonth) return;
@@ -1231,7 +1524,10 @@ async function saveAdmin() {
   const data = { name, fee: toNum($("#aFee").value) || 5000, startMonth: $("#aStart").value || `${localToday().slice(0, 4)}-01`,
     managers: emailList($("#aManagers")), viewers: emailList($("#aViewers")), account: $("#aAccount").value.trim(),
     smsTemplate: $("#aSms").value.trim() || DEFAULT_SMS, openingMonth: $("#aOpenMonth").value || "", openingBalance: toNum($("#aOpenBal").value) };
-  const id = await S.store.saveGroup(adminGid, data);
+  const old = S.groups.find(x => x.id === adminGid), LB = { name: "단체 이름", fee: "월회비", startMonth: "미납 시작 달", managers: "총무", viewers: "보기 전용", account: "계좌", smsTemplate: "문자 문구", openingMonth: "시작 달", openingBalance: "시작 잔액" };
+  const show1 = (k, v) => k === "smsTemplate" ? "" : Array.isArray(v) ? v.join(", ") || "(없음)" : v === "" || v == null ? "(빈칸)" : v;
+  const note = old ? Object.keys(data).filter(k => JSON.stringify(old[k] ?? "") !== JSON.stringify(data[k] ?? "")).map(k => k === "smsTemplate" ? "문자 문구 바꿈" : `${LB[k]} ${show1(k, old[k])}→${show1(k, data[k])}`).join(" / ") : "";
+  const id = await S.store.saveGroup(adminGid, data, note);
   const g = { ...(S.groups.find(x => x.id === id) || {}), ...data, id };
   S.groups = [...S.groups.filter(x => x.id !== id), g].sort((a, b) => a.name.localeCompare(b.name, "ko"));
   S.group = g; adminGid = id;
