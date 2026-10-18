@@ -21,6 +21,9 @@ function onOpen() {
   SpreadsheetApp.getUi().createMenu("출석앱")
     .addItem("① 앱에서 성도 불러오기", "pullMembers")
     .addItem("② 시트 내용을 앱에 저장", "pushMembers")
+    .addSeparator()
+    .addItem("③ 앱 변경 자동 반영 켜기 (1시간마다)", "autoOn")
+    .addItem("자동 반영 끄기", "autoOff")
     .addToUi();
 }
 
@@ -189,11 +192,31 @@ function pushMembers() {
     ui.alert("저장했어요. 고친 " + (changes.length - added) + "명, 새로 넣은 " + added + "명.\n앱에 바로 보여요.");
   } catch (e) { ui.alert("저장하지 못했어요. 시트 내용은 그대로예요.\n" + e.message); }
 }
+// ---------- ③ 자동 반영 ----------
+// 1시간마다 앱 내용을 시트로 새로 받는다. 시트에 아직 앱에 저장 안 한 칸이 있으면 덮어쓰지 않고 건너뛴다.
+function autoOn() {
+  autoOff_();
+  ScriptApp.newTrigger("autoPull").timeBased().everyHours(1).create();
+  autoPull();
+  SpreadsheetApp.getUi().alert("켰어요. 앱에서 바꾼 내용이 1시간마다 시트에 들어와요.\n시트에서 고치고 아직 ② 저장을 안 했으면, 그동안은 덮어쓰지 않고 기다려요.");
+}
+function autoOff() { autoOff_(); SpreadsheetApp.getUi().alert("자동 반영을 껐어요."); }
+function autoOff_() { ScriptApp.getProjectTriggers().filter(t => t.getHandlerFunction() === "autoPull").forEach(t => ScriptApp.deleteTrigger(t)); }
+function autoPull() {
+  const ss = SpreadsheetApp.getActive();
+  const sh = ss.getSheetByName(SHEET), snap = ss.getSheetByName(SNAP);
+  const note = (t) => { const s = ss.getSheetByName(SETUP); if (s) s.getRange("A2:B2").setValues([["자동 반영", t]]); };
+  const now = Utilities.formatDate(new Date(), "Asia/Seoul", "M/d HH:mm");
+  if (sh && snap && diff_(readTable_(sh), readTable_(snap)).length) return note(now + " 건너뜀: 시트에 저장 안 한 칸이 있어요 (② 저장 필요)");
+  pullMembers_quiet_(church_());
+  note(now + " 앱 내용으로 새로 받음");
+}
+
 function pullMembers_quiet_(ch) {
   const ss = SpreadsheetApp.getActive();
   const rows = rowsFromDocs_(listDocs_("churches/" + ch.id + "/members"));
-  writeTable_(ss.getSheetByName(SHEET), rows);
-  const snap = ss.getSheetByName(SNAP);
+  writeTable_(ss.getSheetByName(SHEET) || ss.insertSheet(SHEET, 0), rows);
+  const snap = ss.getSheetByName(SNAP) || ss.insertSheet(SNAP);
   writeTable_(snap, rows);
   snap.hideSheet();
 }
