@@ -22,7 +22,7 @@ function onOpen() {
     .addItem("① 앱에서 성도 불러오기", "pullMembers")
     .addItem("② 시트 내용을 앱에 저장", "pushMembers")
     .addSeparator()
-    .addItem("③ 앱 변경 자동 반영 켜기 (1시간마다)", "autoOn")
+    .addItem("③ 앱 변경 자동 반영 켜기 (열 때마다 + 10분마다)", "autoOn")
     .addItem("자동 반영 끄기", "autoOff")
     .addToUi();
 }
@@ -196,12 +196,13 @@ function pushMembers() {
   } catch (e) { ui.alert("저장하지 못했어요. 시트 내용은 그대로예요.\n" + e.message); }
 }
 // ---------- ③ 자동 반영 ----------
-// 1시간마다 앱 내용을 시트로 새로 받는다. 시트에 아직 앱에 저장 안 한 칸이 있으면 덮어쓰지 않고 건너뛴다.
+// 시트를 열거나 새로고침할 때, 그리고 10분마다 앱 내용을 시트로 새로 받는다. 시트에 아직 앱에 저장 안 한 칸이 있으면 덮어쓰지 않고 건너뛴다.
 function autoOn() {
   autoOff_();
-  ScriptApp.newTrigger("autoPull").timeBased().everyHours(1).create();
+  ScriptApp.newTrigger("autoPull").timeBased().everyMinutes(10).create();
+  ScriptApp.newTrigger("autoPull").forSpreadsheet(SpreadsheetApp.getActive()).onOpen().create();
   autoPull();
-  SpreadsheetApp.getUi().alert("켰어요. 앱에서 바꾼 내용이 1시간마다 시트에 들어와요.\n시트에서 고치고 아직 ② 저장을 안 했으면, 그동안은 덮어쓰지 않고 기다려요.");
+  SpreadsheetApp.getUi().alert("켰어요. 시트를 열거나 새로고침하면, 그리고 10분마다 앱에서 바꾼 내용이 시트에 들어와요.\n시트에서 고치고 아직 ② 저장을 안 했으면, 그동안은 덮어쓰지 않고 기다려요.");
 }
 function autoOff() { autoOff_(); SpreadsheetApp.getUi().alert("자동 반영을 껐어요."); }
 function autoOff_() { ScriptApp.getProjectTriggers().filter(t => t.getHandlerFunction() === "autoPull").forEach(t => ScriptApp.deleteTrigger(t)); }

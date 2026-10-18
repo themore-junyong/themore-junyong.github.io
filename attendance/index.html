@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<meta name="build" content="2026-10-18.6">
+<meta name="build" content="2026-10-18.7">
 <title>교회 출석 · THE MORE</title>
 <meta name="theme-color" content="#1F6F78">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -798,10 +798,11 @@ function eventsOn(days, withBaptism) {
     if (lunarFmt) { const p = lunarFmt.formatToParts(d); lun = `${parseInt(p.find(x => x.type === "month").value)}-${parseInt(p.find(x => x.type === "day").value)}`; }
     return [`${d.getMonth() + 1}-${d.getDate()}`, lun];
   });
+  // 양력·음력이 둘 다 있으면 음력 생일만 보여 줌
   for (const m of S.members) {
     keys.forEach(([sol, lun], i) => {
       const d = days[i];
-      if (m.birthSolar && md(m.birthSolar) === sol) items.push({ m, i, d, what: "생일" });
+      if (m.birthSolar && !(lunarFmt && md(m.birthLunar)) && md(m.birthSolar) === sol) items.push({ m, i, d, what: "생일" });
       if (m.birthLunar && lun && md(m.birthLunar) === lun) items.push({ m, i, d, what: `생일 (음 ${lun.replace("-", ".")})` });
       if (m.anniversary && md(m.anniversary) === sol) items.push({ m, i, d, what: "결혼기념일" });
       if (withBaptism && m.baptism && md(m.baptism) === sol) items.push({ m, i, d, what: "세례일" });
