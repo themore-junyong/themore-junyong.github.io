@@ -1,6 +1,16 @@
 {
- "updated": "2026-10-19T21:40:49.791366+00:00",
+ "updated": "2026-10-19T22:39:30.543915+00:00",
  "posts": [
+  {
+   "kind": "앱",
+   "src": "tistory",
+   "title": "예배 끝나고 출석 체크, 시간 다 가죠? 남은 이름이 기도제목이 되는 출석 앱 | 앱 개발기 ③",
+   "link": "https://changenavigator.tistory.com/entry/%EA%B5%90%ED%9A%8C-%EC%B6%9C%EC%84%9D-%EC%B2%B4%ED%81%AC-%EB%82%A8%EC%9D%80-%EC%9D%B4%EB%A6%84%EC%9D%B4-%EA%B8%B0%EB%8F%84-%EC%A0%9C%EB%AA%A9%EC%9D%B8-%EC%9D%B4%EC%9C%A0-%EC%95%B1-%EA%B0%9C%EB%B0%9C%EA%B8%B0-%E2%91%A2",
+   "date": "2026-10-19T22:00:15+00:00",
+   "summary": "예배 끝나면, 누가 왔고 누가 안 왔는지 체크하느라 시간이 다 가지 않나요? 저도 그랬어요. 명부를 한 장씩 넘기며 이름을 확인하다 보면, 정작 안 오신 분께 연…",
+   "image": "https://blog.kakaocdn.net/dn/bjpNlG/dJMcaaUFCOT/CgoE4cHJPzDMJ0kuMGYATk/img.png",
+   "cat": "앱 이야기"
+  },
   {
    "kind": "영상",
    "src": "youtube",
