@@ -1,6 +1,15 @@
 {
- "updated": "2026-10-20T10:40:42.035771+00:00",
+ "updated": "2026-10-20T11:41:37.371264+00:00",
  "posts": [
+  {
+   "kind": "영상",
+   "src": "youtube",
+   "title": "예배 끝나고 출석 체크, 시간 다 가죠? | 앱 개발기 ③ #shorts",
+   "link": "https://www.youtube.com/watch?v=KcS6Vi0Qb0U",
+   "date": "2026-10-20T11:00:18+00:00",
+   "summary": "받은 것을 흘려보내는 사람, THE MORE 김준용입니다. 설교 · 하루 10분 성경 통독 · 간증을 나눕니다. 도움이 되셨다면 필요한 분께 보내주세요. 예배 끝…",
+   "image": "https://i.ytimg.com/vi/KcS6Vi0Qb0U/hqdefault.jpg"
+  },
   {
    "kind": "앱",
    "src": "tistory",
