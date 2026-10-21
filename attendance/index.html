@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<meta name="build" content="2026-10-21.3">
+<meta name="build" content="2026-10-21.4">
 <title>교회 출석 · THE MORE</title>
 <meta name="theme-color" content="#1F6F78">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -367,7 +367,7 @@ textarea.memo{min-height:60px;border:1px solid var(--line);background:var(--bg);
       <label>가족관계<input name="relation" placeholder="세대주, 배우자…"></label>
     </div>
     <details id="more">
-      <summary>더 보기 (구역·생일·메모)</summary>
+      <summary>더 보기 (구역·생일<span class="edit-phone">·메모</span>)</summary>
       <div style="display:flex;flex-direction:column;gap:10px">
         <div class="two">
           <label>구역<input name="district" placeholder="1구역"></label>
@@ -383,7 +383,7 @@ textarea.memo{min-height:60px;border:1px solid var(--line);background:var(--bg);
         </div>
         <label class="check"><input type="checkbox" name="longAbsent"> 장기결석자</label>
         <label class="check"><input type="checkbox" name="noTrack"> 결석 추적 안 함 (교역자·타지 등)</label>
-        <label>메모<textarea class="memo" name="memo"></textarea></label>
+        <label class="edit-phone">메모<textarea class="memo" name="memo"></textarea></label>
       </div>
     </details>
     <div class="row"><button class="btn" value="ok" id="dlgOk">추가</button><button class="btn line" value="cancel" formnovalidate>취소</button></div>
@@ -425,6 +425,7 @@ const COLS = [
   ["isLeader","리더여부"],["longAbsent","장결자"],["memo","메모"],["noTrack","추적제외"]
 ];
 const BOOL_FIELDS = new Set(["isLeader","longAbsent","noTrack"]);
+const PRIVATE = ["phone", "memo"]; // 리더에게 안 보이는 칸 (contacts에 따로 저장)
 
 function localToday() {
   const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
@@ -530,16 +531,21 @@ async function firebaseStore() {
 
   const memRef = (cid, id) => F.doc(db, "churches", cid, "members", id);
   const telRef = (cid, id) => F.doc(db, "churches", cid, "contacts", id);
-  // 성도 문서에 쓸 값과 연락처를 나눠 같은 배치에 넣음. 연락처를 비우면 contacts 문서를 지움
+  const split = (data) => { const rest = { ...data }, priv = {}; PRIVATE.forEach(k => { if (k in rest) { priv[k] = rest[k]; delete rest[k]; } }); return [rest, priv]; };
+  // 성도 문서에 쓸 값과 연락처·메모를 나눠 같은 배치에 넣음. 빈 값이면 그 칸을 지움
   const putMember = (b, cid, id, data, merge) => {
-    const { phone, ...rest } = data;
+    const [rest, priv] = split(data);
     b.set(memRef(cid, id), rest, merge ? { merge: true } : {});
-    if (phone !== undefined) phone ? b.set(telRef(cid, id), { phone }) : b.delete(telRef(cid, id));
+    if (Object.keys(priv).length) b.set(telRef(cid, id), Object.fromEntries(Object.entries(priv).map(([k, v]) => [k, v ? v : F.deleteField()])), { merge: true });
   };
-  async function movePhones(cid, list) {
+  async function movePrivate(cid, list) {
     for (let i = 0; i < list.length; i += 200) {
       const b = F.writeBatch(db);
-      list.slice(i, i + 200).forEach(m => { if (m.phone) b.set(telRef(cid, m.id), { phone: m.phone }, { merge: true }); b.update(memRef(cid, m.id), { phone: F.deleteField() }); });
+      list.slice(i, i + 200).forEach(m => {
+        const [, priv] = split(m), keep = Object.fromEntries(Object.entries(priv).filter(([, v]) => v));
+        if (Object.keys(keep).length) b.set(telRef(cid, m.id), keep, { merge: true });
+        b.update(memRef(cid, m.id), Object.fromEntries(Object.keys(priv).map(k => [k, F.deleteField()])));
+      });
       await b.commit();
     }
   }
@@ -579,17 +585,17 @@ async function firebaseStore() {
       const snap = await F.getDocs(q);
       return snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => a.name.localeCompare(b.name, "ko"));
     },
-    // 연락처는 contacts/{성도ID}에 따로 둠 → 서버 규칙에서 교역자·담임목사·관리자만 읽음 (리더 폰에는 아예 안 내려감)
-    // withPhone(성도 관리 권한)이면 연락처도 받아 합치고, 예전처럼 성도 문서에 남은 연락처는 contacts로 옮김
+    // 연락처·메모는 contacts/{성도ID}에 따로 둠 → 서버 규칙에서 교역자·담임목사·관리자만 읽음 (리더 폰에는 아예 안 내려감)
+    // withPhone(성도 관리 권한)이면 그것도 받아 합치고, 예전처럼 성도 문서에 남은 연락처·메모는 contacts로 옮김
     watchMembers(cid, cb, withPhone) {
-      let ms = [], phones = new Map(), moved = false;
-      const emit = () => cb(ms.map(m => { const { phone, ...rest } = m; const p = withPhone ? (phones.get(m.id) ?? phone) : undefined; return p ? { ...rest, phone: p } : rest; }));
+      let ms = [], privs = new Map(), moved = false;
+      const emit = () => cb(ms.map(m => { const [rest, old] = split(m); return withPhone ? { ...rest, ...old, ...(privs.get(m.id) || {}) } : rest; }));
       const un1 = F.onSnapshot(F.collection(db, "churches", cid, "members"), s => {
         ms = s.docs.map(d => ({ ...d.data(), id: d.id })); emit();
-        const old = ms.filter(m => "phone" in m);
-        if (withPhone && old.length && !moved) { moved = true; movePhones(cid, old).catch(e => { moved = false; toastErr("연락처 옮기기 실패: " + e.message); }); }
+        const old = ms.filter(m => PRIVATE.some(k => k in m));
+        if (withPhone && old.length && !moved) { moved = true; movePrivate(cid, old).catch(e => { moved = false; toastErr("연락처·메모 옮기기 실패: " + e.message); }); }
       });
-      const un2 = withPhone ? F.onSnapshot(F.collection(db, "churches", cid, "contacts"), s => { phones = new Map(s.docs.map(d => [d.id, d.data().phone || ""])); emit(); }, () => {}) : null;
+      const un2 = withPhone ? F.onSnapshot(F.collection(db, "churches", cid, "contacts"), s => { privs = new Map(s.docs.map(d => [d.id, d.data()])); emit(); }, () => {}) : null;
       return () => { un1(); un2?.(); };
     },
     watchAttendance(cid, date, service, cb) {
@@ -657,8 +663,8 @@ async function firebaseStore() {
     },
     async allMembers(cid) {
       const [s, t] = await Promise.all([F.getDocs(F.collection(db, "churches", cid, "members")), F.getDocs(F.collection(db, "churches", cid, "contacts")).catch(() => null)]);
-      const phones = new Map((t?.docs || []).map(d => [d.id, d.data().phone]));
-      return s.docs.map(d => { const m = { ...d.data(), id: d.id }; if (phones.get(d.id)) m.phone = phones.get(d.id); return m; });
+      const privs = new Map((t?.docs || []).map(d => [d.id, d.data()]));
+      return s.docs.map(d => ({ ...d.data(), ...(privs.get(d.id) || {}), id: d.id }));
     },
     async allAttendance(cid) { const s = await F.getDocs(F.collection(db, "churches", cid, "attendance")); return s.docs.map(d => d.data()); },
     // 성도·출석 문서를 400개씩 지운 뒤 교회 문서를 지움
@@ -739,14 +745,14 @@ function pickChurch(c) {
   S.canEdit = S.admin || (c.staff || []).includes((S.email || "").toLowerCase());
   $("#addBtn").classList.toggle("hidden", !S.canEdit);
   $("#editMode").textContent = S.canEdit ? "✎ 정보" : "정보 보기";
-  document.querySelector(".edit-phone").classList.toggle("hidden", !S.canEdit);
+  document.querySelectorAll(".edit-phone").forEach(el => el.classList.toggle("hidden", !S.canEdit));
   $("#q").placeholder = S.canEdit ? "이름·전화 뒷자리 찾기" : "이름 찾기";
   const services = c.services?.length ? c.services : ["주일낮"];
   $("#date").value = S.date;
   S.service = defaultService(services, S.date);
   renderServices(services);
-  // 리더(성도 관리 권한 없음)에게는 연락처를 빼고 보여 줌 (명단·연락 버튼·통계·성도 창 모두)
-  S.unMembers = S.store.watchMembers(c.id, (ms) => { S.members = S.canEdit ? ms : ms.map(({ phone, ...m }) => m); renderChips(); render(); renderBdays(); }, S.canEdit);
+  // 리더(성도 관리 권한 없음)에게는 연락처·메모를 빼고 보여 줌 (명단·연락 버튼·통계·성도 창 모두)
+  S.unMembers = S.store.watchMembers(c.id, (ms) => { S.members = S.canEdit ? ms : ms.map(({ phone, memo, ...m }) => m); renderChips(); render(); renderBdays(); }, S.canEdit);
   watchAtt();
   show("sMain");
 }
