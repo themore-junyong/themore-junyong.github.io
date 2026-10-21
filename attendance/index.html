@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<meta name="build" content="2026-10-18.11">
+<meta name="build" content="2026-10-21.3">
 <title>교회 출석 · THE MORE</title>
 <meta name="theme-color" content="#1F6F78">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -209,6 +209,7 @@ textarea.memo{min-height:60px;border:1px solid var(--line);background:var(--bg);
   <div id="sNoAccess" class="screen hidden">
     <h1>아직 초대되지 않았어요</h1>
     <p><b id="noAccessEmail"></b> 계정은 어느 교회 리더명단에도 없어요. 교회 담당자에게 이 이메일을 알려 주세요.</p>
+    <p>재정 담당이면 <a href="./finance.html">재정으로 가기</a></p>
     <button class="btn line" data-act="logout">다른 계정으로 로그인</button>
   </div>
 
@@ -221,6 +222,7 @@ textarea.memo{min-height:60px;border:1px solid var(--line);background:var(--bg);
         <button class="ghost" id="editMode" aria-pressed="false">✎ 정보</button>
         <button class="ghost" id="histMode" aria-pressed="false">출석이력</button>
         <button class="ghost" id="toStats">통계</button>
+        <a class="ghost hidden" id="toFinance" href="./finance.html" style="text-decoration:none">재정</a>
         <button class="ghost hidden" id="toAdmin">관리</button>
         <button class="ghost" data-act="logout">로그아웃</button>
       </div>
@@ -284,8 +286,10 @@ textarea.memo{min-height:60px;border:1px solid var(--line);background:var(--bg);
         <label>교회 고르기<select id="aChurch"></select></label>
         <label>교회 이름<input id="aName" placeholder="OO교회"></label>
         <label>예배 종류 (쉼표로 구분)<input id="aServices" placeholder="주일낮, 주일저녁, 수요, 금요"></label>
-        <label>교역자 이메일 (한 줄에 하나) · 출석 + 성도 추가·수정·삭제<textarea id="aStaff" placeholder="pastor@gmail.com"></textarea></label>
+        <label>담임목사 이메일 (한 줄에 하나) · 출석 + 성도 관리 + 재정 모두<textarea id="aPastors" placeholder="senior@gmail.com"></textarea></label>
+        <label>교역자 이메일 (한 줄에 하나) · 출석 + 성도 추가·수정·삭제 (재정은 못 봄)<textarea id="aStaff" placeholder="pastor@gmail.com"></textarea></label>
         <label>리더 이메일 (한 줄에 하나) · 출석 체크 + 정보 보기만 <span id="aLeaderCount" class="hint"></span><textarea id="aLeaders" placeholder="leader1@gmail.com"></textarea></label>
+        <label>재정 담당 이메일 (한 줄에 하나) · 재정만 (출석·성도 명단 화면은 안 보임). 담임목사와 재정 담당 말고는 아무도 재정을 못 봐요<textarea id="aFinance" placeholder="finance@gmail.com"></textarea></label>
         <div class="row"><button class="btn" id="aSave">저장</button><button class="btn line" id="aNew">새 교회</button><span id="aMsg" class="ok"></span></div>
       </section>
       <section>
@@ -356,7 +360,7 @@ textarea.memo{min-height:60px;border:1px solid var(--line);background:var(--bg);
     </div>
     <div class="two">
       <label>성별<select name="gender"><option value="">-</option><option>남성</option><option>여성</option></select></label>
-      <label>연락처<input name="phone" inputmode="numeric" placeholder="숫자만 누르면 - 자동" autocomplete="off"></label>
+      <label class="edit-phone">연락처<input name="phone" inputmode="numeric" placeholder="숫자만 누르면 - 자동" autocomplete="off"></label>
     </div>
     <div class="two">
       <label>같은 가족<select name="household"></select></label>
@@ -443,7 +447,7 @@ function nextPids(ids, n = 1) {
 // ───────────── 저장소: 미리보기(가짜 데이터) ─────────────
 function demoStore() {
   const email = "demo@example.com";
-  const church = { id: "demo", name: "미리보기교회", services: ["주일낮","주일저녁","수요","금요"], leaders: [email] };
+  const church = { id: "demo", name: "미리보기교회", services: ["주일낮","주일저녁","수요","금요"], leaders: [email], finance: [email] };
   const raw = [
     ["P001","홍길동","담임목사","교역자","남성","010-0000-0001","H001","세대주",false],
     ["P002","김영희","사모","교역자","여성","010-0000-0002","H001","배우자",false],
@@ -524,6 +528,21 @@ async function firebaseStore() {
   let me = null;
   const lc = (s) => String(s || "").trim().toLowerCase();
 
+  const memRef = (cid, id) => F.doc(db, "churches", cid, "members", id);
+  const telRef = (cid, id) => F.doc(db, "churches", cid, "contacts", id);
+  // 성도 문서에 쓸 값과 연락처를 나눠 같은 배치에 넣음. 연락처를 비우면 contacts 문서를 지움
+  const putMember = (b, cid, id, data, merge) => {
+    const { phone, ...rest } = data;
+    b.set(memRef(cid, id), rest, merge ? { merge: true } : {});
+    if (phone !== undefined) phone ? b.set(telRef(cid, id), { phone }) : b.delete(telRef(cid, id));
+  };
+  async function movePhones(cid, list) {
+    for (let i = 0; i < list.length; i += 200) {
+      const b = F.writeBatch(db);
+      list.slice(i, i + 200).forEach(m => { if (m.phone) b.set(telRef(cid, m.id), { phone: m.phone }, { merge: true }); b.update(memRef(cid, m.id), { phone: F.deleteField() }); });
+      await b.commit();
+    }
+  }
   return {
     demo: false,
     onUser(cb) { A.onAuthStateChanged(auth, u => { me = u ? lc(u.email) : null; cb(u ? { email: me } : null); }); },
@@ -560,8 +579,18 @@ async function firebaseStore() {
       const snap = await F.getDocs(q);
       return snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => a.name.localeCompare(b.name, "ko"));
     },
-    watchMembers(cid, cb) {
-      return F.onSnapshot(F.collection(db, "churches", cid, "members"), s => cb(s.docs.map(d => ({ ...d.data(), id: d.id }))));
+    // 연락처는 contacts/{성도ID}에 따로 둠 → 서버 규칙에서 교역자·담임목사·관리자만 읽음 (리더 폰에는 아예 안 내려감)
+    // withPhone(성도 관리 권한)이면 연락처도 받아 합치고, 예전처럼 성도 문서에 남은 연락처는 contacts로 옮김
+    watchMembers(cid, cb, withPhone) {
+      let ms = [], phones = new Map(), moved = false;
+      const emit = () => cb(ms.map(m => { const { phone, ...rest } = m; const p = withPhone ? (phones.get(m.id) ?? phone) : undefined; return p ? { ...rest, phone: p } : rest; }));
+      const un1 = F.onSnapshot(F.collection(db, "churches", cid, "members"), s => {
+        ms = s.docs.map(d => ({ ...d.data(), id: d.id })); emit();
+        const old = ms.filter(m => "phone" in m);
+        if (withPhone && old.length && !moved) { moved = true; movePhones(cid, old).catch(e => { moved = false; toastErr("연락처 옮기기 실패: " + e.message); }); }
+      });
+      const un2 = withPhone ? F.onSnapshot(F.collection(db, "churches", cid, "contacts"), s => { phones = new Map(s.docs.map(d => [d.id, d.data().phone || ""])); emit(); }, () => {}) : null;
+      return () => { un1(); un2?.(); };
     },
     watchAttendance(cid, date, service, cb) {
       const q = F.query(F.collection(db, "churches", cid, "attendance"), F.where("date", "==", date), F.where("service", "==", service));
@@ -578,9 +607,8 @@ async function firebaseStore() {
       }).catch(e => toastErr("저장 실패: " + e.message));
     },
     async addMember(cid, data, id) {
-      const ref = F.doc(db, "churches", cid, "members", id);
-      if ((await F.getDoc(ref)).exists()) throw new Error(id + " 번호가 이미 있어요. 다시 저장해 주세요.");
-      await F.setDoc(ref, { ...data, createdAt: F.serverTimestamp() });
+      if ((await F.getDoc(memRef(cid, id))).exists()) throw new Error(id + " 번호가 이미 있어요. 다시 저장해 주세요.");
+      const b = F.writeBatch(db); putMember(b, cid, id, { ...data, createdAt: F.serverTimestamp() }); await b.commit();
     },
     // 성도 번호 바꾸기: 새 번호로 옮기고 출석 기록도 새 번호로 옮긴 뒤 옛 것을 지움
     async renameMember(cid, from, to) {
@@ -589,14 +617,16 @@ async function firebaseStore() {
       if (!old.exists()) return;
       if ((await F.getDoc(F.doc(col("members"), to))).exists()) throw new Error(to + " 번호가 이미 있어요.");
       const recs = (await F.getDocs(F.query(col("attendance"), F.where("memberId", "==", from)))).docs;
+      const tel = await F.getDoc(telRef(cid, from)).catch(() => null);
       const b = F.writeBatch(db);
       b.set(F.doc(col("members"), to), old.data());
+      if (tel?.exists()) { b.set(telRef(cid, to), tel.data()); b.delete(tel.ref); }
       recs.forEach(d => { const r = d.data(); b.set(F.doc(col("attendance"), attId(r.date, r.service, to)), { ...r, memberId: to, checkedBy: me }); b.delete(d.ref); });
       b.delete(old.ref);
       await b.commit();
     },
-    async updateMember(cid, id, data) { await F.setDoc(F.doc(db, "churches", cid, "members", id), data, { merge: true }); },
-    async deleteMember(cid, id) { await F.deleteDoc(F.doc(db, "churches", cid, "members", id)); },
+    async updateMember(cid, id, data) { const b = F.writeBatch(db); putMember(b, cid, id, data, true); await b.commit(); },
+    async deleteMember(cid, id) { const b = F.writeBatch(db); b.delete(memRef(cid, id)); b.delete(telRef(cid, id)); await b.commit(); },
     async memberAttendance(cid, mid) {
       const q = F.query(F.collection(db, "churches", cid, "attendance"), F.where("memberId", "==", mid));
       return (await F.getDocs(q)).docs.map(d => d.data());
@@ -618,20 +648,25 @@ async function firebaseStore() {
       return rows.length;
     },
     async importMembers(cid, rows) {
-      for (let i = 0; i < rows.length; i += 400) {
+      for (let i = 0; i < rows.length; i += 200) {
         const b = F.writeBatch(db);
-        rows.slice(i, i + 400).forEach(r => { const { id, ...rest } = r; b.set(F.doc(db, "churches", cid, "members", id), rest, { merge: true }); });
+        rows.slice(i, i + 200).forEach(r => { const { id, ...rest } = r; putMember(b, cid, id, rest, true); });
         await b.commit();
       }
       return rows.length;
     },
-    async allMembers(cid) { const s = await F.getDocs(F.collection(db, "churches", cid, "members")); return s.docs.map(d => ({ ...d.data(), id: d.id })); },
+    async allMembers(cid) {
+      const [s, t] = await Promise.all([F.getDocs(F.collection(db, "churches", cid, "members")), F.getDocs(F.collection(db, "churches", cid, "contacts")).catch(() => null)]);
+      const phones = new Map((t?.docs || []).map(d => [d.id, d.data().phone]));
+      return s.docs.map(d => { const m = { ...d.data(), id: d.id }; if (phones.get(d.id)) m.phone = phones.get(d.id); return m; });
+    },
     async allAttendance(cid) { const s = await F.getDocs(F.collection(db, "churches", cid, "attendance")); return s.docs.map(d => d.data()); },
     // 성도·출석 문서를 400개씩 지운 뒤 교회 문서를 지움
     async deleteChurch(cid, onProgress) {
       let n = 0;
-      for (const sub of ["attendance", "members"]) {
-        const docs = (await F.getDocs(F.collection(db, "churches", cid, sub))).docs;
+      for (const sub of ["attendance", "members", "contacts", "offerings", "ledger", "fin", "days", "receipts", "issued", "finlog"]) {
+        // 재정 기록은 그 교회 재정 담당만 읽을 수 있어서, 관리자가 재정 담당이 아니면 못 읽고 건너뜀
+        let docs; try { docs = (await F.getDocs(F.collection(db, "churches", cid, sub))).docs; } catch (e) { if (sub === "attendance" || sub === "members") throw e; continue; }
         for (let i = 0; i < docs.length; i += 400) {
           const b = F.writeBatch(db); docs.slice(i, i + 400).forEach(d => b.delete(d.ref));
           await b.commit(); n += Math.min(400, docs.length - i); onProgress?.(n);
@@ -698,14 +733,20 @@ function pickChurch(c) {
   pick.classList.toggle("hidden", S.churches.length < 2);
   pick.innerHTML = S.churches.map(x => `<option value="${esc(x.id)}" ${x.id === c.id ? "selected" : ""}>${esc(x.name)}</option>`).join("");
   $("#toAdmin").classList.toggle("hidden", !S.admin);
+  const me = (S.email || "").toLowerCase();
+  $("#toFinance").classList.toggle("hidden", !(c.finance || []).includes(me) && !(c.pastors || []).includes(me));
+  if (S.store.demo) $("#toFinance").href = "./finance.html?demo";
   S.canEdit = S.admin || (c.staff || []).includes((S.email || "").toLowerCase());
   $("#addBtn").classList.toggle("hidden", !S.canEdit);
   $("#editMode").textContent = S.canEdit ? "✎ 정보" : "정보 보기";
+  document.querySelector(".edit-phone").classList.toggle("hidden", !S.canEdit);
+  $("#q").placeholder = S.canEdit ? "이름·전화 뒷자리 찾기" : "이름 찾기";
   const services = c.services?.length ? c.services : ["주일낮"];
   $("#date").value = S.date;
   S.service = defaultService(services, S.date);
   renderServices(services);
-  S.unMembers = S.store.watchMembers(c.id, (ms) => { S.members = ms; renderChips(); render(); renderBdays(); });
+  // 리더(성도 관리 권한 없음)에게는 연락처를 빼고 보여 줌 (명단·연락 버튼·통계·성도 창 모두)
+  S.unMembers = S.store.watchMembers(c.id, (ms) => { S.members = S.canEdit ? ms : ms.map(({ phone, ...m }) => m); renderChips(); render(); renderBdays(); }, S.canEdit);
   watchAtt();
   show("sMain");
 }
@@ -1084,16 +1125,21 @@ function fillAdmin(c) {
   $("#aName").value = c?.name || "";
   $("#aServices").value = (c?.services || ["주일낮","주일저녁","수요","금요"]).join(", ");
   const staff = c?.staff || [];
-  $("#aStaff").value = staff.join("\n");
-  $("#aLeaders").value = (c?.leaders || []).filter(e => !staff.includes(e)).join("\n");
+  const pastors = c?.pastors || [];
+  $("#aPastors").value = pastors.join("\n");
+  $("#aStaff").value = staff.filter(e => !pastors.includes(e)).join("\n");
+  $("#aLeaders").value = (c?.leaders || []).filter(e => !staff.includes(e) && !pastors.includes(e)).join("\n");
+  $("#aFinance").value = (c?.finance || []).join("\n");
   $("#aMsg").textContent = ""; $("#aImportMsg").textContent = "";
   countLeaders();
 }
 const emailList = (el) => [...new Set(el.value.split(/[\s,;]+/).map(s => s.trim().toLowerCase()).filter(s => s.includes("@")))];
 // leaders = 이 교회를 쓰는 모든 사람(교역자 포함), staff = 그중 성도 정보를 고칠 수 있는 사람
-function leaderList() { return [...new Set([...emailList($("#aStaff")), ...emailList($("#aLeaders"))])]; }
-function countLeaders() { $("#aLeaderCount").textContent = `(교역자 ${emailList($("#aStaff")).length}명 · 전체 ${leaderList().length}명)`; }
-$("#aLeaders").oninput = $("#aStaff").oninput = countLeaders;
+// 담임목사는 교역자·리더 명단에도 함께 넣어 저장 (출석·성도 관리 권한), 재정은 규칙에서 pastors로 따로 확인
+function staffList() { return [...new Set([...emailList($("#aPastors")), ...emailList($("#aStaff"))])]; }
+function leaderList() { return [...new Set([...staffList(), ...emailList($("#aLeaders"))])]; }
+function countLeaders() { $("#aLeaderCount").textContent = `(담임 ${emailList($("#aPastors")).length}명 · 교역자 ${emailList($("#aStaff")).length}명 · 출석 쓰는 사람 전체 ${leaderList().length}명)`; }
+$("#aLeaders").oninput = $("#aStaff").oninput = $("#aPastors").oninput = countLeaders;
 $("#toAdmin").onclick = openAdmin;
 $("#backMain").onclick = () => S.church ? pickChurch(S.churches.find(c => c.id === S.church.id) || S.churches[0]) : (S.churches[0] && pickChurch(S.churches[0]));
 $("#aChurch").onchange = (e) => fillAdmin(S.churches.find(c => c.id === e.target.value));
@@ -1113,7 +1159,7 @@ $("#aDel").onclick = async () => {
   } catch (e) { msg.textContent = "삭제 실패: " + e.message; }
 };
 $("#aSave").onclick = async () => {
-  const data = { name: $("#aName").value.trim(), services: $("#aServices").value.split(",").map(s => s.trim()).filter(Boolean), leaders: leaderList(), staff: emailList($("#aStaff")) };
+  const data = { name: $("#aName").value.trim(), services: $("#aServices").value.split(",").map(s => s.trim()).filter(Boolean), leaders: leaderList(), staff: staffList(), pastors: emailList($("#aPastors")), finance: emailList($("#aFinance")) };
   if (!data.name) return ($("#aMsg").textContent = "교회 이름을 넣어 주세요.");
   try {
     const id = await S.store.saveChurch(adminCid, data);

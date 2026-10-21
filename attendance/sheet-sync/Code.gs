@@ -106,10 +106,16 @@ function church_() {
 }
 
 // ---------- 시트 읽기·쓰기 ----------
-function rowsFromDocs_(docs) {
+// 연락처는 contacts/{성도ID}에 따로 있음 (교역자·담임목사만 읽힘). 못 읽으면 연락처 칸은 비워 둠
+function memberRows_(ch) {
+  const phones = {};
+  try { listDocs_("churches/" + ch.id + "/contacts").forEach(d => { phones[docId_(d)] = fromValue_((d.fields || {}).phone); }); } catch (e) {}
+  return rowsFromDocs_(listDocs_("churches/" + ch.id + "/members"), phones);
+}
+function rowsFromDocs_(docs, phones) {
   const rows = docs.map(d => {
     const f = d.fields || {};
-    return COLS.map(([k]) => k === "id" ? docId_(d) : (BOOL_FIELDS.indexOf(k) >= 0 ? fromValue_(f[k]) === true : fromValue_(f[k])));
+    return COLS.map(([k]) => k === "id" ? docId_(d) : k === "phone" && phones[docId_(d)] ? phones[docId_(d)] : (BOOL_FIELDS.indexOf(k) >= 0 ? fromValue_(f[k]) === true : fromValue_(f[k])));
   });
   rows.sort((a, b) => String(a[1]).localeCompare(String(b[1]), "ko"));
   return rows;
@@ -185,7 +191,7 @@ function pullMembers() {
   try {
     const ch = church_();
     const ss = SpreadsheetApp.getActive();
-    const rows = rowsFromDocs_(listDocs_("churches/" + ch.id + "/members"));
+    const rows = memberRows_(ch);
     const sh = ss.getSheetByName(SHEET) || ss.insertSheet(SHEET, 0);
     writeTable_(sh, rows);
     const snap = ss.getSheetByName(SNAP) || ss.insertSheet(SNAP);
@@ -235,14 +241,15 @@ function pushMembers() {
       "고친 성도 " + (changes.length - added) + "명, 새 성도 " + added + "명\n\n" + preview + (changes.length > 15 ? "\n… 외 " + (changes.length - 15) + "명" : ""),
       ui.ButtonSet.OK_CANCEL);
     if (ok !== ui.Button.OK) return;
-    for (let i = 0; i < changes.length; i += 400) {
-      const writes = changes.slice(i, i + 400).map(c => {
+    for (let i = 0; i < changes.length; i += 200) {
+      const doc = (sub, id) => "projects/" + PROJECT + "/databases/(default)/documents/churches/" + ch.id + "/" + sub + "/" + id;
+      const writes = [];
+      changes.slice(i, i + 200).forEach(c => {
         const fields = {};
-        Object.keys(c.fields).forEach(k => { fields[k] = toValue_(k, c.fields[k]); });
-        return {
-          update: { name: "projects/" + PROJECT + "/databases/(default)/documents/churches/" + ch.id + "/members/" + c.id, fields: fields },
-          updateMask: { fieldPaths: Object.keys(fields) }
-        };
+        Object.keys(c.fields).forEach(k => { if (k !== "phone") fields[k] = toValue_(k, c.fields[k]); });
+        if (Object.keys(fields).length) writes.push({ update: { name: doc("members", c.id), fields: fields }, updateMask: { fieldPaths: Object.keys(fields) } });
+        // 연락처는 contacts 문서로 (지우면 문서도 지움)
+        if ("phone" in c.fields) writes.push(c.fields.phone ? { update: { name: doc("contacts", c.id), fields: { phone: { stringValue: String(c.fields.phone) } } } } : { delete: doc("contacts", c.id) });
       });
       api_("post", BASE + ":commit", { writes: writes });
     }
@@ -273,7 +280,7 @@ function autoPull() {
 
 function pullMembers_quiet_(ch) {
   const ss = SpreadsheetApp.getActive();
-  const rows = rowsFromDocs_(listDocs_("churches/" + ch.id + "/members"));
+  const rows = memberRows_(ch);
   writeTable_(ss.getSheetByName(SHEET) || ss.insertSheet(SHEET, 0), rows);
   const snap = ss.getSheetByName(SNAP) || ss.insertSheet(SNAP);
   writeTable_(snap, rows);

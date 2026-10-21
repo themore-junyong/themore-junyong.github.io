@@ -1,0 +1,1247 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="build" content="2026-10-21.1">
+<title>교회 재정 · THE MORE</title>
+<meta name="theme-color" content="#1F6F78">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@700&family=IBM+Plex+Sans+KR:wght@400;500;600&display=swap">
+<style>
+:root{
+  --bg:#F3F5F4;--surface:#FFFFFF;--ink:#16222B;--muted:#5B6A72;--line:#D5DDDC;
+  --flow:#1F6F78;--flow-soft:#E1EEEE;--on-flow:#FFFFFF;--warn:#A15C07;--warn-soft:#FBEEDC;--bad:#B3261E;
+  --display:"Gowun Batang","Noto Serif KR",Georgia,serif;
+  --body:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0F171C;--surface:#16222A;--ink:#E7EEEE;--muted:#98A8AE;--line:#27363F;--flow:#6FC1C6;--flow-soft:#17333A;--on-flow:#0F171C;--warn:#F0B566;--warn-soft:#3A2C17;--bad:#F2B8B5;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0F171C;--surface:#16222A;--ink:#E7EEEE;--muted:#98A8AE;--line:#27363F;--flow:#6FC1C6;--flow-soft:#17333A;--on-flow:#0F171C;--warn:#F0B566;--warn-soft:#3A2C17;--bad:#F2B8B5;color-scheme:dark}
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.5;-webkit-tap-highlight-color:transparent;overflow-x:clip}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+button:disabled{opacity:.45;cursor:default}
+:focus-visible{outline:2px solid var(--flow);outline-offset:2px;border-radius:6px}
+.hidden{display:none!important}
+.wrap{max-width:720px;margin:0 auto;padding:0 16px 96px}
+h1,h2{font-family:var(--display);margin:0;font-weight:700}
+.top{position:sticky;top:0;z-index:5;background:var(--bg);padding:12px 0 10px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:10px}
+.bar{display:flex;align-items:center;gap:8px;min-width:0;flex-wrap:wrap}
+.bar h1{font-size:20px;flex:1;min-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ghost{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 12px;font-size:13px;color:var(--muted);white-space:nowrap;text-decoration:none}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.seg{display:flex;gap:6px;flex-wrap:wrap}
+.seg button{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 14px;font-size:15px;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--flow);border-color:var(--flow);color:var(--on-flow);font-weight:600}
+.seg.small button{padding:4px 11px;font-size:14px}
+.tabs{overflow-x:auto;flex-wrap:nowrap;scrollbar-width:none}
+.tabs button{flex:none}
+.row input[type=date],.row input[type=month],.row select,.row input[type=number]{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:6px 8px;font-size:15px}
+.search{flex:1;min-width:140px;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:7px 10px;font-size:15px}
+.sync{font-size:12px;color:var(--muted)}
+.sum{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:flex;flex-wrap:wrap;gap:4px 16px;align-items:baseline}
+.sum b{font-size:22px;color:var(--flow);font-variant-numeric:tabular-nums}
+.sum span{white-space:nowrap}
+.sum small{color:var(--muted);font-size:13px;flex-basis:100%}
+.list{display:flex;flex-direction:column;gap:8px;padding-top:12px}
+.empty{color:var(--muted);text-align:center;padding:30px 0}
+.tag{display:inline-block;font-size:11px;font-weight:600;color:var(--warn);background:var(--warn-soft);border-radius:4px;padding:0 5px;margin-left:4px;vertical-align:middle}
+.tag.ok{color:var(--flow);background:var(--flow-soft)}
+.pill{border:1px solid var(--flow);background:transparent;color:var(--flow);border-radius:999px;padding:5px 12px;font-size:14px;font-weight:600;text-decoration:none;white-space:nowrap}
+.pill.solid{background:var(--flow);color:var(--on-flow)}
+.x{border:0;background:transparent;color:var(--muted);font-size:18px;padding:2px 6px}
+.screen{min-height:100dvh;display:flex;flex-direction:column;justify-content:center;gap:18px;padding:32px 0}
+.screen h1{font-size:32px}
+.screen p{margin:0;color:var(--muted)}
+.btn{border:0;background:var(--flow);color:var(--on-flow);border-radius:10px;padding:12px 18px;font-size:16px;font-weight:600;align-self:flex-start;text-decoration:none}
+.btn.line{background:transparent;border:1px solid var(--flow);color:var(--flow)}
+.note{background:var(--warn-soft);color:var(--ink);border-radius:10px;padding:12px 14px;font-size:14px;margin:0}
+.err{color:var(--bad);font-size:14px}
+.ok{color:var(--flow);font-size:14px}
+.fab{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom));border:0;background:var(--ink);color:var(--bg);border-radius:999px;padding:12px 18px;font-weight:600;box-shadow:0 4px 14px rgb(0 0 0 / .18)}
+.panel{display:flex;flex-direction:column;gap:16px;padding-top:16px}
+.panel section{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:10px}
+.panel h2{font-size:18px}
+.panel label,dialog label{display:flex;flex-direction:column;gap:4px;font-size:14px;color:var(--muted);min-width:0}
+.panel input,.panel textarea,.panel select,dialog input,dialog select,dialog textarea{border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:8px 10px;font-size:15px;color:var(--ink);width:100%;min-width:0}
+.panel textarea{min-height:110px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px}
+.panel textarea.plain{font-family:inherit;font-size:15px;min-height:70px}
+.hint{font-size:13px;color:var(--muted);margin:0}
+.two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
+.three{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.danger{border:1px solid var(--bad);background:transparent;color:var(--bad);border-radius:10px;padding:10px 14px;font-size:15px}
+.big{font-size:20px!important;font-variant-numeric:tabular-nums}
+dialog{border:0;border-radius:14px;padding:18px;max-width:min(520px,calc(100vw - 32px));width:100%;max-height:calc(100dvh - 32px);overflow:auto;background:var(--surface);color:var(--ink)}
+dialog::backdrop{background:rgb(0 0 0 / .4)}
+dialog form{display:flex;flex-direction:column;gap:10px}
+dialog h2{font-size:20px}
+details summary{cursor:pointer;color:var(--flow);font-size:14px;padding:4px 0}
+.grp{background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.grp h3{margin:0;font-size:15px;font-weight:600;display:flex;gap:8px;align-items:baseline;padding:8px 12px;background:var(--flow-soft)}
+.grp h3 span{margin-left:auto;font-variant-numeric:tabular-nums}
+.grp h3 small{color:var(--muted);font-weight:400}
+.ln{display:flex;align-items:center;gap:8px;padding:7px 12px;border-top:1px solid var(--line);font-size:15px;width:100%;background:transparent;border-left:0;border-right:0;border-bottom:0;text-align:left}
+.ln:first-of-type{border-top:0}
+.ln .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ln .nm small{color:var(--muted);font-size:12px;margin-left:4px}
+.amt{font-variant-numeric:tabular-nums;font-weight:600;white-space:nowrap}
+.amt.out{color:var(--bad)}
+table.t{width:100%;border-collapse:collapse;font-size:14px;font-variant-numeric:tabular-nums}
+table.t th,table.t td{padding:6px 4px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+table.t th:first-child,table.t td:first-child{text-align:left}
+table.t th{color:var(--muted);font-weight:500;font-size:12px}
+table.t tr.tot td{font-weight:600;border-top:2px solid var(--ink)}
+table.t tbody tr.click{cursor:pointer}
+.scroll{overflow-x:auto}
+.bankin{width:100%;min-height:140px;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:10px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;color:var(--ink)}
+.brow{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:6px}
+.brow.warn{border-color:var(--warn)}
+.brow .l1{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+.brow .l1 .amt{margin-left:auto}
+.brow small{color:var(--muted);font-size:12px;word-break:break-all}
+.brow .fix{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) minmax(0,1fr);gap:6px}
+.brow select{border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:6px 8px;font-size:14px;color:var(--ink);width:100%;min-width:0}
+.rclist{display:flex;flex-direction:column;gap:10px}
+.rclist figure{margin:0;display:flex;flex-direction:column;gap:4px}
+.rclist img,.rpimg{width:100%;border:1px solid var(--line);border-radius:8px;background:#fff}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(76px + env(safe-area-inset-bottom));z-index:9;background:var(--ink);color:var(--bg);border-radius:999px;padding:8px 16px;font-size:14px;max-width:calc(100vw - 32px)}
+.diff{font-weight:600}
+.diff.bad{color:var(--bad)}
+.diff.good{color:var(--flow)}
+@media (max-width:480px){.brow .fix{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.brow .fix select:first-child{grid-column:1 / -1}.three{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="sLoading" class="screen"><p>불러오는 중…</p></div>
+
+  <div id="sLogin" class="screen hidden">
+    <h1>교회 재정</h1>
+    <p>담임목사나 재정 담당으로 등록된 계정으로 로그인해 주세요.</p>
+    <button class="btn" id="login">구글로 로그인</button>
+    <p class="hint">네이버 메일 등 이메일 로그인은 <a href="./">출석 앱</a>에서 로그인한 뒤 '재정' 버튼으로 들어오면 돼요.</p>
+    <p id="loginErr" class="err"></p>
+  </div>
+
+  <div id="sNoAccess" class="screen hidden">
+    <h1>재정 담당이 아니에요</h1>
+    <p><b id="noAccessEmail"></b> 계정은 어느 교회의 재정 담당 명단에도 없어요. 헌금 기록은 그 교회 담임목사와 재정 담당만 볼 수 있어요.</p>
+    <div class="row"><a class="btn line" href="./">출석 앱으로</a><button class="btn line" data-act="logout">다른 계정으로 로그인</button></div>
+  </div>
+
+  <div id="sMain" class="hidden">
+    <div class="top">
+      <div class="bar">
+        <h1 id="cName">교회</h1>
+        <select id="cPick" class="ghost hidden" aria-label="교회 선택"></select>
+        <a class="ghost" href="./" id="toAtt">출석으로</a>
+        <button class="ghost" data-act="logout">로그아웃</button>
+      </div>
+      <div class="seg tabs" id="tabs" role="tablist">
+        <button data-tab="off" aria-pressed="true">헌금</button>
+        <button data-tab="bank" aria-pressed="false">통장 정리</button>
+        <button data-tab="led" aria-pressed="false">장부</button>
+        <button data-tab="rep" aria-pressed="false">보고서</button>
+        <button data-tab="mem" aria-pressed="false">성도별</button>
+        <button data-tab="set" aria-pressed="false">설정</button>
+      </div>
+      <span class="sync" id="sync"></span>
+    </div>
+
+    <!-- 헌금 -->
+    <div id="tOff">
+      <div class="list">
+        <div class="row"><input type="date" id="oDate" aria-label="헌금 날짜"><span class="hint" id="oDay"></span></div>
+        <div class="sum" id="oSum"></div>
+        <section class="panel" style="padding:0">
+          <section>
+            <h2>헌금 넣기</h2>
+            <div class="seg small" id="oType" role="group" aria-label="헌금 종류"></div>
+            <div class="two">
+              <label>이름<input id="oName" list="memList" autocomplete="off" placeholder="이름 (무명이면 비워 두기)"></label>
+              <label>금액 <span id="oAmtWord" class="hint"></span><input id="oAmt" inputmode="numeric" autocomplete="off" placeholder="10000" class="big"></label>
+            </div>
+            <div class="row">
+              <div class="seg small" id="oMethod" role="group" aria-label="받은 방법"><button data-m="현금" aria-pressed="true">현금</button><button data-m="계좌" aria-pressed="false">계좌이체</button></div>
+              <input id="oMemo" class="search" placeholder="메모 (일천번제 회차, 부부 이름 등)" autocomplete="off">
+            </div>
+            <div class="row"><button class="btn" id="oAdd">넣기</button><span class="err" id="oMsg"></span></div>
+            <p class="hint">이름은 성도 명단에서 고르면 성도별 합계와 기부금 영수증에 바로 잡혀요. 같은 이름이 여럿이면 목록에서 직분·번호로 골라 주세요.</p>
+          </section>
+        </section>
+        <div id="oList" class="list" style="padding:0"></div>
+        <section class="panel" style="padding:0">
+          <section>
+            <h2>현금 계수 마감</h2>
+            <p class="hint">봉투를 다 넣은 뒤, 두 사람이 센 현금과 앱 합계가 맞는지 확인하고 마감해요. 은행에 넣으면 '은행에 입금함'을 눌러 현금 시재에서 통장으로 옮겨요.</p>
+            <div class="three">
+              <label>계수자 (두 명 이상)<input id="dCounters" placeholder="홍길동, 김영희"></label>
+              <label>실제로 센 현금<input id="dCash" inputmode="numeric" placeholder="0"></label>
+              <label>앱 현금 합계<input id="dApp" disabled></label>
+            </div>
+            <details id="dBills"><summary>금종별로 세기 (지폐·동전 개수)</summary>
+              <div class="three" style="margin-top:8px">
+                <label>5만원권<input data-bill="50000" inputmode="numeric"></label><label>1만원권<input data-bill="10000" inputmode="numeric"></label><label>5천원권<input data-bill="5000" inputmode="numeric"></label>
+                <label>1천원권<input data-bill="1000" inputmode="numeric"></label><label>500원<input data-bill="500" inputmode="numeric"></label><label>100원<input data-bill="100" inputmode="numeric"></label>
+                <label>수표·기타 (금액)<input data-bill="1" inputmode="numeric"></label>
+              </div>
+            </details>
+            <p id="dDiff" class="hint"></p>
+            <div class="row"><button class="btn line" id="dClose">마감 저장</button><button class="btn line" id="dDeposit">은행에 입금함</button><button class="pill" id="oBulletin">주보 명단 복사</button></div>
+            <p class="ok" id="dMsg"></p>
+          </section>
+        </section>
+      </div>
+    </div>
+
+    <!-- 통장 정리 -->
+    <div id="tBank" class="hidden">
+      <div class="list">
+        <p class="hint">은행 앱이나 엑셀의 거래내역을 그대로 복사해 붙여 넣으세요. 성도 이름이 있는 입금은 계좌이체 헌금으로, 출금은 장부 지출로 나눠요. 적요에 '십일조·감사·선교' 같은 말이 있으면 종류도 맞춰요. 같은 내역을 다시 붙여도 두 번 들어가지 않아요.</p>
+        <textarea id="bankIn" class="bankin" placeholder="2026.10.18 13:05:11	입금	100,000	2,345,000	홍길동 십일조"></textarea>
+        <div class="row"><button class="btn" id="bankRun">정리하기</button><span class="ok" id="bankMsg"></span></div>
+        <div id="bankOut" class="hidden" style="display:flex;flex-direction:column;gap:10px">
+          <div class="sum" id="bankSum"></div>
+          <div id="bankRows" class="list" style="padding:0"></div>
+          <details><summary>건너뛴 줄 <span id="bankSkipN"></span></summary><ul id="bankSkip" class="hint"></ul></details>
+          <div class="row"><button class="btn" id="bankSave">이대로 저장</button><span class="ok" id="bankSaveMsg"></span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 장부 -->
+    <div id="tLed" class="hidden">
+      <div class="list">
+        <div class="row"><input type="month" id="lMonth" aria-label="달"></div>
+        <div class="sum" id="lSum"></div>
+        <div class="scroll"><table class="t" id="lTable"></table></div>
+        <p class="hint">줄을 누르면 고치거나 영수증 사진을 붙일 수 있어요. 헌금은 '헌금' 탭과 '통장 정리'에서 들어오고, 여기에는 합계만 보여요.</p>
+      </div>
+      <button class="fab" id="lAdd">+ 지출·수입 기록</button>
+    </div>
+
+    <!-- 보고서 -->
+    <div id="tRep" class="hidden">
+      <div class="list">
+        <div class="row"><input type="month" id="rMonth" aria-label="달"><button class="pill solid" id="rShare">이미지 저장·공유</button><button class="pill" id="rCopy">글로 복사</button></div>
+        <img id="rImg" class="rpimg" alt="월 재정 보고서">
+        <p class="ok" id="rMsg"></p>
+        <h2 style="font-size:18px">올해 달별 합계</h2>
+        <div class="scroll"><table class="t" id="rYear"></table></div>
+      </div>
+    </div>
+
+    <!-- 성도별 -->
+    <div id="tMem" class="hidden">
+      <div class="list">
+        <div class="row"><select id="mYear" aria-label="연도"></select><input class="search" id="mQ" type="search" placeholder="이름 찾기" autocomplete="off"></div>
+        <div class="sum" id="mSum"></div>
+        <div class="row"><button class="pill" id="mPrintAll">기부금 영수증 모두 인쇄</button><button class="pill" id="mCsv">성도별 합계 엑셀(CSV)</button></div>
+        <div class="scroll"><table class="t" id="mTable"></table></div>
+        <p class="hint">영수증을 인쇄하면 일련번호와 금액이 발급 대장에 남아요(5년 보관). 금액을 고친 뒤 다시 뽑으면 재발급으로 기록돼요.</p>
+        <p class="hint">기부금 영수증의 주민등록번호 칸은 비워서 인쇄해요. 앱에 주민번호를 저장하지 않으려고 일부러 뺐어요. 연말정산 간소화에 올릴 때는 본인 동의를 받은 뒤 따로 적어 주세요.</p>
+      </div>
+    </div>
+
+    <!-- 설정 -->
+    <div id="tSet" class="hidden">
+      <div class="panel">
+        <section>
+          <h2>헌금 종류와 장부 항목</h2>
+          <label>헌금 종류 (쉼표로, 주보 순서대로)<input id="sTypes"></label>
+          <label>지출 항목 (쉼표로)<input id="sOut"></label>
+          <label>헌금 아닌 수입 항목 (쉼표로)<input id="sIn"></label>
+        </section>
+        <section>
+          <h2>시작 잔액</h2>
+          <p class="hint">앱을 쓰기 시작한 달의 1일 기준 현금 시재와 통장 잔액이에요. 넣어 두면 장부와 보고서에 남은 돈이 나와요.</p>
+          <div class="three">
+            <label>시작 달<input type="month" id="sOpenMonth"></label>
+            <label>현금 시재<input id="sOpenCash" inputmode="numeric"></label>
+            <label>통장 잔액<input id="sOpenBank" inputmode="numeric"></label>
+          </div>
+        </section>
+        <section>
+          <h2>기부금 영수증에 들어갈 교회 정보</h2>
+          <div class="two">
+            <label>고유번호 (사업자등록번호)<input id="sRegNo" placeholder="000-00-00000"></label>
+            <label>대표자<input id="sRep" placeholder="담임목사 이름"></label>
+          </div>
+          <label>소재지<input id="sAddr"></label>
+          <label>헌금 계좌 (보고서에 표시)<input id="sAccount" placeholder="OO은행 000-0000-0000 (예금주)"></label>
+        </section>
+        <div class="row"><button class="btn" id="sSave">저장</button><span class="ok" id="sMsg"></span></div>
+        <section>
+          <h2>합계 다시 계산</h2>
+          <p class="hint">장부 잔액이 이상하면 눌러 주세요. 모든 헌금·장부 기록에서 달별 합계를 새로 만들어요.</p>
+          <div class="row"><button class="btn line" id="sRebuild">다시 계산</button><span class="ok" id="sRebuildMsg"></span></div>
+        </section>
+        <section>
+          <h2>수정 기록</h2>
+          <p class="hint">누가 언제 무엇을 넣고 고치고 지웠는지 남아요. 이 기록은 아무도 고치거나 지울 수 없어요.</p>
+          <ul id="logList" class="hint" style="margin:0;padding-left:18px"></ul>
+          <div class="row"><button class="pill" id="logMore">더 보기</button></div>
+        </section>
+      </div>
+    </div>
+  </div>
+</div>
+
+<datalist id="memList"></datalist>
+<datalist id="catList"></datalist>
+<div class="toast hidden" id="toast" role="status"></div>
+
+<!-- 헌금 고치기 -->
+<dialog id="oDlg">
+  <form method="dialog">
+    <h2>헌금 고치기</h2>
+    <div class="two">
+      <label>날짜<input type="date" id="eDate"></label>
+      <label>종류<select id="eType"></select></label>
+    </div>
+    <div class="two">
+      <label>이름<input id="eName" list="memList" autocomplete="off"></label>
+      <label>금액<input id="eAmt" inputmode="numeric"></label>
+    </div>
+    <div class="two">
+      <label>받은 방법<select id="eMethod"><option>현금</option><option value="계좌">계좌이체</option></select></label>
+      <label>메모<input id="eMemo"></label>
+    </div>
+    <p class="err" id="eMsg"></p>
+    <div class="row"><button class="btn" value="ok" id="eOk">저장</button><button class="btn line" value="cancel" formnovalidate>취소</button><button type="button" class="danger" id="eDel" style="margin-left:auto">지우기</button></div>
+  </form>
+</dialog>
+
+<!-- 장부 기록 -->
+<dialog id="lDlg">
+  <form method="dialog">
+    <h2 id="lTitle">지출·수입 기록</h2>
+    <div class="seg" id="lKind" role="group"><button type="button" data-k="out" aria-pressed="true">지출</button><button type="button" data-k="in" aria-pressed="false">헌금 아닌 수입</button><button type="button" data-k="dep" aria-pressed="false">현금 → 통장 입금</button></div>
+    <div class="two">
+      <label>날짜<input type="date" id="lDate"></label>
+      <label>금액<input id="lAmt" inputmode="numeric" class="big"></label>
+    </div>
+    <div class="two">
+      <label id="lCatWrap">항목<input id="lCat" list="catList" autocomplete="off"></label>
+      <label id="lMethodWrap">어디서<select id="lMethod"><option value="계좌">통장</option><option value="현금">현금</option></select></label>
+    </div>
+    <label>내용<input id="lMemo" placeholder="예: 10월 전기요금"></label>
+    <section id="lRcSec" class="hidden" style="display:flex;flex-direction:column;gap:8px">
+      <div class="row"><b style="font-size:15px">영수증</b><label class="pill" style="flex-direction:row;cursor:pointer">사진 붙이기<input type="file" id="lRcFile" accept="image/*" multiple hidden></label></div>
+      <div id="lRcList" class="rclist"></div>
+    </section>
+    <p class="err" id="lMsg"></p>
+    <div class="row"><button class="btn" value="ok" id="lOk">저장</button><button class="btn line" value="cancel" formnovalidate>닫기</button><button type="button" class="danger hidden" id="lDel" style="margin-left:auto">지우기</button></div>
+  </form>
+</dialog>
+
+<!-- 성도 한 사람 -->
+<dialog id="mDlg">
+  <form method="dialog">
+    <h2 id="mTitle"></h2>
+    <div class="scroll"><table class="t" id="mDetail"></table></div>
+    <div class="row"><button type="button" class="btn" id="mPrint">기부금 영수증 인쇄</button><button class="btn line" value="cancel">닫기</button></div>
+  </form>
+</dialog>
+
+<script type="module">
+import { firebaseConfig } from "./firebase-config.js";
+
+const $ = (s) => document.querySelector(s);
+const $$ = (s) => [...document.querySelectorAll(s)];
+const SCREENS = ["sLoading", "sLogin", "sNoAccess", "sMain"];
+const show = (id) => SCREENS.forEach(s => $("#" + s).classList.toggle("hidden", s !== id));
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const toNum = (v) => { const n = Number(String(v ?? "").replace(/[^\d.-]/g, "")); return Number.isFinite(n) ? Math.round(n) : 0; };
+const won = (n) => (Math.round(n) || 0).toLocaleString("ko-KR");
+const DEF = {
+  types: ["십일조", "주정헌금", "감사헌금", "선교헌금", "건축헌금", "일천번제", "장학헌금", "절기헌금", "기타헌금"],
+  outCats: ["예배", "교육", "선교", "구제", "사례비", "관리비", "공과금", "차량", "식비", "비품", "행사", "수수료", "기타"],
+  inCats: ["이자", "후원금", "기타"],
+};
+function localToday() { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0, 10); }
+const addMonth = (ym, n) => { const d = new Date(+ym.slice(0, 4), +ym.slice(5, 7) - 1 + n, 1); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0"); };
+const rid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const INC = (n) => ({ __inc: n }), TS = { __ts: 1 };
+function wordWon(n) {
+  if (!n) return "";
+  const man = Math.floor(n / 10000), rest = n % 10000;
+  return (man ? won(man) + "만" : "") + (rest ? (man ? " " : "") + won(rest) : "") + "원";
+}
+function normDate(v) {
+  const m = String(v || "").match(/(\d{4})\s*[-./년]\s*(\d{1,2})\s*[-./월]\s*(\d{1,2})/);
+  return m ? `${m[1]}-${m[2].padStart(2, "0")}-${m[3].padStart(2, "0")}` : "";
+}
+function hash(str) { let h = 0x811c9dc5; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0).toString(36); }
+
+// ───────────── 저장소 ─────────────
+// 두 저장소(미리보기·Firebase)가 같은 기본 동작만 갖고, 재정 기능은 그 위에 한 번만 만든다.
+// 데이터: churches/{교회}/offerings 헌금 한 건, ledger 지출·헌금 아닌 수입·현금→통장 입금,
+//        fin/settings 설정, fin/totals 달별 합계, days/{날짜} 현금 계수 마감, receipts 영수증 사진, finlog 수정 기록
+function demoStore() {
+  const email = "demo@example.com";
+  const church = { id: "demo", name: "미리보기교회", finance: [email] };
+  const members = [
+    ["P001", "홍길동", "담임목사"], ["P002", "김영희", "사모"], ["P003", "이철수", "장로"], ["P004", "박민지", "권사"],
+    ["P005", "최준호", "집사"], ["P006", "정수아", "청년"], ["P007", "김민수", "집사"], ["P008", "김민수", "청년"],
+  ].map(([id, name, role]) => ({ id, name, role, household: "" }));
+  const db = new Map(); // "sub/id" → data
+  const watchers = new Set();
+  const merge = (cur, data) => {
+    const out = { ...(cur || {}) };
+    for (const [k, v] of Object.entries(data)) {
+      if (v && v.__inc !== undefined) out[k] = (out[k] || 0) + v.__inc;
+      else if (v && v.__ts) out[k] = new Date();
+      else if (v && typeof v === "object" && !Array.isArray(v)) out[k] = merge(out[k], v);
+      else out[k] = v;
+    }
+    return out;
+  };
+  const docs = (sub) => [...db].filter(([k]) => k.startsWith(sub + "/")).map(([k, v]) => ({ ...v, id: k.slice(sub.length + 1) }));
+  const emit = () => watchers.forEach(w => w());
+  const P = {
+    async get(cid, sub, id) { const v = db.get(sub + "/" + id); return v ? { ...v, id } : null; },
+    async range(cid, sub, field, from, to) { return docs(sub).filter(d => d[field] >= from && d[field] < to); },
+    async eq(cid, sub, field, val) { return docs(sub).filter(d => d[field] === val); },
+    async all(cid, sub) { return docs(sub); },
+    watchEq(cid, sub, field, val, cb) { const w = () => cb(docs(sub).filter(d => d[field] === val)); watchers.add(w); w(); return () => watchers.delete(w); },
+    watchDoc(cid, sub, id, cb) { const w = () => cb(db.get(sub + "/" + id) || null); watchers.add(w); w(); return () => watchers.delete(w); },
+    async existing(cid, sub, ids) { return new Set(ids.filter(id => db.has(sub + "/" + id))); },
+    async batch(cid, ops) {
+      for (const o of ops) {
+        const k = o.sub + "/" + o.id;
+        if (o.op === "del") db.delete(k);
+        else db.set(k, o.merge ? merge(db.get(k), o.data) : merge({}, o.data));
+      }
+      emit();
+    },
+  };
+  // 예시 기록 (가짜 이름)
+  const seed = [];
+  const sun = (w) => { const d = new Date(); d.setDate(d.getDate() - d.getDay() - 7 * w); return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10); };
+  for (let w = 0; w < 6; w++) {
+    const date = sun(w);
+    [["P003", "십일조", 300000, "현금"], ["P004", "감사헌금", 50000, "현금"], ["P005", "주정헌금", 10000, "현금"], ["P007", "십일조", 250000, "계좌"],
+      ["", "주정헌금", 23000, "현금"], ["P006", "선교헌금", 20000, "계좌"], ["P001", "십일조", 400000, "계좌"]].forEach(([mid, type, amount, method], i) => {
+      if (w % 2 && i === 5) return;
+      const m = members.find(x => x.id === mid);
+      seed.push({ sub: "offerings", id: `S${w}_${i}`, data: { date, type, memberId: mid, name: m ? m.name : "무명", amount, method, memo: "", by: email } });
+    });
+    seed.push({ sub: "ledger", id: `L${w}`, data: { date, kind: "out", amount: 120000 + w * 5000, category: w % 2 ? "식비" : "공과금", method: "계좌", memo: w % 2 ? "주일 점심 재료" : "전기요금", by: email } });
+  }
+  const ym = localToday().slice(0, 7);
+  seed.push({ sub: "fin", id: "settings", data: { openingMonth: addMonth(ym, -2), openingCash: 150000, openingBank: 3200000, regNo: "000-00-00000", rep: "홍길동", addr: "OO시 OO구 OO로 1", account: "OO은행 000-0000-0000 (미리보기교회)" } });
+  const tot = {};
+  seed.forEach(s => { if (s.sub === "offerings" || s.sub === "ledger") for (const [k, v] of Object.entries(deltaOf(s.sub, s.data, 1))) { tot[k] = tot[k] || {}; for (const [f, n] of Object.entries(v)) tot[k][f] = (tot[k][f] || 0) + n; } });
+  seed.push({ sub: "fin", id: "totals", data: { months: tot } });
+  seed.forEach(s => db.set(s.sub + "/" + s.id, s.data));
+  return {
+    demo: true, P,
+    onUser(cb) { setTimeout(() => cb({ email }), 0); },
+    async signIn() {}, async signOut() { location.href = location.pathname; },
+    async isAdmin() { return false; },
+    async churches() { return [church]; },
+    watchMembers(cid, cb) { cb(members); return () => {}; },
+    me: () => email,
+  };
+}
+
+async function firebaseStore() {
+  const V = "10.12.2";
+  const { initializeApp } = await import(`https://www.gstatic.com/firebasejs/${V}/firebase-app.js`);
+  const A = await import(`https://www.gstatic.com/firebasejs/${V}/firebase-auth.js`);
+  const F = await import(`https://www.gstatic.com/firebasejs/${V}/firebase-firestore.js`);
+  const app = initializeApp(firebaseConfig);
+  const auth = A.getAuth(app);
+  // 헌금 기록은 민감해서 폰에 저장해 두지 않음 (출석 앱과 달리 메모리에만)
+  const db = F.getFirestore(app);
+  let me = null;
+  const lc = (s) => String(s || "").trim().toLowerCase();
+  const col = (cid, sub) => F.collection(db, "churches", cid, sub);
+  const ref = (cid, sub, id) => F.doc(db, "churches", cid, sub, id);
+  const conv = (v) => v && v.__inc !== undefined ? F.increment(v.__inc) : v && v.__ts ? F.serverTimestamp()
+    : v && typeof v === "object" && !Array.isArray(v) ? Object.fromEntries(Object.entries(v).map(([k, x]) => [k, conv(x)])) : v;
+  const list = (s) => s.docs.map(d => ({ ...d.data(), id: d.id }));
+  const P = {
+    async get(cid, sub, id) { const s = await F.getDoc(ref(cid, sub, id)); return s.exists() ? { ...s.data(), id: s.id } : null; },
+    async range(cid, sub, field, from, to) { return list(await F.getDocs(F.query(col(cid, sub), F.where(field, ">=", from), F.where(field, "<", to)))); },
+    async eq(cid, sub, field, val) { return list(await F.getDocs(F.query(col(cid, sub), F.where(field, "==", val)))); },
+    async all(cid, sub) { return list(await F.getDocs(col(cid, sub))); },
+    watchEq(cid, sub, field, val, cb) { return F.onSnapshot(F.query(col(cid, sub), F.where(field, "==", val)), s => cb(list(s)), e => toastErr(e.message)); },
+    watchDoc(cid, sub, id, cb) { return F.onSnapshot(ref(cid, sub, id), s => cb(s.exists() ? s.data() : null), e => toastErr(e.message)); },
+    async existing(cid, sub, ids) {
+      const out = new Set();
+      for (let i = 0; i < ids.length; i += 50) (await Promise.all(ids.slice(i, i + 50).map(id => F.getDoc(ref(cid, sub, id))))).forEach(s => s.exists() && out.add(s.id));
+      return out;
+    },
+    async batch(cid, ops) {
+      for (let i = 0; i < ops.length; i += 400) {
+        const b = F.writeBatch(db);
+        ops.slice(i, i + 400).forEach(o => o.op === "del" ? b.delete(ref(cid, o.sub, o.id)) : b.set(ref(cid, o.sub, o.id), conv(o.data), o.merge ? { merge: true } : {}));
+        await b.commit();
+      }
+    },
+  };
+  return {
+    demo: false, P,
+    onUser(cb) { A.onAuthStateChanged(auth, u => { me = u ? lc(u.email) : null; cb(u ? { email: me } : null); }); },
+    async signIn() {
+      const p = new A.GoogleAuthProvider(); p.setCustomParameters({ prompt: "select_account" });
+      try { await A.signInWithPopup(auth, p); }
+      catch (e) { if (e.code === "auth/popup-blocked" || e.code === "auth/operation-not-supported-in-this-environment") await A.signInWithRedirect(auth, p); else throw e; }
+    },
+    async signOut() { await A.signOut(auth); },
+    async isAdmin() {
+      try { const s = await F.getDoc(F.doc(db, "config", "admins")); return s.exists() && (s.data().emails || []).map(lc).includes(me); }
+      catch { return false; }
+    },
+    async churches() {
+      const c = F.collection(db, "churches");
+      // 관리자라도 재정은 그 교회 재정 명단에 있는 교회만
+      const snaps = await Promise.all(["finance", "pastors"].map(f => F.getDocs(F.query(c, F.where(f, "array-contains", me)))));
+      const out = new Map(); snaps.forEach(s => s.docs.forEach(d => out.set(d.id, { id: d.id, ...d.data() })));
+      return [...out.values()].sort((a, b) => a.name.localeCompare(b.name, "ko"));
+    },
+    watchMembers(cid, cb) { return F.onSnapshot(col(cid, "members"), s => cb(list(s)), e => toastErr(e.message)); },
+    me: () => me,
+  };
+}
+
+// ───────────── 합계 ─────────────
+// 달별 합계: offCash·offBank 헌금(현금·계좌), inCash·inBank 헌금 아닌 수입, outCash·outBank 지출, dep 현금→통장 입금
+function deltaOf(sub, r, sign) {
+  if (!r || !r.date) return {};
+  const ym = r.date.slice(0, 7), a = toNum(r.amount) * sign, cash = r.method === "현금";
+  if (sub === "offerings") return { [ym]: { [cash ? "offCash" : "offBank"]: a } };
+  if (r.kind === "dep") return { [ym]: { dep: a } };
+  return { [ym]: { [(r.kind === "in" ? "in" : "out") + (cash ? "Cash" : "Bank")]: a } };
+}
+function totalsOps(changes) { // [[sub, rec, sign]] → fin/totals 한 번에 올리고 내림
+  const months = {};
+  changes.forEach(([sub, r, sign]) => { for (const [ym, v] of Object.entries(deltaOf(sub, r, sign))) { months[ym] = months[ym] || {}; for (const [f, n] of Object.entries(v)) months[ym][f] = (months[ym][f] || 0) + n; } });
+  for (const ym of Object.keys(months)) { for (const f of Object.keys(months[ym])) months[ym][f] ? (months[ym][f] = INC(months[ym][f])) : delete months[ym][f]; if (!Object.keys(months[ym]).length) delete months[ym]; }
+  return Object.keys(months).length ? [{ op: "set", sub: "fin", id: "totals", merge: true, data: { months } }] : [];
+}
+const logOp = (action, detail) => ({ op: "set", sub: "finlog", id: rid(), data: { at: TS, by: S.store.me(), action, detail: String(detail).slice(0, 300) } });
+const stamp = (r) => ({ ...r, by: S.store.me(), at: TS });
+async function write(changes, extra = [], log) {
+  // changes: [[sub, id, old, new]] 헌금·장부 넣기/고치기/지우기. 합계와 수정 기록을 같은 배치에 넣는다.
+  const ops = [], tot = [];
+  changes.forEach(([sub, id, old, nw]) => {
+    if (old) tot.push([sub, old, -1]);
+    if (nw) { tot.push([sub, nw, 1]); ops.push({ op: "set", sub, id, data: stamp(nw) }); } else ops.push({ op: "del", sub, id });
+  });
+  await S.store.P.batch(S.church.id, [...ops, ...extra, ...totalsOps(tot), ...(log ? [logOp(...log)] : [])]);
+}
+function balances(uptoYm) {
+  const s = S.set; if (!s.openingMonth) return null;
+  let cash = toNum(s.openingCash), bank = toNum(s.openingBank);
+  for (const [ym, t] of Object.entries(S.totals.months || {})) {
+    if (ym < s.openingMonth || ym > uptoYm) continue;
+    cash += (t.offCash || 0) + (t.inCash || 0) - (t.outCash || 0) - (t.dep || 0);
+    bank += (t.offBank || 0) + (t.inBank || 0) - (t.outBank || 0) + (t.dep || 0);
+  }
+  return { cash, bank };
+}
+
+// ───────────── 상태 ─────────────
+const S = { store: null, email: null, admin: false, churches: [], church: null, members: [], set: {}, totals: {}, un: [], tab: "off",
+  date: localToday(), dayRecs: [], dayInfo: null, type: null, method: "현금" };
+const types = () => (S.set.types?.length ? S.set.types : DEF.types);
+const outCats = () => (S.set.outCats?.length ? S.set.outCats : DEF.outCats);
+const inCats = () => (S.set.inCats?.length ? S.set.inCats : DEF.inCats);
+function toast(msg) { const t = $("#toast"); t.textContent = msg; t.classList.remove("hidden"); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.add("hidden"), 2600); }
+function toastErr(msg) { const el = $("#sync"); el.textContent = "연결 문제: " + msg; el.style.color = "var(--warn)"; }
+function stopWatch() { S.un.forEach(f => f?.()); S.un = []; }
+
+async function boot() {
+  const demo = new URLSearchParams(location.search).has("demo");
+  if (demo) $("#toAtt").href = "./?demo";
+  try { S.store = demo ? demoStore() : await firebaseStore(); }
+  catch { show("sLogin"); $("#loginErr").textContent = "연결에 실패했어요. 인터넷을 확인해 주세요."; return; }
+  S.store.onUser(async (u) => {
+    if (!u) { stopWatch(); return show("sLogin"); }
+    S.email = u.email;
+    S.admin = await S.store.isAdmin();
+    S.churches = await S.store.churches().catch(() => []);
+    if (!S.churches.length) { $("#noAccessEmail").textContent = u.email; return show("sNoAccess"); }
+    let last = null; try { last = localStorage.getItem("att.church"); } catch {}
+    pickChurch(S.churches.find(c => c.id === last) || S.churches[0]);
+  });
+}
+$("#login").onclick = () => S.store.signIn().catch(e => ($("#loginErr").textContent = "로그인 실패: " + e.message));
+document.addEventListener("click", (e) => { if (e.target.closest("[data-act=logout]")) S.store.signOut(); });
+
+async function pickChurch(c) {
+  stopWatch();
+  S.church = c;
+  $("#cName").textContent = c.name + " 재정";
+  const pick = $("#cPick");
+  pick.classList.toggle("hidden", S.churches.length < 2);
+  pick.innerHTML = S.churches.map(x => `<option value="${esc(x.id)}" ${x.id === c.id ? "selected" : ""}>${esc(x.name)}</option>`).join("");
+  S.set = (await S.store.P.get(c.id, "fin", "settings").catch(() => null)) || {};
+  S.type = types()[0];
+  S.un.push(S.store.watchMembers(c.id, (ms) => { S.members = ms; fillMemList(); if (S.tab === "mem") renderMem(); }));
+  S.un.push(S.store.P.watchDoc(c.id, "fin", "totals", (t) => { S.totals = t || {}; if (S.tab === "led") renderLedSum(); }));
+  $("#oDate").value = S.date;
+  watchDay();
+  show("sMain");
+  setTab(S.tab);
+}
+$("#cPick").onchange = (e) => pickChurch(S.churches.find(c => c.id === e.target.value));
+
+function setTab(t) {
+  S.tab = t;
+  $$("#tabs button").forEach(b => b.setAttribute("aria-pressed", b.dataset.tab === t));
+  const map = { off: "tOff", bank: "tBank", led: "tLed", rep: "tRep", mem: "tMem", set: "tSet" };
+  Object.entries(map).forEach(([k, id]) => $("#" + id).classList.toggle("hidden", k !== t));
+  if (t === "off") renderTypes();
+  if (t === "led") openLed();
+  if (t === "rep") openRep();
+  if (t === "mem") openMem();
+  if (t === "set") openSet();
+}
+$("#tabs").onclick = (e) => { const b = e.target.closest("button[data-tab]"); if (b) setTab(b.dataset.tab); };
+
+// ───────────── 성도 고르기 ─────────────
+// 목록 값은 "이름 · 직분 · 번호". 그냥 이름만 쳐도 한 명뿐이면 그 사람으로 잡음
+function fillMemList() {
+  $("#memList").innerHTML = [...S.members].sort((a, b) => a.name.localeCompare(b.name, "ko"))
+    .map(m => `<option value="${esc(`${m.name} · ${m.role || "성도"} · ${m.id}`)}">`).join("");
+}
+function findMember(text) {
+  const t = String(text || "").trim();
+  if (!t || t === "무명") return { m: null, name: "무명" };
+  const id = t.split("·").map(s => s.trim()).pop();
+  const byId = S.members.find(m => m.id === id);
+  if (byId) return { m: byId, name: byId.name };
+  const same = S.members.filter(m => m.name === t);
+  if (same.length === 1) return { m: same[0], name: t };
+  if (same.length > 1) return { err: `'${t}' 이름이 ${same.length}명이에요. 목록에서 직분·번호로 골라 주세요.` };
+  return { m: null, name: t, unknown: true };
+}
+const memLabel = (r) => r.memberId ? (() => { const m = S.members.find(x => x.id === r.memberId); return m ? `${m.name} · ${m.role || "성도"} · ${m.id}` : r.name; })() : (r.name === "무명" ? "" : r.name);
+
+// ───────────── 헌금 ─────────────
+function watchDay() {
+  S.un.forEach((f, i) => { if (f?.day) { f(); S.un[i] = null; } });
+  const un = S.store.P.watchEq(S.church.id, "offerings", "date", S.date, (rs) => { S.dayRecs = rs; renderDay(); });
+  un.day = true; S.un.push(un);
+  S.store.P.get(S.church.id, "days", S.date).then(d => { S.dayInfo = d; renderClose(); }).catch(() => {});
+  const wd = new Date(S.date + "T12:00:00").getDay();
+  $("#oDay").textContent = "일월화수목금토"[wd] + "요일";
+}
+$("#oDate").onchange = (e) => { if (!e.target.value) return; S.date = e.target.value; watchDay(); };
+function renderTypes() {
+  if (!types().includes(S.type)) S.type = types()[0];
+  $("#oType").innerHTML = types().map(t => `<button type="button" data-t="${esc(t)}" aria-pressed="${t === S.type}">${esc(t)}</button>`).join("");
+}
+$("#oType").onclick = (e) => { const b = e.target.closest("button[data-t]"); if (!b) return; S.type = b.dataset.t; renderTypes(); $("#oName").focus(); };
+$("#oMethod").onclick = (e) => { const b = e.target.closest("button[data-m]"); if (!b) return; S.method = b.dataset.m; $$("#oMethod button").forEach(x => x.setAttribute("aria-pressed", x === b)); };
+$("#oAmt").oninput = () => { $("#oAmtWord").textContent = wordWon(toNum($("#oAmt").value)); };
+$("#oAmt").onkeydown = $("#oName").onkeydown = $("#oMemo").onkeydown = (e) => { if (e.key === "Enter" && !e.isComposing) { e.preventDefault(); $("#oAdd").click(); } };
+const closedOk = () => !S.dayInfo?.closedAt || confirm("이미 계수 마감한 날이에요. 바꾸면 마감한 현금 합계와 달라지고, 수정 기록에 남아요. 계속할까요?");
+$("#oAdd").onclick = async () => {
+  const msg = $("#oMsg"); msg.textContent = "";
+  if (!closedOk()) return;
+  const amount = toNum($("#oAmt").value);
+  if (!amount || amount < 0) return (msg.textContent = "금액을 넣어 주세요."), $("#oAmt").focus();
+  const f = findMember($("#oName").value);
+  if (f.err) return (msg.textContent = f.err);
+  if (f.unknown && !confirm(`'${f.name}'은(는) 성도 명단에 없어요. 그대로 넣을까요?\n(성도별 합계·영수증에는 잡히지 않아요)`)) return;
+  const rec = { date: S.date, type: S.type, memberId: f.m?.id || "", name: f.name, amount, method: S.method, memo: $("#oMemo").value.trim() };
+  const id = "O" + S.date.replace(/-/g, "") + "_" + rid();
+  $("#oAdd").disabled = true;
+  try {
+    await write([["offerings", id, null, rec]], [], ["헌금 넣기", `${rec.date} ${rec.type} ${rec.name} ${won(amount)}원 ${rec.method}`]);
+    $("#oName").value = ""; $("#oAmt").value = ""; $("#oMemo").value = ""; $("#oAmtWord").textContent = "";
+    toast(`${rec.name} ${rec.type} ${won(amount)}원`); $("#oName").focus();
+  } catch (e) { msg.textContent = "저장 실패: " + e.message; }
+  finally { $("#oAdd").disabled = false; }
+};
+const typeOrder = (t) => { const i = types().indexOf(t); return i < 0 ? 999 : i; };
+function renderDay() {
+  const rs = S.dayRecs;
+  const cash = rs.filter(r => r.method === "현금").reduce((s, r) => s + toNum(r.amount), 0), bank = rs.filter(r => r.method !== "현금").reduce((s, r) => s + toNum(r.amount), 0);
+  $("#oSum").innerHTML = `<span>합계 <b>${won(cash + bank)}</b>원</span><span>현금 ${won(cash)}원</span><span>계좌 ${won(bank)}원</span><small>${rs.length}건 · ${new Set(rs.filter(r => r.memberId).map(r => r.memberId)).size}명</small>`;
+  const by = new Map();
+  rs.forEach(r => (by.get(r.type) || by.set(r.type, []).get(r.type)).push(r));
+  const keys = [...by.keys()].sort((a, b) => typeOrder(a) - typeOrder(b) || a.localeCompare(b, "ko"));
+  $("#oList").innerHTML = keys.length ? keys.map(t => {
+    const g = by.get(t).sort((a, b) => (a.name === "무명") - (b.name === "무명") || a.name.localeCompare(b.name, "ko"));
+    return `<div class="grp"><h3>${esc(t)} <small>${g.length}건</small><span>${won(g.reduce((s, r) => s + toNum(r.amount), 0))}원</span></h3>
+      ${g.map(r => `<button type="button" class="ln" data-o="${esc(r.id)}"><span class="nm">${esc(r.name)}${r.memberId ? "" : r.name === "무명" ? "" : `<span class="tag">명단 밖</span>`}${r.memo ? `<small>${esc(r.memo)}</small>` : ""}</span>
+        <span class="tag ${r.method === "현금" ? "" : "ok"}">${r.method === "현금" ? "현금" : "계좌"}</span><span class="amt">${won(r.amount)}</span></button>`).join("")}</div>`;
+  }).join("") : `<p class="empty">이 날 넣은 헌금이 없어요.</p>`;
+  renderClose();
+}
+$("#oList").onclick = (e) => { const b = e.target.closest("[data-o]"); if (b) openOff(S.dayRecs.find(r => r.id === b.dataset.o)); };
+
+let editOff = null;
+function openOff(r) {
+  if (!r) return; editOff = r;
+  $("#eType").innerHTML = [...new Set([...types(), r.type])].map(t => `<option ${t === r.type ? "selected" : ""}>${esc(t)}</option>`).join("");
+  $("#eDate").value = r.date; $("#eName").value = memLabel(r); $("#eAmt").value = r.amount; $("#eMethod").value = r.method === "현금" ? "현금" : "계좌"; $("#eMemo").value = r.memo || "";
+  $("#eMsg").textContent = ""; $("#oDlg").showModal();
+}
+$("#eOk").onclick = async (e) => {
+  e.preventDefault();
+  const amount = toNum($("#eAmt").value); if (!amount) return ($("#eMsg").textContent = "금액을 넣어 주세요.");
+  if (!closedOk()) return;
+  const f = findMember($("#eName").value); if (f.err) return ($("#eMsg").textContent = f.err);
+  const { id, at, by, ...old } = editOff;
+  const nw = { ...old, date: $("#eDate").value || old.date, type: $("#eType").value, memberId: f.m?.id || "", name: f.name, amount, method: $("#eMethod").value, memo: $("#eMemo").value.trim() };
+  try { await write([["offerings", id, old, nw]], [], ["헌금 고치기", `${old.date} ${old.type} ${old.name} ${won(old.amount)}원 → ${nw.date} ${nw.type} ${nw.name} ${won(nw.amount)}원 ${nw.method}`]); $("#oDlg").close(); }
+  catch (er) { $("#eMsg").textContent = "저장 실패: " + er.message; }
+};
+$("#eDel").onclick = async () => {
+  const { id, at, by, ...old } = editOff;
+  if (!confirm(`${old.name} ${old.type} ${won(old.amount)}원을 지울까요?`) || !closedOk()) return;
+  try { await write([["offerings", id, old, null]], [], ["헌금 지우기", `${old.date} ${old.type} ${old.name} ${won(old.amount)}원 ${old.method}`]); $("#oDlg").close(); }
+  catch (er) { $("#eMsg").textContent = "지우기 실패: " + er.message; }
+};
+
+// 현금 계수 마감: 두 사람이 센 현금과 앱 현금 합계를 맞춰 보고 남김. 은행에 넣으면 장부에 '현금→통장 입금'
+const dayCash = () => S.dayRecs.filter(r => r.method === "현금").reduce((s, r) => s + toNum(r.amount), 0);
+function renderClose() {
+  const d = S.dayInfo || {}, app = dayCash();
+  $("#dApp").value = won(app) + "원";
+  if (document.activeElement !== $("#dCounters")) $("#dCounters").value = d.counters || "";
+  if (document.activeElement !== $("#dCash")) $("#dCash").value = d.counted != null ? d.counted : "";
+  if (!$("#dBills").contains(document.activeElement)) $$("[data-bill]").forEach(i => { i.value = (d.bills || {})[i.dataset.bill] || ""; });
+  showDiff();
+  const parts = [];
+  if (d.closedAt) parts.push(`마감함 (${esc(d.counters || "")})`);
+  if (d.depositId) parts.push(`은행 입금 기록함 ${won(d.deposited)}원 (${esc(d.depositDate || "")})`);
+  $("#dMsg").innerHTML = parts.join(" · ");
+  $("#dDeposit").textContent = d.depositId ? "입금 기록 보기" : "은행에 입금함";
+}
+function showDiff() {
+  const c = $("#dCash").value.trim(); const el = $("#dDiff");
+  if (!c) { el.textContent = ""; return; }
+  const diff = toNum(c) - dayCash();
+  el.innerHTML = diff === 0 ? `<span class="diff good">센 현금과 앱 합계가 맞아요.</span>` : `<span class="diff bad">${diff > 0 ? "현금이 " + won(diff) + "원 더 많아요" : "현금이 " + won(-diff) + "원 모자라요"}.</span> 봉투를 빠뜨렸거나 금액을 잘못 넣었는지 확인해 주세요.`;
+}
+$("#dCash").oninput = showDiff;
+const bills = () => Object.fromEntries($$("[data-bill]").map(i => [i.dataset.bill, toNum(i.value)]).filter(([, n]) => n));
+$("#dBills").oninput = () => { const b = bills(); $("#dCash").value = Object.entries(b).reduce((s, [k, n]) => s + k * n, 0) || ""; showDiff(); };
+$("#dClose").onclick = async () => {
+  const counters = $("#dCounters").value.trim(), counted = toNum($("#dCash").value);
+  if (counters.split(/[,\s·]+/).filter(Boolean).length < 2 && !confirm("계수자는 두 사람 이상이 좋아요. 그래도 마감할까요?")) return;
+  if ($("#dCash").value.trim() === "") return ($("#dMsg").textContent = "실제로 센 현금을 넣어 주세요.");
+  const diff = counted - dayCash();
+  if (diff && !confirm(`센 현금과 앱 합계가 ${won(Math.abs(diff))}원 달라요. 그래도 마감할까요?`)) return;
+  const data = { ...(S.dayInfo || {}), counters, counted, bills: bills(), appCash: dayCash(), closedAt: TS, closedBy: S.store.me() };
+  delete data.id;
+  try {
+    await S.store.P.batch(S.church.id, [{ op: "set", sub: "days", id: S.date, data }, logOp("계수 마감", `${S.date} 계수자 ${counters} · 센 현금 ${won(counted)}원 · 앱 ${won(dayCash())}원`)]);
+    S.dayInfo = await S.store.P.get(S.church.id, "days", S.date); renderClose(); toast("마감했어요.");
+  } catch (e) { $("#dMsg").textContent = "저장 실패: " + e.message; }
+};
+$("#dDeposit").onclick = async () => {
+  const d = S.dayInfo || {};
+  if (d.depositId) { setTab("led"); $("#lMonth").value = (d.depositDate || S.date).slice(0, 7); openLed(); return; }
+  const amt = toNum(prompt("은행에 넣은 현금은 얼마인가요?", String(d.counted ?? dayCash())));
+  if (!amt) return;
+  const date = normDate(prompt("입금한 날짜 (예: " + localToday() + ")", localToday()) || "");
+  if (!date) return;
+  const id = "D" + S.date.replace(/-/g, "") + "_" + rid();
+  const rec = { date, kind: "dep", amount: amt, category: "현금 입금", method: "현금", memo: `${S.date} 헌금 현금 은행 입금`, receipts: [] };
+  try {
+    await write([["ledger", id, null, rec]], [{ op: "set", sub: "days", id: S.date, merge: true, data: { depositId: id, deposited: amt, depositDate: date } }], ["현금 은행 입금", `${S.date} 헌금 → ${date} 통장 ${won(amt)}원`]);
+    S.dayInfo = await S.store.P.get(S.church.id, "days", S.date); renderClose(); toast("현금 시재에서 통장으로 옮겼어요.");
+  } catch (e) { $("#dMsg").textContent = "저장 실패: " + e.message; }
+};
+// 주보 헌금자 명단: 종류 순서대로, 가나다, 한 사람은 한 번, 무명은 빼고
+$("#oBulletin").onclick = async () => {
+  const by = new Map();
+  S.dayRecs.filter(r => r.name && r.name !== "무명").forEach(r => (by.get(r.type) || by.set(r.type, new Set()).get(r.type)).add(r.name));
+  const keys = [...by.keys()].sort((a, b) => typeOrder(a) - typeOrder(b));
+  if (!keys.length) return toast("명단에 올릴 이름이 없어요.");
+  const t = keys.map(k => `[${k}] ${[...by.get(k)].sort((a, b) => a.localeCompare(b, "ko")).join(" ")}`).join("\n");
+  try { await navigator.clipboard.writeText(t); toast("주보 명단을 복사했어요."); } catch { prompt("아래 글을 복사하세요", t); }
+};
+
+// ───────────── 통장 정리 ─────────────
+// 입금: 성도 이름이 있으면 계좌이체 헌금(적요로 종류 짐작) / 이름 없고 '현금·ATM'이면 현금→통장 입금 / 이자 → 헌금 아닌 수입 / 그 밖은 확인 필요
+// 출금: 장부 지출 (항목 짐작). 줄 내용으로 ID를 만들어 같은 내역을 다시 붙여도 두 번 저장되지 않음.
+const TYPE_WORDS = [[/십일조|십일|1\/10/, "십일조"], [/주정|주일헌금|주일 헌금/, "주정헌금"], [/일천|천번/, "일천번제"], [/선교/, "선교헌금"], [/건축/, "건축헌금"],
+  [/장학/, "장학헌금"], [/부활|맥추|추수|성탄|송구|절기/, "절기헌금"], [/감사|생일|생신/, "감사헌금"]];
+function guessType(memo) { for (const [re, t] of TYPE_WORDS) if (re.test(memo)) { const hit = types().find(x => x === t) || types().find(x => x.startsWith(t.replace("헌금", ""))); if (hit) return hit; } return ""; }
+function guessOut(t) {
+  const c = /전기|가스|수도|통신|인터넷|kt|sk|lg/i.test(t) ? "공과금" : /사례/.test(t) ? "사례비" : /선교/.test(t) ? "선교" : /구제|후원/.test(t) ? "구제"
+    : /주유|차량|보험|정비|하이패스/.test(t) ? "차량" : /마트|식|반찬|쌀|카페|커피/.test(t) ? "식비" : /수수료/.test(t) ? "수수료" : /쿠팡|다이소|구입|구매/.test(t) ? "비품" : "기타";
+  return outCats().includes(c) ? c : outCats()[outCats().length - 1];
+}
+function parseBank(raw) {
+  const names = [...new Set(S.members.map(m => m.name).filter(n => n && n.length >= 2))].sort((a, b) => b.length - a.length);
+  const R = { rows: [], skip: [] }, seen = {};
+  let H = null;
+  raw.replace(/\r/g, "").split("\n").forEach((line0) => {
+    const line = line0.trim(); if (!line) return;
+    const cells = line0.split("\t").map(x => x.trim());
+    const isDate = (c) => /\d{4}\s*[-./년]\s*\d{1,2}\s*[-./월]\s*\d{1,2}/.test(c || "");
+    if (!H && cells.length > 2 && !cells.slice(0, 3).some(isDate)) {
+      const f = (re) => cells.findIndex(c => re.test(c));
+      const h = { date: f(/거래일|일시|날짜|일자/), inn: f(/^(입금|입금액|맡기신금액|입금\(원\))$/), out: f(/^(출금|출금액|찾으신금액|출금\(원\)|지급)$/), bal: f(/잔액/) };
+      if (h.inn >= 0 && h.out >= 0) { H = h; return; }
+    }
+    let parts = line.split(/\t+/); if (parts.length < 2) parts = line.split(/\s{2,}/);
+    const di = parts.slice(0, 3).findIndex(isDate);
+    const date = normDate(di < 0 ? (H?.date >= 0 ? cells[H.date] : "") : parts[di]);
+    if (!date) { if (/\d/.test(line)) R.skip.push(`${line} — 날짜를 못 읽음`); return; }
+    if (di > 0) parts = parts.slice(di);
+    const numCells = parts.slice(1).map(x => x.trim()).filter(x => /^-?[\d,]+(\.\d+)?$/.test(x));
+    const rest = parts.slice(1).join(" ").replace(/\d{4}[.\-\/]\d{1,2}[.\-\/]\d{1,2}/g, " ").replace(/\d{1,2}:\d{2}(:\d{2})?/g, " ");
+    const nums = (numCells.length ? numCells : rest.match(/-?\d[\d,]{2,}/g) || []).map(toNum).filter(n => n > 0);
+    let amount = nums[0] || 0, colOut = null;
+    if (H) { const i = toNum(cells[H.inn]), o = toNum(cells[H.out]); colOut = o > 0 && !(i > 0); amount = colOut ? o : i; }
+    const memo = parts.slice(1).map(x => x.trim()).filter(x => x && !/^-?[\d,]+(\.\d+)?$/.test(x) && !isDate(x) && !/^(입금|출금|일반입금|일반출금)$/.test(x)).join(" ");
+    const k = (seen[line] = (seen[line] || 0) + 1);
+    const key = "B" + date.replace(/-/g, "") + "_" + hash(line + "#" + k);
+    const isOut = colOut ?? (/출금|지급|이체출금|체크카드|카드결제/.test(parts.slice(1).join(" ")) && !/^\s*입금/.test(parts[1] || ""));
+    if (!amount) { R.skip.push(`${line} — 금액 없음`); return; }
+    const row = { key, date, amount, memo, warn: "" };
+    if (isOut) { R.rows.push({ ...row, pick: "out", cat: guessOut(memo) }); return; }
+    const nm = names.find(n => memo.replace(/\d+/g, " ").includes(n));
+    const same = nm ? S.members.filter(m => m.name === nm) : [];
+    if (same.length) {
+      const type = guessType(memo);
+      R.rows.push({ ...row, pick: same.length === 1 ? same[0].id : "", type, warn: same.length > 1 ? `'${nm}' 이름이 ${same.length}명 · 누구인지 골라 주세요` : type ? "" : "헌금 종류를 적요에서 못 찾음 · 골라 주세요" });
+      return;
+    }
+    if (/이자|결산/.test(memo)) { R.rows.push({ ...row, pick: "in", cat: inCats().includes("이자") ? "이자" : inCats()[0] }); return; }
+    if (/현금|ATM|자동화|창구|무통장/i.test(memo)) { R.rows.push({ ...row, pick: "dep", warn: "현금을 은행에 넣은 것 같아요 · 헌금 탭에서 이미 기록했다면 건너뛰기" }); return; }
+    R.rows.push({ ...row, pick: "", type: guessType(memo), warn: "성도 명단에 없는 이름 · 누구의 헌금인지, 헌금이 아닌지 골라 주세요" });
+  });
+  return R;
+}
+let BK = null;
+$("#bankRun").onclick = async () => {
+  const raw = $("#bankIn").value; if (!raw.trim()) return ($("#bankMsg").textContent = "통장 내역을 붙여 넣어 주세요.");
+  $("#bankMsg").textContent = "정리하는 중…"; $("#bankSaveMsg").textContent = "";
+  const r = parseBank(raw);
+  const ids = r.rows.map(x => x.key);
+  const [eo, el] = await Promise.all([S.store.P.existing(S.church.id, "offerings", ids), S.store.P.existing(S.church.id, "ledger", ids)]).catch(() => [new Set(), new Set()]);
+  r.rows = r.rows.filter(x => { if (eo.has(x.key) || el.has(x.key)) { r.skip.push(`${x.date} ${x.memo} ${won(x.amount)}원 — 이미 저장한 내역`); return false; } return true; });
+  // 손으로 넣은 기록과 같은 날·같은 금액이면 건너뛰기로 (같은 헌금을 두 번 넣지 않게)
+  const dates = r.rows.map(x => x.date).sort();
+  if (dates.length) {
+    const to = new Date(dates[dates.length - 1] + "T12:00:00"); to.setDate(to.getDate() + 1);
+    const [os, ls] = await Promise.all([S.store.P.range(S.church.id, "offerings", "date", dates[0], to.toISOString().slice(0, 10)), S.store.P.range(S.church.id, "ledger", "date", dates[0], to.toISOString().slice(0, 10))]).catch(() => [[], []]);
+    const used = new Set();
+    r.rows.forEach(x => {
+      const o = os.find(o => !used.has(o.id) && o.method === "계좌" && o.date === x.date && toNum(o.amount) === x.amount && (x.pick === o.memberId || x.pick === ""));
+      if (o && x.pick !== "out") { used.add(o.id); x.warn = `이미 같은 날 같은 금액의 계좌 헌금이 있어요 (${o.name} ${o.type}) · 같은 입금이면 건너뛰기`; x.pick = "skip"; return; }
+      const l = ls.find(l => !used.has(l.id) && l.date === x.date && toNum(l.amount) === x.amount && (l.kind === "out") === (x.pick === "out"));
+      if (l) { used.add(l.id); x.warn = `장부에 같은 날 같은 금액이 이미 있어요 (${l.category || ""} ${l.memo || ""}) · 같은 기록이면 건너뛰기`; x.pick = "skip"; }
+    });
+  }
+  BK = r; $("#bankMsg").textContent = ""; renderBank();
+};
+function pickOptions(x) {
+  const ms = [...S.members].sort((a, b) => a.name.localeCompare(b.name, "ko"));
+  const o = (v, t) => `<option value="${esc(v)}"${x.pick === v ? " selected" : ""}>${esc(t)}</option>`;
+  return o("", "고르기…") + o("skip", "건너뛰기 (저장 안 함)") + `<optgroup label="헌금 아님">${o("out", "지출 (장부)")}${o("in", "헌금 아닌 수입 (장부)")}${o("dep", "현금 → 통장 입금")}</optgroup>`
+    + `<optgroup label="헌금">${o("anon", "무명 헌금")}${ms.map(m => o(m.id, `${m.name} · ${m.role || "성도"} · ${m.id}`)).join("")}</optgroup>`;
+}
+function renderBank() {
+  const r = BK; $("#bankOut").classList.remove("hidden");
+  const isOff = (x) => x.pick && !["skip", "out", "in", "dep"].includes(x.pick);
+  const offN = r.rows.filter(isOff).length, need = r.rows.filter(x => !x.pick || (isOff(x) && !x.type)).length;
+  $("#bankSum").innerHTML = `<span>헌금 <b>${offN}</b>건</span><span>지출 ${r.rows.filter(x => x.pick === "out").length}건</span><span>기타 ${r.rows.filter(x => ["in", "dep"].includes(x.pick)).length}건</span>${need ? `<small class="err">고를 것 ${need}건 · 고르지 않은 줄은 저장하지 않아요</small>` : ""}`;
+  $("#bankRows").innerHTML = r.rows.map((x, i) => {
+    const off = isOff(x), led = ["out", "in"].includes(x.pick);
+    const second = off ? `<select data-i="${i}" data-f="type"><option value="">종류 고르기…</option>${types().map(t => `<option${t === x.type ? " selected" : ""}>${esc(t)}</option>`).join("")}</select>`
+      : led ? `<select data-i="${i}" data-f="cat">${(x.pick === "out" ? outCats() : inCats()).map(t => `<option${t === x.cat ? " selected" : ""}>${esc(t)}</option>`).join("")}</select>` : "<span></span>";
+    return `<div class="brow ${x.warn || !x.pick || (off && !x.type) ? "warn" : ""}"><div class="l1"><b>${esc(x.date.slice(5).replace("-", "."))}</b><span>${esc(x.memo || "(적요 없음)")}</span><span class="amt ${x.pick === "out" ? "out" : ""}">${x.pick === "out" ? "-" : "+"}${won(x.amount)}</span></div>
+      ${x.warn ? `<small>${esc(x.warn)}</small>` : ""}<div class="fix"><select data-i="${i}" data-f="pick">${pickOptions(x)}</select>${second}</div></div>`;
+  }).join("") || `<p class="empty">새로 넣을 줄이 없어요.</p>`;
+  $("#bankSkipN").textContent = `(${r.skip.length})`;
+  $("#bankSkip").innerHTML = r.skip.map(s => `<li>${esc(s)}</li>`).join("");
+}
+$("#bankRows").onchange = (e) => {
+  const s = e.target.closest("select[data-i]"); if (!s) return;
+  const x = BK.rows[+s.dataset.i]; x[s.dataset.f] = s.value;
+  if (s.dataset.f === "pick") { if (x.pick === "out" && !x.cat) x.cat = guessOut(x.memo); if (x.pick === "in" && !x.cat) x.cat = inCats()[0]; }
+  renderBank();
+};
+$("#bankSave").onclick = async () => {
+  if (!BK) return;
+  const ch = [], skipped = [];
+  for (const x of BK.rows) {
+    if (!x.pick || x.pick === "skip") { if (!x.pick) skipped.push(x); continue; }
+    if (["out", "in", "dep"].includes(x.pick)) {
+      ch.push(["ledger", x.key, null, { date: x.date, kind: x.pick, amount: x.amount, category: x.pick === "dep" ? "현금 입금" : x.cat || "기타", method: x.pick === "dep" ? "현금" : "계좌", memo: x.memo, receipts: [], src: "통장" }]);
+      continue;
+    }
+    if (!x.type) { skipped.push(x); continue; }
+    const m = x.pick === "anon" ? null : S.members.find(mm => mm.id === x.pick);
+    ch.push(["offerings", x.key, null, { date: x.date, type: x.type, memberId: m?.id || "", name: m?.name || "무명", amount: x.amount, method: "계좌", memo: x.memo, src: "통장" }]);
+  }
+  if (!ch.length) return ($("#bankSaveMsg").textContent = "저장할 줄이 없어요.");
+  $("#bankSave").disabled = true; $("#bankSaveMsg").textContent = "저장하는 중…";
+  try {
+    await write(ch, [], ["통장 정리", `헌금 ${ch.filter(c => c[0] === "offerings").length}건 · 장부 ${ch.filter(c => c[0] === "ledger").length}건`]);
+    BK.rows = skipped; renderBank();
+    $("#bankSaveMsg").textContent = `${ch.length}건 저장했어요.` + (skipped.length ? ` 고르지 않은 ${skipped.length}건은 남겨 뒀어요.` : "");
+  } catch (e) { $("#bankSaveMsg").textContent = "저장 실패: " + e.message; }
+  finally { $("#bankSave").disabled = false; }
+};
+
+// ───────────── 장부 ─────────────
+let LED = [];
+function openLed() {
+  if (!$("#lMonth").value) $("#lMonth").value = localToday().slice(0, 7);
+  renderLedSum(); loadLed();
+}
+$("#lMonth").onchange = () => { renderLedSum(); loadLed(); };
+function renderLedSum() {
+  const ym = $("#lMonth").value; if (!ym) return;
+  const t = (S.totals.months || {})[ym] || {}, b = balances(ym);
+  const off = (t.offCash || 0) + (t.offBank || 0), inn = (t.inCash || 0) + (t.inBank || 0), out = (t.outCash || 0) + (t.outBank || 0);
+  $("#lSum").innerHTML = `<span>헌금 <b>${won(off)}</b>원</span><span>헌금 아닌 수입 ${won(inn)}원</span><span>지출 <b style="color:var(--bad)">${won(out)}</b>원</span>`
+    + (b ? `<small>${+ym.slice(5)}월 말 남은 돈 · 현금 시재 ${won(b.cash)}원 · 통장 ${won(b.bank)}원 · 합계 ${won(b.cash + b.bank)}원${t.dep ? ` · 이번 달 현금 은행 입금 ${won(t.dep)}원` : ""}</small>` : `<small>설정에서 시작 잔액을 넣으면 남은 돈(현금 시재·통장)이 보여요.</small>`);
+}
+async function loadLed() {
+  const ym = $("#lMonth").value; if (!ym) return;
+  LED = await S.store.P.range(S.church.id, "ledger", "date", ym + "-01", addMonth(ym, 1) + "-01").catch(() => []);
+  LED.sort((a, b) => b.date.localeCompare(a.date));
+  const kindName = { out: "지출", in: "수입", dep: "현금→통장" };
+  $("#lTable").innerHTML = `<thead><tr><th>날짜</th><th>구분</th><th>항목·내용</th><th>어디서</th><th>금액</th></tr></thead><tbody>`
+    + (LED.map(e => `<tr class="click" data-l="${esc(e.id)}"><td>${esc(e.date.slice(5).replace("-", "."))}</td><td>${kindName[e.kind] || ""}</td><td style="text-align:left;white-space:normal">${esc(e.category || "")} ${esc(e.memo || "")}${(e.receipts || []).length ? ` 🧾${e.receipts.length}` : e.kind === "out" ? ` <span class="tag">영수증 없음</span>` : ""}</td><td>${e.kind === "dep" ? "현금→통장" : e.method === "현금" ? "현금" : "통장"}</td><td class="amt ${e.kind === "out" ? "out" : ""}">${e.kind === "out" ? "-" : ""}${won(e.amount)}</td></tr>`).join("")
+    || `<tr><td colspan="5" class="hint" style="text-align:center;padding:20px">이 달 장부 기록이 없어요.</td></tr>`) + "</tbody>";
+}
+$("#lTable").onclick = (e) => { const tr = e.target.closest("[data-l]"); if (tr) openLedDlg(LED.find(x => x.id === tr.dataset.l)); };
+let lEdit = null, lKind = "out";
+function setKind(k) {
+  lKind = k; $$("#lKind button").forEach(b => b.setAttribute("aria-pressed", b.dataset.k === k));
+  $("#catList").innerHTML = (k === "in" ? inCats() : outCats()).map(c => `<option value="${esc(c)}">`).join("");
+  $("#lCatWrap").classList.toggle("hidden", k === "dep"); $("#lMethodWrap").classList.toggle("hidden", k === "dep");
+}
+$("#lKind").onclick = (e) => { const b = e.target.closest("button[data-k]"); if (b) setKind(b.dataset.k); };
+function openLedDlg(e) {
+  lEdit = e || null;
+  setKind(e?.kind || "out");
+  $("#lTitle").textContent = e ? "장부 고치기" : "지출·수입 기록";
+  $("#lDate").value = e?.date || localToday(); $("#lAmt").value = e?.amount || ""; $("#lCat").value = e?.category || ""; $("#lMethod").value = e?.method === "현금" ? "현금" : "계좌"; $("#lMemo").value = e?.memo || "";
+  $("#lDel").classList.toggle("hidden", !e); $("#lRcSec").classList.toggle("hidden", !e); $("#lMsg").textContent = "";
+  if (e) showReceipts(e);
+  $("#lDlg").showModal();
+}
+$("#lAdd").onclick = () => openLedDlg(null);
+$("#lOk").onclick = async (ev) => {
+  ev.preventDefault();
+  const amount = toNum($("#lAmt").value); if (!amount) return ($("#lMsg").textContent = "금액을 넣어 주세요.");
+  const date = $("#lDate").value; if (!date) return ($("#lMsg").textContent = "날짜를 넣어 주세요.");
+  const nw = { date, kind: lKind, amount, category: lKind === "dep" ? "현금 입금" : ($("#lCat").value.trim() || "기타"), method: lKind === "dep" ? "현금" : $("#lMethod").value, memo: $("#lMemo").value.trim(), receipts: lEdit?.receipts || [] };
+  let old = null, id = "L" + date.replace(/-/g, "") + "_" + rid();
+  if (lEdit) { const { id: i, at, by, ...o } = lEdit; old = o; id = i; if (o.src) nw.src = o.src; }
+  try {
+    await write([["ledger", id, old, nw]], [], [old ? "장부 고치기" : "장부 넣기", `${nw.date} ${nw.category} ${nw.memo} ${won(nw.amount)}원${old ? ` (전: ${old.date} ${won(old.amount)}원)` : ""}`]);
+    $("#lDlg").close(); loadLed();
+  } catch (e) { $("#lMsg").textContent = "저장 실패: " + e.message; }
+};
+$("#lDel").onclick = async () => {
+  if (!lEdit) return;
+  const { id, at, by, ...old } = lEdit;
+  if (!confirm(`${old.date} ${old.category} ${won(old.amount)}원을 지울까요?`)) return;
+  try {
+    await write([["ledger", id, old, null]], (old.receipts || []).map(r => ({ op: "del", sub: "receipts", id: r })), ["장부 지우기", `${old.date} ${old.category} ${old.memo} ${won(old.amount)}원`]);
+    $("#lDlg").close(); loadLed();
+  } catch (e) { $("#lMsg").textContent = "지우기 실패: " + e.message; }
+};
+async function shrinkImage(file) {
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => no(new Error("사진을 열지 못했어요.")); i.src = url; });
+    for (const [side, q] of [[1600, 0.72], [1400, 0.6], [1200, 0.5], [1000, 0.45]]) {
+      const k = Math.min(1, side / Math.max(img.naturalWidth, img.naturalHeight));
+      const c = document.createElement("canvas"); c.width = Math.round(img.naturalWidth * k); c.height = Math.round(img.naturalHeight * k);
+      const x = c.getContext("2d"); x.fillStyle = "#fff"; x.fillRect(0, 0, c.width, c.height); x.drawImage(img, 0, 0, c.width, c.height);
+      const d = c.toDataURL("image/jpeg", q);
+      if (d.length < 850000) return d;
+    }
+    throw new Error("사진이 너무 커요. 영수증 부분만 잘라서 다시 올려 주세요.");
+  } finally { URL.revokeObjectURL(url); }
+}
+async function showReceipts(e) {
+  const ids = e.receipts || [];
+  $("#lRcList").innerHTML = ids.length ? `<p class="hint">불러오는 중…</p>` : `<p class="hint">붙인 영수증이 없어요.</p>`;
+  if (!ids.length) return;
+  const docs = await Promise.all(ids.map(id => S.store.P.get(S.church.id, "receipts", id).catch(() => null)));
+  $("#lRcList").innerHTML = docs.map((d, i) => d ? `<figure><img src="${esc(d.img)}" alt="영수증 ${i + 1}"><button type="button" class="x" data-rc="${esc(ids[i])}" style="align-self:flex-end">이 사진 지우기</button></figure>` : "").join("");
+}
+$("#lRcFile").onchange = async (ev) => {
+  const files = [...ev.target.files]; ev.target.value = ""; if (!lEdit || !files.length) return;
+  $("#lMsg").textContent = "사진 줄이는 중…";
+  try {
+    const add = [];
+    for (const f of files) add.push({ id: "R" + rid(), img: await shrinkImage(f) });
+    const receipts = [...(lEdit.receipts || []), ...add.map(a => a.id)];
+    await S.store.P.batch(S.church.id, [...add.map(a => ({ op: "set", sub: "receipts", id: a.id, data: { img: a.img, ledgerId: lEdit.id, by: S.store.me(), at: TS } })),
+      { op: "set", sub: "ledger", id: lEdit.id, merge: true, data: { receipts } }, logOp("영수증 붙이기", `${lEdit.date} ${lEdit.category} ${add.length}장`)]);
+    lEdit.receipts = receipts; $("#lMsg").textContent = ""; showReceipts(lEdit); loadLed();
+  } catch (e) { $("#lMsg").textContent = e.message; }
+};
+$("#lRcList").onclick = async (ev) => {
+  const b = ev.target.closest("[data-rc]"); if (!b || !lEdit || !confirm("이 영수증 사진을 지울까요?")) return;
+  const receipts = (lEdit.receipts || []).filter(x => x !== b.dataset.rc);
+  await S.store.P.batch(S.church.id, [{ op: "del", sub: "receipts", id: b.dataset.rc }, { op: "set", sub: "ledger", id: lEdit.id, merge: true, data: { receipts } }, logOp("영수증 지우기", `${lEdit.date} ${lEdit.category}`)]);
+  lEdit.receipts = receipts; showReceipts(lEdit); loadLed();
+};
+
+// ───────────── 보고서 ─────────────
+async function reportData(ym) {
+  const from = ym + "-01", to = addMonth(ym, 1) + "-01";
+  const [os, ls] = await Promise.all([S.store.P.range(S.church.id, "offerings", "date", from, to), S.store.P.range(S.church.id, "ledger", "date", from, to)]);
+  const sumBy = (arr, key) => { const o = {}; arr.forEach(r => o[r[key] || "기타"] = (o[r[key] || "기타"] || 0) + toNum(r.amount)); return Object.entries(o); };
+  const offTypes = sumBy(os, "type").sort((a, b) => typeOrder(a[0]) - typeOrder(b[0]));
+  const outs = ls.filter(e => e.kind === "out");
+  return {
+    ym, offTypes, off: os.reduce((s, r) => s + toNum(r.amount), 0), offCash: os.filter(r => r.method === "현금").reduce((s, r) => s + toNum(r.amount), 0),
+    inCats: sumBy(ls.filter(e => e.kind === "in"), "category").sort((a, b) => b[1] - a[1]), inn: ls.filter(e => e.kind === "in").reduce((s, e) => s + toNum(e.amount), 0),
+    outCats: sumBy(outs, "category").sort((a, b) => b[1] - a[1]), out: outs.reduce((s, e) => s + toNum(e.amount), 0), outN: outs.length, rcN: outs.filter(e => (e.receipts || []).length).length,
+    prev: balances(addMonth(ym, -1)), now: balances(ym), givers: new Set(os.filter(r => r.memberId).map(r => r.memberId)).size,
+  };
+}
+function reportText(d) {
+  const L = [`[${S.church.name}] ${d.ym.slice(0, 4)}년 ${+d.ym.slice(5)}월 재정 보고`, ""];
+  if (d.now && d.ym > S.set.openingMonth) L.push(`지난달 남은 돈 ${won(d.prev.cash + d.prev.bank)}원`);
+  L.push(`헌금 ${won(d.off)}원`, ...d.offTypes.map(([c, v]) => `  ${c} ${won(v)}원`));
+  if (d.inn) L.push(`헌금 아닌 수입 ${won(d.inn)}원`, ...d.inCats.map(([c, v]) => `  ${c} ${won(v)}원`));
+  L.push(`지출 ${won(d.out)}원`, ...d.outCats.map(([c, v]) => `  ${c} ${won(v)}원`));
+  if (d.outN) L.push(`  영수증 ${d.rcN}/${d.outN}건 보관`);
+  if (d.now) L.push(`이번 달 남은 돈 ${won(d.now.cash + d.now.bank)}원 (통장 ${won(d.now.bank)}원 · 현금 ${won(d.now.cash)}원)`);
+  if (S.set.account) L.push("", "헌금 계좌 " + S.set.account);
+  return L.join("\n");
+}
+async function reportImage(d) {
+  const W = 1080, P = 72, ink = "#16222B", mute = "#5B6A72", flow = "#1F6F78", bad = "#B3261E", line = "#D5DDDC";
+  const sans = '"IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif', serif = '"Gowun Batang", serif';
+  await Promise.all(["600 40px \"IBM Plex Sans KR\"", "400 32px \"IBM Plex Sans KR\"", "700 56px \"Gowun Batang\""].map(f => document.fonts?.load(f).catch(() => {})));
+  const R = [];
+  if (d.now && d.ym > S.set.openingMonth) R.push(["row", "지난달 남은 돈", won(d.prev.cash + d.prev.bank) + "원"]);
+  R.push(["head", "헌금", "+" + won(d.off) + "원", flow], ...d.offTypes.map(([c, v]) => ["sub", c, won(v) + "원"]));
+  if (d.inn) R.push(["head", "헌금 아닌 수입", "+" + won(d.inn) + "원", flow], ...d.inCats.map(([c, v]) => ["sub", c, won(v) + "원"]));
+  R.push(["head", "지출", "-" + won(d.out) + "원", bad], ...(d.outCats.length ? d.outCats.map(([c, v]) => ["sub", c, won(v) + "원"]) : [["sub", "없음", ""]]));
+  if (d.outN) R.push(["note", `영수증 ${d.rcN}/${d.outN}건 보관 중`]);
+  if (d.now) R.push(["total", "이번 달 남은 돈", won(d.now.cash + d.now.bank) + "원"], ["note", `통장 ${won(d.now.bank)}원 · 현금 시재 ${won(d.now.cash)}원`]);
+  const H = { row: 76, head: 84, sub: 56, note: 56, total: 110 };
+  const cardH = R.reduce((s, r) => s + H[r[0]], 0) + 40;
+  const height = 250 + cardH + 80 + (S.set.account ? 70 : 0) + 90;
+  const c = document.createElement("canvas"), x = c.getContext("2d");
+  c.width = W; c.height = height;
+  x.fillStyle = "#F3F5F4"; x.fillRect(0, 0, W, height); x.fillStyle = flow; x.fillRect(0, 0, W, 16);
+  const txt = (t, X, Y, font, color, align = "left") => { x.font = font; x.fillStyle = color; x.textAlign = align; x.fillText(t, X, Y); };
+  txt(S.church.name, P, 118, `600 34px ${sans}`, flow);
+  txt(`${d.ym.slice(0, 4)}년 ${+d.ym.slice(5)}월 재정 보고`, P, 196, `700 60px ${serif}`, ink);
+  let y = 250; const top = y;
+  x.fillStyle = "#FFFFFF"; x.strokeStyle = line; x.lineWidth = 2; x.beginPath(); x.roundRect ? x.roundRect(P - 24, top, W - (P - 24) * 2, cardH, 24) : x.rect(P - 24, top, W - (P - 24) * 2, cardH); x.fill(); x.stroke();
+  y += 20;
+  for (const [k, a, b, col] of R) {
+    if (k === "row") { txt(a, P, y + 52, `400 34px ${sans}`, mute); txt(b, W - P, y + 52, `600 38px ${sans}`, ink, "right"); }
+    if (k === "head") { x.fillStyle = line; x.fillRect(P, y + 6, W - P * 2, 2); txt(a, P, y + 62, `600 38px ${sans}`, col); txt(b, W - P, y + 62, `600 40px ${sans}`, col, "right"); }
+    if (k === "sub") { txt(a, P + 32, y + 40, `400 30px ${sans}`, mute); txt(b, W - P, y + 40, `400 30px ${sans}`, mute, "right"); }
+    if (k === "note") txt(a, P + 32, y + 40, `400 26px ${sans}`, mute);
+    if (k === "total") { x.fillStyle = ink; x.fillRect(P, y + 14, W - P * 2, 3); txt(a, P, y + 84, `600 40px ${sans}`, ink); txt(b, W - P, y + 86, `700 54px ${sans}`, ink, "right"); }
+    y += H[k];
+  }
+  y = top + cardH + 70;
+  if (S.set.account) { txt("헌금 계좌  " + S.set.account, P, y, `400 30px ${sans}`, ink); y += 70; }
+  txt(`${localToday().replace(/-/g, ".")} 기준`, P, height - 50, `400 26px ${sans}`, mute);
+  return c;
+}
+let rCanvas = null, rData = null;
+async function openRep() {
+  if (!$("#rMonth").value) { const ym = localToday().slice(0, 7); $("#rMonth").value = new Date().getDate() <= 10 ? addMonth(ym, -1) : ym; }
+  drawRep(); renderYear();
+}
+async function drawRep() {
+  const ym = $("#rMonth").value; if (!ym) return;
+  $("#rMsg").textContent = "만드는 중…";
+  try { rData = await reportData(ym); rCanvas = await reportImage(rData); $("#rImg").src = rCanvas.toDataURL("image/png"); $("#rMsg").textContent = rData.now ? "" : "설정에서 시작 잔액을 넣으면 남은 돈도 보여요."; }
+  catch (e) { $("#rMsg").textContent = "만들지 못했어요: " + e.message; }
+}
+$("#rMonth").onchange = () => { drawRep(); renderYear(); };
+$("#rShare").onclick = async () => {
+  if (!rCanvas) return;
+  const name = `${S.church.name}_${$("#rMonth").value}_재정보고.png`;
+  const blob = await new Promise(ok => rCanvas.toBlob(ok, "image/png"));
+  const file = new File([blob], name, { type: "image/png" });
+  if (navigator.canShare?.({ files: [file] })) { try { await navigator.share({ files: [file] }); return; } catch (e) { if (e.name === "AbortError") return; } }
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+};
+$("#rCopy").onclick = async () => { if (!rData) return; const t = reportText(rData); try { await navigator.clipboard.writeText(t); $("#rMsg").textContent = "복사했어요."; } catch { prompt("아래 글을 복사하세요", t); } };
+function renderYear() {
+  const y = ($("#rMonth").value || localToday()).slice(0, 4), M = S.totals.months || {};
+  let T = [0, 0, 0];
+  const rows = Array.from({ length: 12 }, (_, i) => {
+    const ym = `${y}-${String(i + 1).padStart(2, "0")}`, t = M[ym] || {};
+    const off = (t.offCash || 0) + (t.offBank || 0), inn = (t.inCash || 0) + (t.inBank || 0), out = (t.outCash || 0) + (t.outBank || 0);
+    T = [T[0] + off, T[1] + inn, T[2] + out];
+    return off || inn || out ? `<tr><td>${i + 1}월</td><td>${won(off)}</td><td>${won(inn)}</td><td class="amt out">${won(out)}</td><td>${won(off + inn - out)}</td></tr>` : "";
+  }).join("");
+  $("#rYear").innerHTML = `<thead><tr><th>${y}년</th><th>헌금</th><th>기타 수입</th><th>지출</th><th>차액</th></tr></thead><tbody>${rows || `<tr><td colspan="5" class="hint">기록 없음</td></tr>`}
+    <tr class="tot"><td>합계</td><td>${won(T[0])}</td><td>${won(T[1])}</td><td>${won(T[2])}</td><td>${won(T[0] + T[1] - T[2])}</td></tr></tbody>`;
+}
+
+// ───────────── 성도별 ─────────────
+let MY = { year: null, recs: [], by: new Map() };
+async function openMem() {
+  const y = new Date().getFullYear(), sel = $("#mYear");
+  if (!sel.options.length) { sel.innerHTML = [y, y - 1, y - 2].map(v => `<option value="${v}">${v}년</option>`).join(""); sel.value = new Date().getMonth() === 0 ? y - 1 : y; }
+  await loadMemYear();
+}
+$("#mYear").onchange = loadMemYear;
+$("#mQ").oninput = renderMem;
+async function loadMemYear() {
+  const y = $("#mYear").value;
+  $("#mSum").innerHTML = `<small>불러오는 중…</small>`;
+  MY.year = y; MY.recs = await S.store.P.range(S.church.id, "offerings", "date", `${y}-01-01`, `${+y + 1}-01-01`).catch(() => []);
+  MY.by = new Map();
+  MY.recs.filter(r => r.memberId).forEach(r => (MY.by.get(r.memberId) || MY.by.set(r.memberId, []).get(r.memberId)).push(r));
+  renderMem();
+}
+function renderMem() {
+  if (!MY.year) return;
+  const q = $("#mQ").value.trim();
+  const rows = [...MY.by.entries()].map(([id, rs]) => ({ m: S.members.find(x => x.id === id) || { id, name: rs[0].name, role: "" }, rs, sum: rs.reduce((s, r) => s + toNum(r.amount), 0) }))
+    .filter(x => !q || x.m.name.includes(q)).sort((a, b) => a.m.name.localeCompare(b.m.name, "ko"));
+  const total = MY.recs.reduce((s, r) => s + toNum(r.amount), 0), named = [...MY.by.values()].flat().reduce((s, r) => s + toNum(r.amount), 0);
+  $("#mSum").innerHTML = `<span>${MY.year}년 헌금 <b>${won(total)}</b>원</span><span>이름 있는 헌금 ${MY.by.size}명 · ${won(named)}원</span><span>무명·명단 밖 ${won(total - named)}원</span>`;
+  $("#mTable").innerHTML = `<thead><tr><th>이름</th><th>건수</th><th>합계</th></tr></thead><tbody>` + (rows.map(x => `<tr class="click" data-m="${esc(x.m.id)}"><td>${esc(x.m.name)} <small class="hint">${esc(x.m.role || "")} ${esc(x.m.id)}</small></td><td>${x.rs.length}</td><td class="amt">${won(x.sum)}</td></tr>`).join("") || `<tr><td colspan="3" class="hint">기록 없음</td></tr>`) + "</tbody>";
+}
+let mCur = null;
+$("#mTable").onclick = (e) => { const tr = e.target.closest("[data-m]"); if (tr) openMemDlg(tr.dataset.m); };
+function monthTable(rs) {
+  const tps = [...new Set(rs.map(r => r.type))].sort((a, b) => typeOrder(a) - typeOrder(b));
+  const cell = (mo, t) => rs.filter(r => +r.date.slice(5, 7) === mo && (!t || r.type === t)).reduce((s, r) => s + toNum(r.amount), 0);
+  return `<thead><tr><th>달</th>${tps.map(t => `<th>${esc(t)}</th>`).join("")}<th>합계</th></tr></thead><tbody>`
+    + Array.from({ length: 12 }, (_, i) => cell(i + 1) ? `<tr><td>${i + 1}월</td>${tps.map(t => `<td>${cell(i + 1, t) ? won(cell(i + 1, t)) : ""}</td>`).join("")}<td>${won(cell(i + 1))}</td></tr>` : "").join("")
+    + `<tr class="tot"><td>합계</td>${tps.map(t => `<td>${won(rs.filter(r => r.type === t).reduce((s, r) => s + toNum(r.amount), 0))}</td>`).join("")}<td>${won(rs.reduce((s, r) => s + toNum(r.amount), 0))}</td></tr></tbody>`;
+}
+function openMemDlg(id) {
+  mCur = id; const rs = MY.by.get(id) || [], m = S.members.find(x => x.id === id) || { name: rs[0]?.name || "" };
+  $("#mTitle").textContent = `${m.name} · ${MY.year}년 헌금`;
+  $("#mDetail").innerHTML = monthTable(rs);
+  $("#mDlg").showModal();
+}
+// 기부금 영수증 (소득세법 시행규칙 별지 제45호의2 서식을 따른 모양). 주민번호는 비워서 인쇄
+function receiptHtml(m, rs, no) {
+  const y = +MY.year, s = S.set;
+  const byMonth = Array.from({ length: 12 }, (_, i) => rs.filter(r => +r.date.slice(5, 7) === i + 1).reduce((a, r) => a + toNum(r.amount), 0));
+  const total = byMonth.reduce((a, b) => a + b, 0);
+  const lastDay = (mo) => new Date(+y, mo, 0).getDate();
+  return `<section class="rc"><p class="no">일련번호 ${esc(no)}</p><h1>기 부 금 영 수 증</h1>
+  <table><tr><th colspan="4" class="h">① 기부자</th></tr>
+    <tr><th>성명</th><td>${esc(m.name)}</td><th>주민등록번호</th><td class="blank"></td></tr>
+    <tr><th>주소</th><td colspan="3" class="blank"></td></tr></table>
+  <table><tr><th colspan="4" class="h">② 기부금 단체</th></tr>
+    <tr><th>단체명</th><td>${esc(S.church.name)}</td><th>사업자등록번호(고유번호)</th><td>${esc(s.regNo || "")}</td></tr>
+    <tr><th>소재지</th><td colspan="3">${esc(s.addr || "")}</td></tr>
+    <tr><th>기부금공제대상<br>단체 근거법령</th><td colspan="3">소득세법 시행령 제80조제1항제5호 (종교단체)</td></tr></table>
+  <table><tr><th colspan="7" class="h">③ 기부 내용</th></tr>
+    <tr><th>코드</th><th>구분</th><th>연월일</th><th colspan="2">내용 (품명)</th><th>수량</th><th>금액</th></tr>
+    ${byMonth.map((v, i) => v ? `<tr><td>41</td><td>금전</td><td>${y}.${String(i + 1).padStart(2, "0")}.${lastDay(i + 1)}</td><td colspan="2">헌금 (${i + 1}월분)</td><td></td><td class="r">${won(v)}</td></tr>` : "").join("")}
+    <tr><th colspan="6">합계</th><td class="r"><b>${won(total)}</b></td></tr></table>
+  <p class="law">「소득세법」 제34조, 「조세특례제한법」 제58조·제76조·제88조의4 및 「법인세법」 제24조에 따른 기부금을 위와 같이 기부하였음을 증명하여 주시기 바랍니다.</p>
+  <p class="sig">${y + 1}년 &nbsp;&nbsp;월 &nbsp;&nbsp;일 &nbsp;&nbsp;&nbsp; 신청인 ${esc(m.name)} &nbsp;(서명 또는 인)</p>
+  <p class="law">위와 같이 기부금을 기부받았음을 증명합니다.</p>
+  <p class="sig">${y + 1}년 &nbsp;&nbsp;월 &nbsp;&nbsp;일 &nbsp;&nbsp;&nbsp; 기부금 수령인 ${esc(S.church.name)} 대표 ${esc(s.rep || "")} &nbsp;(서명 또는 인)</p></section>`;
+}
+// 발급 대장: 성도마다 그해 일련번호를 한 번 정해 남김 (다시 뽑으면 같은 번호, 금액이 바뀌면 '재발급'으로 기록)
+async function issue(list) {
+  const y = String(MY.year), have = await S.store.P.eq(S.church.id, "issued", "year", y).catch(() => []);
+  const byM = new Map(have.map(d => [d.memberId, d]));
+  let next = have.reduce((a, d) => Math.max(a, d.no || 0), 0);
+  const changed = list.filter(([m, rs]) => byM.has(m.id) && byM.get(m.id).total !== rs.reduce((a, r) => a + toNum(r.amount), 0));
+  if (changed.length && !confirm(`이미 영수증을 발급한 ${changed.map(([m]) => m.name).join(", ")}의 금액이 그때와 달라요. 재발급으로 기록하고 인쇄할까요?`)) return null;
+  const ops = [], nos = [];
+  for (const [m, rs] of list) {
+    const total = rs.reduce((a, r) => a + toNum(r.amount), 0), old = byM.get(m.id);
+    const no = old?.no || ++next; nos.push(`${y}-${String(no).padStart(3, "0")}`);
+    if (old && old.total === total) continue;
+    ops.push({ op: "set", sub: "issued", id: `${y}-${String(no).padStart(4, "0")}`, data: { year: y, no, memberId: m.id || "", name: m.name, total, reissue: (old?.reissue || 0) + (old ? 1 : 0), by: S.store.me(), at: TS } });
+  }
+  if (ops.length) await S.store.P.batch(S.church.id, [...ops, logOp("기부금 영수증 발급", `${y}년 ${ops.length}명`)]);
+  return nos;
+}
+async function printReceipts(list) {
+  const w = window.open("", "_blank"); if (!w) return toast("팝업이 막혔어요. 팝업을 허용해 주세요.");
+  let nos; try { nos = await issue(list); } catch (e) { w.close(); return toast("발급 대장 저장 실패: " + e.message); }
+  if (!nos) return w.close();
+  const body = list.map(([m, rs], i) => receiptHtml(m, rs, nos[i])).join("");
+  w.document.write(`<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>${esc(S.church.name)} ${MY.year}년 기부금 영수증</title><style>
+    body{font-family:"Malgun Gothic","Apple SD Gothic Neo",sans-serif;color:#000;margin:0;padding:20px;font-size:13px}
+    .rc{max-width:680px;margin:0 auto 40px;page-break-after:always}
+    h1{text-align:center;font-size:24px;letter-spacing:4px;margin:6px 0 14px}.no{margin:0;font-size:12px}
+    table{width:100%;border-collapse:collapse;margin-bottom:8px}th,td{border:1px solid #000;padding:6px;font-weight:normal;text-align:center}
+    th{background:#f2f2f2}th.h{text-align:left;font-weight:bold}td.blank{height:28px}td.r{text-align:right}
+    .law{margin:12px 0 4px;line-height:1.6}.sig{text-align:right;margin:4px 0 14px}
+    @media print{body{padding:0}.rc{margin:0 auto}}</style></head><body>${body}<script>setTimeout(()=>print(),300)<\/script></body></html>`);
+  w.document.close();
+}
+$("#mPrint").onclick = () => { const rs = MY.by.get(mCur) || []; const m = S.members.find(x => x.id === mCur) || { id: mCur, name: rs[0]?.name || "" }; printReceipts([[m, rs]]); };
+$("#mPrintAll").onclick = () => {
+  const list = [...MY.by.entries()].map(([id, rs]) => [S.members.find(x => x.id === id) || { id, name: rs[0].name }, rs]).sort((a, b) => a[0].name.localeCompare(b[0].name, "ko"));
+  if (!list.length) return toast("영수증을 만들 기록이 없어요.");
+  printReceipts(list);
+};
+$("#mCsv").onclick = () => {
+  const tps = types();
+  const rows = [...MY.by.entries()].map(([id, rs]) => { const m = S.members.find(x => x.id === id) || { name: rs[0].name, role: "" }; return [id, m.name, m.role || "", ...tps.map(t => rs.filter(r => r.type === t).reduce((s, r) => s + toNum(r.amount), 0)), rs.reduce((s, r) => s + toNum(r.amount), 0)]; })
+    .sort((a, b) => a[1].localeCompare(b[1], "ko"));
+  const q = (v) => /[",\n]/.test(String(v)) ? `"${String(v).replace(/"/g, '""')}"` : String(v);
+  const csv = "﻿" + [["성도ID", "이름", "직분", ...tps, "합계"], ...rows].map(r => r.map(q).join(",")).join("\n");
+  const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" })); a.download = `${S.church.name}_${MY.year}_성도별헌금.csv`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+};
+
+// ───────────── 설정 ─────────────
+function openSet() {
+  const s = S.set;
+  $("#sTypes").value = types().join(", "); $("#sOut").value = outCats().join(", "); $("#sIn").value = inCats().join(", ");
+  $("#sOpenMonth").value = s.openingMonth || ""; $("#sOpenCash").value = s.openingCash ?? ""; $("#sOpenBank").value = s.openingBank ?? "";
+  $("#sRegNo").value = s.regNo || ""; $("#sRep").value = s.rep || ""; $("#sAddr").value = s.addr || ""; $("#sAccount").value = s.account || "";
+  $("#sMsg").textContent = ""; LOGN = 30; loadLogs();
+}
+const csvList = (v) => [...new Set(v.split(",").map(x => x.trim()).filter(Boolean))];
+$("#sSave").onclick = async () => {
+  const data = { types: csvList($("#sTypes").value), outCats: csvList($("#sOut").value), inCats: csvList($("#sIn").value),
+    openingMonth: $("#sOpenMonth").value, openingCash: toNum($("#sOpenCash").value), openingBank: toNum($("#sOpenBank").value),
+    regNo: $("#sRegNo").value.trim(), rep: $("#sRep").value.trim(), addr: $("#sAddr").value.trim(), account: $("#sAccount").value.trim() };
+  if (!data.types.length) return ($("#sMsg").textContent = "헌금 종류를 하나 이상 넣어 주세요.");
+  try {
+    await S.store.P.batch(S.church.id, [{ op: "set", sub: "fin", id: "settings", merge: true, data }, logOp("설정 바꾸기", `시작 ${data.openingMonth} 현금 ${won(data.openingCash)} 통장 ${won(data.openingBank)} · 종류 ${data.types.join("/")}`)]);
+    S.set = { ...S.set, ...data }; renderTypes(); $("#sMsg").textContent = "저장했어요.";
+  } catch (e) { $("#sMsg").textContent = "저장 실패: " + e.message; }
+};
+$("#sRebuild").onclick = async () => {
+  const el = $("#sRebuildMsg"); el.textContent = "다시 계산하는 중…";
+  try {
+    const [os, ls] = await Promise.all([S.store.P.all(S.church.id, "offerings"), S.store.P.all(S.church.id, "ledger")]);
+    const months = {};
+    [...os.map(r => ["offerings", r]), ...ls.map(r => ["ledger", r])].forEach(([sub, r]) => { for (const [ym, v] of Object.entries(deltaOf(sub, r, 1))) { months[ym] = months[ym] || {}; for (const [f, n] of Object.entries(v)) months[ym][f] = (months[ym][f] || 0) + n; } });
+    await S.store.P.batch(S.church.id, [{ op: "set", sub: "fin", id: "totals", data: { months } }, logOp("합계 다시 계산", `헌금 ${os.length}건 · 장부 ${ls.length}건`)]);
+    el.textContent = `다시 계산했어요. (헌금 ${os.length}건 · 장부 ${ls.length}건)`;
+  } catch (e) { el.textContent = "실패: " + e.message; }
+};
+let LOGN = 30;
+async function loadLogs() {
+  const all = await S.store.P.all(S.church.id, "finlog").catch(() => []);
+  const t = (r) => r.at?.toDate ? r.at.toDate() : r.at instanceof Date ? r.at : null;
+  all.sort((a, b) => (t(b) || 0) - (t(a) || 0));
+  $("#logList").innerHTML = all.slice(0, LOGN).map(r => `<li>${t(r) ? t(r).toLocaleString("ko-KR", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" }) : ""} · ${esc(r.by)} · <b>${esc(r.action)}</b> ${esc(r.detail)}</li>`).join("") || "<li>아직 기록이 없어요.</li>";
+  $("#logMore").classList.toggle("hidden", all.length <= LOGN);
+}
+$("#logMore").onclick = () => { LOGN += 50; loadLogs(); };
+
+boot();
+</script>
+</body>
+</html>
