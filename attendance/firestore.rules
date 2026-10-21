@@ -2,7 +2,7 @@ rules_version = '2';
 
 // 교회 출석앱 + 회비 관리 보안 규칙 (Firestore 규칙은 프로젝트에 하나라 둘을 함께 둠)
 // - config/admins 문서의 emails 배열에 있는 사람 = 관리자(준용). 모든 교회를 만들고 고칠 수 있음.
-// - churches/{교회}.leaders 배열에 있는 사람 = 그 교회를 쓰는 사람. 출석 체크와 성도 정보 보기.
+// - churches/{교회}.leaders 배열에 있는 사람 = 그 교회를 쓰는 사람. 출석 체크와 성도 정보 보기 (연락처 제외).
 // - churches/{교회}.staff 배열에 있는 사람 = 교역자. 위에 더해 성도 추가·수정·삭제. (앱이 staff도 leaders에 넣어 저장함)
 // - churches/{교회}.pastors 배열 = 담임목사. 교역자 권한 + 재정 (앱이 pastors를 staff·leaders에도 넣어 저장함)
 // - churches/{교회}.finance 배열에 있는 사람 = 재정 담당. 헌금·장부(재정)만. 교역자·리더·앱 관리자는 재정을 못 봄.
@@ -48,15 +48,26 @@ service cloud.firestore {
     }
 
     match /churches/{cid} {
-      allow read: if isAdmin() || (signedIn() && (myEmail() in resource.data.leaders || myEmail() in resource.data.get('finance', [])));
+      allow read: if isAdmin() || (signedIn() && (myEmail() in resource.data.get('leaders', []) || myEmail() in resource.data.get('pastors', [])
+        || myEmail() in resource.data.get('finance', [])));
       allow write: if isAdmin();
 
+      // 연락처(phone)는 성도 문서에 새로 넣거나 바꿀 수 없고 contacts에만 둠 (예전 문서에 남은 번호는 교역자가 앱을 열면 옮겨짐)
       match /members/{mid} {
         allow read: if canUse(cid) || isFinance(cid);
-        allow create, update: if canEdit(cid)
+        allow create: if canEdit(cid)
           && request.resource.data.name is string
-          && request.resource.data.name.size() > 0;
+          && request.resource.data.name.size() > 0
+          && !('phone' in request.resource.data);
+        allow update: if canEdit(cid)
+          && request.resource.data.name is string
+          && request.resource.data.name.size() > 0
+          && (!('phone' in request.resource.data) || request.resource.data.phone == resource.data.get('phone', null));
         allow delete: if canEdit(cid);
+      }
+      // 성도 연락처: 담임목사·교역자·관리자만 (리더·재정 담당은 못 봄)
+      match /contacts/{mid} {
+        allow read, write: if canEdit(cid);
       }
 
       match /attendance/{aid} {

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<meta name="build" content="2026-10-21.2">
+<meta name="build" content="2026-10-21.3">
 <title>교회 출석 · THE MORE</title>
 <meta name="theme-color" content="#1F6F78">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -528,6 +528,21 @@ async function firebaseStore() {
   let me = null;
   const lc = (s) => String(s || "").trim().toLowerCase();
 
+  const memRef = (cid, id) => F.doc(db, "churches", cid, "members", id);
+  const telRef = (cid, id) => F.doc(db, "churches", cid, "contacts", id);
+  // 성도 문서에 쓸 값과 연락처를 나눠 같은 배치에 넣음. 연락처를 비우면 contacts 문서를 지움
+  const putMember = (b, cid, id, data, merge) => {
+    const { phone, ...rest } = data;
+    b.set(memRef(cid, id), rest, merge ? { merge: true } : {});
+    if (phone !== undefined) phone ? b.set(telRef(cid, id), { phone }) : b.delete(telRef(cid, id));
+  };
+  async function movePhones(cid, list) {
+    for (let i = 0; i < list.length; i += 200) {
+      const b = F.writeBatch(db);
+      list.slice(i, i + 200).forEach(m => { if (m.phone) b.set(telRef(cid, m.id), { phone: m.phone }, { merge: true }); b.update(memRef(cid, m.id), { phone: F.deleteField() }); });
+      await b.commit();
+    }
+  }
   return {
     demo: false,
     onUser(cb) { A.onAuthStateChanged(auth, u => { me = u ? lc(u.email) : null; cb(u ? { email: me } : null); }); },
@@ -564,8 +579,18 @@ async function firebaseStore() {
       const snap = await F.getDocs(q);
       return snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => a.name.localeCompare(b.name, "ko"));
     },
-    watchMembers(cid, cb) {
-      return F.onSnapshot(F.collection(db, "churches", cid, "members"), s => cb(s.docs.map(d => ({ ...d.data(), id: d.id }))));
+    // 연락처는 contacts/{성도ID}에 따로 둠 → 서버 규칙에서 교역자·담임목사·관리자만 읽음 (리더 폰에는 아예 안 내려감)
+    // withPhone(성도 관리 권한)이면 연락처도 받아 합치고, 예전처럼 성도 문서에 남은 연락처는 contacts로 옮김
+    watchMembers(cid, cb, withPhone) {
+      let ms = [], phones = new Map(), moved = false;
+      const emit = () => cb(ms.map(m => { const { phone, ...rest } = m; const p = withPhone ? (phones.get(m.id) ?? phone) : undefined; return p ? { ...rest, phone: p } : rest; }));
+      const un1 = F.onSnapshot(F.collection(db, "churches", cid, "members"), s => {
+        ms = s.docs.map(d => ({ ...d.data(), id: d.id })); emit();
+        const old = ms.filter(m => "phone" in m);
+        if (withPhone && old.length && !moved) { moved = true; movePhones(cid, old).catch(e => { moved = false; toastErr("연락처 옮기기 실패: " + e.message); }); }
+      });
+      const un2 = withPhone ? F.onSnapshot(F.collection(db, "churches", cid, "contacts"), s => { phones = new Map(s.docs.map(d => [d.id, d.data().phone || ""])); emit(); }, () => {}) : null;
+      return () => { un1(); un2?.(); };
     },
     watchAttendance(cid, date, service, cb) {
       const q = F.query(F.collection(db, "churches", cid, "attendance"), F.where("date", "==", date), F.where("service", "==", service));
@@ -582,9 +607,8 @@ async function firebaseStore() {
       }).catch(e => toastErr("저장 실패: " + e.message));
     },
     async addMember(cid, data, id) {
-      const ref = F.doc(db, "churches", cid, "members", id);
-      if ((await F.getDoc(ref)).exists()) throw new Error(id + " 번호가 이미 있어요. 다시 저장해 주세요.");
-      await F.setDoc(ref, { ...data, createdAt: F.serverTimestamp() });
+      if ((await F.getDoc(memRef(cid, id))).exists()) throw new Error(id + " 번호가 이미 있어요. 다시 저장해 주세요.");
+      const b = F.writeBatch(db); putMember(b, cid, id, { ...data, createdAt: F.serverTimestamp() }); await b.commit();
     },
     // 성도 번호 바꾸기: 새 번호로 옮기고 출석 기록도 새 번호로 옮긴 뒤 옛 것을 지움
     async renameMember(cid, from, to) {
@@ -593,14 +617,16 @@ async function firebaseStore() {
       if (!old.exists()) return;
       if ((await F.getDoc(F.doc(col("members"), to))).exists()) throw new Error(to + " 번호가 이미 있어요.");
       const recs = (await F.getDocs(F.query(col("attendance"), F.where("memberId", "==", from)))).docs;
+      const tel = await F.getDoc(telRef(cid, from)).catch(() => null);
       const b = F.writeBatch(db);
       b.set(F.doc(col("members"), to), old.data());
+      if (tel?.exists()) { b.set(telRef(cid, to), tel.data()); b.delete(tel.ref); }
       recs.forEach(d => { const r = d.data(); b.set(F.doc(col("attendance"), attId(r.date, r.service, to)), { ...r, memberId: to, checkedBy: me }); b.delete(d.ref); });
       b.delete(old.ref);
       await b.commit();
     },
-    async updateMember(cid, id, data) { await F.setDoc(F.doc(db, "churches", cid, "members", id), data, { merge: true }); },
-    async deleteMember(cid, id) { await F.deleteDoc(F.doc(db, "churches", cid, "members", id)); },
+    async updateMember(cid, id, data) { const b = F.writeBatch(db); putMember(b, cid, id, data, true); await b.commit(); },
+    async deleteMember(cid, id) { const b = F.writeBatch(db); b.delete(memRef(cid, id)); b.delete(telRef(cid, id)); await b.commit(); },
     async memberAttendance(cid, mid) {
       const q = F.query(F.collection(db, "churches", cid, "attendance"), F.where("memberId", "==", mid));
       return (await F.getDocs(q)).docs.map(d => d.data());
@@ -622,19 +648,23 @@ async function firebaseStore() {
       return rows.length;
     },
     async importMembers(cid, rows) {
-      for (let i = 0; i < rows.length; i += 400) {
+      for (let i = 0; i < rows.length; i += 200) {
         const b = F.writeBatch(db);
-        rows.slice(i, i + 400).forEach(r => { const { id, ...rest } = r; b.set(F.doc(db, "churches", cid, "members", id), rest, { merge: true }); });
+        rows.slice(i, i + 200).forEach(r => { const { id, ...rest } = r; putMember(b, cid, id, rest, true); });
         await b.commit();
       }
       return rows.length;
     },
-    async allMembers(cid) { const s = await F.getDocs(F.collection(db, "churches", cid, "members")); return s.docs.map(d => ({ ...d.data(), id: d.id })); },
+    async allMembers(cid) {
+      const [s, t] = await Promise.all([F.getDocs(F.collection(db, "churches", cid, "members")), F.getDocs(F.collection(db, "churches", cid, "contacts")).catch(() => null)]);
+      const phones = new Map((t?.docs || []).map(d => [d.id, d.data().phone]));
+      return s.docs.map(d => { const m = { ...d.data(), id: d.id }; if (phones.get(d.id)) m.phone = phones.get(d.id); return m; });
+    },
     async allAttendance(cid) { const s = await F.getDocs(F.collection(db, "churches", cid, "attendance")); return s.docs.map(d => d.data()); },
     // 성도·출석 문서를 400개씩 지운 뒤 교회 문서를 지움
     async deleteChurch(cid, onProgress) {
       let n = 0;
-      for (const sub of ["attendance", "members", "offerings", "ledger", "fin", "days", "receipts", "issued", "finlog"]) {
+      for (const sub of ["attendance", "members", "contacts", "offerings", "ledger", "fin", "days", "receipts", "issued", "finlog"]) {
         // 재정 기록은 그 교회 재정 담당만 읽을 수 있어서, 관리자가 재정 담당이 아니면 못 읽고 건너뜀
         let docs; try { docs = (await F.getDocs(F.collection(db, "churches", cid, sub))).docs; } catch (e) { if (sub === "attendance" || sub === "members") throw e; continue; }
         for (let i = 0; i < docs.length; i += 400) {
@@ -716,7 +746,7 @@ function pickChurch(c) {
   S.service = defaultService(services, S.date);
   renderServices(services);
   // 리더(성도 관리 권한 없음)에게는 연락처를 빼고 보여 줌 (명단·연락 버튼·통계·성도 창 모두)
-  S.unMembers = S.store.watchMembers(c.id, (ms) => { S.members = S.canEdit ? ms : ms.map(({ phone, ...m }) => m); renderChips(); render(); renderBdays(); });
+  S.unMembers = S.store.watchMembers(c.id, (ms) => { S.members = S.canEdit ? ms : ms.map(({ phone, ...m }) => m); renderChips(); render(); renderBdays(); }, S.canEdit);
   watchAtt();
   show("sMain");
 }

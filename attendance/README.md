@@ -11,7 +11,8 @@
 ## 데이터 구조
 - `config/admins` `{ emails: [...] }` 관리자. 콘솔에서만 수정
 - `churches/{교회}` `{ name, services: [...], leaders: [이메일...], staff: [...], pastors: [담임목사...], finance: [재정 담당 이메일...] }`
-- `churches/{교회}/members/{성도ID}` 성도 (시트 '성도' 탭과 같은 칸)
+- `churches/{교회}/members/{성도ID}` 성도 (시트 '성도' 탭과 같은 칸, 연락처 빼고)
+- `churches/{교회}/contacts/{성도ID}` `{ phone }` 연락처. 담임목사·교역자·관리자만 읽음 (리더 폰에는 안 내려감). 예전 성도 문서의 연락처는 교역자가 앱을 열면 자동으로 옮겨짐
 - `churches/{교회}/attendance/{날짜_예배_성도ID}` `{ date, service, memberId, name, present, checkedBy, checkedAt }`
   - 문서 ID가 정해져 있어서 같은 사람이 같은 예배에 두 번 기록되지 않음
 
