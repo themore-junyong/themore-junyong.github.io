@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<meta name="build" content="2026-10-21.1">
+<meta name="build" content="2026-10-21.2">
 <title>교회 출석 · THE MORE</title>
 <meta name="theme-color" content="#1F6F78">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -360,7 +360,7 @@ textarea.memo{min-height:60px;border:1px solid var(--line);background:var(--bg);
     </div>
     <div class="two">
       <label>성별<select name="gender"><option value="">-</option><option>남성</option><option>여성</option></select></label>
-      <label>연락처<input name="phone" inputmode="numeric" placeholder="숫자만 누르면 - 자동" autocomplete="off"></label>
+      <label class="edit-phone">연락처<input name="phone" inputmode="numeric" placeholder="숫자만 누르면 - 자동" autocomplete="off"></label>
     </div>
     <div class="two">
       <label>같은 가족<select name="household"></select></label>
@@ -709,11 +709,14 @@ function pickChurch(c) {
   S.canEdit = S.admin || (c.staff || []).includes((S.email || "").toLowerCase());
   $("#addBtn").classList.toggle("hidden", !S.canEdit);
   $("#editMode").textContent = S.canEdit ? "✎ 정보" : "정보 보기";
+  document.querySelector(".edit-phone").classList.toggle("hidden", !S.canEdit);
+  $("#q").placeholder = S.canEdit ? "이름·전화 뒷자리 찾기" : "이름 찾기";
   const services = c.services?.length ? c.services : ["주일낮"];
   $("#date").value = S.date;
   S.service = defaultService(services, S.date);
   renderServices(services);
-  S.unMembers = S.store.watchMembers(c.id, (ms) => { S.members = ms; renderChips(); render(); renderBdays(); });
+  // 리더(성도 관리 권한 없음)에게는 연락처를 빼고 보여 줌 (명단·연락 버튼·통계·성도 창 모두)
+  S.unMembers = S.store.watchMembers(c.id, (ms) => { S.members = S.canEdit ? ms : ms.map(({ phone, ...m }) => m); renderChips(); render(); renderBdays(); });
   watchAtt();
   show("sMain");
 }
