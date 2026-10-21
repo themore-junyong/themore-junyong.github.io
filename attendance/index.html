@@ -286,9 +286,10 @@ textarea.memo{min-height:60px;border:1px solid var(--line);background:var(--bg);
         <label>교회 고르기<select id="aChurch"></select></label>
         <label>교회 이름<input id="aName" placeholder="OO교회"></label>
         <label>예배 종류 (쉼표로 구분)<input id="aServices" placeholder="주일낮, 주일저녁, 수요, 금요"></label>
-        <label>교역자 이메일 (한 줄에 하나) · 출석 + 성도 추가·수정·삭제<textarea id="aStaff" placeholder="pastor@gmail.com"></textarea></label>
+        <label>담임목사 이메일 (한 줄에 하나) · 출석 + 성도 관리 + 재정 모두<textarea id="aPastors" placeholder="senior@gmail.com"></textarea></label>
+        <label>교역자 이메일 (한 줄에 하나) · 출석 + 성도 추가·수정·삭제 (재정은 못 봄)<textarea id="aStaff" placeholder="pastor@gmail.com"></textarea></label>
         <label>리더 이메일 (한 줄에 하나) · 출석 체크 + 정보 보기만 <span id="aLeaderCount" class="hint"></span><textarea id="aLeaders" placeholder="leader1@gmail.com"></textarea></label>
-        <label>재정 담당 이메일 (한 줄에 하나) · 헌금·장부만. 교역자·리더도 재정은 못 봐요<textarea id="aFinance" placeholder="finance@gmail.com"></textarea></label>
+        <label>재정 담당 이메일 (한 줄에 하나) · 재정만 (출석·성도 명단 화면은 안 보임). 담임목사와 재정 담당 말고는 아무도 재정을 못 봐요<textarea id="aFinance" placeholder="finance@gmail.com"></textarea></label>
         <div class="row"><button class="btn" id="aSave">저장</button><button class="btn line" id="aNew">새 교회</button><span id="aMsg" class="ok"></span></div>
       </section>
       <section>
@@ -634,7 +635,8 @@ async function firebaseStore() {
     async deleteChurch(cid, onProgress) {
       let n = 0;
       for (const sub of ["attendance", "members", "offerings", "ledger", "fin", "days", "receipts", "issued", "finlog"]) {
-        const docs = (await F.getDocs(F.collection(db, "churches", cid, sub))).docs;
+        // 재정 기록은 그 교회 재정 담당만 읽을 수 있어서, 관리자가 재정 담당이 아니면 못 읽고 건너뜀
+        let docs; try { docs = (await F.getDocs(F.collection(db, "churches", cid, sub))).docs; } catch (e) { if (sub === "attendance" || sub === "members") throw e; continue; }
         for (let i = 0; i < docs.length; i += 400) {
           const b = F.writeBatch(db); docs.slice(i, i + 400).forEach(d => b.delete(d.ref));
           await b.commit(); n += Math.min(400, docs.length - i); onProgress?.(n);
@@ -701,7 +703,8 @@ function pickChurch(c) {
   pick.classList.toggle("hidden", S.churches.length < 2);
   pick.innerHTML = S.churches.map(x => `<option value="${esc(x.id)}" ${x.id === c.id ? "selected" : ""}>${esc(x.name)}</option>`).join("");
   $("#toAdmin").classList.toggle("hidden", !S.admin);
-  $("#toFinance").classList.toggle("hidden", !(S.admin || (c.finance || []).includes((S.email || "").toLowerCase())));
+  const me = (S.email || "").toLowerCase();
+  $("#toFinance").classList.toggle("hidden", !(c.finance || []).includes(me) && !(c.pastors || []).includes(me));
   if (S.store.demo) $("#toFinance").href = "./finance.html?demo";
   S.canEdit = S.admin || (c.staff || []).includes((S.email || "").toLowerCase());
   $("#addBtn").classList.toggle("hidden", !S.canEdit);
@@ -1089,17 +1092,21 @@ function fillAdmin(c) {
   $("#aName").value = c?.name || "";
   $("#aServices").value = (c?.services || ["주일낮","주일저녁","수요","금요"]).join(", ");
   const staff = c?.staff || [];
-  $("#aStaff").value = staff.join("\n");
-  $("#aLeaders").value = (c?.leaders || []).filter(e => !staff.includes(e)).join("\n");
+  const pastors = c?.pastors || [];
+  $("#aPastors").value = pastors.join("\n");
+  $("#aStaff").value = staff.filter(e => !pastors.includes(e)).join("\n");
+  $("#aLeaders").value = (c?.leaders || []).filter(e => !staff.includes(e) && !pastors.includes(e)).join("\n");
   $("#aFinance").value = (c?.finance || []).join("\n");
   $("#aMsg").textContent = ""; $("#aImportMsg").textContent = "";
   countLeaders();
 }
 const emailList = (el) => [...new Set(el.value.split(/[\s,;]+/).map(s => s.trim().toLowerCase()).filter(s => s.includes("@")))];
 // leaders = 이 교회를 쓰는 모든 사람(교역자 포함), staff = 그중 성도 정보를 고칠 수 있는 사람
-function leaderList() { return [...new Set([...emailList($("#aStaff")), ...emailList($("#aLeaders"))])]; }
-function countLeaders() { $("#aLeaderCount").textContent = `(교역자 ${emailList($("#aStaff")).length}명 · 전체 ${leaderList().length}명)`; }
-$("#aLeaders").oninput = $("#aStaff").oninput = countLeaders;
+// 담임목사는 교역자·리더 명단에도 함께 넣어 저장 (출석·성도 관리 권한), 재정은 규칙에서 pastors로 따로 확인
+function staffList() { return [...new Set([...emailList($("#aPastors")), ...emailList($("#aStaff"))])]; }
+function leaderList() { return [...new Set([...staffList(), ...emailList($("#aLeaders"))])]; }
+function countLeaders() { $("#aLeaderCount").textContent = `(담임 ${emailList($("#aPastors")).length}명 · 교역자 ${emailList($("#aStaff")).length}명 · 출석 쓰는 사람 전체 ${leaderList().length}명)`; }
+$("#aLeaders").oninput = $("#aStaff").oninput = $("#aPastors").oninput = countLeaders;
 $("#toAdmin").onclick = openAdmin;
 $("#backMain").onclick = () => S.church ? pickChurch(S.churches.find(c => c.id === S.church.id) || S.churches[0]) : (S.churches[0] && pickChurch(S.churches[0]));
 $("#aChurch").onchange = (e) => fillAdmin(S.churches.find(c => c.id === e.target.value));
@@ -1119,7 +1126,7 @@ $("#aDel").onclick = async () => {
   } catch (e) { msg.textContent = "삭제 실패: " + e.message; }
 };
 $("#aSave").onclick = async () => {
-  const data = { name: $("#aName").value.trim(), services: $("#aServices").value.split(",").map(s => s.trim()).filter(Boolean), leaders: leaderList(), staff: emailList($("#aStaff")), finance: emailList($("#aFinance")) };
+  const data = { name: $("#aName").value.trim(), services: $("#aServices").value.split(",").map(s => s.trim()).filter(Boolean), leaders: leaderList(), staff: staffList(), pastors: emailList($("#aPastors")), finance: emailList($("#aFinance")) };
   if (!data.name) return ($("#aMsg").textContent = "교회 이름을 넣어 주세요.");
   try {
     const id = await S.store.saveChurch(adminCid, data);

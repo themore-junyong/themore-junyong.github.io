@@ -10,7 +10,7 @@
 
 ## 데이터 구조
 - `config/admins` `{ emails: [...] }` 관리자. 콘솔에서만 수정
-- `churches/{교회}` `{ name, services: [...], leaders: [이메일...], staff: [...], finance: [재정 담당 이메일...] }`
+- `churches/{교회}` `{ name, services: [...], leaders: [이메일...], staff: [...], pastors: [담임목사...], finance: [재정 담당 이메일...] }`
 - `churches/{교회}/members/{성도ID}` 성도 (시트 '성도' 탭과 같은 칸)
 - `churches/{교회}/attendance/{날짜_예배_성도ID}` `{ date, service, memberId, name, present, checkedBy, checkedAt }`
   - 문서 ID가 정해져 있어서 같은 사람이 같은 예배에 두 번 기록되지 않음
@@ -30,7 +30,8 @@
 - 새 버전 자동 반영: `<meta name="build">` 값이 홈페이지와 다르면 앱이 스스로 새로고침. **앱을 고칠 때마다 이 값을 바꿀 것.**
 
 ## 재정 (finance.html)
-- 볼 수 있는 사람: 관리자와 `finance` 명단만. 교역자·리더도 못 봄. 헌금 기록은 폰에 저장해 두지 않음 (메모리 캐시)
+- 역할: 담임목사(`pastors`) = 출석+성도 관리+재정 / 교역자(`staff`) = 출석+성도 관리 / 리더(`leaders`) = 출석 체크 / 재정 담당(`finance`) = 재정만
+- 재정을 볼 수 있는 사람: 그 교회 `pastors`·`finance`만. 교역자·리더·앱 관리자도 못 봄 (관리자는 교회 삭제 때 지우기만) 헌금 기록은 폰에 저장해 두지 않음 (메모리 캐시)
 - `offerings/{ID}` 헌금 한 건 `{ date, type, memberId, name("무명"), amount, method: 현금|계좌, memo, src, by, at }`
 - `ledger/{ID}` `{ date, kind: out(지출)|in(헌금 아닌 수입)|dep(현금→통장 입금), amount, category, method, memo, receipts[], by, at }`
 - `fin/settings` 헌금 종류·항목·시작 잔액(달, 현금 시재, 통장)·고유번호·대표자·소재지·계좌 / `fin/totals` 달별 합계 `{ months: { YYYY-MM: { offCash, offBank, inCash, inBank, outCash, outBank, dep } } }`

@@ -4,7 +4,8 @@ rules_version = '2';
 // - config/admins 문서의 emails 배열에 있는 사람 = 관리자(준용). 모든 교회를 만들고 고칠 수 있음.
 // - churches/{교회}.leaders 배열에 있는 사람 = 그 교회를 쓰는 사람. 출석 체크와 성도 정보 보기.
 // - churches/{교회}.staff 배열에 있는 사람 = 교역자. 위에 더해 성도 추가·수정·삭제. (앱이 staff도 leaders에 넣어 저장함)
-// - churches/{교회}.finance 배열에 있는 사람 = 재정 담당. 헌금·장부(재정)를 보고 넣음. 교역자·리더도 재정은 못 봄.
+// - churches/{교회}.pastors 배열 = 담임목사. 교역자 권한 + 재정 (앱이 pastors를 staff·leaders에도 넣어 저장함)
+// - churches/{교회}.finance 배열에 있는 사람 = 재정 담당. 헌금·장부(재정)만. 교역자·리더·앱 관리자는 재정을 못 봄.
 // - 그 밖의 사람은 아무것도 볼 수 없음.
 service cloud.firestore {
   match /databases/{db}/documents {
@@ -34,9 +35,11 @@ service cloud.firestore {
     function canUse(cid) {
       return isAdmin() || isLeader(cid);
     }
+    // 재정은 그 교회 담임목사(pastors)와 재정 담당(finance)만. 앱 관리자(준용)도 명단에 없으면 못 봄 (교회를 지울 때만 관리자가 지움)
     function isFinance(cid) {
-      return isAdmin() || (signedIn()
-        && myEmail() in get(/databases/$(db)/documents/churches/$(cid)).data.get('finance', []));
+      return signedIn()
+        && (myEmail() in get(/databases/$(db)/documents/churches/$(cid)).data.get('finance', [])
+          || myEmail() in get(/databases/$(db)/documents/churches/$(cid)).data.get('pastors', []));
     }
 
     match /config/admins {
@@ -71,27 +74,29 @@ service cloud.firestore {
           && request.resource.data.amount is number
           && request.resource.data.date is string
           && request.resource.data.method in ['현금', '계좌'];
-        allow delete: if isFinance(cid);
+        allow delete: if isFinance(cid) || isAdmin();
       }
       match /ledger/{lid} {
         allow read: if isFinance(cid);
         allow create, update: if isFinance(cid)
           && request.resource.data.amount is number
           && request.resource.data.kind in ['in', 'out', 'dep'];
-        allow delete: if isFinance(cid);
+        allow delete: if isFinance(cid) || isAdmin();
       }
       match /fin/{doc} {
         allow read, write: if isFinance(cid);
+        allow delete: if isAdmin();
       }
       match /days/{day} {
         allow read, write: if isFinance(cid);
+        allow delete: if isAdmin();
       }
       match /receipts/{rid} {
         allow read: if isFinance(cid);
         allow create, update: if isFinance(cid)
           && request.resource.data.img is string
           && request.resource.data.img.size() < 1000000;
-        allow delete: if isFinance(cid);
+        allow delete: if isFinance(cid) || isAdmin();
       }
       // 기부금 영수증 발급 대장 (5년 보관): 지울 수 없음
       match /issued/{iid} {

@@ -122,7 +122,7 @@ table.t tbody tr.click{cursor:pointer}
 
   <div id="sLogin" class="screen hidden">
     <h1>교회 재정</h1>
-    <p>재정 담당으로 등록된 계정으로 로그인해 주세요.</p>
+    <p>담임목사나 재정 담당으로 등록된 계정으로 로그인해 주세요.</p>
     <button class="btn" id="login">구글로 로그인</button>
     <p class="hint">네이버 메일 등 이메일 로그인은 <a href="./">출석 앱</a>에서 로그인한 뒤 '재정' 버튼으로 들어오면 돼요.</p>
     <p id="loginErr" class="err"></p>
@@ -130,7 +130,7 @@ table.t tbody tr.click{cursor:pointer}
 
   <div id="sNoAccess" class="screen hidden">
     <h1>재정 담당이 아니에요</h1>
-    <p><b id="noAccessEmail"></b> 계정은 어느 교회의 재정 담당 명단에도 없어요. 헌금 기록은 재정 담당만 볼 수 있어요.</p>
+    <p><b id="noAccessEmail"></b> 계정은 어느 교회의 재정 담당 명단에도 없어요. 헌금 기록은 그 교회 담임목사와 재정 담당만 볼 수 있어요.</p>
     <div class="row"><a class="btn line" href="./">출석 앱으로</a><button class="btn line" data-act="logout">다른 계정으로 로그인</button></div>
   </div>
 
@@ -500,10 +500,12 @@ async function firebaseStore() {
       try { const s = await F.getDoc(F.doc(db, "config", "admins")); return s.exists() && (s.data().emails || []).map(lc).includes(me); }
       catch { return false; }
     },
-    async churches(admin) {
+    async churches() {
       const c = F.collection(db, "churches");
-      const snap = await F.getDocs(admin ? c : F.query(c, F.where("finance", "array-contains", me)));
-      return snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => a.name.localeCompare(b.name, "ko"));
+      // 관리자라도 재정은 그 교회 재정 명단에 있는 교회만
+      const snaps = await Promise.all(["finance", "pastors"].map(f => F.getDocs(F.query(c, F.where(f, "array-contains", me)))));
+      const out = new Map(); snaps.forEach(s => s.docs.forEach(d => out.set(d.id, { id: d.id, ...d.data() })));
+      return [...out.values()].sort((a, b) => a.name.localeCompare(b.name, "ko"));
     },
     watchMembers(cid, cb) { return F.onSnapshot(col(cid, "members"), s => cb(list(s)), e => toastErr(e.message)); },
     me: () => me,
@@ -566,7 +568,7 @@ async function boot() {
     if (!u) { stopWatch(); return show("sLogin"); }
     S.email = u.email;
     S.admin = await S.store.isAdmin();
-    S.churches = await S.store.churches(S.admin).catch(() => []);
+    S.churches = await S.store.churches().catch(() => []);
     if (!S.churches.length) { $("#noAccessEmail").textContent = u.email; return show("sNoAccess"); }
     let last = null; try { last = localStorage.getItem("att.church"); } catch {}
     pickChurch(S.churches.find(c => c.id === last) || S.churches[0]);
