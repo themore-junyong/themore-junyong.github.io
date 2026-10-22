@@ -1,5 +1,5 @@
 {
- "updated": "2026-10-22T06:51:48.410534+00:00",
+ "updated": "2026-10-22T07:51:41.657666+00:00",
  "posts": [
   {
    "kind": "봉사",
@@ -1007,7 +1007,5 @@
    "cat": "설교&middot;묵상"
   }
  ],
- "errors": [
-  "youtube: HTTP Error 500: Internal Server Error"
- ]
+ "errors": []
 }
