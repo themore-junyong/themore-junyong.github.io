@@ -239,7 +239,7 @@ function pushMembers() {
     // 저장은 교역자(담임목사 포함)만. 리더로만 들어 있으면 미리 알려 줌 (관리자는 config/admins를 읽을 수 있음)
     if (ch.staff.indexOf(me_()) < 0) {
       let admin = false; try { api_("get", BASE + "/config/admins"); admin = true; } catch (e) {}
-      if (!admin) throw new Error(me_() + " 계정이 앱에서 '" + ch.name + "'의 " + (ch.leaders.indexOf(me_()) >= 0 ? "리더로만" : "교역자로") + " 등록돼 있지 않아요.\n앱 '관리 → 교회'에서 이 이메일을 담임목사나 교역자 칸에 넣고 '저장'을 눌러 주세요.");
+      if (!admin) throw new Error(me_() + " 계정이 앱에서 '" + ch.name + "'에 " + (ch.leaders.indexOf(me_()) >= 0 ? "리더로만 등록돼 있어요." : "교역자로 등록돼 있지 않아요.") + "\n앱 '관리 → 교회'에서 이 이메일을 담임목사나 교역자 칸에 넣고 '저장'을 눌러 주세요.");
     }
     const changes = diff_(readTable_(sh), readTable_(snap));
     if (!changes.length) return ui.alert("바뀐 칸이 없어요.");
