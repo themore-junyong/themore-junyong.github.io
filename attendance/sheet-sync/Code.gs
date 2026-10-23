@@ -33,6 +33,7 @@ function onOpen() {
 // 그래서 앱 '관리'에 교역자로 등록된 사람이면 누구든(준용님이 아니어도) 자기 교회 성도를 불러오고 저장할 수 있다.
 // 로그인 교환이 안 되면 예전처럼 Firebase 프로젝트 주인 권한으로 접속한다.
 function me_() { return (Session.getEffectiveUser().getEmail() || "").toLowerCase(); }
+let loginErr_ = "";
 function fbToken_() {
   const cache = CacheService.getUserCache();
   const hit = cache.get("fbIdToken");
@@ -41,7 +42,7 @@ function fbToken_() {
     method: "post", contentType: "application/json", muteHttpExceptions: true,
     payload: JSON.stringify({ postBody: "access_token=" + ScriptApp.getOAuthToken() + "&providerId=google.com", requestUri: "http://localhost", returnSecureToken: true })
   });
-  if (res.getResponseCode() >= 300) return null;
+  if (res.getResponseCode() >= 300) { loginErr_ = "앱 로그인 교환 실패 " + res.getResponseCode() + ": " + res.getContentText().slice(0, 200); return null; }
   const t = JSON.parse(res.getContentText()).idToken;
   if (t) cache.put("fbIdToken", t, 50 * 60);
   return t || null;
@@ -54,7 +55,7 @@ function api_(method, url, body) {
     payload: body ? JSON.stringify(body) : undefined
   });
   const code = res.getResponseCode(), text = res.getContentText();
-  if (code === 403 || code === 401) throw new Error(me_() + " 계정은 이 교회 성도를 " + (method === "get" ? "볼" : "저장할") + " 권한이 없어요.\n앱 '관리'에서 이 이메일을 교역자로 넣어 주세요. (응답 " + code + ")");
+  if (code === 403 || code === 401) throw new Error(me_() + " 계정은 이 교회 성도를 " + (method === "get" ? "볼" : "저장할") + " 권한이 없어요.\n앱 '관리'에서 이 이메일을 교역자로 넣어 주세요. (응답 " + code + ")" + (fb ? "" : "\n" + (loginErr_ || "앱 로그인 교환 안 됨")) + "\n" + text.slice(0, 200));
   if (code >= 300) throw new Error("앱 서버 응답 " + code + ": " + text.slice(0, 300));
   return text ? JSON.parse(text) : {};
 }
