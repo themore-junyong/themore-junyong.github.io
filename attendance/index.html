@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<meta name="build" content="2026-10-23.2">
+<meta name="build" content="2026-10-23.3">
 <title>교회 출석 · THE MORE</title>
 <meta name="theme-color" content="#1F6F78">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -324,6 +324,14 @@ textarea.memo{min-height:60px;border:1px solid var(--line);background:var(--bg);
         <div id="aDistMsg" class="ok" style="white-space:pre-line;font-size:14px"></div>
       </section>
       <section>
+        <h2>교회 등록일 한꺼번에 넣기</h2>
+        <p class="hint">"이름 2005년 3월"처럼 한 줄에 한 사람씩 붙여 넣으세요. 셀 이름 줄이 있어도 괜찮아요. 같은 이름이 여럿이면 그 셀(구역) 사람으로 찾아요. 일까지 모르면 "2005-03", 연도만 알면 "2005"로 넣어요. 날짜가 없는 줄은 건너뛰어요.</p>
+        <textarea id="aReg" placeholder="은혜셀&#10;홍길동 2008년 2월&#10;김영희 15년 8월&#10;이철수 2012"></textarea>
+        <label class="check"><input type="checkbox" id="aRegDist"> 셀 이름을 구역 칸에도 넣기</label>
+        <div class="row"><button class="btn line" id="aRegCheck">바뀔 내용 보기</button><button class="btn hidden" id="aRegApply">이대로 저장</button></div>
+        <div id="aRegMsg" class="ok" style="white-space:pre-line;font-size:14px"></div>
+      </section>
+      <section>
         <h2>장결자·기타 출석 한꺼번에 지정</h2>
         <p class="hint">이름을 띄어쓰기나 줄바꿈으로 붙여 넣으세요. "이름(010-…)"처럼 번호가 붙어 있으면 같은 이름이 여럿일 때 번호로 가려요. 명단에 없는 이름은 기타 출석으로 새로 추가할 수 있어요. 지정된 분들은 평소 명단에서 빠지고 그 탭에서만 보여요.</p>
         <div class="row"><select id="aMarkKind"><option value="extra">기타 출석으로</option><option value="longAbsent">장결자로</option></select></div>
@@ -380,7 +388,7 @@ textarea.memo{min-height:60px;border:1px solid var(--line);background:var(--bg);
       <div style="display:flex;flex-direction:column;gap:10px">
         <div class="two">
           <label>구역<input name="district" placeholder="1구역"></label>
-          <label>등록일<input name="regDate" type="date"></label>
+          <label>등록일<input name="regDate" placeholder="2005-03 (모르면 연도만)" autocomplete="off"></label>
         </div>
         <div class="two">
           <label>생일 (양력)<input name="birthSolar" type="date"></label>
@@ -1477,6 +1485,68 @@ $("#aDistApply").onclick = async () => {
   try {
     await S.store.importMembers(adminCid, distPlan.map(c => ({ id: c.id, district: c.to })));
     msg.textContent = `${distPlan.length}명의 구역을 저장했어요. 첫 화면 위쪽에 구역별 버튼이 생겨요.`; distPlan = []; $("#aDistApply").classList.add("hidden");
+  } catch (e) { msg.textContent = "저장 실패: " + e.message; }
+};
+
+// 교회 등록일 한꺼번에: 셀 이름 줄 + "이름 날짜" 줄. 날짜는 아는 만큼만 (YYYY / YYYY-MM / YYYY-MM-DD)
+let regPlan = [];
+function parseRegDate(t) {
+  t = t.replace(/\?/g, " ");
+  let m = t.match(/(\d{4})\s*[년.\-/]?\s*(?:(\d{1,2})\s*[월.\-/]?\s*(?:(\d{1,2})\s*일?)?)?/) || t.match(/(?:^|\D)(\d{2})\s*년\s*(?:(\d{1,2})\s*월?\s*(?:(\d{1,2})\s*일)?)?/);
+  if (!m) return "";
+  let y = +m[1]; if (y < 100) y += y > 40 ? 1900 : 2000;
+  const mo = +m[2], d = +m[3];
+  if (y < 1900 || y > 2100) return "";
+  if (!(mo >= 1 && mo <= 12)) return String(y);
+  const ym = `${y}-${String(mo).padStart(2, "0")}`;
+  return d >= 1 && d <= 31 ? `${ym}-${String(d).padStart(2, "0")}` : ym;
+}
+function planRegDates(text, members, withDist) {
+  const norm = (n) => (n || "").replace(/\s/g, "");
+  const cellName = (l) => l.replace(/[^가-힣A-Za-z]/g, "").replace(/셀$/, "");
+  const base = (n) => n.replace(/[A-Za-z]$/, "");
+  const plan = new Map(), missing = [], twins = [], guessed = [], noDate = [];
+  let cell = "";
+  for (const line of text.split(/\n/).map(l => l.trim()).filter(Boolean)) {
+    const nm = line.match(/^([가-힣]+[A-Za-z]?)/);
+    const rest = nm ? line.slice(nm[0].length) : "";
+    // 숫자 없는 줄이 성도 이름이 아니면 셀 이름 줄로 봄
+    if (!nm || (!/\d/.test(line) && !members.some(x => [norm(x.name), base(norm(x.name))].includes(nm[1])))) { cell = cellName(line); continue; }
+    const raw = nm[1], date = parseRegDate(rest);
+    let hit = members.filter(x => norm(x.name) === raw);
+    if (!hit.length) {
+      const cand = members.filter(x => { const n = norm(x.name); return n !== raw && (base(n) === raw || n === base(raw) || raw.startsWith(n) && /(집사|권사|장로|목사|성도)$/.test(raw)); });
+      if (cand.length === 1) { hit = cand; guessed.push(`${raw} → ${cand[0].name}`); }
+    }
+    if (hit.length > 1 && cell) { const h = hit.filter(x => (x.district || "").replace(/셀$/, "") === cell); if (h.length) hit = h; }
+    if (!hit.length) { missing.push(`${raw}${cell ? `(${cell})` : ""}`); continue; }
+    if (hit.length > 1) { twins.push(`${raw}${cell ? `(${cell})` : ""} ${hit.length}명`); continue; }
+    const m = hit[0], c = { id: m.id, name: m.name };
+    if (date && date !== m.regDate) { c.regDate = date; c.from = m.regDate || ""; }
+    if (withDist && cell && cell !== m.district) c.district = cell;
+    if (!date && !/\d/.test(rest)) noDate.push(m.name);
+    else if (!date) noDate.push(`${m.name}(${rest.trim()})`);
+    if (c.regDate || c.district) plan.set(m.id, { ...(plan.get(m.id) || {}), ...c });
+  }
+  return { changes: [...plan.values()], missing, twins, guessed, noDate };
+}
+$("#aRegCheck").onclick = async () => {
+  const msg = $("#aRegMsg"); if (!adminCid) return (msg.textContent = "먼저 교회를 골라 주세요.");
+  msg.textContent = "살펴보는 중…";
+  const r = planRegDates($("#aReg").value, await S.store.allMembers(adminCid), $("#aRegDist").checked);
+  regPlan = r.changes;
+  $("#aRegApply").classList.toggle("hidden", !regPlan.length);
+  msg.textContent = `${regPlan.length}명을 바꿔요.\n` + regPlan.map(c => `${c.name} ${c.regDate ? `${c.from ? c.from + " → " : ""}${c.regDate}` : ""}${c.district ? ` 구역 ${c.district}` : ""}`).join("\n")
+    + (r.noDate.length ? `\n\n날짜가 없거나 못 읽어서 건너뛴 ${r.noDate.length}명:\n` + r.noDate.join(", ") : "")
+    + (r.missing.length ? `\n\n명단에서 못 찾은 이름 ${r.missing.length}명:\n` + r.missing.join(", ") : "")
+    + (r.twins.length ? `\n\n같은 이름이 여러 명이라 건너뛴 이름:\n` + r.twins.join(", ") : "")
+    + (r.guessed.length ? `\n\n비슷한 이름으로 짐작한 사람:\n` + r.guessed.join(", ") : "");
+};
+$("#aRegApply").onclick = async () => {
+  const msg = $("#aRegMsg"); if (!regPlan.length) return;
+  try {
+    await S.store.importMembers(adminCid, regPlan.map(({ id, regDate, district }) => Object.fromEntries(Object.entries({ id, regDate, district }).filter(([, v]) => v))));
+    msg.textContent = `${regPlan.length}명의 등록일을 저장했어요.`; regPlan = []; $("#aRegApply").classList.add("hidden"); $("#aReg").value = "";
   } catch (e) { msg.textContent = "저장 실패: " + e.message; }
 };
 
