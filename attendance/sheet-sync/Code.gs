@@ -103,7 +103,8 @@ function church_() {
   }
   const found = docs.filter(d => fromValue_((d.fields || {}).name) === name);
   if (!found.length) throw new Error("앱에서 '" + name + "' 교회를 찾지 못했어요. 이름이 앱과 똑같은지 확인해 주세요.");
-  return { id: docId_(found[0]), name: name };
+  const arr = (k) => ((((found[0].fields || {})[k] || {}).arrayValue || {}).values || []).map(v => String(v.stringValue || "").toLowerCase());
+  return { id: docId_(found[0]), name: name, staff: arr("staff"), leaders: arr("leaders") };
 }
 
 // ---------- 시트 읽기·쓰기 ----------
@@ -235,6 +236,11 @@ function pushMembers() {
     const sh = ss.getSheetByName(SHEET), snap = ss.getSheetByName(SNAP);
     if (!sh || !snap) throw new Error("먼저 '① 앱에서 성도 불러오기'를 눌러 주세요.");
     const ch = church_();
+    // 저장은 교역자(담임목사 포함)만. 리더로만 들어 있으면 미리 알려 줌 (관리자는 config/admins를 읽을 수 있음)
+    if (ch.staff.indexOf(me_()) < 0) {
+      let admin = false; try { api_("get", BASE + "/config/admins"); admin = true; } catch (e) {}
+      if (!admin) throw new Error(me_() + " 계정이 앱에서 '" + ch.name + "'의 " + (ch.leaders.indexOf(me_()) >= 0 ? "리더로만" : "교역자로") + " 등록돼 있지 않아요.\n앱 '관리 → 교회'에서 이 이메일을 담임목사나 교역자 칸에 넣고 '저장'을 눌러 주세요.");
+    }
     const changes = diff_(readTable_(sh), readTable_(snap));
     if (!changes.length) return ui.alert("바뀐 칸이 없어요.");
     const added = changes.filter(c => c.isNew).length;
