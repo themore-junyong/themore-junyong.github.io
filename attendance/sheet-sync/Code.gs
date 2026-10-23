@@ -25,6 +25,8 @@ function onOpen() {
     .addSeparator()
     .addItem("③ 앱 변경 자동 반영 켜기 (열 때마다 + 10분마다)", "autoOn")
     .addItem("자동 반영 끄기", "autoOff")
+    .addSeparator()
+    .addItem("앱 연결 번호 보기", "showClientId")
     .addToUi();
 }
 
@@ -34,18 +36,40 @@ function onOpen() {
 // 로그인 교환이 안 되면 예전처럼 Firebase 프로젝트 주인 권한으로 접속한다.
 function me_() { return (Session.getEffectiveUser().getEmail() || "").toLowerCase(); }
 let loginErr_ = "";
+// 이 시트 스크립트의 구글 로그인 ID 토큰 (aud = 이 스크립트의 OAuth 클라이언트 ID)
+function idToken_() { try { return ScriptApp.getIdentityToken() || ""; } catch (e) { return ""; } }
+function clientId_() {
+  const t = idToken_().split(".")[1];
+  if (!t) return "";
+  try { return JSON.parse(Utilities.newBlob(Utilities.base64DecodeWebSafe(t + "===".slice((t.length + 3) % 4))).getDataAsString()).aud || ""; } catch (e) { return ""; }
+}
 function fbToken_() {
   const cache = CacheService.getUserCache();
   const hit = cache.get("fbIdToken");
   if (hit) return hit;
-  const res = UrlFetchApp.fetch("https://identitytoolkit.googleapis.com/v1/accounts:signInWithIdp?key=" + API_KEY, {
-    method: "post", contentType: "application/json", muteHttpExceptions: true,
-    payload: JSON.stringify({ postBody: "access_token=" + ScriptApp.getOAuthToken() + "&providerId=google.com", requestUri: "http://localhost", returnSecureToken: true })
-  });
-  if (res.getResponseCode() >= 300) { loginErr_ = "앱 로그인 교환 실패 " + res.getResponseCode() + ": " + res.getContentText().slice(0, 200); return null; }
-  const t = JSON.parse(res.getContentText()).idToken;
-  if (t) cache.put("fbIdToken", t, 50 * 60);
-  return t || null;
+  // ID 토큰으로 먼저 (Firebase에 이 스크립트의 클라이언트 ID를 허용해 두면 됨), 안 되면 access 토큰으로
+  const tries = [];
+  const idt = idToken_();
+  if (idt) tries.push("id_token=" + idt);
+  tries.push("access_token=" + ScriptApp.getOAuthToken());
+  for (const body of tries) {
+    const res = UrlFetchApp.fetch("https://identitytoolkit.googleapis.com/v1/accounts:signInWithIdp?key=" + API_KEY, {
+      method: "post", contentType: "application/json", muteHttpExceptions: true,
+      payload: JSON.stringify({ postBody: body + "&providerId=google.com", requestUri: "http://localhost", returnSecureToken: true })
+    });
+    if (res.getResponseCode() < 300) {
+      const t = JSON.parse(res.getContentText()).idToken;
+      if (t) { cache.put("fbIdToken", t, 50 * 60); return t; }
+    } else if (!loginErr_) loginErr_ = res.getContentText().slice(0, 160);
+  }
+  const cid = clientId_();
+  loginErr_ = "시트가 앱에 로그인하지 못했어요. 앱 관리자(준용)가 Firebase 콘솔 → Authentication → 로그인 방법 → Google → '외부 프로젝트의 클라이언트 ID 허용 목록'에 아래 번호를 한 번 넣어 주면 돼요.\n"
+    + (cid || "(번호를 못 읽음: appsscript.json에 openid 권한이 있는지 확인)") + "\n" + loginErr_;
+  return null;
+}
+// 메뉴: 위 번호를 보여 줌
+function showClientId() {
+  SpreadsheetApp.getUi().alert("이 시트의 앱 연결 번호 (Firebase 허용 목록에 넣을 값):\n\n" + (clientId_() || "못 읽었어요. appsscript.json을 새로 붙여 넣었는지 확인해 주세요."));
 }
 function api_(method, url, body) {
   const fb = fbToken_();
@@ -55,7 +79,8 @@ function api_(method, url, body) {
     payload: body ? JSON.stringify(body) : undefined
   });
   const code = res.getResponseCode(), text = res.getContentText();
-  if (code === 403 || code === 401) throw new Error(me_() + " 계정은 이 교회 성도를 " + (method === "get" ? "볼" : "저장할") + " 권한이 없어요.\n앱 '관리'에서 이 이메일을 교역자로 넣어 주세요. (응답 " + code + ")" + (fb ? "" : "\n" + (loginErr_ || "앱 로그인 교환 안 됨")) + "\n" + text.slice(0, 200));
+  if ((code === 403 || code === 401) && !fb) throw new Error(loginErr_ || "시트가 앱에 로그인하지 못했어요.");
+  if (code === 403 || code === 401) throw new Error(me_() + " 계정은 이 교회 성도를 " + (method === "get" ? "볼" : "저장할") + " 권한이 없어요.\n앱 '관리'에서 이 이메일을 교역자로 넣어 주세요. (응답 " + code + ")" + "\n" + text.slice(0, 200));
   if (code >= 300) throw new Error("앱 서버 응답 " + code + ": " + text.slice(0, 300));
   return text ? JSON.parse(text) : {};
 }
