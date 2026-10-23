@@ -1,5 +1,5 @@
 """티스토리·네이버·유튜브 새 글을 모아 posts.json 생성 (GitHub Actions에서 매시간 실행)."""
-import json, re, urllib.request, xml.etree.ElementTree as ET
+import html, json, re, urllib.request, xml.etree.ElementTree as ET
 from email.utils import parsedate_to_datetime
 from datetime import datetime, timezone
 
@@ -66,6 +66,37 @@ def dedupe(posts):
         titles.add(key); out.append(p)
     return out
 
+SITE = "https://themore-junyong.github.io/"
+SRC_KO = {"tistory": "티스토리", "naver": "네이버", "youtube": "유튜브"}
+
+def esc(s):
+    return html.escape(str(s or ""), quote=True)
+
+def static_feed(posts, n=8):
+    """AI 검색·검색엔진은 자바스크립트를 잘 안 돌리므로, 최근 글 목록을 index.html에 글자로 박아 둔다 (화면에선 JS가 덮어씀)."""
+    items = []
+    for p in posts[:n]:
+        d = (p.get("date") or "")[:10].replace("-", ".")
+        th = (f'<span class="th" style="background-image:url(\'{esc(p["image"])}\')"></span>' if p.get("image")
+              else f'<span class="th">{esc(p["kind"][:1])}</span>')
+        items.append(f'<li><a class="post" href="{esc(p["link"])}" target="_blank" rel="noopener">{th}<span>'
+                     f'<span class="meta"><b>{esc(p["kind"])}</b><span>{d}</span><span>{SRC_KO.get(p["src"], "")}</span></span>'
+                     f'<h3>{esc(p["title"])}</h3><p>{esc(p.get("summary"))}</p></span></a></li>')
+    try:
+        page = open("index.html", encoding="utf-8").read()
+        a, b = page.index("<!--FEED:START-->") + len("<!--FEED:START-->"), page.index("<!--FEED:END-->")
+        open("index.html", "w", encoding="utf-8").write(page[:a] + "".join(items) + page[b:])
+    except (OSError, ValueError) as e:
+        print("static feed skipped:", e)
+
+def sitemap(updated):
+    day = updated[:10]
+    urls = [("", "daily", "1.0"), ("lecture/", "monthly", "0.7"), ("app/", "monthly", "0.7"), ("join/", "monthly", "0.6")]
+    body = "".join(f"<url><loc>{SITE}{u}</loc><lastmod>{day}</lastmod><changefreq>{c}</changefreq><priority>{pr}</priority></url>\n"
+                   for u, c, pr in urls)
+    open("sitemap.xml", "w", encoding="utf-8").write(
+        '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' + body + "</urlset>\n")
+
 def main():
     posts, errors = [], []
     for src, url in FEEDS:
@@ -90,6 +121,8 @@ def main():
     posts.sort(key=lambda p: p.get("date", ""), reverse=True)
     json.dump({"updated": datetime.now(timezone.utc).isoformat(), "posts": posts[:200], "errors": errors},
               open("posts.json", "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+    static_feed(posts)
+    sitemap(datetime.now(timezone.utc).isoformat())
     print(len(posts), "posts", errors)
 
 if __name__ == "__main__":
