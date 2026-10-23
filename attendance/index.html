@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<meta name="build" content="2026-10-21.4">
+<meta name="build" content="2026-10-23.2">
 <title>교회 출석 · THE MORE</title>
 <meta name="theme-color" content="#1F6F78">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -324,6 +324,15 @@ textarea.memo{min-height:60px;border:1px solid var(--line);background:var(--bg);
         <div id="aDistMsg" class="ok" style="white-space:pre-line;font-size:14px"></div>
       </section>
       <section>
+        <h2>장결자·기타 출석 한꺼번에 지정</h2>
+        <p class="hint">이름을 띄어쓰기나 줄바꿈으로 붙여 넣으세요. "이름(010-…)"처럼 번호가 붙어 있으면 같은 이름이 여럿일 때 번호로 가려요. 명단에 없는 이름은 기타 출석으로 새로 추가할 수 있어요. 지정된 분들은 평소 명단에서 빠지고 그 탭에서만 보여요.</p>
+        <div class="row"><select id="aMarkKind"><option value="extra">기타 출석으로</option><option value="longAbsent">장결자로</option></select></div>
+        <textarea id="aMark" placeholder="홍길동(010-0000-0001) 김영희&#10;이철수"></textarea>
+        <label class="check"><input type="checkbox" id="aMarkAdd" checked> 명단에 없는 이름은 새 성도로 추가 (기타 출석일 때만)</label>
+        <div class="row"><button class="btn line" id="aMarkCheck">바뀔 내용 보기</button><button class="btn hidden" id="aMarkApply">이대로 저장</button></div>
+        <div id="aMarkMsg" class="ok" style="white-space:pre-line;font-size:14px"></div>
+      </section>
+      <section>
         <h2>성도 번호 정리</h2>
         <p class="hint">P001처럼 생기지 않은 성도 번호(앱에서 새로 넣은 사람 등)를 다음 P번호로 바꿔요. 출석 기록도 함께 옮겨요. 구글 시트를 쓰면 바꾼 뒤 시트에서 '① 앱에서 성도 불러오기'를 한 번 눌러 주세요.</p>
         <div class="row"><button class="btn line" id="aIdCheck">바뀔 내용 보기</button><button class="btn hidden" id="aIdApply">이대로 저장</button></div>
@@ -381,7 +390,8 @@ textarea.memo{min-height:60px;border:1px solid var(--line);background:var(--bg);
           <label>결혼기념일<input name="anniversary" type="date"></label>
           <label>세례일<input name="baptism" type="date"></label>
         </div>
-        <label class="check"><input type="checkbox" name="longAbsent"> 장기결석자</label>
+        <label class="check"><input type="checkbox" name="longAbsent"> 장기결석자 (명단에서 빠지고 '장결자' 탭으로)</label>
+        <label class="check"><input type="checkbox" name="extra"> 기타 출석 (가끔 오는 가족 등, '기타출석' 탭으로)</label>
         <label class="check"><input type="checkbox" name="noTrack"> 결석 추적 안 함 (교역자·타지 등)</label>
         <label class="edit-phone">메모<textarea class="memo" name="memo"></textarea></label>
       </div>
@@ -422,9 +432,12 @@ const COLS = [
   ["id","성도ID"],["name","이름"],["role","직분"],["group","분류"],["gender","성별"],["phone","연락처"],
   ["regDate","등록일"],["birthSolar","생일_양력"],["birthLunar","생일_음력"],["anniversary","결혼기념일"],
   ["district","구역"],["baptism","세례일"],["household","세대ID"],["relation","가족관계"],["photo","사진"],
-  ["isLeader","리더여부"],["longAbsent","장결자"],["memo","메모"],["noTrack","추적제외"]
+  ["isLeader","리더여부"],["longAbsent","장결자"],["memo","메모"],["noTrack","추적제외"],["extra","기타출석"]
 ];
-const BOOL_FIELDS = new Set(["isLeader","longAbsent","noTrack"]);
+const BOOL_FIELDS = new Set(["isLeader","longAbsent","noTrack","extra"]);
+// 장결자·기타 출석자는 평소 명단과 '남음' 숫자에서 빠지고 자기 탭에서만 보임. 체크를 풀면 다시 명단으로.
+const OFF_TABS = ["장결자", "기타출석"];
+const offList = (m) => !!(m.longAbsent || m.extra);
 const PRIVATE = ["phone", "memo"]; // 리더에게 안 보이는 칸 (contacts에 따로 저장)
 
 function localToday() {
@@ -774,32 +787,39 @@ function watchAtt() {
 }
 
 function renderChips() {
-  const groups = [...new Set(S.members.map(m => m.group).filter(Boolean))]
+  const regular = S.members.filter(m => !offList(m));
+  const groups = [...new Set(regular.map(m => m.group).filter(Boolean))]
     .sort((a, b) => (GROUP_ORDER.indexOf(a) + 99) % 99 - (GROUP_ORDER.indexOf(b) + 99) % 99);
-  const districts = [...new Set(S.members.map(m => m.district).filter(Boolean))].sort((a, b) => a.localeCompare(b, "ko", { numeric: true }));
-  const chips = ["전체", ...groups, ...districts.filter(d => !groups.includes(d)), "장결자"];
+  const districts = [...new Set(regular.map(m => m.district).filter(Boolean))].sort((a, b) => a.localeCompare(b, "ko", { numeric: true }));
+  const chips = ["전체", ...groups, ...districts.filter(d => !groups.includes(d)), ...OFF_TABS];
   if (!chips.includes(S.chip)) S.chip = "전체";
-  $("#chips").innerHTML = chips.map(c => `<button type="button" aria-pressed="${c === S.chip}" data-c="${esc(c)}">${esc(c)}</button>`).join("");
+  const offCount = { 장결자: S.members.filter(m => m.longAbsent).length, 기타출석: S.members.filter(m => m.extra && !m.longAbsent).length };
+  $("#chips").innerHTML = chips.map(c => `<button type="button" aria-pressed="${c === S.chip}" data-c="${esc(c)}">${esc(c)}${c in offCount ? ` ${offCount[c]}` : ""}</button>`).join("");
 }
 
 // 검색하면 찾은 사람의 가족(같은 세대ID)도 함께 보여 줌
 function visibleMembers() {
   const q = S.q.trim();
+  // 탭에 속하는지. '전체'에서 이름을 찾으면 장결자·기타 출석자도 찾아 줌 (오신 날 바로 체크하도록)
+  const inTab = (m, searching) =>
+    S.chip === "장결자" ? !!m.longAbsent
+    : S.chip === "기타출석" ? !!m.extra && !m.longAbsent
+    : (searching && S.chip === "전체") || (!offList(m) && (S.chip === "전체" || m.group === S.chip || m.district === S.chip));
   const list = S.members.filter(m => {
-    if (S.chip === "장결자" ? !m.longAbsent : S.chip !== "전체" && m.group !== S.chip && m.district !== S.chip) return false;
+    if (!inTab(m, !!q)) return false;
     if (q && !(m.name || "").includes(q) && !(m.phone || "").replace(/\D/g, "").endsWith(q.replace(/\D/g, "") || "\u0000")) return false;
     return true;
   });
   if (!q) return list;
   const homes = new Set(list.map(m => m.household).filter(Boolean));
-  return S.members.filter(m => list.includes(m) || homes.has(m.household));
+  return S.members.filter(m => list.includes(m) || (homes.has(m.household) && inTab(m, false)));
 }
 
 function render() {
   if (!S.church) return;
   const present = S.members.filter(m => S.att.get(m.id)?.present).length;
   $("#cnt").textContent = present;
-  $("#left").textContent = S.members.length - present;
+  $("#left").textContent = S.members.filter(m => !offList(m) && !S.att.get(m.id)?.present).length;
   // 출석한 사람은 목록에서 빠짐 (✎ 정보 중이거나 '출석한 사람 보기'를 켜면 모두 보임)
   const hideDone = !S.showDone && !S.edit;
   const shown = (m) => !hideDone || !S.att.get(m.id)?.present;
@@ -833,7 +853,7 @@ function personBtn(m) {
   const on = !!r?.present;
   const sub = [m.role, m.relation && m.household ? m.relation : "", m.district].filter(Boolean).join(" · ");
   return `<button type="button" class="p ${on ? "on" : ""} ${r?._pending ? "pending" : ""}" data-m="${esc(m.id)}" aria-pressed="${on}">
-    <span class="av">${avatar(m)}</span><span class="nm"><b>${esc(m.name)}${m.longAbsent ? '<span class="tag">장결</span>' : ""}</b><small>${esc(sub)}</small>${m.phone ? `<small class="tel" data-call="${esc(m.id)}">${esc(m.phone)}</small>` : ""}</span></button>`;
+    <span class="av">${avatar(m)}</span><span class="nm"><b>${esc(m.name)}${m.longAbsent ? '<span class="tag">장결</span>' : m.extra ? '<span class="tag">기타</span>' : ""}</b><small>${esc(sub)}</small>${m.phone ? `<small class="tel" data-call="${esc(m.id)}">${esc(m.phone)}</small>` : ""}</span></button>`;
 }
 function avatar(m) {
   return /^data:image\//.test(m.thumb || "") ? `<img class="ph" src="${esc(m.thumb)}" alt="">` : `<span class="ph" aria-hidden="true">${esc((m.name || "?")[0])}</span>`;
@@ -995,8 +1015,8 @@ function openMember(id) {
       if (el.tagName === "SELECT" && m[k] && ![...el.options].some(o => o.value === m[k])) el.add(new Option(m[k], m[k]));
       el.value = m[k] ?? "";
     }
-    f.longAbsent.checked = !!m.longAbsent; f.noTrack.checked = !!m.noTrack;
-  } else f.regDate.value = localToday();
+    f.longAbsent.checked = !!m.longAbsent; f.noTrack.checked = !!m.noTrack; f.extra.checked = !!m.extra;
+  } else { f.regDate.value = localToday(); f.extra.checked = S.chip === "기타출석"; }
   dlgThumb = m?.thumb || "";
   showDlgPhoto(m?.name);
   const tel = (m?.phone || "").replace(/[^\d+]/g, "");
@@ -1042,7 +1062,7 @@ $("#dlg").addEventListener("close", async () => {
   const f = $("#addForm");
   const data = {};
   for (const k of TEXT_FIELDS) if (f[k]) data[k] = f[k].value.trim();
-  data.longAbsent = f.longAbsent.checked; data.noTrack = f.noTrack.checked;
+  data.longAbsent = f.longAbsent.checked; data.noTrack = f.noTrack.checked; data.extra = f.extra.checked;
   data.thumb = dlgThumb;
   if (!data.role) data.role = "성도";
   if (data.household === "__new") { data.household = "H" + Date.now().toString(36); data.relation ||= "세대주"; }
@@ -1103,7 +1123,7 @@ function renderStats() {
     : `<p class="hint">최근 8주 동안 이 예배의 출석 기록이 없어요.</p>`;
   // 연속 결석: 기록이 있는 예배 날짜만 '드린 예배'로 봄
   const recent = dates.slice().reverse();
-  const list = S.members.filter(m => !m.noTrack).map(m => {
+  const list = S.members.filter(m => !m.noTrack && !offList(m)).map(m => {
     let n = 0; for (const d of recent) { if (byDate.get(d).has(m.id)) break; n++; }
     const last = dates.slice().reverse().find(d => byDate.get(d).has(m.id));
     return { m, n, last };
@@ -1457,6 +1477,60 @@ $("#aDistApply").onclick = async () => {
   try {
     await S.store.importMembers(adminCid, distPlan.map(c => ({ id: c.id, district: c.to })));
     msg.textContent = `${distPlan.length}명의 구역을 저장했어요. 첫 화면 위쪽에 구역별 버튼이 생겨요.`; distPlan = []; $("#aDistApply").classList.add("hidden");
+  } catch (e) { msg.textContent = "저장 실패: " + e.message; }
+};
+
+// 장결자·기타 출석 한꺼번에: "이름" 또는 "이름(전화)"를 읽어 성도를 찾고 표시만 바꿈
+let markPlan = null;
+function planMarks(text, members, kind, addNew) {
+  const digits = (v) => String(v || "").replace(/\D/g, "");
+  const byName = new Map();
+  members.forEach(m => { const k = (m.name || "").replace(/\s/g, ""); if (!byName.has(k)) byName.set(k, []); byName.get(k).push(m); });
+  const base = (n) => n.replace(/[A-Za-z]$/, "");
+  const set = new Map(), already = [], missing = [], twins = [], guessed = [], adds = [];
+  for (const [, raw, tel] of text.matchAll(/([가-힣A-Za-z]+)\s*(?:\(([\d\-\s]+)\))?/g)) {
+    let hit = byName.get(raw) || [];
+    if (!hit.length) {
+      const cand = members.filter(x => { const n = (x.name || "").replace(/\s/g, ""); return n !== raw && (base(n) === raw || n === base(raw)); });
+      if (cand.length === 1) { hit = cand; guessed.push(`${raw} → ${cand[0].name}`); }
+    }
+    if (hit.length > 1 && tel) hit = hit.filter(x => digits(x.phone).endsWith(digits(tel).slice(-4)));
+    if (hit.length > 1) { twins.push(`${raw} ${hit.length}명`); continue; }
+    if (!hit.length) {
+      if (kind === "extra" && addNew) { if (!adds.some(a => a.name === raw)) adds.push({ name: raw, phone: tel ? fmtPhone(tel) : "", group: "기타", extra: true }); }
+      else missing.push(raw);
+      continue;
+    }
+    const m = hit[0];
+    if (m[kind]) already.push(m.name); else set.set(m.id, { id: m.id, name: m.name });
+  }
+  return { set: [...set.values()], already, missing, twins, guessed, adds };
+}
+$("#aMarkCheck").onclick = async () => {
+  const msg = $("#aMarkMsg"); if (!adminCid) return (msg.textContent = "먼저 교회를 골라 주세요.");
+  msg.textContent = "살펴보는 중…";
+  const kind = $("#aMarkKind").value, label = kind === "extra" ? "기타 출석" : "장결자";
+  const r = planMarks($("#aMark").value, await S.store.allMembers(adminCid), kind, $("#aMarkAdd").checked);
+  markPlan = { kind, ...r };
+  $("#aMarkApply").classList.toggle("hidden", !r.set.length && !r.adds.length);
+  msg.textContent = `${r.set.length}명을 ${kind === "extra" ? "기타 출석으로" : "장결자로"} 바꿔요.${r.already.length ? ` (이미 ${label}인 ${r.already.length}명)` : ""}`
+    + (r.set.length ? "\n" + r.set.map(x => x.name).join(", ") : "")
+    + (r.adds.length ? `\n\n명단에 없어서 기타 출석으로 새로 추가할 ${r.adds.length}명:\n` + r.adds.map(x => x.name).join(", ") : "")
+    + (r.missing.length ? `\n\n명단에서 못 찾은 이름 ${r.missing.length}명:\n` + r.missing.join(", ") : "")
+    + (r.twins.length ? `\n\n같은 이름이 여러 명이라 건너뛴 이름 (번호를 붙여 다시 넣어 주세요):\n` + r.twins.join(", ") : "")
+    + (r.guessed.length ? `\n\n비슷한 이름으로 짐작한 사람:\n` + r.guessed.join(", ") : "");
+};
+$("#aMarkApply").onclick = async () => {
+  const msg = $("#aMarkMsg"); if (!markPlan) return;
+  const { kind, set, adds } = markPlan;
+  try {
+    const ids = nextPids((await S.store.allMembers(adminCid)).map(m => m.id), adds.length);
+    await S.store.importMembers(adminCid, [
+      ...set.map(x => ({ id: x.id, [kind]: true })),
+      ...adds.map((a, i) => ({ id: ids[i], ...Object.fromEntries(Object.entries(a).filter(([, v]) => v !== "")), regDate: localToday() }))
+    ]);
+    msg.textContent = `${set.length}명을 바꾸고 ${adds.length}명을 새로 추가했어요. 첫 화면 맨 끝 탭에서 보실 수 있어요.`;
+    markPlan = null; $("#aMarkApply").classList.add("hidden"); $("#aMark").value = "";
   } catch (e) { msg.textContent = "저장 실패: " + e.message; }
 };
 
