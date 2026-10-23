@@ -178,10 +178,11 @@ function dress_(sh, nRows, nCols) {
   all.applyRowBanding(SpreadsheetApp.BandingTheme.LIGHT_GREY, true, false)
     .setHeaderRowColor("#3b5bdb").setFirstRowColor("#ffffff").setSecondRowColor("#f4f6fb");
   sh.getRange(1, 1, 1, nCols).setFontColor("#ffffff").setFontWeight("bold").setHorizontalAlignment("center").setWrap(true);
-  sh.setRowHeight(1, 34);
-  if (nRows > 1) sh.setRowHeights(2, nRows - 1, 24);
+  // 칸 너비·줄 높이는 한 번도 안 건드린 기본값(너비 100, 높이 21)일 때만 맞춤. 손으로 조정한 크기는 그대로 둔다
+  if (sh.getRowHeight(1) === 21) sh.setRowHeight(1, 34);
+  if (nRows > 1 && sh.getRowHeight(2) === 21) sh.setRowHeights(2, nRows - 1, 24);
   COLS.forEach(([k], i) => {
-    sh.setColumnWidth(i + 1, WIDTH[k] || 90);
+    if (sh.getColumnWidth(i + 1) === 100) sh.setColumnWidth(i + 1, WIDTH[k] || 90);
     if (nRows < 2) return;
     const body = sh.getRange(2, i + 1, nRows - 1, 1);
     if (CENTER.indexOf(k) >= 0) body.setHorizontalAlignment("center");
