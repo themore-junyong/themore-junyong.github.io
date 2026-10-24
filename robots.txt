@@ -1,0 +1,8 @@
+# AI 검색(ChatGPT·Perplexity·Gemini·Claude)과 네이버·구글 검색이 모두 읽어 가도록 연다.
+# 교인·회비 앱 화면은 개인 데이터용이라 검색에서 뺀다.
+User-agent: *
+Allow: /
+Disallow: /attendance/
+Disallow: /dues/
+
+Sitemap: https://themore-junyong.github.io/sitemap.xml
