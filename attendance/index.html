@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<meta name="build" content="2026-10-23.6">
+<meta name="build" content="2026-10-25.1">
 <title>교회 출석 · THE MORE</title>
 <meta name="theme-color" content="#1F6F78">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -89,6 +89,9 @@ h1,h2{font-family:var(--display);margin:0;font-weight:700}
 
 /* 관리 */
 .panel{display:flex;flex-direction:column;gap:16px;padding-top:16px}
+.panel details.tools>summary{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;font-weight:700;cursor:pointer}
+.panel details.tools[open]>summary{margin-bottom:12px}
+.panel details.tools>section{margin-bottom:12px}
 .panel section{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:10px}
 .panel h2{font-size:18px}
 .panel label{display:flex;flex-direction:column;gap:4px;font-size:14px;color:var(--muted)}
@@ -267,6 +270,12 @@ textarea.memo{min-height:60px;border:1px solid var(--line);background:var(--bg);
         <ul class="bday-m" id="evList"></ul>
       </section>
       <section>
+        <h2>오래 함께한 성도</h2>
+        <p class="hint">교회 등록일로 찾아요. 연도만 적힌 분은 연도로만 셈해요. 기타 출석 분은 빼요.</p>
+        <div class="row"><input id="yrN" type="number" min="1" max="80" value="10" inputmode="numeric" aria-label="몇 년" style="width:72px"><span>년</span><select id="yrMode" aria-label="찾는 방법"><option value="over">이상 된 분</option><option value="exact">올해 딱 그 주년인 분</option></select></div>
+        <ul class="absent" id="yrList"></ul>
+      </section>
+      <section>
         <h2>연속 결석</h2>
         <p class="hint">이 예배를 최근 3번 이상 연달아 빠진 성도예요. '추적제외'로 표시한 성도는 빠져요.</p>
         <ul class="absent" id="statAbsent"></ul>
@@ -301,12 +310,6 @@ textarea.memo{min-height:60px;border:1px solid var(--line);background:var(--bg);
         <div class="row"><button class="btn" id="aImportBtn">가져오기</button><span id="aImportMsg" class="ok"></span></div>
       </section>
       <section>
-        <h2>출석 기록 가져오기</h2>
-        <p class="hint">구글 시트 '출석' 탭에서 Ctrl+A로 전체 선택해 복사한 뒤 붙여 넣으세요. 성도를 먼저 가져온 뒤 하세요. 같은 날짜·예배·성도는 덮어써서, 여러 번 가져와도 겹치지 않아요.</p>
-        <textarea id="aAttImport" placeholder="출석ID	날짜	예배종류	성도ID	이름	출석	체크한사람	메모"></textarea>
-        <div class="row"><button class="btn" id="aAttImportBtn">가져오기</button><span id="aAttImportMsg" class="ok"></span></div>
-      </section>
-      <section>
         <h2>사진 가져오기</h2>
         <p class="hint">앱시트 사진 폴더(구글 드라이브 '성도_Images' 등)를 PC로 내려받아 압축을 푼 뒤, 아래에서 사진들을 한꺼번에 고르세요. 시트의 '사진' 칸 파일 이름, 성도ID, 이름 순으로 짝을 찾아요. 사진은 작게 줄여서 저장해요.</p>
         <div class="row"><label class="btn line" style="cursor:pointer">사진 고르기<input type="file" id="aPhotos" accept="image/*" multiple hidden></label><label class="btn line" style="cursor:pointer">폴더째 고르기<input type="file" id="aPhotoDir" webkitdirectory multiple hidden></label></div>
@@ -318,36 +321,46 @@ textarea.memo{min-height:60px;border:1px solid var(--line);background:var(--bg);
         <div class="row"><button class="btn line" id="aHeadCheck">바뀔 내용 보기</button><button class="btn hidden" id="aHeadApply">이대로 저장</button></div>
         <div id="aHeadMsg" class="ok" style="white-space:pre-line;font-size:14px"></div>
       </section>
-      <section>
-        <h2>구역(셀) 한꺼번에 넣기</h2>
-        <p class="hint">한 줄에 한 구역씩 "구역이름: 이름 이름 이름"처럼 붙여 넣으세요. 이름으로 성도를 찾아 구역 칸을 채워요. 여기 없는 성도의 구역은 그대로 둬요.</p>
-        <textarea id="aDist" placeholder="은혜: 홍길동 김영희 이철수&#10;다윗: 최준호 강하늘"></textarea>
-        <div class="row"><button class="btn line" id="aDistCheck">바뀔 내용 보기</button><button class="btn hidden" id="aDistApply">이대로 저장</button></div>
-        <div id="aDistMsg" class="ok" style="white-space:pre-line;font-size:14px"></div>
-      </section>
-      <section>
-        <h2>교회 등록일 한꺼번에 넣기</h2>
-        <p class="hint">"이름 2005년 3월"처럼 한 줄에 한 사람씩 붙여 넣으세요. 셀 이름 줄이 있어도 괜찮아요. 같은 이름이 여럿이면 그 셀(구역) 사람으로 찾아요. 일까지 모르면 "2005-03", 연도만 알면 "2005"로 넣어요. 날짜가 없는 줄은 건너뛰어요.</p>
-        <textarea id="aReg" placeholder="은혜셀&#10;홍길동 2008년 2월&#10;김영희 15년 8월&#10;이철수 2012"></textarea>
-        <label class="check"><input type="checkbox" id="aRegDist"> 셀 이름을 구역 칸에도 넣기</label>
-        <div class="row"><button class="btn line" id="aRegCheck">바뀔 내용 보기</button><button class="btn hidden" id="aRegApply">이대로 저장</button></div>
-        <div id="aRegMsg" class="ok" style="white-space:pre-line;font-size:14px"></div>
-      </section>
-      <section>
-        <h2>장결자·기타 출석 한꺼번에 지정</h2>
-        <p class="hint">이름을 띄어쓰기나 줄바꿈으로 붙여 넣으세요. "이름(010-…)"처럼 번호가 붙어 있으면 같은 이름이 여럿일 때 번호로 가려요. 명단에 없는 이름은 기타 출석으로 새로 추가할 수 있어요. 지정된 분들은 평소 명단에서 빠지고 그 탭에서만 보여요.</p>
-        <div class="row"><select id="aMarkKind"><option value="extra">기타 출석으로</option><option value="longAbsent">장결자로</option></select></div>
-        <textarea id="aMark" placeholder="홍길동(010-0000-0001) 김영희&#10;이철수"></textarea>
-        <label class="check"><input type="checkbox" id="aMarkAdd" checked> 명단에 없는 이름은 새 성도로 추가 (기타 출석일 때만)</label>
-        <div class="row"><button class="btn line" id="aMarkCheck">바뀔 내용 보기</button><button class="btn hidden" id="aMarkApply">이대로 저장</button></div>
-        <div id="aMarkMsg" class="ok" style="white-space:pre-line;font-size:14px"></div>
-      </section>
-      <section>
-        <h2>성도 번호 정리</h2>
-        <p class="hint">P001처럼 생기지 않은 성도 번호(앱에서 새로 넣은 사람 등)를 다음 P번호로 바꿔요. 출석 기록도 함께 옮겨요. 구글 시트를 쓰면 바꾼 뒤 시트에서 '① 앱에서 성도 불러오기'를 한 번 눌러 주세요.</p>
-        <div class="row"><button class="btn line" id="aIdCheck">바뀔 내용 보기</button><button class="btn hidden" id="aIdApply">이대로 저장</button></div>
-        <div id="aIdMsg" class="ok" style="white-space:pre-line;font-size:14px"></div>
-      </section>
+      <details class="tools" id="aTools">
+        <summary>처음 옮길 때 쓰는 도구 5가지 (눌러서 펼치기)</summary>
+        <p class="hint">출석 기록 가져오기, 구역(셀)·교회 등록일·장결자 한꺼번에 넣기, 성도 번호 정리예요. 새 교회는 보통 쓸 일이 없어요.</p>
+        <section>
+          <h2>출석 기록 가져오기</h2>
+          <p class="hint">구글 시트 '출석' 탭에서 Ctrl+A로 전체 선택해 복사한 뒤 붙여 넣으세요. 성도를 먼저 가져온 뒤 하세요. 같은 날짜·예배·성도는 덮어써서, 여러 번 가져와도 겹치지 않아요.</p>
+          <textarea id="aAttImport" placeholder="출석ID	날짜	예배종류	성도ID	이름	출석	체크한사람	메모"></textarea>
+          <div class="row"><button class="btn" id="aAttImportBtn">가져오기</button><span id="aAttImportMsg" class="ok"></span></div>
+        </section>
+        <section>
+          <h2>구역(셀) 한꺼번에 넣기</h2>
+          <p class="hint">한 줄에 한 구역씩 "구역이름: 이름 이름 이름"처럼 붙여 넣으세요. 이름으로 성도를 찾아 구역 칸을 채워요. 여기 없는 성도의 구역은 그대로 둬요.</p>
+          <textarea id="aDist" placeholder="은혜: 홍길동 김영희 이철수&#10;다윗: 최준호 강하늘"></textarea>
+          <div class="row"><button class="btn line" id="aDistCheck">바뀔 내용 보기</button><button class="btn hidden" id="aDistApply">이대로 저장</button></div>
+          <div id="aDistMsg" class="ok" style="white-space:pre-line;font-size:14px"></div>
+        </section>
+        <section>
+          <h2>교회 등록일 한꺼번에 넣기</h2>
+          <p class="hint">"이름 2005년 3월"처럼 한 줄에 한 사람씩 붙여 넣으세요. 셀 이름 줄이 있어도 괜찮아요. 같은 이름이 여럿이면 그 셀(구역) 사람으로 찾아요. 일까지 모르면 "2005-03", 연도만 알면 "2005"로 넣어요. 날짜가 없는 줄은 건너뛰어요.</p>
+          <textarea id="aReg" placeholder="은혜셀&#10;홍길동 2008년 2월&#10;김영희 15년 8월&#10;이철수 2012"></textarea>
+          <label class="check"><input type="checkbox" id="aRegDist"> 셀 이름을 구역 칸에도 넣기</label>
+          <div class="row"><button class="btn line" id="aRegCheck">바뀔 내용 보기</button><button class="btn hidden" id="aRegApply">이대로 저장</button></div>
+          <div id="aRegMsg" class="ok" style="white-space:pre-line;font-size:14px"></div>
+        </section>
+        <section>
+          <h2>장결자·기타 출석 한꺼번에 지정</h2>
+          <p class="hint">이름을 띄어쓰기나 줄바꿈으로 붙여 넣으세요. "이름(010-…)"처럼 번호가 붙어 있으면 같은 이름이 여럿일 때 번호로 가려요. 명단에 없는 이름은 기타 출석으로 새로 추가할 수 있어요. 지정된 분들은 평소 명단에서 빠지고 그 탭에서만 보여요.</p>
+          <div class="row"><select id="aMarkKind"><option value="extra">기타 출석으로</option><option value="longAbsent">장결자로</option></select></div>
+          <textarea id="aMark" placeholder="홍길동(010-0000-0001) 김영희&#10;이철수"></textarea>
+          <label class="check"><input type="checkbox" id="aMarkAdd" checked> 명단에 없는 이름은 새 성도로 추가 (기타 출석일 때만)</label>
+          <div class="row"><button class="btn line" id="aMarkCheck">바뀔 내용 보기</button><button class="btn hidden" id="aMarkApply">이대로 저장</button></div>
+          <div id="aMarkMsg" class="ok" style="white-space:pre-line;font-size:14px"></div>
+        </section>
+        <section>
+          <h2>성도 번호 정리</h2>
+          <p class="hint">P001처럼 생기지 않은 성도 번호(앱에서 새로 넣은 사람 등)를 다음 P번호로 바꿔요. 출석 기록도 함께 옮겨요. 구글 시트를 쓰면 바꾼 뒤 시트에서 '① 앱에서 성도 불러오기'를 한 번 눌러 주세요.</p>
+          <div class="row"><button class="btn line" id="aIdCheck">바뀔 내용 보기</button><button class="btn hidden" id="aIdApply">이대로 저장</button></div>
+          <div id="aIdMsg" class="ok" style="white-space:pre-line;font-size:14px"></div>
+        </section>
+      </details>
       <section>
         <h2>내보내기</h2>
         <p class="hint">엑셀에서 바로 열리는 CSV 파일로 받아요. 교회가 데이터를 원하면 이 파일을 드리면 돼요.</p>
@@ -1117,6 +1130,7 @@ function ymd(d) { return new Date(d.getTime() - d.getTimezoneOffset() * 60000).t
 async function openStats() {
   show("sStats");
   renderMonth();
+  renderYears();
   const services = S.church.services?.length ? S.church.services : ["주일낮"];
   statSvc ||= S.service || services[0];
   $("#statSvc").innerHTML = services.map(x => `<button type="button" aria-pressed="${x === statSvc}" data-ss="${esc(x)}">${esc(x)}</button>`).join("");
@@ -1148,6 +1162,26 @@ function renderStats() {
       <small>${last ? `마지막 출석 ${last.slice(5).replace("-", "/")}` : "최근 8주 출석 없음"}${m.phone ? ` · <a href="tel:${esc(m.phone.replace(/[^\d+]/g, ""))}">📞 ${esc(m.phone)}</a> · <a href="sms:${esc(m.phone.replace(/[^\d+]/g, ""))}">💬 문자</a>` : ""}</small></li>`).join("")
     : `<li><small>3번 이상 연달아 빠진 성도가 없어요.</small></li>`;
 }
+// 등록 N년: regDate는 YYYY / YYYY-MM / YYYY-MM-DD
+function regYears(reg, today = new Date()) {
+  const [y, mo, d] = String(reg || "").split("-").map(Number);
+  if (!y) return null;
+  let n = today.getFullYear() - y;
+  if (mo && (today.getMonth() + 1 < mo || (today.getMonth() + 1 === mo && d && today.getDate() < d))) n--;
+  return { n, yearOnly: !mo, diffYear: today.getFullYear() - y };
+}
+function renderYears() {
+  const N = Math.max(1, parseInt($("#yrN").value, 10) || 0), exact = $("#yrMode").value === "exact";
+  const pool = S.members.filter(m => !m.extra);
+  const noDate = pool.filter(m => !regYears(m.regDate)).length;
+  const hits = pool.map(m => ({ m, r: regYears(m.regDate) })).filter(({ r }) => r && (exact ? r.diffYear === N : r.n >= N))
+    .sort((a, b) => a.m.regDate.localeCompare(b.m.regDate) || a.m.name.localeCompare(b.m.name, "ko"));
+  $("#yrList").innerHTML = (hits.length ? hits.map(({ m, r }) => `<li><span><b>${esc(m.name)}</b> ${esc(m.role || "")}${m.longAbsent ? '<span class="tag">장결</span>' : ""}</span>
+      <span class="n">${exact ? `${N}주년` : `${r.n}년`}</span><small>등록 ${esc(m.regDate)}${m.district ? ` · ${esc(m.district)}` : ""}</small></li>`).join("")
+    : `<li><small>${exact ? `올해 ${N}주년인` : `${N}년 이상 된`} 성도가 없어요.</small></li>`)
+    + `<li><small>모두 ${hits.length}명${noDate ? ` · 등록일이 비어 있는 ${noDate}명은 못 찾아요` : ""}</small></li>`;
+}
+$("#yrN").oninput = renderYears; $("#yrMode").onchange = renderYears;
 $("#toStats").onclick = openStats;
 $("#statsBack").onclick = () => show("sMain");
 
