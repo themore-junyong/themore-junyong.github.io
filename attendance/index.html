@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<meta name="build" content="2026-10-25.3">
+<meta name="build" content="2026-10-26.1">
 <title>교회 출석 · THE MORE</title>
 <meta name="theme-color" content="#1F6F78">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -394,7 +394,7 @@ textarea.memo{min-height:60px;border:1px solid var(--line);background:var(--bg);
 <dialog id="dlg">
   <form method="dialog" id="addForm">
     <h2 style="font-size:18px" id="dlgTitle">새 성도</h2>
-    <div class="contact hidden" id="contact"><a id="cTel" href="#">📞 전화</a><a id="cSms" href="#">💬 문자</a></div>
+    <div class="contact hidden" id="contact"><a id="cTel" href="#">📞 전화</a><a id="cSms" href="#">💬 문자</a><a id="cEm" href="#" class="hidden">🚨 비상</a></div>
     <details id="hist" class="hidden"><summary>📅 출석 기록 보기</summary><div id="histBody" style="font-size:14px;line-height:1.6"></div></details>
     <div class="photo"><span id="phView"></span>
       <label class="ghost" style="cursor:pointer">사진 찍기·고르기<input type="file" id="phFile" accept="image/*" hidden></label>
@@ -408,6 +408,7 @@ textarea.memo{min-height:60px;border:1px solid var(--line);background:var(--bg);
       <label>성별<select name="gender"><option value="">-</option><option>남성</option><option>여성</option></select></label>
       <label class="edit-phone">연락처<input name="phone" inputmode="numeric" placeholder="숫자만 누르면 - 자동" autocomplete="off"></label>
     </div>
+    <label class="edit-phone">비상연락처 (누구·번호)<input name="emergency" placeholder="엄마 010-0000-0000" autocomplete="off"></label>
     <div class="two">
       <label>같은 가족<select name="household"></select></label>
       <label>가족관계<input name="relation" placeholder="세대주, 배우자…"></label>
@@ -469,13 +470,13 @@ const COLS = [
   ["id","성도ID"],["name","이름"],["role","직분"],["group","분류"],["gender","성별"],["phone","연락처"],
   ["regDate","등록일"],["birthSolar","생일_양력"],["birthLunar","생일_음력"],["anniversary","결혼기념일"],
   ["district","구역"],["baptism","세례일"],["household","세대ID"],["relation","가족관계"],["photo","사진"],
-  ["isLeader","리더여부"],["longAbsent","장결자"],["memo","메모"],["noTrack","추적제외"],["extra","기타출석"]
+  ["isLeader","리더여부"],["longAbsent","장결자"],["memo","메모"],["noTrack","추적제외"],["extra","기타출석"],["emergency","비상연락처"]
 ];
 const BOOL_FIELDS = new Set(["isLeader","longAbsent","noTrack","extra"]);
 // 장결자·기타 출석자는 평소 명단과 '남음' 숫자에서 빠지고 자기 탭에서만 보임. 체크를 풀면 다시 명단으로.
 const OFF_TABS = ["장결자", "기타출석"];
 const offList = (m) => !!(m.longAbsent || m.extra);
-const PRIVATE = ["phone", "memo"]; // 리더에게 안 보이는 칸 (contacts에 따로 저장)
+const PRIVATE = ["phone", "memo", "emergency"]; // 리더에게 안 보이는 칸 (contacts에 따로 저장)
 
 function localToday() {
   const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
@@ -802,7 +803,7 @@ function pickChurch(c) {
   S.service = defaultService(services, S.date);
   renderServices(services);
   // 리더(성도 관리 권한 없음)에게는 연락처·메모를 빼고 보여 줌 (명단·연락 버튼·통계·성도 창 모두)
-  S.unMembers = S.store.watchMembers(c.id, (ms) => { S.members = S.canEdit ? ms : ms.map(({ phone, memo, ...m }) => m); renderChips(); render(); renderBdays(); }, S.canEdit);
+  S.unMembers = S.store.watchMembers(c.id, (ms) => { S.members = S.canEdit ? ms : ms.map(({ phone, memo, emergency, ...m }) => m); renderChips(); render(); renderBdays(); }, S.canEdit);
   watchAtt();
   show("sMain");
 }
@@ -1019,7 +1020,7 @@ $("#qClear").onclick = () => { $("#q").value = ""; S.q = ""; $("#qClear").classL
 $("#churchPick").onchange = (e) => pickChurch(S.churches.find(c => c.id === e.target.value));
 
 // 성도 추가·정보
-const TEXT_FIELDS = ["name","role","group","gender","phone","household","relation","district","regDate","birthSolar","birthLunar","anniversary","baptism","memo"];
+const TEXT_FIELDS = ["name","role","group","gender","phone","household","relation","district","regDate","birthSolar","birthLunar","anniversary","baptism","memo","emergency"];
 // 숫자만 눌러도 010-1234-5678 / 02-123-4567 / 031-123-4567 모양으로
 function fmtPhone(v) {
   const d = String(v).replace(/\D/g, "").slice(0, 11);
@@ -1063,6 +1064,9 @@ function openMember(id) {
   const tel = (m?.phone || "").replace(/[^\d+]/g, "");
   $("#contact").classList.toggle("hidden", !tel);
   $("#cTel").href = "tel:" + tel; $("#cSms").href = "sms:" + tel;
+  const em = (m?.emergency || "").replace(/[^\d+]/g, "");
+  $("#cEm").classList.toggle("hidden", em.length < 7); $("#cEm").href = "tel:" + em;
+  if (em.length >= 7) $("#contact").classList.remove("hidden");
   $("#dlgTitle").textContent = m ? `${m.name} 정보` : "새 성도";
   $("#dlgOk").textContent = m ? "저장" : "추가";
   $("#dlgDel").classList.toggle("hidden", !(m && S.canEdit));

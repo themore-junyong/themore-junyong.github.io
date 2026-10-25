@@ -13,7 +13,7 @@ const COLS = [
   ["id", "성도ID"], ["name", "이름"], ["role", "직분"], ["group", "분류"], ["gender", "성별"], ["phone", "연락처"],
   ["regDate", "등록일"], ["birthSolar", "생일_양력"], ["birthLunar", "생일_음력"], ["anniversary", "결혼기념일"],
   ["district", "구역"], ["baptism", "세례일"], ["household", "세대ID"], ["relation", "가족관계"],
-  ["isLeader", "리더여부"], ["longAbsent", "장결자"], ["memo", "메모"], ["noTrack", "추적제외"], ["extra", "기타출석"]
+  ["isLeader", "리더여부"], ["longAbsent", "장결자"], ["memo", "메모"], ["noTrack", "추적제외"], ["extra", "기타출석"], ["emergency", "비상연락처"]
 ];
 const BOOL_FIELDS = ["isLeader", "longAbsent", "noTrack", "extra"];
 const DATE_FIELDS = ["regDate", "birthSolar", "anniversary", "baptism"];
@@ -134,7 +134,7 @@ function church_() {
 
 // ---------- 시트 읽기·쓰기 ----------
 // 연락처·메모는 contacts/{성도ID}에 따로 있음 (교역자·담임목사만 읽힘). 못 읽으면 그 칸은 비워 둠
-const PRIVATE = ["phone", "memo"];
+const PRIVATE = ["phone", "memo", "emergency"];
 function memberRows_(ch) {
   const priv = {};
   try { listDocs_("churches/" + ch.id + "/contacts").forEach(d => { priv[docId_(d)] = d.fields || {}; }); } catch (e) {}
@@ -167,7 +167,7 @@ function writeTable_(sh, rows) {
 }
 // 보기 좋게: 칸 너비, 제목 줄 색, 줄무늬, 필터. 값은 건드리지 않아 저장 비교에는 영향 없다.
 const WIDTH = { id: 60, name: 80, role: 60, group: 60, gender: 45, phone: 115, regDate: 95, birthSolar: 95, birthLunar: 95,
-  anniversary: 95, district: 70, baptism: 95, household: 60, relation: 70, isLeader: 60, longAbsent: 55, memo: 220, noTrack: 60, extra: 60 };
+  anniversary: 95, district: 70, baptism: 95, household: 60, relation: 70, isLeader: 60, longAbsent: 55, memo: 220, noTrack: 60, extra: 60, emergency: 160 };
 const CENTER = ["id", "role", "group", "gender", "phone", "regDate", "birthSolar", "birthLunar", "anniversary", "district", "baptism", "household", "relation", "isLeader", "longAbsent", "noTrack", "extra"];
 function dress_(sh, nRows, nCols) {
   if (sh.getFilter()) sh.getFilter().remove();
