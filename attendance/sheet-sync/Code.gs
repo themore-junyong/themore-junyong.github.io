@@ -275,6 +275,17 @@ function pushMembers() {
       "고친 성도 " + (changes.length - added) + "명, 새 성도 " + added + "명\n\n" + preview + (changes.length > 15 ? "\n… 외 " + (changes.length - 15) + "명" : ""),
       ui.ButtonSet.OK_CANCEL);
     if (ok !== ui.Button.OK) return;
+    // 새 줄인데 이미 같은 이름이 있으면 한 번 더 확인 (성도ID 없이 이름만 넣으면 새 사람이 됨)
+    const names = {};
+    readTable_(snap).forEach(r => { const k = String(r.name || "").replace(/\s/g, ""); if (k) (names[k] = names[k] || []).push(r.id); });
+    const twins = changes.filter(c => c.isNew && names[String(c.name).replace(/\s/g, "")]);
+    if (twins.length) {
+      const yes = ui.alert("같은 이름이 이미 있어요",
+        twins.slice(0, 15).map(c => "· " + c.name + " (이미 " + names[String(c.name).replace(/\s/g, "")].join(", ") + ")").join("\n") + (twins.length > 15 ? "\n… 외 " + (twins.length - 15) + "명" : "")
+        + "\n\n성도ID 없이 새 줄에 적으면 새 사람으로 들어가요.\n동명이인(다른 사람)이면 '예', 같은 사람이면 '아니요'를 누르고 그 사람의 원래 줄을 고쳐 주세요.",
+        ui.ButtonSet.YES_NO);
+      if (yes !== ui.Button.YES) return;
+    }
     for (let i = 0; i < changes.length; i += 200) {
       const doc = (sub, id) => "projects/" + PROJECT + "/databases/(default)/documents/churches/" + ch.id + "/" + sub + "/" + id;
       const writes = [];

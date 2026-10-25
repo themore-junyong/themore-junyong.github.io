@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<meta name="build" content="2026-10-26.1">
+<meta name="build" content="2026-10-26.2">
 <title>교회 출석 · THE MORE</title>
 <meta name="theme-color" content="#1F6F78">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -335,6 +335,13 @@ textarea.memo{min-height:60px;border:1px solid var(--line);background:var(--bg);
         <div class="row"><button class="btn line" id="aHeadCheck">바뀔 내용 보기</button><button class="btn hidden" id="aHeadApply">이대로 저장</button></div>
         <div id="aHeadMsg" class="ok" style="white-space:pre-line;font-size:14px"></div>
       </section>
+      <section>
+        <h2>같은 이름 정리</h2>
+        <p class="hint">이름이 같은 성도를 찾아 보여 드려요. 같은 사람이 두 번 들어간 경우만 골라 합치세요. 번호가 작은 쪽으로 합치고, 빈 칸은 다른 쪽 내용으로 채우고, 출석 기록도 옮겨요. 진짜 동명이인은 고르지 마세요.</p>
+        <div class="row"><button class="btn line" id="aTwinCheck">같은 이름 찾기</button><button class="btn line hidden" id="aTwinAll">모두 고르기</button><button class="btn hidden" id="aTwinApply">고른 것 합치기</button></div>
+        <div id="aTwinList" style="font-size:14px;display:flex;flex-direction:column;gap:8px"></div>
+        <div id="aTwinMsg" class="ok" style="white-space:pre-line;font-size:14px"></div>
+      </section>
       <details class="tools" id="aTools">
         <summary>처음 옮길 때 쓰는 도구 5가지 (눌러서 펼치기)</summary>
         <p class="hint">출석 기록 가져오기, 구역(셀)·교회 등록일·장결자 한꺼번에 넣기, 성도 번호 정리예요. 새 교회는 보통 쓸 일이 없어요.</p>
@@ -556,6 +563,14 @@ function demoStore() {
     },
     async updateMember(cid, id, data) { members.set(id, { ...members.get(id), ...data, id }); emitMembers(); },
     async deleteMember(cid, id) { members.delete(id); emitMembers(); },
+    async mergeMember(cid, keep, dup, fill) {
+      members.set(keep, { ...members.get(keep), ...fill, id: keep });
+      for (const [k, r] of [...att]) if (r.memberId === dup) {
+        att.delete(k); const nk = attId(r.date, r.service, keep);
+        if (!att.get(nk)?.present) att.set(nk, { ...r, memberId: keep });
+      }
+      members.delete(dup); emitMembers(); emitAtt();
+    },
     async attendanceSince(cid, from) { return [...att.values()].filter(r => r.date >= from); },
     async memberAttendance(cid, mid) { return [...att.values()].filter(r => r.memberId === mid); },
     async saveChurch(cid, data) { Object.assign(church, data); return "demo"; },
@@ -684,6 +699,19 @@ async function firebaseStore() {
     },
     async updateMember(cid, id, data) { const b = F.writeBatch(db); putMember(b, cid, id, data, true); await b.commit(); },
     async deleteMember(cid, id) { const b = F.writeBatch(db); b.delete(memRef(cid, id)); b.delete(telRef(cid, id)); await b.commit(); },
+    // 같은 사람 합치기: 빈 칸만 채우고, 출석 기록을 남길 번호로 옮긴 뒤(이미 출석이면 그대로) 겹친 번호를 지움
+    async mergeMember(cid, keep, dup, fill) {
+      const col = F.collection(db, "churches", cid, "attendance");
+      const [mine, theirs] = await Promise.all([keep, dup].map(id => F.getDocs(F.query(col, F.where("memberId", "==", id)))));
+      const present = new Set(mine.docs.map(d => d.data()).filter(r => r.present).map(r => attId(r.date, r.service, keep)));
+      const ops = [];
+      theirs.docs.forEach(d => { const r = d.data(), nk = attId(r.date, r.service, keep); if (!present.has(nk)) ops.push(b => b.set(F.doc(col, nk), { ...r, memberId: keep, checkedBy: me })); ops.push(b => b.delete(d.ref)); });
+      for (let i = 0; i < ops.length; i += 400) { const b = F.writeBatch(db); ops.slice(i, i + 400).forEach(f => f(b)); await b.commit(); }
+      const b = F.writeBatch(db);
+      if (Object.keys(fill).length) putMember(b, cid, keep, fill, true);
+      b.delete(memRef(cid, dup)); b.delete(telRef(cid, dup));
+      await b.commit();
+    },
     async memberAttendance(cid, mid) {
       const q = F.query(F.collection(db, "churches", cid, "attendance"), F.where("memberId", "==", mid));
       return (await F.getDocs(q)).docs.map(d => d.data());
@@ -1112,6 +1140,8 @@ $("#dlg").addEventListener("close", async () => {
   if (!data.role) data.role = "성도";
   if (data.household === "__new") { data.household = "H" + Date.now().toString(36); data.relation ||= "세대주"; }
   if (!data.name) return;
+  const same = editingId ? [] : S.members.filter(m => (m.name || "").replace(/\s/g, "") === data.name.replace(/\s/g, ""));
+  if (same.length && !confirm(`같은 이름이 이미 있어요.\n${same.map(m => "· " + m.name + " " + [m.role, m.district, m.birthSolar].filter(Boolean).join(" · ")).join("\n")}\n\n다른 사람(동명이인)이면 '확인', 같은 사람이면 '취소'를 누르세요.`)) return;
   try {
     if (editingId) await S.store.updateMember(S.church.id, editingId, data);
     else await S.store.addMember(S.church.id, data, nextPids(S.members.map(m => m.id))[0]);
@@ -1502,6 +1532,45 @@ $("#aHeadApply").onclick = async () => {
     await S.store.importMembers(adminCid, headPlan.map(c => ({ id: c.id, relation: c.to })));
     msg.textContent = `${headPlan.length}명의 가족관계를 저장했어요.`; headPlan = []; $("#aHeadApply").classList.add("hidden");
   } catch (e) { msg.textContent = "저장 실패: " + e.message; }
+};
+
+// 같은 이름 정리: 이름이 같은 성도 묶음마다 '같은 사람'을 고르면 번호가 작은 쪽으로 합침
+let twinGroups = [];
+const pidNum = (id) => { const m = /^P(\d+)$/.exec(id || ""); return m ? +m[1] : Infinity; };
+const twinInfo = (m) => [m.id, m.role, m.district, m.birthSolar, m.phone ? "☎" + m.phone.slice(-4) : "", m.longAbsent ? "장결" : "", m.extra ? "기타" : ""].filter(Boolean).join(" · ");
+function twinFill(keep, dup) {
+  const fill = {};
+  for (const [k] of COLS) if (k !== "id" && !BOOL_FIELDS.has(k) && !keep[k] && dup[k]) fill[k] = dup[k];
+  if (!keep.thumb && dup.thumb) fill.thumb = dup.thumb;
+  return fill;
+}
+$("#aTwinCheck").onclick = async () => {
+  const msg = $("#aTwinMsg"); if (!adminCid) return (msg.textContent = "먼저 교회를 골라 주세요.");
+  msg.textContent = "찾는 중…";
+  const by = new Map();
+  (await S.store.allMembers(adminCid)).forEach(m => { const k = (m.name || "").replace(/\s/g, ""); if (k) by.set(k, [...(by.get(k) || []), m]); });
+  twinGroups = [...by.values()].filter(g => g.length > 1).map(g => g.sort((a, b) => pidNum(a.id) - pidNum(b.id) || a.id.localeCompare(b.id)));
+  $("#aTwinList").innerHTML = twinGroups.map((g, i) => `<label class="check" style="align-items:flex-start"><input type="checkbox" data-twin="${i}"><span><b>${esc(g[0].name)}</b> ${g.length}명 → 같은 사람이면 ${esc(g[0].id)}로 합치기<br><small>${g.map(m => esc(twinInfo(m))).join("<br>")}</small></span></label>`).join("");
+  $("#aTwinAll").classList.toggle("hidden", !twinGroups.length);
+  $("#aTwinApply").classList.toggle("hidden", !twinGroups.length);
+  msg.textContent = twinGroups.length ? `이름이 같은 묶음 ${twinGroups.length}개예요. 같은 사람인 것만 고르세요.` : "이름이 같은 성도가 없어요.";
+};
+$("#aTwinAll").onclick = () => $("#aTwinList").querySelectorAll("input[data-twin]").forEach(el => { el.checked = true; });
+$("#aTwinApply").onclick = async () => {
+  const msg = $("#aTwinMsg");
+  const pick = [...$("#aTwinList").querySelectorAll("input[data-twin]:checked")].map(el => twinGroups[+el.dataset.twin]);
+  if (!pick.length) return (msg.textContent = "합칠 묶음을 골라 주세요.");
+  if (!confirm(`${pick.length}묶음을 합칠까요? 겹친 번호는 지워지고 되돌릴 수 없어요.`)) return;
+  let n = 0;
+  try {
+    for (const g of pick) {
+      let keep = { ...g[0] };
+      for (const dup of g.slice(1)) { const fill = twinFill(keep, dup); await S.store.mergeMember(adminCid, keep.id, dup.id, fill); keep = { ...keep, ...fill }; n++; }
+      msg.textContent = `합치는 중… ${n}명`;
+    }
+    msg.textContent = `${pick.length}묶음, 겹친 ${n}명을 합쳤어요.`;
+    $("#aTwinList").innerHTML = ""; twinGroups = []; ["#aTwinAll", "#aTwinApply"].forEach(s => $(s).classList.add("hidden"));
+  } catch (e) { msg.textContent = `합친 ${n}명까지 저장했어요. 나머지는 실패: ` + e.message; }
 };
 
 // 구역(셀) 한꺼번에 넣기: "구역: 이름 이름…" 줄을 읽어 이름으로 성도를 찾음
