@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<meta name="build" content="2026-10-25.1">
+<meta name="build" content="2026-10-25.2">
 <title>교회 출석 · THE MORE</title>
 <meta name="theme-color" content="#1F6F78">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -123,6 +123,11 @@ textarea.memo{min-height:60px;border:1px solid var(--line);background:var(--bg);
 .stats{display:flex;flex-direction:column;gap:16px;padding-top:16px}
 .stats section{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:10px}
 .stats h2{font-size:18px}
+.stats details.fold>summary{display:flex;align-items:center;justify-content:space-between;cursor:pointer;list-style:none}
+.stats details.fold>summary::-webkit-details-marker{display:none}
+.stats details.fold>summary::after{content:"펼치기 ▾";font-size:13px;color:var(--muted)}
+.stats details.fold[open]>summary::after{content:"접기 ▴"}
+.stats .foldBody{display:flex;flex-direction:column;gap:10px;margin-top:10px}
 .stats .hint{font-size:13px;color:var(--muted);margin:0}
 .bars{display:flex;flex-direction:column;gap:6px}
 .bars .b{display:grid;grid-template-columns:5.5em minmax(0,1fr) 3em;gap:8px;align-items:center;font-size:14px}
@@ -265,20 +270,29 @@ textarea.memo{min-height:60px;border:1px solid var(--line);background:var(--bg);
         <div class="bars" id="statBars"></div>
       </section>
       <section id="evSec">
-        <h2>월별 생일·기념일</h2>
-        <div class="row"><button class="ghost" id="evPrev" aria-label="이전 달">◀</button><b id="evTitle" style="flex:1;text-align:center"></b><button class="ghost" id="evNext" aria-label="다음 달">▶</button></div>
-        <ul class="bday-m" id="evList"></ul>
+        <details class="fold" id="evFold"><summary><h2>월별 생일·기념일</h2></summary>
+          <div class="foldBody">
+            <div class="row"><button class="ghost" id="evPrev" aria-label="이전 달">◀</button><b id="evTitle" style="flex:1;text-align:center"></b><button class="ghost" id="evNext" aria-label="다음 달">▶</button></div>
+            <ul class="bday-m" id="evList"></ul>
+          </div>
+        </details>
       </section>
       <section>
-        <h2>오래 함께한 성도</h2>
-        <p class="hint">교회 등록일로 찾아요. 연도만 적힌 분은 연도로만 셈해요. 기타 출석 분은 빼요.</p>
-        <div class="row"><input id="yrN" type="number" min="1" max="80" value="10" inputmode="numeric" aria-label="몇 년" style="width:72px"><span>년</span><select id="yrMode" aria-label="찾는 방법"><option value="over">이상 된 분</option><option value="exact">올해 딱 그 주년인 분</option></select></div>
-        <ul class="absent" id="yrList"></ul>
+        <details class="fold"><summary><h2>오래 함께한 성도</h2></summary>
+          <div class="foldBody">
+            <p class="hint">교회 등록일로 찾아요. 연도만 적힌 분은 연도로만 셈해요. 기타 출석 분은 빼요.</p>
+            <div class="row"><input id="yrN" type="number" min="1" max="80" value="10" inputmode="numeric" aria-label="몇 년" style="width:72px"><span>년</span><select id="yrMode" aria-label="찾는 방법"><option value="over">이상 된 분</option><option value="exact">올해 딱 그 주년인 분</option></select></div>
+            <ul class="absent" id="yrList"></ul>
+          </div>
+        </details>
       </section>
       <section>
-        <h2>연속 결석</h2>
-        <p class="hint">이 예배를 최근 3번 이상 연달아 빠진 성도예요. '추적제외'로 표시한 성도는 빠져요.</p>
-        <ul class="absent" id="statAbsent"></ul>
+        <details class="fold"><summary><h2>연속 결석</h2></summary>
+          <div class="foldBody">
+            <p class="hint">이 예배를 최근 3번 이상 연달아 빠진 성도예요. '추적제외'로 표시한 성도는 빠져요.</p>
+            <ul class="absent" id="statAbsent"></ul>
+          </div>
+        </details>
       </section>
     </div>
   </div>
@@ -978,7 +992,7 @@ async function makeThumb(file, size = 112) {
 
 // ───────────── 이벤트 ─────────────
 document.addEventListener("click", (e) => {
-  if (e.target.closest("#toMonth")) { openStats(); setTimeout(() => $("#evSec").scrollIntoView(), 50); return; }
+  if (e.target.closest("#toMonth")) { openStats(); $("#evFold").open = true; setTimeout(() => $("#evSec").scrollIntoView(), 50); return; }
   const call = e.target.closest("[data-call]");
   if (call) { e.preventDefault(); return openCall(call.dataset.call); }
   const t = e.target.closest("button,[data-act]"); if (!t) return;
