@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<meta name="build" content="2026-10-25.2">
+<meta name="build" content="2026-10-25.3">
 <title>교회 출석 · THE MORE</title>
 <meta name="theme-color" content="#1F6F78">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1158,7 +1158,8 @@ function renderStats() {
   const rows = statRows.filter(r => r.service === statSvc);
   const byDate = new Map();
   for (const r of rows) { if (!byDate.has(r.date)) byDate.set(r.date, new Set()); if (r.present) byDate.get(r.date).add(r.memberId); }
-  const dates = [...byDate.keys()].sort();
+  // 체크했다 취소만 남은 날(출석 0명)은 예배를 드린 날로 보지 않음
+  const dates = [...byDate.keys()].filter(d => byDate.get(d).size).sort();
   const max = Math.max(1, ...dates.map(d => byDate.get(d).size));
   $("#statBars").innerHTML = dates.length
     ? dates.map(d => `<div class="b"><span>${d.slice(5).replace("-", "/")}</span><i style="width:${byDate.get(d).size / max * 100}%"></i><b>${byDate.get(d).size}명</b></div>`).join("")
