@@ -1,6 +1,15 @@
 {
- "updated": "2026-10-26T06:11:19.121911+00:00",
+ "updated": "2026-10-26T12:58:46.973514+00:00",
  "posts": [
+  {
+   "kind": "영상",
+   "src": "youtube",
+   "title": "용서하고 싶은데 왜 미울까? | 창세기 2:4-7 내 안의 전쟁터 #shorts",
+   "link": "https://www.youtube.com/watch?v=BJ6zSQfzl5o",
+   "date": "2026-10-26T11:00:07+00:00",
+   "summary": "창세기 2장 4-7절 해설 | 내 안의 전쟁터 \"여호와 하나님이 땅의 흙으로 사람을 지으시고 생기를 그 코에 불어넣으시니 사람이 생령이 되니라\"(창세기 2:7) …",
+   "image": "https://i.ytimg.com/vi/BJ6zSQfzl5o/hqdefault.jpg"
+  },
   {
    "kind": "말씀",
    "src": "tistory",
@@ -1056,7 +1065,5 @@
    "cat": "설교&middot;묵상"
   }
  ],
- "errors": [
-  "youtube: HTTP Error 404: Not Found"
- ]
+ "errors": []
 }
