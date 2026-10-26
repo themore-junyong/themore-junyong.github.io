@@ -1,6 +1,16 @@
 {
- "updated": "2026-10-25T21:45:53.115234+00:00",
+ "updated": "2026-10-26T00:22:07.101556+00:00",
  "posts": [
+  {
+   "kind": "말씀",
+   "src": "tistory",
+   "title": "창세기 2장 4-7절 해설, 내 안의 전쟁터 | 창세기 강해 2026 ⑤",
+   "link": "https://changenavigator.tistory.com/entry/%EC%B0%BD%EC%84%B8%EA%B8%B0-2%EC%9E%A5-4-7%EC%A0%88-%ED%95%B4%EC%84%A4-%EB%82%B4-%EC%95%88%EC%9D%98-%EC%A0%84%EC%9F%81%ED%84%B0-%EC%B0%BD%EC%84%B8%EA%B8%B0-%EA%B0%95%ED%95%B4-2026-%E2%91%A4",
+   "date": "2026-10-25T22:00:20+00:00",
+   "summary": "이것이 천지가 창조될 때에 하늘과 땅의 내력이니 여호와 하나님이 땅과 하늘을 만드시던 날에 여호와 하나님이 땅에 비를 내리지 아니하셨고 땅을 갈 사람도 없었으므로…",
+   "image": "https://blog.kakaocdn.net/dn/UVuRe/dJMb99OTekI/RwLc8q6yV47AWKrWjidVo1/img.png",
+   "cat": "설교&middot;묵상"
+  },
   {
    "kind": "강의",
    "src": "naver",
@@ -1046,5 +1056,7 @@
    "cat": "설교&middot;묵상"
   }
  ],
- "errors": []
+ "errors": [
+  "youtube: HTTP Error 404: Not Found"
+ ]
 }
