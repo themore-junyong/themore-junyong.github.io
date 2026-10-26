@@ -1,6 +1,16 @@
 {
- "updated": "2026-10-26T19:17:40.648220+00:00",
+ "updated": "2026-10-26T23:51:33.862889+00:00",
  "posts": [
+  {
+   "kind": "앱",
+   "src": "tistory",
+   "title": "교회 출석 앱에 '예배 전환'이 필요한 이유, 예배가 네 번이면 | 앱 개발기 ④",
+   "link": "https://changenavigator.tistory.com/entry/%EA%B5%90%ED%9A%8C-%EC%B6%9C%EC%84%9D-%EC%95%B1%EC%97%90-%EC%98%88%EB%B0%B0-%EC%A0%84%ED%99%98%EC%9D%B4-%ED%95%84%EC%9A%94%ED%95%9C-%EC%9D%B4%EC%9C%A0-%EC%98%88%EB%B0%B0%EA%B0%80-%EB%84%A4-%EB%B2%88%EC%9D%B4%EB%A9%B4-%EC%95%B1-%EA%B0%9C%EB%B0%9C%EA%B8%B0-%E2%91%A3",
+   "date": "2026-10-26T22:00:28+00:00",
+   "summary": "일주일에 예배, 몇 번 드리세요? 섬기는 교회는 네 번입니다. 주일 낮, 주일 저녁, 수요, 금요. 몰라서 매번 쓰던 시간 예전엔 예배 때마다 종이 명부를 넘기며…",
+   "image": "https://blog.kakaocdn.net/dn/bNY21F/dJMcacydhPo/5hTYyT7CO71vP1uTRxQ401/img.png",
+   "cat": "앱 이야기"
+  },
   {
    "kind": "영상",
    "src": "youtube",
@@ -1065,5 +1075,7 @@
    "cat": "설교&middot;묵상"
   }
  ],
- "errors": []
+ "errors": [
+  "youtube: HTTP Error 404: Not Found"
+ ]
 }
