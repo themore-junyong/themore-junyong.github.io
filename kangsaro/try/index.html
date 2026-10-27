@@ -223,7 +223,8 @@ function seed(){const t=todayIso(),d=n=>addDays(t,n);
       {id:'e1',instId:'i1',dates:[d(-13)],title:'분당 ○○고 진로',org:'□□교육',time:'13:00~15:00',fee:150000,km:50,toll:2000,st:'paid',to:''},
       {id:'e2',instId:'i1',dates:[d(5)],title:'경주 ○○고 비즈니스매너',org:'◇◇에듀',time:'09:00~15:50',fee:360000,km:640,toll:38000,st:'confirmed',to:''},
       {id:'e3',instId:'i1',dates:[d(9)],title:'수원 기관 법정교육',org:'☆☆컨설팅',time:'14:00~16:00',fee:160000,km:20,toll:0,st:'applied',to:''}]}}
-function load(){try{const s=JSON.parse(localStorage.getItem(KEY));if(s&&s.v===1)return s}catch(e){}return seed()}
+let firstVisit=false;
+function load(){try{const s=JSON.parse(localStorage.getItem(KEY));if(s&&s.v===1)return s}catch(e){}firstVisit=true;return seed()}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 S=load();
 
@@ -529,7 +530,15 @@ document.addEventListener('change',ev=>{const el=ev.target,D=el.dataset||{};
     save();render();toast(to.length?`바꿨어요. 확정 강사 ${to.length}명에게 변경 공지가 갔어요`:'바꿨어요')}
 });
 document.addEventListener('input',ev=>{if(['pDates','pRaw'].includes(ev.target.id))pWarn()});
+// 처음 들어오면 강사/업체 고르기 (?as=inst 또는 ?as=co 로 바로 들어오기도 함)
+function pickRole(r){S.me=r==='co'?'c:c1':'i:i1';ui.tab=NAV[meRole()][0][0];save();closeSheet();render();toast(r==='co'?'업체 화면으로 보고 있어요. 맨 위에서 언제든 바꿀 수 있어요':'강사 화면으로 보고 있어요. 맨 위에서 언제든 바꿀 수 있어요')}
+const asQ=new URLSearchParams(location.search).get('as');
 render();
+if(asQ==='inst'||asQ==='co')pickRole(asQ);
+else if(firstVisit)openSheet(`<h2>어느 쪽으로 써 볼까요?</h2><p class="mu">예시 강의가 들어 있는 체험판이에요. 가입 없이 눌러 볼 수 있고, 맨 위에서 언제든 바꿀 수 있어요.</p>
+  <button class="btn pri" data-act="role" data-r="inst">강사로 써 보기</button><span class="mu sm">내 강의 달력, 공고 지원, 강사료·결산</span>
+  <button class="btn nv" data-act="role" data-r="co">강의 업체로 써 보기</button><span class="mu sm">강의 운영판, 강사 확정, 공지·서류, 강사비 지급</span>`);
+document.addEventListener('click',e=>{const b=e.target.closest('[data-act=role]');if(b)pickRole(b.dataset.r)});
 </script>
 </body>
 </html>
