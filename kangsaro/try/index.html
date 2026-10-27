@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<meta name="build" content="261028-1">
+<meta name="build" content="261028-2">
 <title>강사로 (시범 운영)</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
 <style>
@@ -190,7 +190,7 @@ function parseNotice(raw){
 
 
 /* ===== 강사로: 저장 (체험판은 이 기기에만 저장. 서버 연결은 다음 단계) ===== */
-const KEY='kangsaro.demo.v1';
+const KEY='kangsaro.demo.v2';
 const ST={applied:'지원',confirmed:'확정',done:'강의 끝·미지급',paid:'지급 완료'};
 const won=n=>Math.round(n||0).toLocaleString('ko-KR')+'원';
 const last=a=>a[a.length-1];
@@ -209,8 +209,9 @@ function seed(){const t=todayIso(),d=n=>addDays(t,n);
     jobs:[
       {id:'j1',coId:'c1',title:'면접 특강',school:'○○고',region:'평택',dates:[d(-20)],time:'09:00~15:50',교시:'6교시',대상:'3학년',fee:300000,status:'마감',needs:['프로필','교안','통장사본'],notices:[],created:d(-35)},
       {id:'j2',coId:'c1',title:'AI 자기소개서',school:'○○공고',region:'안양',dates:[d(-6)],time:'09:00~12:30',교시:'4교시',대상:'3학년',fee:200000,status:'마감',needs:['프로필','교안'],notices:[],created:d(-25)},
-      {id:'j3',coId:'c1',title:'취업 특강',school:'○○공고',region:'천안',dates:[d(2)],time:'09:00~15:50',교시:'6교시',대상:'2학년 120명',fee:300000,status:'마감',needs:['프로필','교안','통장사본'],notices:[{id:'n1',text:'도착하시면 본관 1층 교무실로 오세요. 주차는 운동장 옆입니다. 노트북 연결 HDMI 있습니다.',at:new Date().toISOString(),to:['i1'],reads:{}}],created:d(-12)},
+      {id:'j3',coId:'c1',title:'취업 특강',school:'○○공고',region:'천안',dates:[d(1)],time:'09:00~15:50',교시:'6교시',대상:'2학년 120명',fee:300000,status:'마감',needs:['프로필','교안','통장사본'],notices:[{id:'n1',text:'도착하시면 본관 1층 교무실로 오세요. 주차는 운동장 옆입니다. 노트북 연결 HDMI 있습니다.',at:new Date().toISOString(),to:['i1'],reads:{}}],created:d(-12)},
       {id:'j4',coId:'c1',title:'진로 캠프',school:'○○중',region:'서울',dates:[d(9),d(10)],time:'09:00~12:00',교시:'3교시',대상:'1학년',fee:180000,status:'모집',needs:['프로필','교안'],notices:[],created:d(-2)},
+      {id:'j6',coId:'c1',title:'면접 캠프',school:'○○고',region:'수원',dates:[t],time:'13:00~15:00',교시:'2교시',대상:'3학년 60명',fee:120000,status:'마감',needs:['프로필','교안'],notices:[],created:d(-10)},
       {id:'j5',coId:'c2',title:'비즈니스매너',school:'○○여고',region:'인천',dates:[d(14)],time:'10:00~14:00',교시:'4교시',대상:'3학년',fee:220000,status:'모집',needs:['프로필','통장사본'],notices:[],created:d(-1)}],
     apps:[
       {id:'a1',jobId:'j1',instId:'i1',status:'확정',docs:{교안:'면접특강.pptx',통장사본:'통장.jpg'},paidAt:d(-5),km:120,toll:6000},
@@ -218,7 +219,9 @@ function seed(){const t=todayIso(),d=n=>addDays(t,n);
       {id:'a3',jobId:'j3',instId:'i1',status:'확정',docs:{교안:'취업특강.pptx'},paidAt:null,km:150,toll:7000},
       {id:'a4',jobId:'j3',instId:'i3',status:'미선정',docs:{},paidAt:null,km:0,toll:0},
       {id:'a5',jobId:'j4',instId:'i2',status:'지원',docs:{},paidAt:null,km:0,toll:0},
-      {id:'a6',jobId:'j4',instId:'i3',status:'지원',docs:{},paidAt:null,km:0,toll:0}],
+      {id:'a6',jobId:'j4',instId:'i3',status:'지원',docs:{},paidAt:null,km:0,toll:0},
+      {id:'a7',jobId:'j6',instId:'i1',status:'확정',docs:{교안:'면접캠프.pptx'},paidAt:null,km:20,toll:0},
+      {id:'a8',jobId:'j6',instId:'i2',status:'확정',docs:{교안:'면접캠프2.pptx'},paidAt:null,km:30,toll:0,day:{[t]:{ack:d(-1)+'T20:00',dep:t+'T11:40',eta:'12:30'}}}],
     evs:[
       {id:'e1',instId:'i1',dates:[d(-13)],title:'분당 ○○고 진로',org:'□□교육',time:'13:00~15:00',fee:150000,km:50,toll:2000,st:'paid',to:''},
       {id:'e2',instId:'i1',dates:[d(5)],title:'경주 ○○고 비즈니스매너',org:'◇◇에듀',time:'09:00~15:50',fee:360000,km:640,toll:38000,st:'confirmed',to:''},
@@ -288,11 +291,36 @@ function vCal(){const iid=meId(),E=entries(iid),t=todayIso();const [Y,M]=ui.mont
 function noticeBox(j,iid){const nts=j.notices.filter(n=>(n.to||[]).includes(iid)).slice().reverse().sort((a,b)=>(b.kind==='주의사항')-(a.kind==='주의사항'));if(!nts.length)return '';
   return `<div style="background:var(--nvs);border-radius:10px;padding:8px 10px;display:flex;flex-direction:column;gap:6px"><b class="sm" style="color:var(--nv)">회사 공지 ${nts.length}개 (주의사항·최신이 위)</b>${nts.map(n=>`<div class="sm">${n.reads[iid]?'':'<span class="chip warn">새 공지</span> '}${n.kind?`<b>[${esc(n.kind)}]</b> `:''}${esc(n.text).replace(/\n/g,'<br>')}${n.img?`<img src="${n.img}" alt="${esc(n.kind||'공지')} 이미지" style="display:block;width:100%;border-radius:8px;margin-top:6px">`:''}<div class="mu sm">${n.at.slice(5,10).replace('-','/')} ${n.at.slice(11,16)}</div></div>`).join('')}</div>`}
 function markRead(j,iid){let ch=0;for(const n of j.notices)if((n.to||[]).includes(iid)&&!n.reads[iid]){n.reads[iid]=new Date().toISOString();ch++}if(ch)save();return ch}
+/* ===== 당일 확인 (전날 확인 → 출발 → 도착, 위치 추적 없이 버튼으로) ===== */
+const hm=iso=>iso?iso.slice(11,16):'';const nowIso=()=>{const n=new Date();return `${todayIso()}T${pad(n.getHours())}:${pad(n.getMinutes())}`};
+const startOf=j=>(String(j.time).match(/^(\d{2}:\d{2})/)||[])[1]||'09:00';
+function dayOf(a,d){a.day=a.day||{};return a.day[d]=a.day[d]||{}}
+function dayBox(e){if(e.kind!=='app'||e.ref.status!=='확정')return '';const t=todayIso(),a=e.ref,x=(a.day||{})[e.d]||{};
+  if(e.d===addDays(t,1))return x.ack?`<div class="ok">내일 강의 확인했어요 (${hm(x.ack)})</div>`:`<button class="btn nv" data-act="dayack" data-a="${a.id}" data-d="${e.d}">내일 강의 확인했어요</button><span class="mu sm">업체가 전날 확인 여부를 봐요.</span>`;
+  if(e.d!==t)return '';
+  const st=startOf(e.job);
+  return `<div style="background:var(--acs);border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:8px"><b class="sm">오늘 강의 · ${st} 시작</b>
+   ${x.arr?`<div class="ok">도착했어요 (${hm(x.arr)})</div>`:x.dep?`<div class="ok">출발했어요 (${hm(x.dep)}) · 도착 예정 ${esc(x.eta||'')}</div><button class="btn pri" data-act="dayarr" data-a="${a.id}" data-d="${e.d}">도착했어요</button>`
+   :`<div class="grid2"><label class="f">예상 도착 시간<input type="time" id="eta-${a.id}" value="${x.eta||''}"></label><span></span></div><button class="btn pri" data-act="daydep" data-a="${a.id}" data-d="${e.d}">출발했어요</button>`}
+   ${x.arr?'':`<details><summary>늦거나 못 갈 것 같아요</summary><textarea class="f" id="late-${a.id}" rows="2" placeholder="예) 사고로 20분 늦어요">${esc(x.late||'')}</textarea><button class="btn sm" data-act="daylate" data-a="${a.id}" data-d="${e.d}">업체에 알리기</button></details>`}
+   ${x.late?`<div class="alert">업체에 알림: ${esc(x.late)}</div>`:''}</div>`}
+function dayBoard(cid){const t=todayIso(),tm=addDays(t,1),now=nowIso(),rows=[];
+  for(const a of S.apps){const j=job(a.jobId);if(!j||j.coId!==cid||a.status!=='확정')continue;
+    for(const d of j.dates){if(d!==t&&d!==tm)continue;const x=(a.day||{})[d]||{},p=inst(a.instId),st=startOf(j);let s,bad=false;
+      if(d===tm){s=x.ack?`전날 확인 ✓ ${hm(x.ack)}`:'전날 확인 안 함';bad=!x.ack}
+      else if(x.arr)s=`도착 ✓ ${hm(x.arr)}`;
+      else if(x.dep){s=`출발 ${hm(x.dep)} · 도착 예정 ${x.eta||'?'}`;bad=!!x.eta&&x.eta>st}
+      else{s='아직 출발 안 함';const lim=new Date(`${d}T${st}`);lim.setMinutes(lim.getMinutes()-60);bad=new Date(now)>=lim}
+      rows.push({d,j,p,s,bad,late:x.late,st})}}
+  if(!rows.length)return '';rows.sort((a,b)=>(a.d+a.st)<(b.d+b.st)?-1:1);
+  return `<div class="card"><h3>오늘·내일 강의 현황</h3>${rows.map(r=>`<div style="border-top:1px solid var(--ln);padding-top:6px;display:flex;flex-direction:column;gap:2px"><div class="row"><b>${esc(r.p.name)}</b><span class="mu sm sp">${r.d===todayIso()?'오늘':'내일'} ${r.st} ${esc(r.j.school)} ${esc(r.j.title)}</span></div>
+   <span class="chip ${r.bad?'warn':'paid'}" style="align-self:flex-start">${esc(r.s)}</span>${r.late?`<div class="alert">강사 알림: ${esc(r.late)}</div>`:''}${r.bad||r.late?`<span class="mu sm">연락처 ${esc(r.p.phone)}</span>`:''}</div>`).join('')}
+   <span class="mu sm">시작 1시간 전까지 출발을 안 누르거나, 시작보다 늦게 도착할 예정이면 빨간색이에요.</span></div>`}
 function entryCard(e){const tx=tax(e.fee);
   const ctrl=e.kind==='ev'?`<div class="row">${[['applied','지원'],['confirmed','확정'],['done','강의 끝'],['paid','지급 완료'],['no','안 됨']].map(([k,l])=>`<button class="btn sm" data-act="evst" data-id="${e.ref.id}" data-st="${k}" ${e.ref.st===k||(k==='done'&&e.st==='done')?'style="border-color:var(--ac);color:var(--ac)"':''}>${l}</button>`).join('')}<button class="btn sm" data-act="evdel" data-id="${e.ref.id}">지우기</button></div>`
     :`<p class="mu sm">강사로 안에서 지원한 강의예요. 회사가 확정·지급하면 자동으로 바뀌어요.</p>`;
   return `<div class="card"><div class="row">${chip(e.st)}<h3 class="sp">${esc(e.title)}</h3></div>
-  ${e.kind==='app'?noticeBox(e.job,meId()):''}
+  ${e.kind==='app'?noticeBox(e.job,meId())+dayBox(e):''}
   <span class="mu">${esc(e.org)} · ${esc(e.time||'시간 미정')}</span>
   <span class="mu sm money">강사료 ${won(e.fee)} · 3.3% 뗀 뒤 ${won(tx.net)} · 왕복 교통비 ${won(e.trv)}</span>
   <b class="money" style="color:var(--ac)">순수익 ${won(netOf(e))}</b>
@@ -385,7 +413,7 @@ function vCJobs(){if(ui.jobId&&job(ui.jobId))return vCJob(job(ui.jobId));const t
     <span class="mu">${j.dates.map(d=>`${md(d)}(${dowOf(d)})`).join('·')} ${esc(j.time)} · 1일 ${won(j.fee)}</span>
     <div class="row">${s.ap?`<span class="chip applied">지원 ${s.ap}</span>`:''}${s.cf?`<span class="chip confirmed">확정 ${s.cf}</span>`:''}${s.miss?`<span class="chip warn">빠진 서류 ${s.miss}</span>`:''}${s.unread?`<span class="chip warn">공지 안 읽음 ${s.unread}</span>`:''}${!s.cf&&j.status==='마감'?'<span class="chip warn">확정 강사 없음</span>':''}</div></button>`};
   const todo=up.filter(j=>{const s=jobStats(j);return s.miss||s.unread||(!s.cf&&j.status==='마감')});
-  return `<h2>${esc(co(meId()).name)} 강의 운영판</h2>
+  return `<h2>${esc(co(meId()).name)} 강의 운영판</h2>${dayBoard(meId())}
   ${todo.length?`<div class="alert">챙길 강의 ${todo.length}건: 빠진 서류, 안 읽은 공지, 확정 강사 없음을 확인하세요.</div>`:'<div class="ok">다가오는 강의에 빠진 것이 없어요.</div>'}
   <h3>다가오는 강의</h3>${up.map(card).join('')||'<p class="mu">아래 + 로 강의를 등록하세요.</p>'}
   <details><summary>지난 강의 ${past.length}건</summary>${past.map(card).join('')}</details>`}
@@ -473,6 +501,12 @@ document.addEventListener('click',async ev=>{
   if(A==='year'){const y=+ui.month.slice(0,4)+ +D.n;ui.month=`${y}-${ui.month.slice(5)}`;return render()}
   if(A==='evst'){const e=S.evs.find(x=>x.id===D.id);e.st=D.st;save();render();return toast(D.st==='no'?'달력에서 숨겼어요':'바꿨어요')}
   if(A==='evdel'){S.evs=S.evs.filter(x=>x.id!==D.id);save();render();return toast('지웠어요')}
+  if(A==='dayack'||A==='daydep'||A==='dayarr'||A==='daylate'){const a=S.apps.find(x=>x.id===D.a),x=dayOf(a,D.d);
+    if(A==='dayack')x.ack=nowIso();
+    if(A==='daydep'){const eta=$('#eta-'+a.id).value;if(!eta)return toast('예상 도착 시간을 넣어 주세요');x.dep=nowIso();x.eta=eta}
+    if(A==='dayarr')x.arr=nowIso();
+    if(A==='daylate'){const v=$('#late-'+a.id).value.trim();if(!v)return toast('사유를 짧게 써 주세요');x.late=v}
+    save();render();return toast({dayack:'확인했어요. 업체에 표시돼요',daydep:'출발을 업체에 알렸어요',dayarr:'도착을 업체에 알렸어요',daylate:'업체에 알렸어요'}[A])}
   if(A==='plus')return sheetPaste();
   if(A==='parse'){const raw=$('#pRaw').value;const r=parseNotice(raw);const fee=(raw.match(/(\d{1,3}(?:,\d{3})+|\d+)\s*(만)?\s*원/)||[]);
     sheetPaste({raw,title:[r.지역,r.학교명,r.강의명].filter(Boolean).join(' '),org:r.기관명,dates:r.dates,time:r.시간,to:r.to,dows:r.dows,fee:fee[1]?(+fee[1].replace(/,/g,''))*(fee[2]?10000:1):''});return toast('공고를 읽었어요. 빈칸만 확인하세요')}
