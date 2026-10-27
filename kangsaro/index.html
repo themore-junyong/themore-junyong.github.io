@@ -283,11 +283,15 @@ function vCal(){const iid=meId(),E=entries(iid),t=todayIso();const [Y,M]=ui.mont
   <div class="sum"><div><span class="mu sm">받은 돈</span><b>${won(paid)}</b></div><div><span class="mu sm">받을 돈</span><b>${won(unpaid)}</b></div><div><span class="mu sm">이달 순수익</span><b>${won(net)}</b></div></div>
   <h3>${mdK(ui.sel)} (${dowOf(ui.sel)})${HOL[ui.sel]?' · '+HOL[ui.sel]:''}</h3>
   ${DE.length>1?'<div class="alert">같은 날 일정이 두 개예요. 시간과 거리를 확인하세요.</div>':''}
-  ${DE.length?DE.map(entryCard).join(''):'<p class="mu">이날은 일정이 없어요. 아래 + 로 공고를 붙여 넣거나 직접 넣을 수 있어요.</p>'}`}
+  ${DE.length?DE.map(entryCard).join('')+(DE.some(e=>e.kind==='app'&&markRead(e.job,iid))?'':''):'<p class="mu">이날은 일정이 없어요. 아래 + 로 공고를 붙여 넣거나 직접 넣을 수 있어요.</p>'}`}
+function noticeBox(j,iid){const nts=j.notices.filter(n=>(n.to||[]).includes(iid)).slice().reverse().sort((a,b)=>(b.kind==='주의사항')-(a.kind==='주의사항'));if(!nts.length)return '';
+  return `<div style="background:var(--nvs);border-radius:10px;padding:8px 10px;display:flex;flex-direction:column;gap:6px"><b class="sm" style="color:var(--nv)">회사 공지 ${nts.length}개 (주의사항·최신이 위)</b>${nts.map(n=>`<div class="sm">${n.reads[iid]?'':'<span class="chip warn">새 공지</span> '}${n.kind?`<b>[${esc(n.kind)}]</b> `:''}${esc(n.text).replace(/\n/g,'<br>')}${n.img?`<img src="${n.img}" alt="${esc(n.kind||'공지')} 이미지" style="display:block;width:100%;border-radius:8px;margin-top:6px">`:''}<div class="mu sm">${n.at.slice(5,10).replace('-','/')} ${n.at.slice(11,16)}</div></div>`).join('')}</div>`}
+function markRead(j,iid){let ch=0;for(const n of j.notices)if((n.to||[]).includes(iid)&&!n.reads[iid]){n.reads[iid]=new Date().toISOString();ch++}if(ch)save();return ch}
 function entryCard(e){const tx=tax(e.fee);
   const ctrl=e.kind==='ev'?`<div class="row">${[['applied','지원'],['confirmed','확정'],['done','강의 끝'],['paid','지급 완료'],['no','안 됨']].map(([k,l])=>`<button class="btn sm" data-act="evst" data-id="${e.ref.id}" data-st="${k}" ${e.ref.st===k||(k==='done'&&e.st==='done')?'style="border-color:var(--ac);color:var(--ac)"':''}>${l}</button>`).join('')}<button class="btn sm" data-act="evdel" data-id="${e.ref.id}">지우기</button></div>`
     :`<p class="mu sm">강사로 안에서 지원한 강의예요. 회사가 확정·지급하면 자동으로 바뀌어요.</p>`;
   return `<div class="card"><div class="row">${chip(e.st)}<h3 class="sp">${esc(e.title)}</h3></div>
+  ${e.kind==='app'?noticeBox(e.job,meId()):''}
   <span class="mu">${esc(e.org)} · ${esc(e.time||'시간 미정')}</span>
   <span class="mu sm money">강사료 ${won(e.fee)} · 3.3% 뗀 뒤 ${won(tx.net)} · 왕복 교통비 ${won(e.trv)}</span>
   <b class="money" style="color:var(--ac)">순수익 ${won(netOf(e))}</b>
@@ -299,11 +303,11 @@ function vJobs(){const iid=meId(),t=todayIso();
   const mine=S.apps.filter(a=>a.instId===iid&&a.status==='확정'&&last(job(a.jobId).dates)>=t).map(a=>({a,j:job(a.jobId)}));
   const all=S.jobs.filter(j=>j.status==='모집'&&j.dates[0]>=t).sort((a,b)=>a.dates[0]<b.dates[0]?-1:1),F=ui.jf||(ui.jf={r:'',q:'',free:false});
   const open=all.filter(j=>(!F.r||j.region===F.r)&&(!F.q||`${j.title} ${j.school} ${j.대상}`.includes(F.q))&&(!F.free||!clashes(iid,j.dates).length));
+  setTimeout(()=>{let c=0;for(const {j} of mine)c+=markRead(j,iid);if(c){const nb=$('[data-tab="jobs"]');if(nb)nb.innerHTML='공고'}},1500);
   return `<h2>확정된 강의</h2>${mine.length?mine.map(({a,j})=>{const nts=j.notices.filter(n=>(n.to||[]).includes(iid));const un=nts.filter(n=>!n.reads[iid]).length;const miss=j.needs.filter(n=>n!=='프로필'&&!a.docs[n]);
     return `<div class="card"><div class="row">${chip('confirmed')}<h3 class="sp">${esc(j.region)} ${esc(j.school)} ${esc(j.title)}</h3></div>
+    ${nts.length?noticeBox(j,iid):'<span class="mu sm">아직 공지가 없어요.</span>'}
     <span class="mu">${esc(co(j.coId).name)} · ${j.dates.map(d=>`${md(d)}(${dowOf(d)})`).join('·')} ${esc(j.time)}</span>
-    ${un?`<div class="alert">새 공지 ${un}개</div>`:''}
-    ${nts.length?`<details ${un?'':''} data-act="readNotices" data-j="${j.id}"><summary>공지 ${nts.length}개 보기</summary>${nts.map(n=>`<pre class="pf">${esc(n.text)}</pre>`).join('')}</details>`:'<span class="mu sm">아직 공지가 없어요.</span>'}
     <div class="mu sm">낼 것: ${j.needs.map(n=>n==='프로필'?'프로필 ✓(자동)':a.docs[n]?`${esc(n)} ✓`:`<b style="color:var(--r2)">${esc(n)} 빠짐</b>`).join(' · ')}</div>
     ${miss.map(n=>`<label class="f">${esc(n)} 올리기 <input type="file" data-act="doc" data-a="${a.id}" data-n="${esc(n)}"></label>`).join('')}
     </div>`}).join(''):'<p class="mu">곧 있을 확정 강의가 없어요.</p>'}
@@ -401,8 +405,8 @@ function vCJob(j){const A=appsOf(j.id),s=jobStats(j);
   ${A.filter(a=>a.status!=='미선정').map(prof).join('')||'<p class="mu">아직 지원자가 없어요.</p>'}
   ${missPeople.length?`<button class="btn" data-act="nudgeDocs" data-j="${j.id}">서류 빠진 ${missPeople.length}명에게 요청 공지 보내기</button>`:''}
   <h3>공지</h3>
-  <div class="card"><textarea class="f" id="ntText" rows="3" placeholder="도착 장소, 주차, 기자재, 인원, 준비물 등"></textarea><button class="btn pri" data-act="notice" data-j="${j.id}" ${s.cf?'':'disabled'}>확정 강사 ${s.cf}명에게 공지 보내기</button></div>
-  ${j.notices.slice().reverse().map(n=>{const to=n.to||[],rd=to.filter(i=>n.reads[i]);return `<div class="card"><pre class="pf">${esc(n.text)}</pre><span class="mu sm">읽음 ${rd.length}/${to.length}${to.length>rd.length?` · 안 읽음: ${to.filter(i=>!n.reads[i]).map(i=>esc(inst(i).name)).join(', ')}`:''}</span></div>`}).join('')}`}
+  <div class="card"><label class="f">종류<select id="ntKind"><option>일반</option><option>시간표</option><option>집결 장소</option><option>주의사항</option><option>준비물</option></select></label><textarea class="f" id="ntText" rows="3" placeholder="도착 장소, 주차, 기자재, 인원, 준비물, 주의사항 등"></textarea><label class="f">사진·이미지 (시간표, 약도 등, 선택)<input type="file" id="ntImg" accept="image/*"></label><button class="btn pri" data-act="notice" data-j="${j.id}" ${s.cf?'':'disabled'}>확정 강사 ${s.cf}명에게 공지 보내기</button></div>
+  ${j.notices.slice().reverse().map(n=>{const to=n.to||[],rd=to.filter(i=>n.reads[i]);return `<div class="card">${n.kind?`<b class="sm">[${esc(n.kind)}]</b>`:''}<pre class="pf">${esc(n.text)}</pre>${n.img?`<img src="${n.img}" alt="공지 이미지" style="width:100%;border-radius:8px">`:''}<span class="mu sm">읽음 ${rd.length}/${to.length}${to.length>rd.length?` · 안 읽음: ${to.filter(i=>!n.reads[i]).map(i=>esc(inst(i).name)).join(', ')}`:''}</span></div>`}).join('')}`}
 function sheetNewJob(p){p=p||{};const N=['프로필','교안','통장사본','신분증 사본','강사 확인서','범죄경력 조회 동의서','결과보고서','수업 사진'];
   openSheet(`<div class="row"><h2 class="sp">강의 등록</h2><button class="btn sm" data-act="closeSheet">닫기</button></div>
   <div class="card" style="background:var(--acs)"><h3>강사가 헷갈리지 않는 공고</h3><span class="sm">① 날짜는 달력에서 고르세요. 요일이 자동으로 붙어요.<br>② 시간은 09:00~15:50처럼, 교시도 함께 적어 주세요.<br>③ 대상은 학년과 인원까지 (예: 3학년 100명).<br>④ 장소는 학교 이름과 지역을 모두.<br>⑤ 1일 강사료와 받을 서류를 정해 주세요. 빠지면 등록되지 않아요.</span></div>
@@ -418,6 +422,8 @@ function sheetNewJob(p){p=p||{};const N=['프로필','교안','통장사본','�
 
 function jDateChips(ds){return ds.length?ds.map(d=>`<button class="btn sm" data-act="jdel" data-d="${d}" aria-label="${mdK(d)} 빼기">${mdK(d)}(${dowOf(d)}) ✕</button>`).join(''):'<span class="mu sm">날짜를 고르면 여기에 요일과 함께 보여요. 여러 날이면 계속 고르세요.</span>'}
 function jWarn(){const ds=$('#jDates').value.split(/[,\s]+/).filter(x=>/^\d{4}-\d{2}-\d{2}$/.test(x));$('#jWarn').innerHTML=dateWarn(ds).map(w=>`<div class="alert">${esc(w)}</div>`).join('')}
+// 이미지는 긴 변 1200px JPEG로 줄여 저장 (체험판은 기기 저장 공간이 작음)
+function shrink(f){return new Promise(res=>{const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{const k=Math.min(1,1200/Math.max(im.width,im.height));const c=document.createElement('canvas');c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext('2d').drawImage(im,0,0,c.width,c.height);res(c.toDataURL('image/jpeg',0.7))};im.onerror=()=>res('');im.src=r.result};r.onerror=()=>res('');r.readAsDataURL(f)})}
 /* ===== 회사: 지급 ===== */
 function unpaidOf(cid){const t=todayIso();return S.apps.filter(a=>{const j=job(a.jobId);return j&&j.coId===cid&&a.status==='확정'&&!a.paidAt&&last(j.dates)<t}).map(a=>{const j=job(a.jobId),amt=j.fee*j.dates.length;return {a,j,p:inst(a.instId),amt,tx:tax(amt)}})}
 function vPay(){const U=unpaidOf(meId());const tot=U.reduce((s,x)=>s+x.tx.net,0);
@@ -489,8 +495,9 @@ document.addEventListener('click',async ev=>{
   if(A==='close'){const j=job(D.j);const cf=appsOf(j.id).filter(a=>a.status==='확정').length;
     if(!cf&&!el.dataset.sure){el.dataset.sure=1;el.textContent='확정한 강사가 없어요. 그래도 마감';return}
     j.status='마감';let n=0;for(const a of appsOf(j.id))if(a.status==='지원'){a.status='미선정';n++}save();render();return toast(`마감했어요. 미선정 ${n}명은 달력에서 사라졌어요`)}
-  if(A==='notice'){const j=job(D.j),tx=$('#ntText').value.trim();if(!tx)return toast('공지 내용을 쓰세요');
-    j.notices.push({id:uid(),text:tx,at:new Date().toISOString(),to:appsOf(j.id).filter(a=>a.status==='확정').map(a=>a.instId),reads:{}});save();render();return toast('공지를 보냈어요')}
+  if(A==='notice'){const j=job(D.j),tx=$('#ntText').value.trim();if(!tx&&!$('#ntImg').files[0])return toast('공지 내용을 쓰거나 이미지를 넣으세요');
+    const f=$('#ntImg').files[0];const img=f?await shrink(f):'';
+    j.notices.push({id:uid(),kind:$('#ntKind').value,text:tx,img,at:new Date().toISOString(),to:appsOf(j.id).filter(a=>a.status==='확정').map(a=>a.instId),reads:{}});save();render();return toast('공지를 보냈어요. 강사 일정 카드 맨 위에 떠요')}
   if(A==='nudgeDocs'){const j=job(D.j);const ms=appsOf(j.id).filter(a=>a.status==='확정'&&j.needs.some(n=>n!=='프로필'&&!a.docs[n]));
     for(const a of ms)j.notices.push({id:uid(),text:`[서류 요청] ${j.school} ${j.title} 강의에 ${j.needs.filter(n=>n!=='프로필'&&!a.docs[n]).join(', ')}이(가) 아직 없어요. 강사로 앱 "공고 > 확정된 강의"에서 올려 주세요.`,at:new Date().toISOString(),to:[a.instId],reads:{}});
     save();render();return toast(`${ms.length}명에게 요청 공지를 보냈어요`)}
