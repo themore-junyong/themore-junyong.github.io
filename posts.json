@@ -1,6 +1,15 @@
 {
- "updated": "2026-10-27T10:31:52.998676+00:00",
+ "updated": "2026-10-27T16:36:49.962819+00:00",
  "posts": [
+  {
+   "kind": "영상",
+   "src": "youtube",
+   "title": "예배가 네 번이면, 출석 체크는? | 앱 개발기 ④ #shorts",
+   "link": "https://www.youtube.com/watch?v=rEBStSZ7cOA",
+   "date": "2026-10-27T11:00:32+00:00",
+   "summary": "교회 리더님, 출석 체크를 폰 하나로 끝내는 앱을 만들고 있습니다. 저희 교회는 예배가 네 번이라, 예전엔 종이 명부도 일주일에 네 번 넘겼어요. 지금은 '예배 …",
+   "image": "https://i.ytimg.com/vi/rEBStSZ7cOA/hqdefault.jpg"
+  },
   {
    "kind": "앱",
    "src": "tistory",
