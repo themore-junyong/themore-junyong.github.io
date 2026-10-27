@@ -4,532 +4,189 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<meta name="build" content="261028-1">
-<title>강사로 (시범 운영)</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
+<title>강사로: 강사와 강의 업체를 잇는 앱</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=Gowun+Batang:wght@700&display=swap">
 <style>
-:root{--bg:#F3F5F4;--sf:#FFFFFF;--fg:#16222B;--mu:#4F5D66;--ln:#D5DDDC;--ac:#1F6F78;--acs:#E1EEEE;--nv:#2D3E73;--nvs:#E3E7F4;
---g1:#E3E7E9;--g2:#3B4650;--b1:#DCEBFA;--b2:#1A4F8A;--p1:#ECE2F7;--p2:#5B3A8C;--k1:#DDF1E4;--k2:#1E6B3A;--r1:#FDECE3;--r2:#9A3608;--sun:#B3261E;
-font-family:'IBM Plex Sans KR','Apple SD Gothic Neo','Malgun Gothic',sans-serif}
-@media (prefers-color-scheme:dark){:root{--bg:#0F1719;--sf:#172225;--fg:#E7EEEE;--mu:#A3B2B5;--ln:#2C3A3E;--ac:#5FB7BF;--acs:#183338;--nv:#9DAEE6;--nvs:#1E2640;
---g1:#2A3337;--g2:#C9D2D6;--b1:#1B2F47;--b2:#9CC6F2;--p1:#2E2540;--p2:#CDB5EE;--k1:#173426;--k2:#94D9AE;--r1:#3A2116;--r2:#F2A57E;--sun:#F28B82;color-scheme:dark}}
-*{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--fg);font-size:15px;line-height:1.55}
-button,input,select,textarea{font:inherit;color:inherit}
-.app{max-width:560px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;padding-bottom:84px}
-header{position:sticky;top:0;z-index:5;background:var(--bg);padding:10px 16px 6px;display:flex;flex-direction:column;gap:6px;border-bottom:1px solid var(--ln)}
-.brand{display:flex;align-items:center;gap:8px;justify-content:space-between}
-.brand b{font-size:20px}.beta{font-size:11px;font-weight:700;background:var(--acs);color:var(--ac);padding:2px 8px;border-radius:99px}
-.who{display:flex;gap:6px;align-items:center;font-size:12px;color:var(--mu)}
-.who select{flex:1;min-width:0;padding:6px 8px;border:1px solid var(--ln);border-radius:8px;background:var(--sf)}
-main{padding:12px 16px;display:flex;flex-direction:column;gap:12px}
-h2{font-size:18px;margin:4px 0 0}h3{font-size:15px;margin:0}
-.card{background:var(--sf);border:1px solid var(--ln);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
-.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.sp{flex:1}
-.mu{color:var(--mu);font-size:13px}.sm{font-size:12px}
-.btn{min-height:44px;padding:0 14px;border-radius:10px;border:1px solid var(--ln);background:var(--sf);font-weight:600;cursor:pointer}
-.btn.pri{background:var(--ac);border-color:var(--ac);color:var(--bg)}.btn.nv{background:var(--nv);border-color:var(--nv);color:var(--bg)}
-.btn.sm{min-height:36px;padding:0 10px;font-size:13px}.btn:disabled{opacity:.45;cursor:default}
-.btn:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--ac);outline-offset:1px}
-.chip{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:99px;white-space:nowrap}
-.applied{background:var(--g1);color:var(--g2)}.confirmed{background:var(--b1);color:var(--b2)}.done{background:var(--p1);color:var(--p2)}.paid{background:var(--k1);color:var(--k2)}.warn{background:var(--r1);color:var(--r2)}.off{background:var(--g1);color:var(--mu)}
-.alert{background:var(--r1);color:var(--r2);border-radius:10px;padding:8px 10px;font-size:13px;font-weight:600}
-.ok{background:var(--k1);color:var(--k2);border-radius:10px;padding:8px 10px;font-size:13px;font-weight:600}
-label.f{display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--mu);font-weight:600;min-width:0}
-label.f input,label.f select,label.f textarea,textarea.f{padding:9px 10px;border:1px solid var(--ln);border-radius:10px;background:var(--sf);font-size:15px;color:var(--fg);font-weight:400;width:100%}
-.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
-/* 달력 */
-.dow,.cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px}
-.dow span{text-align:center;font-size:11px;font-weight:600;color:var(--mu)}.dow span:first-child{color:var(--sun)}.dow span:last-child{color:var(--b2)}
-.day{height:62px;padding:3px;border:1px solid var(--ln);border-radius:8px;background:var(--sf);display:flex;flex-direction:column;gap:2px;overflow:hidden;text-align:left;cursor:pointer}
-.day.blank{background:transparent;border-color:transparent;cursor:default}.day.sel{border:2px solid var(--ac);background:var(--acs)}.day.clash{border:2px solid var(--r2)}
-.day .n{font-size:11px;font-weight:500}.day .n.red{color:var(--sun)}.day .n.blue{color:var(--b2)}.day .n.today{background:var(--ac);color:var(--bg);border-radius:99px;width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;font-weight:700}
-.bar{display:block;font-size:10px;font-weight:600;line-height:1.3;padding:1px 3px;border-radius:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.sum{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
-.sum div{background:var(--sf);border:1px solid var(--ln);border-radius:12px;padding:8px 10px;display:flex;flex-direction:column}
-.sum b{font-size:15px;font-variant-numeric:tabular-nums}
-.money{font-variant-numeric:tabular-nums}
-table{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums}
-th,td{padding:6px 4px;border-bottom:1px solid var(--ln);text-align:right;white-space:nowrap}th:first-child,td:first-child{text-align:left}
-.tw{overflow-x:auto}
-nav{position:fixed;bottom:0;left:0;right:0;background:var(--sf);border-top:1px solid var(--ln);display:flex;justify-content:center;padding-bottom:env(safe-area-inset-bottom,0px);z-index:6}
-nav .in{max-width:560px;width:100%;display:flex;justify-content:space-around;align-items:center;height:64px}
-nav button{background:none;border:0;font-size:12px;color:var(--mu);padding:10px 8px;min-height:44px;cursor:pointer;position:relative}
-nav button.on{color:var(--ac);font-weight:700}
-nav .plus{width:52px;height:52px;border-radius:26px;background:var(--ac);color:var(--bg);font-size:26px;margin-top:-26px;padding:0}
-.dot{position:absolute;top:4px;right:0;background:var(--r2);color:var(--bg);font-size:10px;border-radius:99px;padding:0 5px}
-.sheet{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:10;display:flex;align-items:flex-end;justify-content:center}
-.sheet .in{background:var(--bg);width:100%;max-width:560px;max-height:92vh;overflow:auto;border-radius:18px 18px 0 0;padding:16px;display:flex;flex-direction:column;gap:10px}
-#toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:8px 14px;border-radius:10px;font-size:13px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:20}
-#toast.on{opacity:1}
-details summary{cursor:pointer;font-weight:600;font-size:13px;color:var(--ac)}
-pre.pf{white-space:pre-wrap;font:inherit;font-size:13px;background:var(--bg);border-radius:10px;padding:10px;margin:0}
-@media (prefers-reduced-motion:reduce){#toast{transition:none}}
+/* 레이아웃: 강사 쪽(청록)과 회사 쪽(남색) 두 줄기가 '다리' 하나로 만나는 세로 흐름. 불편 → 해결 → 기능 → 반박 순서 */
+:root{
+  --bg:#F4F6F5; --surface:#FFFFFF; --fg:#15222A; --muted:#4D5B63; --line:#D6DEDC;
+  --teal:#1F6F78; --teal-soft:#E0EEEE; --navy:#2D3E73; --navy-soft:#E3E7F4;
+  --gray-chip:#E3E7E9; --gray-fg:#3B4650; --blue-chip:#DCEBFA; --blue-fg:#1A4F8A;
+  --purple-chip:#ECE2F7; --purple-fg:#5B3A8C; --green-chip:#DDF1E4; --green-fg:#1E6B3A;
+  --warn:#9A3608; --warn-soft:#FDECE3;
+  --display:'Gowun Batang', 'Nanum Myeongjo', serif;
+  --body:'IBM Plex Sans KR', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0F1719; --surface:#172225; --fg:#E7EEEE; --muted:#A3B2B5; --line:#2C3A3E;
+  --teal:#5FB7BF; --teal-soft:#183338; --navy:#9DAEE6; --navy-soft:#1E2640;
+  --gray-chip:#2A3337; --gray-fg:#C9D2D6; --blue-chip:#1B2F47; --blue-fg:#9CC6F2;
+  --purple-chip:#2E2540; --purple-fg:#CDB5EE; --green-chip:#173426; --green-fg:#94D9AE;
+  --warn:#F2A57E; --warn-soft:#3A2116; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0F1719; --surface:#172225; --fg:#E7EEEE; --muted:#A3B2B5; --line:#2C3A3E;
+  --teal:#5FB7BF; --teal-soft:#183338; --navy:#9DAEE6; --navy-soft:#1E2640;
+  --gray-chip:#2A3337; --gray-fg:#C9D2D6; --blue-chip:#1B2F47; --blue-fg:#9CC6F2;
+  --purple-chip:#2E2540; --purple-fg:#CDB5EE; --green-chip:#173426; --green-fg:#94D9AE;
+  --warn:#F2A57E; --warn-soft:#3A2116; color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:16px;line-height:1.7}
+.wrap{max-width:720px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:32px 56px;display:flex;flex-direction:column;gap:56px}
+h1,h2,h3{text-wrap:balance;margin:0}
+h1{font-family:var(--display);font-size:clamp(28px,7vw,40px);line-height:1.35}
+h2{font-family:var(--display);font-size:clamp(23px,5.5vw,30px);line-height:1.4}
+h3{font-size:17px;font-weight:700}
+p{margin:0}
+.eyebrow{font-size:13px;font-weight:700;letter-spacing:.06em}
+.t{color:var(--teal)} .n{color:var(--navy)}
+section{display:flex;flex-direction:column;gap:18px}
+.lead{font-size:17px;color:var(--muted)}
+.btns{display:flex;flex-wrap:wrap;gap:10px}
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:52px;padding:0 22px;border-radius:14px;font-weight:700;font-size:16px;text-decoration:none;font-family:inherit;cursor:pointer}
+.btn.primary{background:var(--teal);color:var(--bg);border:0}
+.btn.ghost{background:transparent;color:var(--fg);border:1.5px solid var(--line)}
+.btn:focus-visible{outline:3px solid var(--navy);outline-offset:2px}
+.note{font-size:13px;color:var(--muted)}
+/* 히어로의 강의 카드 */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:10px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-size:12px;font-weight:700;padding:3px 10px;border-radius:999px}
+.c-gray{background:var(--gray-chip);color:var(--gray-fg)} .c-blue{background:var(--blue-chip);color:var(--blue-fg)}
+.c-purple{background:var(--purple-chip);color:var(--purple-fg)} .c-green{background:var(--green-chip);color:var(--green-fg)}
+.calc{display:grid;grid-template-columns:1fr auto;gap:2px 12px;font-size:14px;font-variant-numeric:tabular-nums}
+.calc .r{text-align:right} .calc .total{font-weight:700;color:var(--teal);border-top:1px solid var(--line);padding-top:6px;margin-top:4px}
+/* 불편 목록 */
+.pain{display:flex;flex-direction:column;gap:10px;margin:0;padding:0;list-style:none}
+.pain li{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px;font-size:15px}
+.pain li b{display:block;font-size:15px}
+.pain li span{color:var(--muted);font-size:14px}
+.chain{background:var(--warn-soft);color:var(--warn);border-radius:12px;padding:12px 14px;font-size:15px;font-weight:600}
+/* 기능 */
+.feat{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+@media (max-width:520px){.feat{grid-template-columns:1fr}}
+.feat div{border-top:2px solid var(--line);padding-top:10px;display:flex;flex-direction:column;gap:4px;min-width:0}
+.feat.t2 div{border-color:var(--teal)} .feat.n2 div{border-color:var(--navy)}
+.feat p{font-size:14px;color:var(--muted)}
+/* 반박 */
+.qa{display:flex;flex-direction:column;gap:8px}
+details{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:0 14px}
+summary{cursor:pointer;font-weight:700;padding:14px 0;list-style:none;display:flex;justify-content:space-between;gap:12px}
+summary::after{content:"+";color:var(--muted);font-weight:400}
+details[open] summary::after{content:"−"}
+details p{padding-bottom:14px;font-size:15px;color:var(--muted)}
+summary:focus-visible{outline:2px solid var(--teal);outline-offset:2px;border-radius:6px}
+.bridge{display:flex;align-items:center;gap:10px;font-size:14px;font-weight:700}
+.bridge i{flex:1;height:2px;background:linear-gradient(90deg,var(--teal),var(--navy))}
+.price{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+@media (max-width:520px){.price{grid-template-columns:1fr}}
+.price div{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:4px}
+.price strong{font-size:20px;font-variant-numeric:tabular-nums}
+.end{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:22px 18px;display:flex;flex-direction:column;gap:14px}
 </style>
+
 </head>
 <body>
-<div class="app">
-<header>
-  <div class="brand"><b>강사로</b><span class="beta">무료 시범 운영</span><span class="sp"></span><button class="btn sm" data-act="reset" title="체험 데이터 처음으로">처음으로</button></div>
-  <div class="who"><span>체험 중:</span><select id="who" aria-label="누구로 써 볼지 고르기"></select></div>
-</header>
-<main id="main"></main>
+<div class="wrap">
+
+  <!-- 히어로 -->
+  <section>
+    <span class="eyebrow t">강사와 강의 업체를 잇는 앱 · 강사로</span>
+    <h1>공고 찾고, 프로필 고치고, 강사료 기다리는 일. 이제 한곳에서 끝내세요.</h1>
+    <p class="lead">현장에서 강의하는 강사가 직접 겪은 불편에서 시작했습니다. 강사는 일정과 돈이 한눈에 보이고, 업체는 놓치는 일이 사라집니다.</p>
+    <div class="card" aria-label="강의 카드 예시">
+      <div class="chips"><span class="chip c-gray">지원</span><span class="chip c-blue">확정</span><span class="chip c-purple">강의 끝·미지급</span><span class="chip c-green">지급 완료</span></div>
+      <h3>10월 28일 (수) 천안 ○○공고 취업 특강 <span class="chip c-blue">확정</span></h3>
+      <div class="calc">
+        <span>강사료</span><span class="r">300,000원</span>
+        <span>3.3% 뗀 금액</span><span class="r">290,100원</span>
+        <span>왕복 기름값·통행료</span><span class="r">− 18,000원</span>
+        <span class="total">순수익</span><span class="r total">272,100원</span>
+      </div>
+      <p class="note">예시 화면이에요. 실제 강의가 아닙니다.</p>
+    </div>
+    <div class="btns">
+      <a class="btn primary" href="try/" target="_blank" rel="noopener">먼저 체험해 보기</a>
+      <a class="btn ghost" href="#join">시범 가입 신청</a>
+    </div>
+  </section>
+
+  <!-- 강사 -->
+  <section>
+    <span class="eyebrow t">강사님이라면</span>
+    <h2>이런 불편, 겪어 보셨죠?</h2>
+    <ul class="pain">
+      <li><b>업체마다 다른 프로필 양식</b><span>같은 내용을 한글, 워드, PPT로 몇 번씩 다시 만듭니다.</span></li>
+      <li><b>공고 볼 때마다 지원 메일 새로 쓰기</b><span>단톡방에 공고가 올라오면 이미 늦을 때가 많습니다.</span></li>
+      <li><b>여러 업체 일정이 뒤섞임</b><span>같은 날 두 곳에 지원했다가 겹치는 걸 늦게 알아챕니다.</span></li>
+      <li><b>강사료가 들어왔는지 기억이 안 남</b><span>강의 끝나고 한두 달 뒤 지급되면 어디가 아직인지 헷갈립니다.</span></li>
+      <li><b>5월 종합소득세</b><span>1년 치 3.3% 내역을 통장에서 하나하나 찾습니다.</span></li>
+    </ul>
+    <p>이 불편을 없애려고 만들었습니다.</p>
+    <div class="feat t2">
+      <div><h3>프로필은 한 번만</h3><p>한 번 쓰면 업체·학교 양식에 맞춰 나옵니다.</p></div>
+      <div><h3>공고 붙여넣기 → 지원서 완성</h3><p>날짜, 장소, 대상을 AI가 읽고 지원 메일을 써 둡니다. 보내기는 내가 누릅니다.</p></div>
+      <div><h3>버튼 한 번으로 지원</h3><p>앱에 올라온 공고는 프로필이 바로 붙어서 갑니다. 단톡방 공고는 받는 사람·제목·본문이 채워진 Gmail이 열리고, 프로필 파일만 붙여 보내면 됩니다.</p></div>
+      <div><h3>내 강의 달력</h3><p>지원 → 확정 → 강의 끝 → 지급 완료를 색으로 봅니다. 업체가 확정하면 달력에 바로 뜹니다.</p></div>
+      <div><h3>겹침·미지급 알림</h3><p>같은 날 일정이 겹치거나 강사료가 늦으면 알려 줍니다.</p></div>
+      <div><h3>순수익과 결산</h3><p>강사료에서 3.3%와 기름값을 뺀 금액, 월별·연말 합계를 정리합니다.</p></div>
+    </div>
+  </section>
+
+  <div class="bridge" aria-hidden="true"><span class="t">강사</span><i></i><span class="n">업체</span></div>
+
+  <!-- 회사 -->
+  <section>
+    <span class="eyebrow n">강의 업체라면</span>
+    <h2>작은 실수 하나가 운영을 흔들고, 강사에게 돌아갑니다.</h2>
+    <ul class="pain">
+      <li><b>강사마다 다른 형식의 프로필</b><span>학교가 원하는 양식으로 다시 받거나 직접 고칩니다.</span></li>
+      <li><b>교안·통장사본·서류 받기</b><span>카톡, 메일, 드라이브로 흩어져 누가 냈는지 매번 확인합니다.</span></li>
+      <li><b>일정 변경 전달</b><span>학교가 시간을 바꾸면 강사에게 전달하다 하나씩 빠집니다.</span></li>
+      <li><b>공지를 안 읽는 강사</b><span>도착 장소, 기자재, 인원을 보냈는데 당일에 다시 묻습니다.</span></li>
+      <li><b>강사비 정산</b><span>수십 명에게 이체하고 3.3%를 계산해 월별로 정리합니다.</span></li>
+    </ul>
+    <p class="chain">서류 하나 빠짐 → 학교에 늦게 제출 → 강사에게 급히 재요청 → 강사도 업체도 지칩니다.</p>
+    <p>이 흐름을 끊으려고 만들었습니다.</p>
+    <div class="feat n2">
+      <div><h3>강의 운영판</h3><p>모든 강의 일정과 배정 강사를 한 화면에서 봅니다.</p></div>
+      <div><h3>프로필 자동 맞춤</h3><p>강사 프로필이 학교 양식에 맞춰 나옵니다.</p></div>
+      <div><h3>교안·서류 한곳에</h3><p>강의별로 받을 것을 정해 두면, 빠진 사람만 알려 줍니다.</p></div>
+      <div><h3>공지와 읽음 확인</h3><p>강의별로 한 번에 보내고, 누가 읽었는지 봅니다.</p></div>
+      <div><h3>일정 변경 바로 전달</h3><p>시간을 바꾸면 그 강사 달력도 같이 바뀝니다.</p></div>
+      <div><h3>강사비 한 번에 이체</h3><p>은행 대량이체 엑셀을 만들어 주고, 거래내역을 붙여 넣으면 지급 완료로 바뀝니다. 3.3% 월별·연말 결산까지.</p></div>
+    </div>
+  </section>
+
+  <!-- 반박 -->
+  <section>
+    <span class="eyebrow t">이런 걱정이 드실 수 있어요</span>
+    <h2>먼저 답해 드릴게요</h2>
+    <div class="qa">
+      <details><summary>앱을 또 깔고 가입해야 하나요?</summary><p>카톡에서 링크를 누르면 바로 열립니다. 홈 화면에 추가하면 앱처럼 쓰고, 프로필은 처음 한 번만 씁니다.</p></details>
+      <details><summary>나이가 있어서 어려울 것 같아요</summary><p>공고를 복사해 붙여 넣는 것만 하시면 됩니다. 나머지는 앱이 채우고, 글자도 크게 볼 수 있습니다.</p></details>
+      <details><summary>내 개인정보는 안전한가요?</summary><p>주민등록번호는 받지 않습니다. 계좌와 연락처는 나를 배정한 업체만 볼 수 있고, 다른 업체는 볼 수 없습니다.</p></details>
+      <details><summary>우리 업체가 안 쓰면 쓸모없지 않나요?</summary><p>강의 달력과 순수익·결산은 혼자 써도 됩니다. 앱 밖에서 잡은 강의도 직접 넣을 수 있습니다.</p></details>
+      <details><summary>업체: 이미 엑셀로 관리하고 있어요</summary><p>엑셀 내용을 복사해 붙여 넣으면 그대로 옮겨집니다. 처음 옮기는 일도 도와드립니다.</p></details>
+      <details><summary>업체: 강사들이 안 들어오면요?</summary><p>업체가 보내는 초대 링크 하나로 들어옵니다. 강사에게도 달력과 결산이 생기니 들어올 이유가 있습니다.</p></details>
+      <details><summary>업체: 우리 거래처와 강사 정보가 새지 않나요?</summary><p>업체의 학교·강의·강사 정보는 그 업체만 봅니다. 다른 업체는 물론 운영자도 열어 보지 않도록 막아 둡니다.</p></details>
+    </div>
+    <div class="price" style="grid-template-columns:1fr">
+      <div><span class="eyebrow t">시범 운영 중</span><strong>지금은 무료로 시범 운영 중입니다</strong></div>
+    </div>
+  </section>
+
+  <!-- 마무리 -->
+  <section class="end" id="try">
+    <h2>가입 전에 먼저 눌러 보세요</h2>
+    <p>체험판에는 예시 강의가 들어 있어요. 맨 위 "체험 중"에서 강사와 업체를 바꿔 가며 양쪽 화면을 모두 볼 수 있습니다. 가입이나 로그인은 필요 없고, 누른 내용은 내 휴대폰에만 남습니다.</p>
+    <div class="btns"><a class="btn primary" href="try/" target="_blank" rel="noopener">체험판 열기</a></div>
+    <hr style="border:0;border-top:1px solid var(--line);width:100%;margin:6px 0">
+    <h2 id="join">마음에 드시면 시범 가입을 신청하세요</h2>
+    <p>강사인지 업체인지, 연락처만 남기시면 시범 운영이 열릴 때 가장 먼저 안내해 드립니다. 있었으면 하는 기능도 한 줄 남겨 주세요. 직접 읽고 반영합니다.</p>
+    <div class="btns"><a class="btn primary" href="#join" target="_blank" rel="noopener">시범 가입 신청 (1분)</a></div>
+    <p class="note">만든 사람: 김준용 (현장 강사). 문의는 카카오톡 채널로 받습니다.</p>
+  </section>
+
 </div>
-<nav><div class="in" id="nav"></div></nav>
-<div id="toast" role="status"></div>
-<div id="sheet"></div>
-<script>
-/* ===== 도우미·공고 읽기 (lecture-app v1에서 가져옴) ===== */
 
-/* ===== 도우미 ===== */
-const $=(s,r=document)=>r.querySelector(s),$$=(s,r=document)=>[...r.querySelectorAll(s)];
-const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const DOW='일월화수목금토';
-const pad=n=>String(n).padStart(2,'0');
-const isoOf=(y,m,d)=>`${y}-${pad(m)}-${pad(d)}`;
-const dt=iso=>{const[y,m,d]=iso.split('-').map(Number);return new Date(y,m-1,d)};
-const dowOf=iso=>DOW[dt(iso).getDay()];
-const todayIso=()=>{const t=new Date();return isoOf(t.getFullYear(),t.getMonth()+1,t.getDate())};
-const md=iso=>{const d=dt(iso);return `${d.getMonth()+1}/${d.getDate()}`};
-const mdK=iso=>{const d=dt(iso);return `${d.getMonth()+1}월 ${d.getDate()}일`};
-const addDays=(iso,n)=>{const d=dt(iso);d.setDate(d.getDate()+n);return isoOf(d.getFullYear(),d.getMonth()+1,d.getDate())};
-const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
-function batchim(w){const c=String(w||'').trim().slice(-1).charCodeAt(0);if(c>=0xAC00&&c<=0xD7A3)return(c-0xAC00)%28;return /[013678LMNR]$/i.test(String(w).trim())?1:0}
-const ro=w=>{const b=batchim(w);return b&&b!==8?'으로':'로'};
-const eul=w=>batchim(w)?'을':'를';
-
-/* ===== 공휴일 (kholidayz.com 2026·2027 목록 기준, 2026-10-27 확인) ===== */
-const HOL={'2026-01-01':'신정','2026-02-16':'설날 연휴','2026-02-17':'설날','2026-02-18':'설날 연휴','2026-03-01':'삼일절','2026-03-02':'대체공휴일','2026-05-01':'노동절','2026-05-05':'어린이날','2026-05-24':'부처님오신날','2026-05-25':'대체공휴일','2026-06-03':'지방선거','2026-06-06':'현충일','2026-07-17':'제헌절','2026-08-15':'광복절','2026-08-17':'대체공휴일','2026-09-24':'추석 연휴','2026-09-25':'추석','2026-09-26':'추석 연휴','2026-10-03':'개천절','2026-10-05':'대체공휴일','2026-10-09':'한글날','2026-12-25':'성탄절',
-'2027-01-01':'신정','2027-02-06':'설날 연휴','2027-02-07':'설날','2027-02-08':'설날 연휴','2027-02-09':'대체공휴일','2027-03-01':'삼일절','2027-05-01':'노동절','2027-05-03':'대체공휴일','2027-05-05':'어린이날','2027-05-13':'부처님오신날','2027-06-06':'현충일','2027-07-17':'제헌절','2027-07-19':'대체공휴일','2027-08-15':'광복절','2027-08-16':'대체공휴일','2027-09-14':'추석 연휴','2027-09-15':'추석','2027-09-16':'추석 연휴','2027-10-03':'개천절','2027-10-04':'대체공휴일','2027-10-09':'한글날','2027-10-11':'대체공휴일','2027-12-25':'성탄절','2027-12-27':'대체공휴일'};
-
-const TOPICS=[
- {k:'legal',name:'법정교육',re:/성희롱|괴롭힘|장애인\s*인식|법정\s*의무|법정\s*교육|산업\s*안전/,c:4,org:1,way:'사례 중심으로, 참여자가 직접 상황을 판단해 보는 활동을 넣어 지루하지 않게 진행하겠습니다.',new:1},
- {k:'aicover',name:'AI 자기소개서',re:/(AI|인공지능|생성형|챗\s*GPT|GPT|뤼튼).{0,20}(자소서|자기소개서)|(자소서|자기소개서).{0,20}(AI|인공지능|생성형|GPT)/i,c:1,way:'생성형 AI로 지원 직무에 맞춰 경험을 정리하고, 30분 안에 자기소개서 한 편을 완성하는 방식으로 컨설팅하겠습니다.'},
- {k:'cover',name:'자기소개서',re:/자소서|자기소개서|이력서/,c:2,way:'학생들이 자기 경험을 직접 꺼내 정리하고, 그 자리에서 첨삭을 받아 한 편을 완성해 가는 실습 위주로 준비하겠습니다.',new:1},
- {k:'interview',name:'면접·스피치',re:/면접|스피치|말하기/,c:0,way:'학생 한 명 한 명이 1분 자기소개와 모의면접을 직접 해 보고, 그 자리에서 피드백을 받는 실습 위주로 준비하겠습니다.',new:1},
- {k:'manner',name:'비즈니스매너',re:/비즈니스\s*매너|직장\s*예절|매너|예절|고객\s*응대/,c:0,way:'인사, 명함 교환, 전화 응대, 자기소개를 학생들이 직접 해 보는 실습 위주로 준비하겠습니다.'},
- {k:'labor',name:'노동인권',re:/노동\s*인권|노동법|근로\s*계약|근로\s*기준|노동\s*교육/,c:3,way:'첫 월급 명세서 읽기, 근로계약서 체크포인트, 부당한 상황에서 내 권리 지키기처럼 학생들이 곧 사회에 나가 바로 쓸 수 있는 내용으로, 사례와 실습 위주로 준비하겠습니다.'},
- {k:'startup',name:'창업',re:/창업|기업가\s*정신/,c:3,way:'제공해 주시는 기본 교안을 바탕으로 학생들이 직접 아이디어를 내고 발표해 보는 실습 중심으로 진행하겠습니다.'},
- {k:'career',name:'진로',re:/진로|동기\s*부여|취업\s*역량|취업\s*특강|직업\s*탐색/,c:3,way:'게임·팀 활동·발표로 학생들이 직접 움직이며, 자기 진로를 한 문장으로 정리해 가는 참여형으로 준비하겠습니다.',new:1},
- {k:'etc',name:'기타',re:/$^/,c:3,way:'학생들이 직접 해 보는 실습과 팀 활동 위주로 준비하겠습니다.',new:1}
-];
-const topicOf=k=>TOPICS.find(t=>t.k===k)||TOPICS[TOPICS.length-1];
-
-/* ===== 공고 읽기 (규칙 기반, 외부 전송 없음) ===== */
-function parseNotice(raw){
-  const text=String(raw||'').replace(/\r/g,'');
-  const lines=text.split('\n');
-  const lab=re=>{const R=new RegExp('^[\\s\\-•·*▶■□○◎●◇◆※>☞①-⑳\\d.)]*\\s*(?:'+re+')\\s*[:：]\\s*(.+)$');for(const ln of lines){const m=ln.match(R);if(m)return m[1].trim()}return ''};
-  const r={dates:[],dows:{},deadline:'',기관명:'',담당자호칭:'',학교명:'',지역:'',시간:'',교시:'',대상:'',강의명:'',지원안:'',to:'',topic:'etc',profile:'school'};
-  // 날짜
-  const lineOf=idx=>{const s=text.lastIndexOf('\n',idx-1)+1;let e=text.indexOf('\n',idx);if(e<0)e=text.length;return text.slice(s,e)};
-  const found=[];
-  const now=new Date();
-  const add=(y,m,d,w,idx)=>{m=+m;d=+d;if(m<1||m>12||d<1||d>31)return;
-    if(!y){y=now.getFullYear();if((now-new Date(y,m-1,d))/864e5>60)y++}
-    const iso=isoOf(+y,m,d);if(dt(iso).getMonth()!==m-1)return;
-    const ln=lineOf(idx);
-    const dl=/마감|접수|지원\s*기한|모집\s*기간|까지|제출\s*기한|서류/.test(ln)&&!/교육\s*일|강의\s*일|일시|일정|출강/.test(ln);
-    found.push({iso,w:w||'',dl})};
-  const W='(?:\\s*\\(\\s*([월화수목금토일])\\s*\\)|\\s*([월화수목금토일])요일)?';
-  const RG='(?:\\s*[~∼\\-–]\\s*(\\d{1,2})\\s*일?(?![\\d/.:월])(?:\\s*\\(\\s*([월화수목금토일])\\s*\\))?)?';
-  let masked=text;
-  const run=(re,hasY)=>{masked=masked.replace(re,(...a)=>{const idx=a[a.length-2];const g=a.slice(1,a.length-2);
-      const [y,m,d,w1,w2,rd,rw]=hasY?g:[null,...g];add(y,m,d,w1||w2,idx);if(rd)add(y,m,rd,rw,idx);return ' '.repeat(a[0].length)})};
-  run(new RegExp('(20\\d{2})\\s*[.\\-/년]\\s*(\\d{1,2})\\s*[.\\-/월]\\s*(\\d{1,2})\\s*일?\\.?'+W+RG,'g'),1);
-  run(new RegExp('(\\d{1,2})\\s*월\\s*(\\d{1,2})\\s*일'+W+RG,'g'),0);
-  run(new RegExp('(?<![\\d.:/])(\\d{1,2})[./](\\d{1,2})(?![\\d:./])(?!\\s*(?:시간|교시|차시|명|%|점|배|만|원|kg|km))'+W+RG,'g'),0);
-  const seen=new Set();
-  for(const f of found){if(f.dl){if(!r.deadline)r.deadline=f.iso;continue}
-    if(!seen.has(f.iso)){seen.add(f.iso);r.dates.push(f.iso)}if(f.w)r.dows[f.iso]=f.w}
-  r.dates.sort();
-  // 시간
-  const fixH=h=>{h=+h;return h<8?h+12:h};
-  let m=text.match(/(\d{1,2})\s*:\s*(\d{2})\s*[~∼\-–]\s*(\d{1,2})\s*:\s*(\d{2})/);
-  if(m)r.시간=`${pad(fixH(m[1]))}:${m[2]}~${pad(fixH(m[3]))}:${m[4]}`;
-  else if(m=text.match(/(\d{1,2})\s*시(?:\s*(\d{1,2})\s*분)?\s*[~∼\-–]\s*(\d{1,2})\s*시(?:\s*(\d{1,2})\s*분)?/))r.시간=`${pad(fixH(m[1]))}:${pad(m[2]||0)}~${pad(fixH(m[3]))}:${pad(m[4]||0)}`;
-  // 교시
-  m=text.match(/\d{1,2}\s*[~∼\-]\s*\d{1,2}\s*교시|총?\s*\d{1,2}\s*(?:교시|차시)|\d{1,2}\s*시간(?![~:])/);
-  if(m)r.교시=m[0].replace(/\s+/g,'').replace(/^총/,'');
-  // 대상
-  let v=lab('교육\\s*대상|참여\\s*대상|수강\\s*대상|대상');
-  if(!v){m=text.match(/[1-3]\s*학년(?:\s*[가-힣]{2,10}과)?(?:\s*\d+\s*개?\s*반)?(?:\s*\(?\s*\d+\s*명\s*\)?)?/)||text.match(/청년|구직자|재직자|취업\s*준비생|대학생|중학생|고등학생|성인|학부모|교직원|임직원/);if(m)v=m[0]}
-  r.대상=v.replace(/\s+/g,' ').slice(0,30);
-  // 학교
-  const EXCL=/^(모집|채용|강사|재|수정|추가|긴급|입찰|안내|교육|강의|본|위|해당|최|참|광|보|신|경|원)공고$/;
-  const SCH=/[가-힣]{2,}(?:고등학교|중학교|초등학교|대학교|여자고|공업고|디자인고|정보고|과학고|마이스터고|상업고|여고|공고|여중|고교)/g;
-  const pickSchool=s=>{for(const x of String(s).match(SCH)||[]){if(!EXCL.test(x))return x}
-    m=String(s).match(/([가-힣]{2,5})고(?=\s*(?:[1-3]\s*학년|학생|에서|강의|특강|\(|,|$))/m);
-    if(m&&!/(하|되|있|없|이|라|지|보|주|오|며|고|최|참|광|신|경|재|원)$/.test(m[1]))return m[1]+'고';return ''};
-  const place=lab('학교명?|교육\\s*장소|강의\\s*장소|장소');
-  r.학교명=pickSchool(place)||pickSchool(text)||'';
-  // 기관(섭외 업체)
-  v=lab('업체명?|섭외\\s*업체|주관|주최|운영\\s*기관|운영사|교육\\s*업체|회사명?|기관명?');
-  if(v&&!pickSchool(v))r.기관명=v.replace(/\(.*?\)/g,'').trim().slice(0,20);
-  if(!r.기관명){const OR=/[가-힣A-Za-z]{2,}(?:교육|에듀|컴퍼니|아카데미|연구소|연구원|협회|재단|센터|컨설팅)/g;
-    const GEN=/^(진로|취업|직업|인성|법정|안전|예방|인권|노동인권|창업|금융|경제|통일|보건|소방|정보|특강|강사|외부|방과후|평생|의무|보수|직무|역량|학생|청소년|교사|학교|성|문화|예술|체험|대면|비대면|온라인|집합|현장|사전|맞춤|공교육|사교육|코딩|AI|진로체험|취업지원|교육)(교육|센터)$/;
-    for(const x of text.match(OR)||[]){if(!GEN.test(x)&&!pickSchool(x)){r.기관명=x;break}}}
-  // 담당자 호칭
-  v=lab('담당자?|문의');m=(v||text).match(/([가-힣]{2,4})\s*(대표|팀장|실장|과장|부장|선생|매니저|주임|대리|코디네이터|코디)/);
-  r.담당자호칭=m?`${m[1]} ${m[2]}님`:'담당자님';
-  // 받는 메일
-  m=text.match(/[\w.+-]+@[\w-]+(?:\.[\w-]+)+/);if(m)r.to=m[0];
-  // 지원안
-  m=text.match(/(?<![A-Za-z])([A-D])\s*안(?![가-힣])/);if(m)r.지원안=m[1]+'안';else if(/메인\s*강사/.test(text))r.지원안='메인강사';else if(/보조\s*강사/.test(text))r.지원안='보조강사';
-  // 지역
-  const SKIP=/^(오전|오후|종료|시작|점심|전체|진행|모집|소요|이전|이후|시간|당일|매일|평일|휴일|강의|교육|수업|학교|동시|현재|상세|일정|예정|장소|공지|추가|변경|해당|운영|개최)$/;
-  for(const x of text.matchAll(/([가-힣]{2,3})(시|군)(?=[\s,)\]·./(]|$)/gm)){if(!SKIP.test(x[1])){r.지역=x[1];break}}
-  if(!r.지역){m=text.match(/서울|부산|대구|인천|광주|대전|울산|세종|제주|경기|강원|충북|충남|전북|전남|경북|경남/);if(m)r.지역=m[0]}
-  // 주제·강의명
-  v=lab('강의\\s*주제|교육\\s*주제|주제|강의명|교육명|과목|프로그램명?|과정명?|교육\\s*내용|강의\\s*내용');
-  const t=TOPICS.find(t=>v&&t.re.test(v))||TOPICS.find(t=>t.re.test(text))||topicOf('etc');
-  r.topic=t.k;r.강의명=(v||(t.k==='etc'?'':t.name)).replace(/\(?\s*(?:[A-D]\s*안|메인\s*강사|보조\s*강사)\s*\)?/g,'').replace(/\s+/g,' ').trim().slice(0,40);
-  r.profile=(t.org||(!r.학교명&&!/학생|학년|고[1-3]|중[1-3]/.test(text)&&/법정|직장\s*내|재직자|임직원|공무원|CS|고객\s*응대|구직자|성인/.test(text)))?'org':'school';
-  return r;
-}
-
-
-/* ===== 강사로: 저장 (체험판은 이 기기에만 저장. 서버 연결은 다음 단계) ===== */
-const KEY='kangsaro.demo.v1';
-const ST={applied:'지원',confirmed:'확정',done:'강의 끝·미지급',paid:'지급 완료'};
-const won=n=>Math.round(n||0).toLocaleString('ko-KR')+'원';
-const last=a=>a[a.length-1];
-const ym=iso=>iso.slice(0,7);
-// 3.3% = 소득세 3% + 지방소득세 0.3%. 10원 미만 절사, 소득세 1,000원 미만은 떼지 않음(소액부징수)
-function tax(amt){let it=Math.floor(amt*0.03/10)*10;if(it<1000)it=0;const lt=Math.floor(it*0.1/10)*10;return {it,lt,all:it+lt,net:amt-it-lt}}
-let S,ui={tab:'cal',month:todayIso().slice(0,7),sel:todayIso(),jobId:null};
-
-function seed(){const t=todayIso(),d=n=>addDays(t,n);
-  return {v:1,me:'i:i1',
-    insts:[
-      {id:'i1',name:'김하늘',phone:'010-0000-0001',email:'sky@example.com',region:'수원',topics:'진로, 면접, AI 자기소개서',intro:'특성화고와 청년 대상으로 AI 자소서, 면접, 취업역량 강의를 꾸준히 하고 있습니다.',career:'2024~ 특성화고 취업 특강 40회\n2023~ 청년 면접 컨설팅',bank:'국민',acct:'000000-00-000001',holder:'김하늘',kmpl:20,fuel:1650,joined:t,beta:true},
-      {id:'i2',name:'이도윤',phone:'010-0000-0002',email:'doyun@example.com',region:'안양',topics:'비즈니스매너, 면접',intro:'기업 CS와 비즈니스매너 강의를 10년째 하고 있습니다.',career:'2016~ 기업 CS 교육',bank:'신한',acct:'110-000-000002',holder:'이도윤',kmpl:15,fuel:1650,joined:t,beta:true},
-      {id:'i3',name:'박서연',phone:'010-0000-0003',email:'seoyeon@example.com',region:'인천',topics:'노동인권, 진로',intro:'노동인권과 진로 수업을 참여형으로 진행합니다.',career:'2020~ 노동인권 교육',bank:'농협',acct:'000-0000-0000-03',holder:'박서연',kmpl:14,fuel:1650,joined:t,beta:true}],
-    cos:[{id:'c1',name:'○○교육',contact:'최 팀장',email:'job@example.com'},{id:'c2',name:'△△에듀',contact:'정 실장',email:'edu@example.com'}],
-    jobs:[
-      {id:'j1',coId:'c1',title:'면접 특강',school:'○○고',region:'평택',dates:[d(-20)],time:'09:00~15:50',교시:'6교시',대상:'3학년',fee:300000,status:'마감',needs:['프로필','교안','통장사본'],notices:[],created:d(-35)},
-      {id:'j2',coId:'c1',title:'AI 자기소개서',school:'○○공고',region:'안양',dates:[d(-6)],time:'09:00~12:30',교시:'4교시',대상:'3학년',fee:200000,status:'마감',needs:['프로필','교안'],notices:[],created:d(-25)},
-      {id:'j3',coId:'c1',title:'취업 특강',school:'○○공고',region:'천안',dates:[d(2)],time:'09:00~15:50',교시:'6교시',대상:'2학년 120명',fee:300000,status:'마감',needs:['프로필','교안','통장사본'],notices:[{id:'n1',text:'도착하시면 본관 1층 교무실로 오세요. 주차는 운동장 옆입니다. 노트북 연결 HDMI 있습니다.',at:new Date().toISOString(),to:['i1'],reads:{}}],created:d(-12)},
-      {id:'j4',coId:'c1',title:'진로 캠프',school:'○○중',region:'서울',dates:[d(9),d(10)],time:'09:00~12:00',교시:'3교시',대상:'1학년',fee:180000,status:'모집',needs:['프로필','교안'],notices:[],created:d(-2)},
-      {id:'j5',coId:'c2',title:'비즈니스매너',school:'○○여고',region:'인천',dates:[d(14)],time:'10:00~14:00',교시:'4교시',대상:'3학년',fee:220000,status:'모집',needs:['프로필','통장사본'],notices:[],created:d(-1)}],
-    apps:[
-      {id:'a1',jobId:'j1',instId:'i1',status:'확정',docs:{교안:'면접특강.pptx',통장사본:'통장.jpg'},paidAt:d(-5),km:120,toll:6000},
-      {id:'a2',jobId:'j2',instId:'i1',status:'확정',docs:{교안:'AI자소서.pptx'},paidAt:null,km:40,toll:0},
-      {id:'a3',jobId:'j3',instId:'i1',status:'확정',docs:{교안:'취업특강.pptx'},paidAt:null,km:150,toll:7000},
-      {id:'a4',jobId:'j3',instId:'i3',status:'미선정',docs:{},paidAt:null,km:0,toll:0},
-      {id:'a5',jobId:'j4',instId:'i2',status:'지원',docs:{},paidAt:null,km:0,toll:0},
-      {id:'a6',jobId:'j4',instId:'i3',status:'지원',docs:{},paidAt:null,km:0,toll:0}],
-    evs:[
-      {id:'e1',instId:'i1',dates:[d(-13)],title:'분당 ○○고 진로',org:'□□교육',time:'13:00~15:00',fee:150000,km:50,toll:2000,st:'paid',to:''},
-      {id:'e2',instId:'i1',dates:[d(5)],title:'경주 ○○고 비즈니스매너',org:'◇◇에듀',time:'09:00~15:50',fee:360000,km:640,toll:38000,st:'confirmed',to:''},
-      {id:'e3',instId:'i1',dates:[d(9)],title:'수원 기관 법정교육',org:'☆☆컨설팅',time:'14:00~16:00',fee:160000,km:20,toll:0,st:'applied',to:''}]}}
-function load(){try{const s=JSON.parse(localStorage.getItem(KEY));if(s&&s.v===1)return s}catch(e){}return seed()}
-function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
-S=load();
-
-const meRole=()=>S.me.split(':')[0],meId=()=>S.me.split(':')[1];
-const inst=id=>S.insts.find(x=>x.id===id),co=id=>S.cos.find(x=>x.id===id),job=id=>S.jobs.find(x=>x.id===id);
-const appsOf=jid=>S.apps.filter(a=>a.jobId===jid);
-
-/* ===== 강사: 달력 항목 모으기 ===== */
-function travel(x,who){const p=who||inst(meId());return Math.round((+x.km||0)/(+p.kmpl||15)*(+p.fuel||1650))+(+x.toll||0)}
-function entries(iid){const t=todayIso(),me=inst(iid),out=[];
-  for(const e of S.evs){if(e.instId!==iid||e.st==='no')continue;
-    const st=e.st==='confirmed'&&last(e.dates)<t?'done':e.st;
-    for(const d of e.dates)out.push({kind:'ev',ref:e,d,st,title:e.title,org:e.org,time:e.time,fee:+e.fee||0,trv:travel(e,me)})}
-  for(const a of S.apps){if(a.instId!==iid||a.status==='미선정')continue;const j=job(a.jobId);if(!j)continue;
-    const st=a.status==='지원'?'applied':a.paidAt?'paid':last(j.dates)<t?'done':'confirmed';
-    for(const d of j.dates)out.push({kind:'app',ref:a,job:j,d,st,title:`${j.region} ${j.school} ${j.title}`,org:co(j.coId).name,time:j.time,fee:+j.fee||0,trv:travel(a,me)})}
-  return out.sort((x,y)=>x.d<y.d?-1:x.d>y.d?1:0)}
-const netOf=e=>tax(e.fee).net-e.trv;
-function clashes(iid,dates,skip){const E=entries(iid).filter(e=>dates.includes(e.d)&&e.ref!==skip);return E}
-function dateWarn(dates,dows){const W=[];for(const iso of dates){const a=dowOf(iso),w=(dows||{})[iso];
-  if(w&&w!==a)W.push(`${mdK(iso)}: 공고에는 ${w}요일인데 달력상 ${a}요일이에요`);
-  else if(HOL[iso])W.push(`${mdK(iso)}은 공휴일(${HOL[iso]})이에요`);
-  else if(a==='토'||a==='일')W.push(`${mdK(iso)}은 ${a}요일이에요`);
-  if(iso<todayIso())W.push(`${mdK(iso)}은 이미 지난 날짜예요`)}return W}
-
-/* ===== 화면 공통 ===== */
-const NAV={i:[['cal','달력'],['jobs','공고'],['plus','+'],['money','결산'],['me','프로필']],c:[['cjobs','강의'],['cnew','+'],['pay','지급'],['csum','결산']]};
-function unreadCount(){const id=meId();let n=0;for(const j of S.jobs)for(const nt of j.notices)if((nt.to||[]).includes(id)&&!nt.reads[id])n++;return n}
-function render(){
-  const who=$('#who');who.innerHTML=`<optgroup label="강사">${S.insts.map(i=>`<option value="i:${i.id}">강사 ${esc(i.name)} (예시)</option>`).join('')}</optgroup><optgroup label="회사">${S.cos.map(c=>`<option value="c:${c.id}">회사 ${esc(c.name)} (예시)</option>`).join('')}</optgroup>`;who.value=S.me;
-  const r=meRole();if(!NAV[r].some(n=>n[0]===ui.tab))ui.tab=NAV[r][0][0];
-  const un=r==='i'?unreadCount():0;
-  $('#nav').innerHTML=NAV[r].map(([k,l])=>k==='plus'||k==='cnew'?`<button class="plus" data-act="${k}" aria-label="${r==='i'?'일정 넣기':'강의 등록'}">+</button>`:`<button data-tab="${k}" class="${ui.tab===k?'on':''}">${l}${k==='jobs'&&un?`<span class="dot">${un}</span>`:''}</button>`).join('');
-  $('#main').innerHTML=(VIEWS[ui.tab]||(()=>''))();
-}
-function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(toast.h);toast.h=setTimeout(()=>t.classList.remove('on'),2400)}
-async function copy(text,what){try{await navigator.clipboard.writeText(text)}catch(e){const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();try{document.execCommand('copy')}catch(_){}ta.remove()}toast((what||'')+' 복사했어요')}
-function openSheet(html){$('#sheet').innerHTML=`<div class="sheet" data-act="closeSheetBg"><div class="in" role="dialog" aria-modal="true">${html}</div></div>`}
-function closeSheet(){$('#sheet').innerHTML=''}
-const chip=st=>`<span class="chip ${st}">${ST[st]}</span>`;
-
-/* ===== 강사: 달력 ===== */
-function vCal(){const iid=meId(),E=entries(iid),t=todayIso();const [Y,M]=ui.month.split('-').map(Number);
-  const first=new Date(Y,M-1,1).getDay(),days=new Date(Y,M,0).getDate();const cells=[];
-  for(let i=0;i<first;i++)cells.push('<div class="day blank"></div>');
-  for(let n=1;n<=days;n++){const iso=isoOf(Y,M,n),es=E.filter(e=>e.d===iso),dw=dt(iso).getDay();
-    const cls=['day',iso===ui.sel?'sel':'',es.length>1?'clash':''].join(' ');
-    const nc=iso===t?'today':(dw===0||HOL[iso])?'red':dw===6?'blue':'';
-    cells.push(`<button class="${cls}" data-act="sel" data-d="${iso}" aria-label="${M}월 ${n}일 일정 ${es.length}개"><span class="n ${nc}">${n}</span>${es.slice(0,2).map(e=>`<span class="bar ${e.st}">${esc(e.title.split(' ')[0])}</span>`).join('')}</button>`)}
-  const ME=E.filter(e=>ym(e.d)===ui.month);
-  const paid=ME.filter(e=>e.st==='paid').reduce((a,e)=>a+tax(e.fee).net,0),unpaid=ME.filter(e=>e.st==='done').reduce((a,e)=>a+tax(e.fee).net,0),net=ME.filter(e=>e.st!=='applied').reduce((a,e)=>a+netOf(e),0);
-  const DE=E.filter(e=>e.d===ui.sel);const late=E.filter(e=>e.st==='done'&&addDays(e.d,30)<t);
-  return `<div class="row"><h2>${Y}년 ${M}월</h2><span class="sp"></span><button class="btn sm" data-act="mon" data-n="-1" aria-label="이전 달">‹</button><button class="btn sm" data-act="mon" data-n="0">오늘</button><button class="btn sm" data-act="mon" data-n="1" aria-label="다음 달">›</button></div>
-  <div class="row">${Object.keys(ST).map(chip).join('')}<span class="chip warn">빨간 테두리 = 겹침</span></div>
-  ${late.length?`<div class="alert">강의 끝나고 30일이 지났는데 아직 못 받은 강사료가 ${late.length}건 있어요.</div>`:''}
-  <div class="dow">${[...DOW].map(x=>`<span>${x}</span>`).join('')}</div><div class="cal">${cells.join('')}</div>
-  <div class="sum"><div><span class="mu sm">받은 돈</span><b>${won(paid)}</b></div><div><span class="mu sm">받을 돈</span><b>${won(unpaid)}</b></div><div><span class="mu sm">이달 순수익</span><b>${won(net)}</b></div></div>
-  <h3>${mdK(ui.sel)} (${dowOf(ui.sel)})${HOL[ui.sel]?' · '+HOL[ui.sel]:''}</h3>
-  ${DE.length>1?'<div class="alert">같은 날 일정이 두 개예요. 시간과 거리를 확인하세요.</div>':''}
-  ${DE.length?DE.map(entryCard).join('')+(DE.some(e=>e.kind==='app'&&markRead(e.job,iid))?'':''):'<p class="mu">이날은 일정이 없어요. 아래 + 로 공고를 붙여 넣거나 직접 넣을 수 있어요.</p>'}`}
-function noticeBox(j,iid){const nts=j.notices.filter(n=>(n.to||[]).includes(iid)).slice().reverse().sort((a,b)=>(b.kind==='주의사항')-(a.kind==='주의사항'));if(!nts.length)return '';
-  return `<div style="background:var(--nvs);border-radius:10px;padding:8px 10px;display:flex;flex-direction:column;gap:6px"><b class="sm" style="color:var(--nv)">회사 공지 ${nts.length}개 (주의사항·최신이 위)</b>${nts.map(n=>`<div class="sm">${n.reads[iid]?'':'<span class="chip warn">새 공지</span> '}${n.kind?`<b>[${esc(n.kind)}]</b> `:''}${esc(n.text).replace(/\n/g,'<br>')}${n.img?`<img src="${n.img}" alt="${esc(n.kind||'공지')} 이미지" style="display:block;width:100%;border-radius:8px;margin-top:6px">`:''}<div class="mu sm">${n.at.slice(5,10).replace('-','/')} ${n.at.slice(11,16)}</div></div>`).join('')}</div>`}
-function markRead(j,iid){let ch=0;for(const n of j.notices)if((n.to||[]).includes(iid)&&!n.reads[iid]){n.reads[iid]=new Date().toISOString();ch++}if(ch)save();return ch}
-function entryCard(e){const tx=tax(e.fee);
-  const ctrl=e.kind==='ev'?`<div class="row">${[['applied','지원'],['confirmed','확정'],['done','강의 끝'],['paid','지급 완료'],['no','안 됨']].map(([k,l])=>`<button class="btn sm" data-act="evst" data-id="${e.ref.id}" data-st="${k}" ${e.ref.st===k||(k==='done'&&e.st==='done')?'style="border-color:var(--ac);color:var(--ac)"':''}>${l}</button>`).join('')}<button class="btn sm" data-act="evdel" data-id="${e.ref.id}">지우기</button></div>`
-    :`<p class="mu sm">강사로 안에서 지원한 강의예요. 회사가 확정·지급하면 자동으로 바뀌어요.</p>`;
-  return `<div class="card"><div class="row">${chip(e.st)}<h3 class="sp">${esc(e.title)}</h3></div>
-  ${e.kind==='app'?noticeBox(e.job,meId()):''}
-  <span class="mu">${esc(e.org)} · ${esc(e.time||'시간 미정')}</span>
-  <span class="mu sm money">강사료 ${won(e.fee)} · 3.3% 뗀 뒤 ${won(tx.net)} · 왕복 교통비 ${won(e.trv)}</span>
-  <b class="money" style="color:var(--ac)">순수익 ${won(netOf(e))}</b>
-  <div class="grid2"><label class="f">왕복 거리(km)<input type="number" inputmode="numeric" data-act="km" data-kind="${e.kind}" data-id="${e.ref.id}" value="${+e.ref.km||0}"></label><label class="f">통행료(원)<input type="number" inputmode="numeric" data-act="toll" data-kind="${e.kind}" data-id="${e.ref.id}" value="${+e.ref.toll||0}"></label></div>
-  ${ctrl}</div>`}
-
-/* ===== 강사: 공고 + 내 확정 강의 ===== */
-function vJobs(){const iid=meId(),t=todayIso();
-  const mine=S.apps.filter(a=>a.instId===iid&&a.status==='확정'&&last(job(a.jobId).dates)>=t).map(a=>({a,j:job(a.jobId)}));
-  const all=S.jobs.filter(j=>j.status==='모집'&&j.dates[0]>=t).sort((a,b)=>a.dates[0]<b.dates[0]?-1:1),F=ui.jf||(ui.jf={r:'',q:'',free:false});
-  const open=all.filter(j=>(!F.r||j.region===F.r)&&(!F.q||`${j.title} ${j.school} ${j.대상}`.includes(F.q))&&(!F.free||!clashes(iid,j.dates).length));
-  setTimeout(()=>{let c=0;for(const {j} of mine)c+=markRead(j,iid);if(c){const nb=$('[data-tab="jobs"]');if(nb)nb.innerHTML='공고'}},1500);
-  return `<h2>확정된 강의</h2>${mine.length?mine.map(({a,j})=>{const nts=j.notices.filter(n=>(n.to||[]).includes(iid));const un=nts.filter(n=>!n.reads[iid]).length;const miss=j.needs.filter(n=>n!=='프로필'&&!a.docs[n]);
-    return `<div class="card"><div class="row">${chip('confirmed')}<h3 class="sp">${esc(j.region)} ${esc(j.school)} ${esc(j.title)}</h3></div>
-    ${nts.length?noticeBox(j,iid):'<span class="mu sm">아직 공지가 없어요.</span>'}
-    <span class="mu">${esc(co(j.coId).name)} · ${j.dates.map(d=>`${md(d)}(${dowOf(d)})`).join('·')} ${esc(j.time)}</span>
-    <div class="mu sm">낼 것: ${j.needs.map(n=>n==='프로필'?'프로필 ✓(자동)':a.docs[n]?`${esc(n)} ✓`:`<b style="color:var(--r2)">${esc(n)} 빠짐</b>`).join(' · ')}</div>
-    ${miss.map(n=>`<label class="f">${esc(n)} 올리기 <input type="file" data-act="doc" data-a="${a.id}" data-n="${esc(n)}"></label>`).join('')}
-    </div>`}).join(''):'<p class="mu">곧 있을 확정 강의가 없어요.</p>'}
-  <h2>모집 중인 공고</h2><p class="mu sm">강사로에 들어온 회사의 공고예요. 강사료가 모두 공개돼요. 지원하면 프로필이 같이 가요.</p>
-  <div class="grid2"><label class="f">지역<select data-act="jf" data-k="r"><option value="">전체</option>${[...new Set(all.map(j=>j.region))].map(r=>`<option ${F.r===r?'selected':''}>${esc(r)}</option>`).join('')}</select></label><label class="f">분야·강의명<input data-act="jf" data-k="q" value="${esc(F.q)}" placeholder="면접, 진로…"></label></div>
-  <label class="sm"><input type="checkbox" data-act="jf" data-k="free" ${F.free?'checked':''}> 내 일정과 안 겹치는 것만</label>
-  ${open.length?open.map(j=>{const a=S.apps.find(x=>x.jobId===j.id&&x.instId===iid);const cl=clashes(iid,j.dates);
-    return `<div class="card"><div class="row"><h3 class="sp">${esc(j.region)} ${esc(j.school)} ${esc(j.title)}</h3>${a?chip(a.status==='확정'?'confirmed':'applied'):''}</div>
-    <span class="mu">${esc(co(j.coId).name)} · ${j.dates.map(d=>`${md(d)}(${dowOf(d)})`).join('·')} ${esc(j.time)} · ${esc(j.교시)} · ${esc(j.대상)}</span>
-    <b class="money">1일 강사료 ${won(j.fee)}</b>
-    ${cl.length?`<div class="alert">이날 이미 일정이 있어요: ${cl.map(e=>`${esc(e.title)}(${ST[e.st]})`).join(', ')}</div>`:''}
-    ${a?`<span class="mu sm">지원했어요. 회사가 확정하면 달력이 파란색으로 바뀌어요.</span>`:`<button class="btn pri" data-act="apply" data-j="${j.id}">버튼 한 번으로 지원하기</button>`}</div>`}).join(''):'<p class="mu">지금 모집 중인 공고가 없어요.</p>'}`}
-
-/* ===== 강사: 공고 붙여넣기 / 직접 입력 ===== */
-function sheetPaste(pre){const p=pre||{};
-  openSheet(`<div class="row"><h2 class="sp">일정 넣기</h2><button class="btn sm" data-act="closeSheet">닫기</button></div>
-  <label class="f">단톡방·메일 공고를 그대로 붙여 넣으세요<textarea id="pRaw" rows="6" placeholder="예) 11/18(화) 천안 ○○고 3학년 면접 특강 09:00~15:50 강사료 30만원 지원: job@example.com">${esc(p.raw||'')}</textarea></label>
-  <button class="btn" data-act="parse">공고 읽기</button>
-  <div class="grid2">
-   <label class="f">강의<input id="pTitle" value="${esc(p.title||'')}"></label><label class="f">업체<input id="pOrg" value="${esc(p.org||'')}"></label>
-   <label class="f">날짜 (쉼표로)<input id="pDates" value="${esc((p.dates||[]).join(', '))}" placeholder="2026-11-18"></label><label class="f">시간<input id="pTime" value="${esc(p.time||'')}"></label>
-   <label class="f">1일 강사료(원)<input id="pFee" type="number" inputmode="numeric" value="${p.fee||''}"></label><label class="f">받는 메일<input id="pTo" type="email" value="${esc(p.to||'')}"></label>
-   <label class="f">왕복 거리(km)<input id="pKm" type="number" inputmode="numeric" value="${p.km||''}"></label><label class="f">통행료(원)<input id="pToll" type="number" inputmode="numeric" value="${p.toll||''}"></label>
-  </div>
-  <div id="pWarn"></div>
-  <button class="btn pri" data-act="addMail">달력에 넣고 Gmail 열기</button>
-  <button class="btn" data-act="addOnly">달력에만 넣기 (확정된 강의 등)</button>
-  <p class="mu sm">Gmail이 받는 사람·제목·본문이 채워진 채로 열려요. 프로필 파일을 붙이고 보내기는 직접 누르세요.</p>`);
-  ui.dows=p.dows||{};pWarn()}
-function readPaste(){const g=id=>$('#'+id).value.trim();
-  const dates=g('pDates').split(/[,\s]+/).filter(x=>/^\d{4}-\d{2}-\d{2}$/.test(x)).sort();
-  return {raw:g('pRaw'),title:g('pTitle'),org:g('pOrg'),dates,time:g('pTime'),fee:+g('pFee')||0,to:g('pTo'),km:+g('pKm')||0,toll:+g('pToll')||0,dows:ui.dows||{}}}
-function pWarn(){if(!$('#pWarn'))return;const p=readPaste();const W=dateWarn(p.dates,p.dows);
-  const cl=clashes(meId(),p.dates);for(const e of cl)W.push(`${mdK(e.d)}에 이미 "${e.title}"(${ST[e.st]})이 있어요`);
-  if(!p.dates.length)W.push('날짜를 못 찾았어요. 2026-11-18처럼 넣어 주세요');
-  $('#pWarn').innerHTML=W.map(w=>`<div class="alert">${esc(w)}</div>`).join('')}
-function mailOf(p){const me=inst(meId());const place=p.title;
-  const su=`[강사 지원] ${p.dates.map(md).join('·')} ${p.title} - ${me.name}`;
-  const body=`안녕하세요, ${p.org?p.org+' ':''}담당자님.\n강사 ${me.name}입니다.\n\n${p.dates.map(d=>`${mdK(d)}(${dowOf(d)})`).join('·')} ${place} 강의에 지원합니다.\n${p.dates.map(d=>`- 일시: ${md(d)}(${dowOf(d)})${p.time?' '+p.time:''}`).join('\n')}\n\n${me.intro}\n주제: ${me.topics}\n\n프로필 첨부합니다.\n연락처: ${me.phone}\n\n감사합니다.\n${me.name} 드림`;
-  return {su,body,url:`https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(p.to)}&su=${encodeURIComponent(su)}&body=${encodeURIComponent(body)}`}}
-
-/* ===== 강사: 결산 ===== */
-function vMoney(){const E=entries(meId()).filter(e=>e.st!=='applied');const Y=ui.month.slice(0,4);
-  const rows=[];let T={n:0,fee:0,tx:0,net:0,trv:0,pn:0,un:0};
-  for(let m=1;m<=12;m++){const k=`${Y}-${pad(m)}`,es=E.filter(e=>ym(e.d)===k);if(!es.length)continue;
-    const r={m,n:es.length,fee:0,tx:0,net:0,trv:0,un:0};for(const e of es){const x=tax(e.fee);r.fee+=e.fee;r.tx+=x.all;r.trv+=e.trv;r.net+=x.net-e.trv;if(e.st==='done')r.un+=x.net}
-    rows.push(r);for(const k2 of ['n','fee','tx','net','trv','un'])T[k2]+=r[k2]}
-  return `<div class="row"><h2 class="sp">${Y}년 결산</h2><button class="btn sm" data-act="year" data-n="-1">‹</button><button class="btn sm" data-act="year" data-n="1">›</button></div>
-  <div class="sum"><div><span class="mu sm">강사료 합계</span><b>${won(T.fee)}</b></div><div><span class="mu sm">떼인 3.3%</span><b>${won(T.tx)}</b></div><div><span class="mu sm">순수익</span><b>${won(T.net)}</b></div></div>
-  <div class="card tw"><table><thead><tr><th>월</th><th>강의</th><th>강사료</th><th>3.3%</th><th>교통비</th><th>순수익</th><th>못 받음</th></tr></thead><tbody>
-  ${rows.map(r=>`<tr><td>${r.m}월</td><td>${r.n}</td><td>${won(r.fee)}</td><td>${won(r.tx)}</td><td>${won(r.trv)}</td><td>${won(r.net)}</td><td>${r.un?won(r.un):'-'}</td></tr>`).join('')||'<tr><td colspan="7">아직 기록이 없어요</td></tr>'}
-  ${rows.length?`<tr><th>합계</th><th>${T.n}</th><th>${won(T.fee)}</th><th>${won(T.tx)}</th><th>${won(T.trv)}</th><th>${won(T.net)}</th><th>${T.un?won(T.un):'-'}</th></tr>`:''}</tbody></table></div>
-  <button class="btn" data-act="copyYear">결산표 복사 (종합소득세 준비용)</button>
-  <p class="mu sm">강의한 날짜 기준으로 모았어요. 3.3%는 소득세 3%와 지방소득세 0.3%예요. 참고용이며 실제 신고는 홈택스 지급명세서 기준으로 하세요.</p>`}
-
-/* ===== 강사: 프로필 ===== */
-const PF=[['name','이름'],['phone','연락처'],['email','메일'],['region','사는 곳'],['topics','강의 분야'],['intro','한 줄 소개'],['career','강의 경력 (줄마다 한 개)'],['bank','은행'],['acct','계좌번호'],['holder','예금주'],['kmpl','내 차 연비 (km/L)'],['fuel','기름값 (원/L)']];
-function profileText(p){return `■ 강사 프로필\n이름: ${p.name}\n연락처: ${p.phone}\n메일: ${p.email}\n지역: ${p.region}\n강의 분야: ${p.topics}\n\n${p.intro}\n\n[강의 경력]\n${p.career}`}
-function vMe(){const p=inst(meId());
-  return `<h2>내 프로필</h2><p class="mu sm">한 번만 쓰면 지원할 때마다 같이 가요. 주민등록번호는 받지 않아요. 계좌는 나를 확정한 회사만 볼 수 있어요.</p>
-  <div class="card">${PF.map(([k,l])=>`<label class="f">${l}${k==='intro'||k==='career'?`<textarea rows="${k==='career'?4:2}" data-act="pf" data-k="${k}">${esc(p[k])}</textarea>`:`<input data-act="pf" data-k="${k}" value="${esc(p[k])}" ${k==='kmpl'||k==='fuel'?'type="number" inputmode="decimal"':''}>`}</label>`).join('')}</div>
-  <div class="card"><h3>회사에 보이는 프로필 카드</h3><pre class="pf">${esc(profileText(p))}</pre><button class="btn" data-act="copyPf">프로필 복사</button></div>
-  <p class="mu sm">가입일 ${esc(p.joined)} · ${p.beta?'시범 운영 회원 (정식 운영 때 감사 혜택 대상)':''}</p>`}
-
-/* ===== 회사: 강의 목록·상세 ===== */
-function jobStats(j){const A=appsOf(j.id),cf=A.filter(a=>a.status==='확정');
-  const miss=cf.reduce((n,a)=>n+j.needs.filter(x=>x!=='프로필'&&!a.docs[x]).length,0);
-  const unread=j.notices.reduce((n,nt)=>n+(nt.to||[]).filter(i=>!nt.reads[i]).length,0);
-  return {ap:A.filter(a=>a.status==='지원').length,cf:cf.length,miss,unread}}
-function vCJobs(){if(ui.jobId&&job(ui.jobId))return vCJob(job(ui.jobId));const t=todayIso();
-  const J=S.jobs.filter(j=>j.coId===meId()).sort((a,b)=>a.dates[0]<b.dates[0]?-1:1);
-  const up=J.filter(j=>last(j.dates)>=t),past=J.filter(j=>last(j.dates)<t);
-  const card=j=>{const s=jobStats(j);return `<button class="card" style="text-align:left;cursor:pointer" data-act="openJob" data-j="${j.id}"><div class="row"><span class="chip ${j.status==='모집'?'applied':'confirmed'}">${j.status==='모집'?'모집 중':'마감'}</span><h3 class="sp">${esc(j.region)} ${esc(j.school)} ${esc(j.title)}</h3></div>
-    <span class="mu">${j.dates.map(d=>`${md(d)}(${dowOf(d)})`).join('·')} ${esc(j.time)} · 1일 ${won(j.fee)}</span>
-    <div class="row">${s.ap?`<span class="chip applied">지원 ${s.ap}</span>`:''}${s.cf?`<span class="chip confirmed">확정 ${s.cf}</span>`:''}${s.miss?`<span class="chip warn">빠진 서류 ${s.miss}</span>`:''}${s.unread?`<span class="chip warn">공지 안 읽음 ${s.unread}</span>`:''}${!s.cf&&j.status==='마감'?'<span class="chip warn">확정 강사 없음</span>':''}</div></button>`};
-  const todo=up.filter(j=>{const s=jobStats(j);return s.miss||s.unread||(!s.cf&&j.status==='마감')});
-  return `<h2>${esc(co(meId()).name)} 강의 운영판</h2>
-  ${todo.length?`<div class="alert">챙길 강의 ${todo.length}건: 빠진 서류, 안 읽은 공지, 확정 강사 없음을 확인하세요.</div>`:'<div class="ok">다가오는 강의에 빠진 것이 없어요.</div>'}
-  <h3>다가오는 강의</h3>${up.map(card).join('')||'<p class="mu">아래 + 로 강의를 등록하세요.</p>'}
-  <details><summary>지난 강의 ${past.length}건</summary>${past.map(card).join('')}</details>`}
-function vCJob(j){const A=appsOf(j.id),s=jobStats(j);
-  const prof=a=>{const p=inst(a.instId);const cf=a.status==='확정';return `<div class="card"><div class="row"><h3 class="sp">${esc(p.name)} <span class="mu sm">${esc(p.region)} · ${esc(p.topics)}</span></h3>${cf?chip('confirmed'):a.status==='미선정'?'<span class="chip off">미선정</span>':chip('applied')}</div>
-    <span class="mu sm">${esc(p.intro)}</span>
-    <details><summary>프로필 보기</summary><pre class="pf">${esc(profileText(cf?p:{...p,phone:'확정하면 보여요',email:'확정하면 보여요'}))}</pre>${cf?`<span class="mu sm">계좌: ${esc(p.bank)} ${esc(p.acct)} ${esc(p.holder)}</span><button class="btn sm" data-act="copyPfOf" data-i="${p.id}">학교 제출용으로 복사</button>`:''}</details>
-    ${cf?`<div class="mu sm">받을 것: ${j.needs.map(n=>n==='프로필'?'프로필 ✓':a.docs[n]?`${esc(n)} ✓ <span class="sm">(${esc(a.docs[n])})</span>`:`<b style="color:var(--r2)">${esc(n)} 빠짐</b>`).join(' · ')}</div>`:''}
-    ${a.status==='지원'?`<button class="btn pri" data-act="confirm" data-a="${a.id}">이 강사로 확정</button>`:cf&&!a.paidAt?`<button class="btn sm" data-act="unconfirm" data-a="${a.id}">확정 취소</button>`:''}</div>`};
-  const missPeople=A.filter(a=>a.status==='확정'&&j.needs.some(n=>n!=='프로필'&&!a.docs[n]));
-  return `<button class="btn sm" data-act="back">‹ 목록</button>
-  <div class="card"><div class="row"><span class="chip ${j.status==='모집'?'applied':'confirmed'}">${j.status==='모집'?'모집 중':'마감'}</span><h2 class="sp">${esc(j.region)} ${esc(j.school)} ${esc(j.title)}</h2></div>
-  <div class="grid2"><label class="f">날짜 (쉼표로)<input data-act="jedit" data-k="dates" value="${j.dates.join(', ')}"></label><label class="f">시간<input data-act="jedit" data-k="time" value="${esc(j.time)}"></label></div>
-  <span class="mu sm">날짜·시간을 고치면 확정된 강사 달력에도 바로 바뀌고, 강사에게 변경 공지가 가요.</span>
-  <span class="mu">${esc(j.교시)} · ${esc(j.대상)} · 1일 강사료 ${won(j.fee)} (강사에게 공개)</span>
-  ${j.status==='모집'?`<button class="btn nv" data-act="close" data-j="${j.id}">모집 마감</button><span class="mu sm">마감하면 확정하지 않은 지원자는 미선정이 되고, 그 강사 달력에서 사라져요.</span>`:''}</div>
-  <h3>지원자 ${A.filter(a=>a.status!=='미선정').length}명${A.some(a=>a.status==='미선정')?` · 미선정 ${A.filter(a=>a.status==='미선정').length}명`:''}</h3>
-  ${A.filter(a=>a.status!=='미선정').map(prof).join('')||'<p class="mu">아직 지원자가 없어요.</p>'}
-  ${missPeople.length?`<button class="btn" data-act="nudgeDocs" data-j="${j.id}">서류 빠진 ${missPeople.length}명에게 요청 공지 보내기</button>`:''}
-  <h3>공지</h3>
-  <div class="card"><label class="f">종류<select id="ntKind"><option>일반</option><option>시간표</option><option>집결 장소</option><option>주의사항</option><option>준비물</option></select></label><textarea class="f" id="ntText" rows="3" placeholder="도착 장소, 주차, 기자재, 인원, 준비물, 주의사항 등"></textarea><label class="f">사진·이미지 (시간표, 약도 등, 선택)<input type="file" id="ntImg" accept="image/*"></label><button class="btn pri" data-act="notice" data-j="${j.id}" ${s.cf?'':'disabled'}>확정 강사 ${s.cf}명에게 공지 보내기</button></div>
-  ${j.notices.slice().reverse().map(n=>{const to=n.to||[],rd=to.filter(i=>n.reads[i]);return `<div class="card">${n.kind?`<b class="sm">[${esc(n.kind)}]</b>`:''}<pre class="pf">${esc(n.text)}</pre>${n.img?`<img src="${n.img}" alt="공지 이미지" style="width:100%;border-radius:8px">`:''}<span class="mu sm">읽음 ${rd.length}/${to.length}${to.length>rd.length?` · 안 읽음: ${to.filter(i=>!n.reads[i]).map(i=>esc(inst(i).name)).join(', ')}`:''}</span></div>`}).join('')}`}
-function sheetNewJob(p){p=p||{};const N=['프로필','교안','통장사본','신분증 사본','강사 확인서','범죄경력 조회 동의서','결과보고서','수업 사진'];
-  openSheet(`<div class="row"><h2 class="sp">강의 등록</h2><button class="btn sm" data-act="closeSheet">닫기</button></div>
-  <div class="card" style="background:var(--acs)"><h3>강사가 헷갈리지 않는 공고</h3><span class="sm">① 날짜는 달력에서 고르세요. 요일이 자동으로 붙어요.<br>② 시간은 09:00~15:50처럼, 교시도 함께 적어 주세요.<br>③ 대상은 학년과 인원까지 (예: 3학년 100명).<br>④ 장소는 학교 이름과 지역을 모두.<br>⑤ 1일 강사료와 받을 서류를 정해 주세요. 빠지면 등록되지 않아요.</span></div>
-  <label class="f">학교 요청이나 기존 공고를 붙여 넣으면 채워져요<textarea id="jRaw" rows="4">${esc(p.raw||'')}</textarea></label><button class="btn" data-act="jparse">읽기</button>
-  <div class="grid2"><label class="f">강의<input id="jTitle" value="${esc(p.title||'')}"></label><label class="f">학교·기관<input id="jSchool" value="${esc(p.school||'')}"></label>
-  <label class="f">지역<input id="jRegion" value="${esc(p.region||'')}"></label><label class="f">날짜 고르기<input id="jPick" type="date" data-act="jpick"></label></div>
-  <input type="hidden" id="jDates" value="${esc((p.dates||[]).join(', '))}"><div class="row" id="jDateList">${jDateChips(p.dates||[])}</div><div id="jWarn"></div><div class="grid2">
-  <label class="f">시간<input id="jTime" value="${esc(p.time||'')}" placeholder="09:00~15:50"></label><label class="f">교시<input id="jPer" value="${esc(p.per||'')}" placeholder="6교시"></label>
-  <label class="f">대상·인원<input id="jFor" value="${esc(p.for||'')}" placeholder="3학년 100명"></label><label class="f">1일 강사료(원)<input id="jFee" type="number" inputmode="numeric" value="${p.fee||''}"></label></div>
-  <fieldset class="card"><legend class="mu sm">강사에게 받을 것</legend><div class="row">${N.map(n=>`<label class="sm"><input type="checkbox" class="jNeed" value="${n}" ${['프로필','교안','통장사본'].includes(n)?'checked':''} ${n==='프로필'?'disabled':''}> ${n}</label>`).join('')}</div></fieldset>
-  <p class="mu sm">강사료는 공고에 공개돼요. 공개 공고에 지원이 더 많이 와요.</p>
-  <button class="btn pri" data-act="jsave">등록하고 모집 시작</button>`)}
-
-function jDateChips(ds){return ds.length?ds.map(d=>`<button class="btn sm" data-act="jdel" data-d="${d}" aria-label="${mdK(d)} 빼기">${mdK(d)}(${dowOf(d)}) ✕</button>`).join(''):'<span class="mu sm">날짜를 고르면 여기에 요일과 함께 보여요. 여러 날이면 계속 고르세요.</span>'}
-function jWarn(){const ds=$('#jDates').value.split(/[,\s]+/).filter(x=>/^\d{4}-\d{2}-\d{2}$/.test(x));$('#jWarn').innerHTML=dateWarn(ds).map(w=>`<div class="alert">${esc(w)}</div>`).join('')}
-// 이미지는 긴 변 1200px JPEG로 줄여 저장 (체험판은 기기 저장 공간이 작음)
-function shrink(f){return new Promise(res=>{const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{const k=Math.min(1,1200/Math.max(im.width,im.height));const c=document.createElement('canvas');c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext('2d').drawImage(im,0,0,c.width,c.height);res(c.toDataURL('image/jpeg',0.7))};im.onerror=()=>res('');im.src=r.result};r.onerror=()=>res('');r.readAsDataURL(f)})}
-/* ===== 회사: 지급 ===== */
-function unpaidOf(cid){const t=todayIso();return S.apps.filter(a=>{const j=job(a.jobId);return j&&j.coId===cid&&a.status==='확정'&&!a.paidAt&&last(j.dates)<t}).map(a=>{const j=job(a.jobId),amt=j.fee*j.dates.length;return {a,j,p:inst(a.instId),amt,tx:tax(amt)}})}
-function vPay(){const U=unpaidOf(meId());const tot=U.reduce((s,x)=>s+x.tx.net,0);
-  return `<h2>강사비 지급</h2>
-  ${U.length?`<div class="alert">강의가 끝났는데 아직 안 보낸 강사비 ${U.length}건, ${won(tot)}</div>`:'<div class="ok">밀린 강사비가 없어요.</div>'}
-  ${U.map(x=>`<div class="card"><div class="row"><h3 class="sp">${esc(x.p.name)}</h3>${chip('done')}</div><span class="mu">${esc(x.j.school)} ${esc(x.j.title)} · ${x.j.dates.map(md).join('·')}</span>
-   <span class="mu sm money">강사료 ${won(x.amt)} − 소득세 ${won(x.tx.it)} − 지방소득세 ${won(x.tx.lt)}</span><b class="money">보낼 돈 ${won(x.tx.net)}</b><span class="mu sm">${esc(x.p.bank)} ${esc(x.p.acct)} ${esc(x.p.holder)}</span></div>`).join('')}
-  ${U.length?`<div class="card"><h3>1. 은행 대량이체 파일</h3><p class="mu sm">인터넷뱅킹 "대량이체(다계좌 이체)"에 올리는 파일이에요. 은행마다 칸 순서가 조금 달라요.</p>
-   <button class="btn pri" data-act="bulk">대량이체 파일 받기 (CSV)</button><button class="btn" data-act="bulkCopy">내용 복사</button></div>
-  <div class="card"><h3>2. 이체한 뒤 거래내역 붙여넣기</h3><p class="mu sm">인터넷뱅킹 거래내역을 복사해 붙여 넣으면, 이름과 금액이 맞는 강사를 지급 완료로 바꿔요. 강사 달력도 초록색으로 바뀌어요.</p>
-   <textarea class="f" id="txRaw" rows="4" placeholder="2026.10.28 타행이체 김하늘 194,100"></textarea><button class="btn pri" data-act="match">맞춰 보기</button><div id="txOut"></div></div>`:''}`}
-function bulkCsv(){const U=unpaidOf(meId());const c=co(meId()).name;
-  return '﻿입금은행,입금계좌번호,예금주,이체금액,받는분통장표시,내통장표시\n'+U.map(x=>[x.p.bank,x.p.acct,x.p.holder,x.tx.net,`${c} 강사료`,`${x.p.name} ${x.j.dates.map(md).join('.')}`].map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n')}
-function matchTx(raw){const U=unpaidOf(meId()),done=[],t=todayIso();
-  for(const line of raw.split('\n')){const nums=(line.match(/\d{1,3}(?:,\d{3})+|\d{4,}/g)||[]).map(x=>+x.replace(/,/g,''));
-    const dm=line.match(/(20\d{2})[.\-/](\d{1,2})[.\-/](\d{1,2})/);const day=dm?isoOf(+dm[1],+dm[2],+dm[3]):t;
-    const x=U.find(x=>!x.a.paidAt&&(line.includes(x.p.holder)||line.includes(x.p.name))&&nums.includes(x.tx.net));
-    if(x){x.a.paidAt=day;done.push(`${x.p.name} ${won(x.tx.net)}`)}}
-  save();return done}
-
-/* ===== 회사: 결산 ===== */
-function vCSum(){const Y=ui.month.slice(0,4),P=S.apps.filter(a=>a.paidAt&&a.paidAt.startsWith(Y)&&job(a.jobId).coId===meId()).map(a=>{const j=job(a.jobId),amt=j.fee*j.dates.length;return {a,j,p:inst(a.instId),amt,tx:tax(amt)}});
-  const rows=[];for(let m=1;m<=12;m++){const k=`${Y}-${pad(m)}`,xs=P.filter(x=>ym(x.a.paidAt)===k);if(xs.length)rows.push({m,n:xs.length,amt:xs.reduce((s,x)=>s+x.amt,0),it:xs.reduce((s,x)=>s+x.tx.it,0),lt:xs.reduce((s,x)=>s+x.tx.lt,0),net:xs.reduce((s,x)=>s+x.tx.net,0)})}
-  const per={};for(const x of P){const k=x.p.id;per[k]=per[k]||{p:x.p,n:0,amt:0,it:0,lt:0};per[k].n++;per[k].amt+=x.amt;per[k].it+=x.tx.it;per[k].lt+=x.tx.lt}
-  const T=rows.reduce((t,r)=>({n:t.n+r.n,amt:t.amt+r.amt,it:t.it+r.it,lt:t.lt+r.lt,net:t.net+r.net}),{n:0,amt:0,it:0,lt:0,net:0});
-  return `<div class="row"><h2 class="sp">${Y}년 지급 결산</h2><button class="btn sm" data-act="year" data-n="-1">‹</button><button class="btn sm" data-act="year" data-n="1">›</button></div>
-  <p class="mu sm">지급한 날 기준이에요. 원천세는 다음 달 10일까지 신고·납부해요.</p>
-  <div class="card tw"><table><thead><tr><th>월</th><th>건</th><th>강사료</th><th>소득세 3%</th><th>지방세 0.3%</th><th>실지급</th></tr></thead><tbody>
-  ${rows.map(r=>`<tr><td>${r.m}월</td><td>${r.n}</td><td>${won(r.amt)}</td><td>${won(r.it)}</td><td>${won(r.lt)}</td><td>${won(r.net)}</td></tr>`).join('')||'<tr><td colspan="6">아직 지급 기록이 없어요</td></tr>'}
-  ${rows.length?`<tr><th>합계</th><th>${T.n}</th><th>${won(T.amt)}</th><th>${won(T.it)}</th><th>${won(T.lt)}</th><th>${won(T.net)}</th></tr>`:''}</tbody></table></div>
-  <div class="card tw"><h3>강사별 (지급명세서 준비용)</h3><table><thead><tr><th>강사</th><th>건</th><th>강사료</th><th>원천세</th></tr></thead><tbody>${Object.values(per).map(r=>`<tr><td>${esc(r.p.name)}</td><td>${r.n}</td><td>${won(r.amt)}</td><td>${won(r.it+r.lt)}</td></tr>`).join('')||'<tr><td colspan="4">-</td></tr>'}</tbody></table></div>
-  <button class="btn" data-act="copyCSum">결산표 복사</button><p class="mu sm">참고용이에요. 실제 신고는 홈택스와 세무사 확인을 거치세요.</p>`}
-
-const VIEWS={cal:vCal,jobs:vJobs,money:vMoney,me:vMe,cjobs:vCJobs,pay:vPay,csum:vCSum};
-
-/* ===== 동작 ===== */
-function tableText(){return [...$$('#main table')].map(t=>[...t.rows].map(r=>[...r.cells].map(c=>c.textContent).join('\t')).join('\n')).join('\n\n')}
-document.addEventListener('click',async ev=>{
-  const tb=ev.target.closest('[data-tab]');if(tb){ui.tab=tb.dataset.tab;ui.jobId=null;render();scrollTo(0,0);return}
-  const el=ev.target.closest('[data-act]');if(!el)return;const A=el.dataset.act,D=el.dataset;
-  if(A==='closeSheetBg'){if(ev.target===el)closeSheet();return}
-  if(A==='closeSheet')return closeSheet();
-  if(A==='reset'){if(el.dataset.sure){try{localStorage.removeItem(KEY)}catch(e){}S=seed();ui.jobId=null;delete el.dataset.sure;el.textContent='처음으로';render();toast('체험 데이터를 처음으로 되돌렸어요');}else{el.dataset.sure=1;el.textContent='한 번 더 누르면 초기화';setTimeout(()=>{delete el.dataset.sure;el.textContent='처음으로'},3000)}return}
-  if(A==='sel'){ui.sel=D.d;return render()}
-  if(A==='mon'){const n=+D.n;if(!n){ui.month=todayIso().slice(0,7);ui.sel=todayIso()}else{const [y,m]=ui.month.split('-').map(Number);const d=new Date(y,m-1+n,1);ui.month=`${d.getFullYear()}-${pad(d.getMonth()+1)}`}return render()}
-  if(A==='year'){const y=+ui.month.slice(0,4)+ +D.n;ui.month=`${y}-${ui.month.slice(5)}`;return render()}
-  if(A==='evst'){const e=S.evs.find(x=>x.id===D.id);e.st=D.st;save();render();return toast(D.st==='no'?'달력에서 숨겼어요':'바꿨어요')}
-  if(A==='evdel'){S.evs=S.evs.filter(x=>x.id!==D.id);save();render();return toast('지웠어요')}
-  if(A==='plus')return sheetPaste();
-  if(A==='parse'){const raw=$('#pRaw').value;const r=parseNotice(raw);const fee=(raw.match(/(\d{1,3}(?:,\d{3})+|\d+)\s*(만)?\s*원/)||[]);
-    sheetPaste({raw,title:[r.지역,r.학교명,r.강의명].filter(Boolean).join(' '),org:r.기관명,dates:r.dates,time:r.시간,to:r.to,dows:r.dows,fee:fee[1]?(+fee[1].replace(/,/g,''))*(fee[2]?10000:1):''});return toast('공고를 읽었어요. 빈칸만 확인하세요')}
-  if(A==='addMail'||A==='addOnly'){const p=readPaste();if(!p.dates.length){pWarn();return toast('날짜를 넣어 주세요')}if(!p.title)return toast('강의 이름을 넣어 주세요');
-    if(A==='addMail'&&!p.to)return toast('받는 메일을 넣어 주세요');
-    S.evs.push({id:uid(),instId:meId(),dates:p.dates,title:p.title,org:p.org,time:p.time,fee:p.fee,km:p.km,toll:p.toll,st:A==='addMail'?'applied':'confirmed',to:p.to});save();
-    if(A==='addMail'){const m=mailOf(p);const w=window.open(m.url,'_blank');if(!w)copy(m.body,'메일 본문')}
-    closeSheet();ui.tab='cal';ui.sel=p.dates[0];ui.month=ym(p.dates[0]);render();return toast(A==='addMail'?'달력에 "지원"으로 넣고 Gmail을 열었어요':'달력에 "확정"으로 넣었어요')}
-  if(A==='apply'){const j=job(D.j);S.apps.push({id:uid(),jobId:j.id,instId:meId(),status:'지원',docs:{},paidAt:null,km:0,toll:0});save();render();return toast('지원했어요. 프로필이 같이 갔어요')}
-  if(A==='copyPf')return copy(profileText(inst(meId())),'프로필');
-  if(A==='copyPfOf')return copy(profileText(inst(D.i)),'프로필');
-  if(A==='copyYear'||A==='copyCSum')return copy(tableText(),'결산표');
-  // 회사
-  if(A==='openJob'){ui.jobId=D.j;render();return scrollTo(0,0)}
-  if(A==='back'){ui.jobId=null;return render()}
-  if(A==='confirm'){const a=S.apps.find(x=>x.id===D.a),j=job(a.jobId);
-    const other=S.apps.filter(x=>x.instId===a.instId&&x.status==='확정'&&x.id!==a.id&&job(x.jobId).dates.some(d=>j.dates.includes(d)));
-    if(other.length&&!el.dataset.sure){el.dataset.sure=1;el.textContent='그날 다른 확정 강의가 있어요. 그래도 확정';return}
-    a.status='확정';save();render();return toast(`${inst(a.instId).name} 강사로 확정했어요. 강사 달력에 바로 떠요`)}
-  if(A==='unconfirm'){const a=S.apps.find(x=>x.id===D.a);a.status='지원';save();render();return toast('확정을 취소했어요')}
-  if(A==='close'){const j=job(D.j);const cf=appsOf(j.id).filter(a=>a.status==='확정').length;
-    if(!cf&&!el.dataset.sure){el.dataset.sure=1;el.textContent='확정한 강사가 없어요. 그래도 마감';return}
-    j.status='마감';let n=0;for(const a of appsOf(j.id))if(a.status==='지원'){a.status='미선정';n++}save();render();return toast(`마감했어요. 미선정 ${n}명은 달력에서 사라졌어요`)}
-  if(A==='notice'){const j=job(D.j),tx=$('#ntText').value.trim();if(!tx&&!$('#ntImg').files[0])return toast('공지 내용을 쓰거나 이미지를 넣으세요');
-    const f=$('#ntImg').files[0];const img=f?await shrink(f):'';
-    j.notices.push({id:uid(),kind:$('#ntKind').value,text:tx,img,at:new Date().toISOString(),to:appsOf(j.id).filter(a=>a.status==='확정').map(a=>a.instId),reads:{}});save();render();return toast('공지를 보냈어요. 강사 일정 카드 맨 위에 떠요')}
-  if(A==='nudgeDocs'){const j=job(D.j);const ms=appsOf(j.id).filter(a=>a.status==='확정'&&j.needs.some(n=>n!=='프로필'&&!a.docs[n]));
-    for(const a of ms)j.notices.push({id:uid(),text:`[서류 요청] ${j.school} ${j.title} 강의에 ${j.needs.filter(n=>n!=='프로필'&&!a.docs[n]).join(', ')}이(가) 아직 없어요. 강사로 앱 "공고 > 확정된 강의"에서 올려 주세요.`,at:new Date().toISOString(),to:[a.instId],reads:{}});
-    save();render();return toast(`${ms.length}명에게 요청 공지를 보냈어요`)}
-  if(A==='cnew')return sheetNewJob();
-  if(A==='jparse'){const raw=$('#jRaw').value,r=parseNotice(raw);const fee=(raw.match(/(\d{1,3}(?:,\d{3})+|\d+)\s*(만)?\s*원/)||[]);
-    sheetNewJob({raw,title:r.강의명,school:r.학교명,region:r.지역,dates:r.dates,time:r.시간,per:r.교시,for:r.대상,fee:fee[1]?(+fee[1].replace(/,/g,''))*(fee[2]?10000:1):''});jWarn();return toast('읽었어요. 빈칸만 확인하세요')}
-  if(A==='jdel'){const ds=$('#jDates').value.split(/[,\s]+/).filter(x=>x&&x!==D.d);$('#jDates').value=ds.join(', ');$('#jDateList').innerHTML=jDateChips(ds);return jWarn()}
-  if(A==='jsave'){const g=id=>$('#'+id).value.trim();const dates=g('jDates').split(/[,\s]+/).filter(x=>/^\d{4}-\d{2}-\d{2}$/.test(x)).sort();
-    const miss=[!g('jTitle')&&'강의',!dates.length&&'날짜',!/^\d{2}:\d{2}\s*~\s*\d{2}:\d{2}$/.test(g('jTime'))&&'시간(09:00~15:50 형식)',!g('jPer')&&'교시',!g('jFor')&&'대상',!(g('jSchool')&&g('jRegion'))&&'학교·지역',!+g('jFee')&&'강사료'].filter(Boolean);
-    if(miss.length)return toast('빠졌어요: '+miss.join(', '));
-    const j={id:uid(),coId:meId(),title:g('jTitle'),school:g('jSchool'),region:g('jRegion'),dates,time:g('jTime'),교시:g('jPer'),대상:g('jFor'),fee:+g('jFee'),status:'모집',needs:['프로필',...$$('.jNeed:checked').map(x=>x.value).filter(x=>x!=='프로필')],notices:[],created:todayIso()};
-    S.jobs.push(j);save();closeSheet();ui.tab='cjobs';ui.jobId=j.id;render();const W=dateWarn(dates);return toast(W.length?W[0]:'등록했어요. 강사 공고 목록에 바로 올라가요')}
-  if(A==='bulk'){const blob=new Blob([bulkCsv()],{type:'text/csv'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`대량이체_${todayIso()}.csv`;document.body.appendChild(a);a.click();a.remove();return toast('파일을 받았어요')}
-  if(A==='bulkCopy')return copy(bulkCsv().replace('﻿',''),'대량이체 내용');
-  if(A==='match'){const d=matchTx($('#txRaw').value);render();const o=$('#txOut');if(o)o.innerHTML='';toast(d.length?`지급 완료로 바꿨어요: ${d.join(', ')}`:'맞는 이름과 금액을 못 찾았어요');return}
-});
-document.addEventListener('toggle',ev=>{const el=ev.target;if(el.dataset&&el.dataset.act==='readNotices'&&el.open){const j=job(el.dataset.j),id=meId();let ch=0;for(const n of j.notices)if((n.to||[]).includes(id)&&!n.reads[id]){n.reads[id]=new Date().toISOString();ch++}if(ch){save();const un=unreadCount();const nb=$('[data-tab="jobs"]');if(nb)nb.innerHTML='공고'+(un?`<span class="dot">${un}</span>`:'')}}},true);
-document.addEventListener('change',ev=>{const el=ev.target,D=el.dataset||{};
-  if(el.id==='who'){S.me=el.value;ui.jobId=null;ui.tab=NAV[meRole()][0][0];save();render();return toast(el.options[el.selectedIndex].text+'(으)로 보고 있어요')}
-  if(D.act==='jpick'&&el.value){const ds=[...new Set([...$('#jDates').value.split(/[,\s]+/).filter(Boolean),el.value])].sort();$('#jDates').value=ds.join(', ');$('#jDateList').innerHTML=jDateChips(ds);el.value='';jWarn();return}
-  if(D.act==='jf'){ui.jf[D.k]=el.type==='checkbox'?el.checked:el.value.trim();render();return}
-  if(D.act==='km'||D.act==='toll'){const o=D.kind==='ev'?S.evs.find(x=>x.id===D.id):S.apps.find(x=>x.id===D.id);o[D.act]=+el.value||0;save();render()}
-  if(D.act==='pf'){const p=inst(meId());p[D.k]=D.k==='kmpl'||D.k==='fuel'?+el.value||0:el.value;save();render()}
-  if(D.act==='doc'&&el.files[0]){const a=S.apps.find(x=>x.id===D.a);a.docs[D.n]=el.files[0].name;save();render();toast(`${D.n} 냈어요 (체험판은 파일 이름만 저장해요)`)}
-  if(D.act==='jedit'){const j=job(ui.jobId);const old=j[D.k];let v=el.value.trim();
-    if(D.k==='dates'){v=v.split(/[,\s]+/).filter(x=>/^\d{4}-\d{2}-\d{2}$/.test(x)).sort();if(!v.length)return toast('날짜는 2026-11-18처럼 넣어 주세요');if(v.join()===old.join())return}else if(v===old)return;
-    j[D.k]=v;const to=appsOf(j.id).filter(a=>a.status==='확정').map(a=>a.instId);
-    if(to.length)j.notices.push({id:uid(),text:`[일정 변경] ${j.school} ${j.title}: ${D.k==='dates'?'날짜':'시간'}이 ${D.k==='dates'?old.map(md).join('·'):old} → ${D.k==='dates'?v.map(md).join('·'):v}(으)로 바뀌었어요.`,at:new Date().toISOString(),to,reads:{}});
-    save();render();toast(to.length?`바꿨어요. 확정 강사 ${to.length}명에게 변경 공지가 갔어요`:'바꿨어요')}
-});
-document.addEventListener('input',ev=>{if(['pDates','pRaw'].includes(ev.target.id))pWarn()});
-render();
-</script>
 </body>
 </html>
