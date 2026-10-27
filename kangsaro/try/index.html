@@ -214,7 +214,7 @@ function seed(){const t=todayIso(),d=n=>addDays(t,n);
       {id:'j6',coId:'c1',title:'면접 캠프',school:'○○고',region:'수원',dates:[t],time:'13:00~15:00',교시:'2교시',대상:'3학년 60명',fee:120000,status:'마감',needs:['프로필','교안'],notices:[],created:d(-10)},
       {id:'j5',coId:'c2',title:'비즈니스매너',school:'○○여고',region:'인천',dates:[d(14)],time:'10:00~14:00',교시:'4교시',대상:'3학년',fee:220000,status:'모집',needs:['프로필','통장사본'],notices:[],created:d(-1)}],
     apps:[
-      {id:'a1',jobId:'j1',instId:'i1',status:'확정',docs:{교안:'면접특강.pptx',통장사본:'통장.jpg'},paidAt:d(-5),km:120,toll:6000},
+      {id:'a1',jobId:'j1',instId:'i1',status:'확정',docs:{교안:'면접특강.pptx',통장사본:'통장.jpg'},paidAt:d(-5),recv:'ok',km:120,toll:6000},
       {id:'a2',jobId:'j2',instId:'i1',status:'확정',docs:{교안:'AI자소서.pptx'},paidAt:null,km:40,toll:0},
       {id:'a3',jobId:'j3',instId:'i1',status:'확정',docs:{교안:'취업특강.pptx'},paidAt:null,km:150,toll:7000},
       {id:'a4',jobId:'j3',instId:'i3',status:'미선정',docs:{},paidAt:null,km:0,toll:0},
@@ -229,7 +229,7 @@ function seed(){const t=todayIso(),d=n=>addDays(t,n);
 let firstVisit=false;
 function load(){try{const s=JSON.parse(localStorage.getItem(KEY));if(s&&s.v===1)return s}catch(e){}firstVisit=true;return seed()}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
-S=load();
+S=load();S.alerts=S.alerts||[];
 
 const meRole=()=>S.me.split(':')[0],meId=()=>S.me.split(':')[1];
 const inst=id=>S.insts.find(x=>x.id===id),co=id=>S.cos.find(x=>x.id===id),job=id=>S.jobs.find(x=>x.id===id);
@@ -261,7 +261,8 @@ function render(){
   const r=meRole();if(!NAV[r].some(n=>n[0]===ui.tab))ui.tab=NAV[r][0][0];
   const un=r==='i'?unreadCount():0;
   $('#nav').innerHTML=NAV[r].map(([k,l])=>k==='plus'||k==='cnew'?`<button class="plus" data-act="${k}" aria-label="${r==='i'?'일정 넣기':'강의 등록'}">+</button>`:`<button data-tab="${k}" class="${ui.tab===k?'on':''}">${l}${k==='jobs'&&un?`<span class="dot">${un}</span>`:''}</button>`).join('');
-  $('#main').innerHTML=(VIEWS[ui.tab]||(()=>''))();
+  const al=r==='i'?S.alerts.filter(a=>a.instId===meId()&&!a.read):[];
+  $('#main').innerHTML=(al.length?`<div class="card" style="border-color:var(--b2);background:var(--b1)" role="status"><b style="color:var(--b2)">알림 ${al.length}개</b>${al.map(a=>`<div class="row"><span class="sp">${esc(a.text)}</span>${a.kind==='pay'?`<button class="btn sm pri" data-act="recv" data-id="${a.id}" data-v="ok">입금 확인했어요</button><button class="btn sm" data-act="recv" data-id="${a.id}" data-v="no">아직 안 들어왔어요</button>`:`<button class="btn sm" data-act="alertOk" data-id="${a.id}">확인</button>`}</div>`).join('')}</div>`:'')+(VIEWS[ui.tab]||(()=>''))();
 }
 function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(toast.h);toast.h=setTimeout(()=>t.classList.remove('on'),2400)}
 async function copy(text,what){try{await navigator.clipboard.writeText(text)}catch(e){const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();try{document.execCommand('copy')}catch(_){}ta.remove()}toast((what||'')+' 복사했어요')}
@@ -459,19 +460,17 @@ function vPay(){const U=unpaidOf(meId());const tot=U.reduce((s,x)=>s+x.tx.net,0)
   return `<h2>강사비 지급</h2>
   ${U.length?`<div class="alert">강의가 끝났는데 아직 안 보낸 강사비 ${U.length}건, ${won(tot)}</div>`:'<div class="ok">밀린 강사비가 없어요.</div>'}
   ${U.map(x=>`<div class="card"><div class="row"><h3 class="sp">${esc(x.p.name)}</h3>${chip('done')}</div><span class="mu">${esc(x.j.school)} ${esc(x.j.title)} · ${x.j.dates.map(md).join('·')}</span>
-   <span class="mu sm money">강사료 ${won(x.amt)} − 소득세 ${won(x.tx.it)} − 지방소득세 ${won(x.tx.lt)}</span><b class="money">보낼 돈 ${won(x.tx.net)}</b><span class="mu sm">${esc(x.p.bank)} ${esc(x.p.acct)} ${esc(x.p.holder)}</span></div>`).join('')}
-  ${U.length?`<div class="card"><h3>1. 은행 대량이체 파일</h3><p class="mu sm">인터넷뱅킹 "대량이체(다계좌 이체)"에 올리는 파일이에요. 은행마다 칸 순서가 조금 달라요.</p>
+   <span class="mu sm money">강사료 ${won(x.amt)} − 소득세 ${won(x.tx.it)} − 지방소득세 ${won(x.tx.lt)}</span><b class="money">보낼 돈 ${won(x.tx.net)}</b><span class="mu sm">${esc(x.p.bank)} ${esc(x.p.acct)} ${esc(x.p.holder)}</span><button class="btn" data-act="payOne" data-a="${x.a.id}">지급 완료</button></div>`).join('')}
+  ${U.length?`<div class="card"><h3>1. 은행 대량이체 파일</h3><p class="mu sm">인터넷뱅킹 "대량이체(다계좌 이체)"에 올리는 파일이에요. 통장 내역은 앱에 올리지 않아요. 은행마다 칸 순서가 조금 달라요.</p>
    <button class="btn pri" data-act="bulk">대량이체 파일 받기 (CSV)</button><button class="btn" data-act="bulkCopy">내용 복사</button></div>
-  <div class="card"><h3>2. 이체한 뒤 거래내역 붙여넣기</h3><p class="mu sm">인터넷뱅킹 거래내역을 복사해 붙여 넣으면, 이름과 금액이 맞는 강사를 지급 완료로 바꿔요. 강사 달력도 초록색으로 바뀌어요.</p>
-   <textarea class="f" id="txRaw" rows="4" placeholder="2026.10.28 타행이체 김하늘 194,100"></textarea><button class="btn pri" data-act="match">맞춰 보기</button><div id="txOut"></div></div>`:''}`}
+  <div class="card"><h3>2. 이체한 뒤 지급 완료 누르기</h3><p class="mu sm">위 강사 카드에서 "지급 완료"를 누르거나, 아래 버튼으로 한 번에 처리하세요. 강사에게 "입금 확인하기" 알림이 가고, 강사가 확인하면 여기에 표시돼요.</p>
+   <button class="btn pri" data-act="payAll">이 목록 ${U.length}명 모두 지급 완료</button></div>`:''}
+  ${(()=>{const R=recentPaid(meId());return R.length?`<h3>최근 30일 지급 · 강사 입금 확인</h3>${R.map(x=>`<div class="card"><div class="row"><b class="sp">${esc(x.p.name)} · ${won(x.net)}</b><span class="chip ${x.a.recv==='no'?'warn':x.a.recv==='ok'?'paid':'applied'}">${x.a.recv==='ok'?'강사 확인 ✓':x.a.recv==='no'?'강사: 아직 안 들어옴':'강사 확인 전'}</span></div><span class="mu sm">${esc(x.j.school)} ${esc(x.j.title)} · 지급 ${md(x.a.paidAt)}</span></div>`).join('')}`:''})()}`}
+function recentPaid(cid){const t=todayIso();return S.apps.filter(a=>{const j=job(a.jobId);return j&&j.coId===cid&&a.paidAt&&a.paidAt>=addDays(t,-30)}).map(a=>{const j=job(a.jobId);return {a,j,p:inst(a.instId),net:tax(j.fee*j.dates.length).net}})}
+function markPaid(a){const j=job(a.jobId),net=tax(j.fee*j.dates.length).net;a.paidAt=todayIso();a.recv='';
+  S.alerts.push({id:uid(),instId:a.instId,kind:'pay',appId:a.id,text:`[입금 확인] ${co(j.coId).name}에서 ${j.school} ${j.title}(${j.dates.map(md).join('·')}) 강사료 ${won(net)}을 보냈다고 알려 왔어요. 통장에서 확인해 주세요.`,at:new Date().toISOString(),read:false})}
 function bulkCsv(){const U=unpaidOf(meId());const c=co(meId()).name;
   return '﻿입금은행,입금계좌번호,예금주,이체금액,받는분통장표시,내통장표시\n'+U.map(x=>[x.p.bank,x.p.acct,x.p.holder,x.tx.net,`${c} 강사료`,`${x.p.name} ${x.j.dates.map(md).join('.')}`].map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n')}
-function matchTx(raw){const U=unpaidOf(meId()),done=[],t=todayIso();
-  for(const line of raw.split('\n')){const nums=(line.match(/\d{1,3}(?:,\d{3})+|\d{4,}/g)||[]).map(x=>+x.replace(/,/g,''));
-    const dm=line.match(/(20\d{2})[.\-/](\d{1,2})[.\-/](\d{1,2})/);const day=dm?isoOf(+dm[1],+dm[2],+dm[3]):t;
-    const x=U.find(x=>!x.a.paidAt&&(line.includes(x.p.holder)||line.includes(x.p.name))&&nums.includes(x.tx.net));
-    if(x){x.a.paidAt=day;done.push(`${x.p.name} ${won(x.tx.net)}`)}}
-  save();return done}
 
 /* ===== 회사: 결산 ===== */
 function vCSum(){const Y=ui.month.slice(0,4),P=S.apps.filter(a=>a.paidAt&&a.paidAt.startsWith(Y)&&job(a.jobId).coId===meId()).map(a=>{const j=job(a.jobId),amt=j.fee*j.dates.length;return {a,j,p:inst(a.instId),amt,tx:tax(amt)}});
@@ -507,6 +506,10 @@ document.addEventListener('click',async ev=>{
     if(A==='dayarr')x.arr=nowIso();
     if(A==='daylate'){const v=$('#late-'+a.id).value.trim();if(!v)return toast('사유를 짧게 써 주세요');x.late=v}
     save();render();return toast({dayack:'확인했어요. 업체에 표시돼요',daydep:'출발을 업체에 알렸어요',dayarr:'도착을 업체에 알렸어요',daylate:'업체에 알렸어요'}[A])}
+  if(A==='payOne'){markPaid(S.apps.find(x=>x.id===D.a));save();render();return toast('지급 완료로 바꾸고 강사에게 입금 확인 알림을 보냈어요')}
+  if(A==='payAll'){const U=unpaidOf(meId());for(const x of U)markPaid(x.a);save();render();return toast(`${U.length}명 지급 완료, 입금 확인 알림을 보냈어요`)}
+  if(A==='recv'){const al=S.alerts.find(x=>x.id===D.id),a=S.apps.find(x=>x.id===al.appId);al.read=true;if(a)a.recv=D.v;save();render();return toast(D.v==='ok'?'입금 확인을 업체에 알렸어요':'아직 안 들어왔다고 업체에 알렸어요')}
+  if(A==='alertOk'){const a=S.alerts.find(x=>x.id===D.id);if(a)a.read=true;save();return render()}
   if(A==='plus')return sheetPaste();
   if(A==='parse'){const raw=$('#pRaw').value;const r=parseNotice(raw);const fee=(raw.match(/(\d{1,3}(?:,\d{3})+|\d+)\s*(만)?\s*원/)||[]);
     sheetPaste({raw,title:[r.지역,r.학교명,r.강의명].filter(Boolean).join(' '),org:r.기관명,dates:r.dates,time:r.시간,to:r.to,dows:r.dows,fee:fee[1]?(+fee[1].replace(/,/g,''))*(fee[2]?10000:1):''});return toast('공고를 읽었어요. 빈칸만 확인하세요')}
@@ -525,7 +528,8 @@ document.addEventListener('click',async ev=>{
   if(A==='confirm'){const a=S.apps.find(x=>x.id===D.a),j=job(a.jobId);
     const other=S.apps.filter(x=>x.instId===a.instId&&x.status==='확정'&&x.id!==a.id&&job(x.jobId).dates.some(d=>j.dates.includes(d)));
     if(other.length&&!el.dataset.sure){el.dataset.sure=1;el.textContent='그날 다른 확정 강의가 있어요. 그래도 확정';return}
-    a.status='확정';save();render();return toast(`${inst(a.instId).name} 강사로 확정했어요. 강사 달력에 바로 떠요`)}
+    a.status='확정';S.alerts.push({id:uid(),instId:a.instId,text:`[확정] ${co(j.coId).name} · ${j.region} ${j.school} ${j.title} (${j.dates.map(d=>`${md(d)}(${dowOf(d)})`).join('·')} ${j.time}) 강의가 확정되었어요.`,at:new Date().toISOString(),read:false});
+    save();render();return toast(`${inst(a.instId).name} 강사로 확정했어요. 강사에게 확정 알림이 갔어요`)}
   if(A==='unconfirm'){const a=S.apps.find(x=>x.id===D.a);a.status='지원';save();render();return toast('확정을 취소했어요')}
   if(A==='close'){const j=job(D.j);const cf=appsOf(j.id).filter(a=>a.status==='확정').length;
     if(!cf&&!el.dataset.sure){el.dataset.sure=1;el.textContent='확정한 강사가 없어요. 그래도 마감';return}
@@ -547,7 +551,6 @@ document.addEventListener('click',async ev=>{
     S.jobs.push(j);save();closeSheet();ui.tab='cjobs';ui.jobId=j.id;render();const W=dateWarn(dates);return toast(W.length?W[0]:'등록했어요. 강사 공고 목록에 바로 올라가요')}
   if(A==='bulk'){const blob=new Blob([bulkCsv()],{type:'text/csv'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`대량이체_${todayIso()}.csv`;document.body.appendChild(a);a.click();a.remove();return toast('파일을 받았어요')}
   if(A==='bulkCopy')return copy(bulkCsv().replace('﻿',''),'대량이체 내용');
-  if(A==='match'){const d=matchTx($('#txRaw').value);render();const o=$('#txOut');if(o)o.innerHTML='';toast(d.length?`지급 완료로 바꿨어요: ${d.join(', ')}`:'맞는 이름과 금액을 못 찾았어요');return}
 });
 document.addEventListener('toggle',ev=>{const el=ev.target;if(el.dataset&&el.dataset.act==='readNotices'&&el.open){const j=job(el.dataset.j),id=meId();let ch=0;for(const n of j.notices)if((n.to||[]).includes(id)&&!n.reads[id]){n.reads[id]=new Date().toISOString();ch++}if(ch){save();const un=unreadCount();const nb=$('[data-tab="jobs"]');if(nb)nb.innerHTML='공고'+(un?`<span class="dot">${un}</span>`:'')}}},true);
 document.addEventListener('change',ev=>{const el=ev.target,D=el.dataset||{};
