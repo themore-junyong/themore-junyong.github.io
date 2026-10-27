@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>강사로: 강사와 강의 업체를 잇는 앱</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=Gowun+Batang:wght@700&display=swap">
+<style>
+/* 레이아웃: 강사 쪽(청록)과 회사 쪽(남색) 두 줄기가 '다리' 하나로 만나는 세로 흐름. 불편 → 해결 → 기능 → 반박 순서 */
+:root{
+  --bg:#F4F6F5; --surface:#FFFFFF; --fg:#15222A; --muted:#4D5B63; --line:#D6DEDC;
+  --teal:#1F6F78; --teal-soft:#E0EEEE; --navy:#2D3E73; --navy-soft:#E3E7F4;
+  --gray-chip:#E3E7E9; --gray-fg:#3B4650; --blue-chip:#DCEBFA; --blue-fg:#1A4F8A;
+  --purple-chip:#ECE2F7; --purple-fg:#5B3A8C; --green-chip:#DDF1E4; --green-fg:#1E6B3A;
+  --warn:#9A3608; --warn-soft:#FDECE3;
+  --display:'Gowun Batang', 'Nanum Myeongjo', serif;
+  --body:'IBM Plex Sans KR', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0F1719; --surface:#172225; --fg:#E7EEEE; --muted:#A3B2B5; --line:#2C3A3E;
+  --teal:#5FB7BF; --teal-soft:#183338; --navy:#9DAEE6; --navy-soft:#1E2640;
+  --gray-chip:#2A3337; --gray-fg:#C9D2D6; --blue-chip:#1B2F47; --blue-fg:#9CC6F2;
+  --purple-chip:#2E2540; --purple-fg:#CDB5EE; --green-chip:#173426; --green-fg:#94D9AE;
+  --warn:#F2A57E; --warn-soft:#3A2116; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0F1719; --surface:#172225; --fg:#E7EEEE; --muted:#A3B2B5; --line:#2C3A3E;
+  --teal:#5FB7BF; --teal-soft:#183338; --navy:#9DAEE6; --navy-soft:#1E2640;
+  --gray-chip:#2A3337; --gray-fg:#C9D2D6; --blue-chip:#1B2F47; --blue-fg:#9CC6F2;
+  --purple-chip:#2E2540; --purple-fg:#CDB5EE; --green-chip:#173426; --green-fg:#94D9AE;
+  --warn:#F2A57E; --warn-soft:#3A2116; color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:16px;line-height:1.7}
+.wrap{max-width:720px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:32px 56px;display:flex;flex-direction:column;gap:56px}
+h1,h2,h3{text-wrap:balance;margin:0}
+h1{font-family:var(--display);font-size:clamp(28px,7vw,40px);line-height:1.35}
+h2{font-family:var(--display);font-size:clamp(23px,5.5vw,30px);line-height:1.4}
+h3{font-size:17px;font-weight:700}
+p{margin:0}
+.eyebrow{font-size:13px;font-weight:700;letter-spacing:.06em}
+.t{color:var(--teal)} .n{color:var(--navy)}
+section{display:flex;flex-direction:column;gap:18px}
+.lead{font-size:17px;color:var(--muted)}
+.btns{display:flex;flex-wrap:wrap;gap:10px}
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:52px;padding:0 22px;border-radius:14px;font-weight:700;font-size:16px;text-decoration:none;font-family:inherit;cursor:pointer}
+.btn.primary{background:var(--teal);color:var(--bg);border:0}
+.btn.ghost{background:transparent;color:var(--fg);border:1.5px solid var(--line)}
+.btn:focus-visible{outline:3px solid var(--navy);outline-offset:2px}
+.note{font-size:13px;color:var(--muted)}
+/* 히어로의 강의 카드 */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:10px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-size:12px;font-weight:700;padding:3px 10px;border-radius:999px}
+.c-gray{background:var(--gray-chip);color:var(--gray-fg)} .c-blue{background:var(--blue-chip);color:var(--blue-fg)}
+.c-purple{background:var(--purple-chip);color:var(--purple-fg)} .c-green{background:var(--green-chip);color:var(--green-fg)}
+.calc{display:grid;grid-template-columns:1fr auto;gap:2px 12px;font-size:14px;font-variant-numeric:tabular-nums}
+.calc .r{text-align:right} .calc .total{font-weight:700;color:var(--teal);border-top:1px solid var(--line);padding-top:6px;margin-top:4px}
+/* 불편 목록 */
+.pain{display:flex;flex-direction:column;gap:10px;margin:0;padding:0;list-style:none}
+.pain li{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px;font-size:15px}
+.pain li b{display:block;font-size:15px}
+.pain li span{color:var(--muted);font-size:14px}
+.chain{background:var(--warn-soft);color:var(--warn);border-radius:12px;padding:12px 14px;font-size:15px;font-weight:600}
+/* 기능 */
+.feat{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+@media (max-width:520px){.feat{grid-template-columns:1fr}}
+.feat div{border-top:2px solid var(--line);padding-top:10px;display:flex;flex-direction:column;gap:4px;min-width:0}
+.feat.t2 div{border-color:var(--teal)} .feat.n2 div{border-color:var(--navy)}
+.feat p{font-size:14px;color:var(--muted)}
+/* 반박 */
+.qa{display:flex;flex-direction:column;gap:8px}
+details{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:0 14px}
+summary{cursor:pointer;font-weight:700;padding:14px 0;list-style:none;display:flex;justify-content:space-between;gap:12px}
+summary::after{content:"+";color:var(--muted);font-weight:400}
+details[open] summary::after{content:"−"}
+details p{padding-bottom:14px;font-size:15px;color:var(--muted)}
+summary:focus-visible{outline:2px solid var(--teal);outline-offset:2px;border-radius:6px}
+.bridge{display:flex;align-items:center;gap:10px;font-size:14px;font-weight:700}
+.bridge i{flex:1;height:2px;background:linear-gradient(90deg,var(--teal),var(--navy))}
+.price{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+@media (max-width:520px){.price{grid-template-columns:1fr}}
+.price div{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:4px}
+.price strong{font-size:20px;font-variant-numeric:tabular-nums}
+.end{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:22px 18px;display:flex;flex-direction:column;gap:14px}
+</style>
+
+</head>
+<body>
+<div class="wrap">
+
+  <!-- 히어로 -->
+  <section>
+    <span class="eyebrow t">강사와 강의 업체를 잇는 앱 · 강사로</span>
+    <h1>공고 찾고, 프로필 고치고, 강사료 기다리는 일. 이제 한곳에서 끝내세요.</h1>
+    <p class="lead">현장에서 강의하는 강사가 직접 겪은 불편에서 시작했습니다. 강사는 일정과 돈이 한눈에 보이고, 업체는 놓치는 일이 사라집니다.</p>
+    <div class="card" aria-label="강의 카드 예시">
+      <div class="chips"><span class="chip c-gray">지원</span><span class="chip c-blue">확정</span><span class="chip c-purple">강의 끝·미지급</span><span class="chip c-green">지급 완료</span></div>
+      <h3>10월 28일 (수) 천안 ○○공고 취업 특강 <span class="chip c-blue">확정</span></h3>
+      <div class="calc">
+        <span>강사료</span><span class="r">300,000원</span>
+        <span>3.3% 뗀 금액</span><span class="r">290,100원</span>
+        <span>왕복 기름값·통행료</span><span class="r">− 18,000원</span>
+        <span class="total">순수익</span><span class="r total">272,100원</span>
+      </div>
+      <p class="note">예시 화면이에요. 실제 강의가 아닙니다.</p>
+    </div>
+    <div class="btns">
+      <a class="btn primary" href="try/" target="_blank" rel="noopener">먼저 체험해 보기</a>
+      <a class="btn ghost" href="#join">시범 가입 신청</a>
+    </div>
+  </section>
+
+  <!-- 강사 -->
+  <section>
+    <span class="eyebrow t">강사님이라면</span>
+    <h2>이런 불편, 겪어 보셨죠?</h2>
+    <ul class="pain">
+      <li><b>업체마다 다른 프로필 양식</b><span>같은 내용을 한글, 워드, PPT로 몇 번씩 다시 만듭니다.</span></li>
+      <li><b>공고 볼 때마다 지원 메일 새로 쓰기</b><span>단톡방에 공고가 올라오면 이미 늦을 때가 많습니다.</span></li>
+      <li><b>여러 업체 일정이 뒤섞임</b><span>같은 날 두 곳에 지원했다가 겹치는 걸 늦게 알아챕니다.</span></li>
+      <li><b>강사료가 들어왔는지 기억이 안 남</b><span>강의 끝나고 한두 달 뒤 지급되면 어디가 아직인지 헷갈립니다.</span></li>
+      <li><b>5월 종합소득세</b><span>1년 치 3.3% 내역을 통장에서 하나하나 찾습니다.</span></li>
+    </ul>
+    <p>이 불편을 없애려고 만들었습니다.</p>
+    <div class="feat t2">
+      <div><h3>프로필은 한 번만</h3><p>한 번 쓰면 업체·학교 양식에 맞춰 나옵니다.</p></div>
+      <div><h3>공고 붙여넣기 → 지원서 완성</h3><p>날짜, 장소, 대상을 AI가 읽고 지원 메일을 써 둡니다. 보내기는 내가 누릅니다.</p></div>
+      <div><h3>버튼 한 번으로 지원</h3><p>앱에 올라온 공고는 프로필이 바로 붙어서 갑니다. 단톡방 공고는 받는 사람·제목·본문이 채워진 Gmail이 열리고, 프로필 파일만 붙여 보내면 됩니다.</p></div>
+      <div><h3>내 강의 달력</h3><p>지원 → 확정 → 강의 끝 → 지급 완료를 색으로 봅니다. 업체가 확정하면 달력에 바로 뜹니다.</p></div>
+      <div><h3>겹침·미지급 알림</h3><p>같은 날 일정이 겹치거나 강사료가 늦으면 알려 줍니다.</p></div>
+      <div><h3>순수익과 결산</h3><p>강사료에서 3.3%와 기름값을 뺀 금액, 월별·연말 합계를 정리합니다.</p></div>
+    </div>
+  </section>
+
+  <div class="bridge" aria-hidden="true"><span class="t">강사</span><i></i><span class="n">업체</span></div>
+
+  <!-- 회사 -->
+  <section>
+    <span class="eyebrow n">강의 업체라면</span>
+    <h2>작은 실수 하나가 운영을 흔들고, 강사에게 돌아갑니다.</h2>
+    <ul class="pain">
+      <li><b>강사마다 다른 형식의 프로필</b><span>학교가 원하는 양식으로 다시 받거나 직접 고칩니다.</span></li>
+      <li><b>교안·통장사본·서류 받기</b><span>카톡, 메일, 드라이브로 흩어져 누가 냈는지 매번 확인합니다.</span></li>
+      <li><b>일정 변경 전달</b><span>학교가 시간을 바꾸면 강사에게 전달하다 하나씩 빠집니다.</span></li>
+      <li><b>공지를 안 읽는 강사</b><span>도착 장소, 기자재, 인원을 보냈는데 당일에 다시 묻습니다.</span></li>
+      <li><b>강사비 정산</b><span>수십 명에게 이체하고 3.3%를 계산해 월별로 정리합니다.</span></li>
+    </ul>
+    <p class="chain">서류 하나 빠짐 → 학교에 늦게 제출 → 강사에게 급히 재요청 → 강사도 업체도 지칩니다.</p>
+    <p>이 흐름을 끊으려고 만들었습니다.</p>
+    <div class="feat n2">
+      <div><h3>강의 운영판</h3><p>모든 강의 일정과 배정 강사를 한 화면에서 봅니다.</p></div>
+      <div><h3>프로필 자동 맞춤</h3><p>강사 프로필이 학교 양식에 맞춰 나옵니다.</p></div>
+      <div><h3>교안·서류 한곳에</h3><p>강의별로 받을 것을 정해 두면, 빠진 사람만 알려 줍니다.</p></div>
+      <div><h3>공지와 읽음 확인</h3><p>강의별로 한 번에 보내고, 누가 읽었는지 봅니다.</p></div>
+      <div><h3>일정 변경 바로 전달</h3><p>시간을 바꾸면 그 강사 달력도 같이 바뀝니다.</p></div>
+      <div><h3>강사비 한 번에 이체</h3><p>은행 대량이체 엑셀을 만들어 주고, 거래내역을 붙여 넣으면 지급 완료로 바뀝니다. 3.3% 월별·연말 결산까지.</p></div>
+    </div>
+  </section>
+
+  <!-- 반박 -->
+  <section>
+    <span class="eyebrow t">이런 걱정이 드실 수 있어요</span>
+    <h2>먼저 답해 드릴게요</h2>
+    <div class="qa">
+      <details><summary>앱을 또 깔고 가입해야 하나요?</summary><p>카톡에서 링크를 누르면 바로 열립니다. 홈 화면에 추가하면 앱처럼 쓰고, 프로필은 처음 한 번만 씁니다.</p></details>
+      <details><summary>나이가 있어서 어려울 것 같아요</summary><p>공고를 복사해 붙여 넣는 것만 하시면 됩니다. 나머지는 앱이 채우고, 글자도 크게 볼 수 있습니다.</p></details>
+      <details><summary>내 개인정보는 안전한가요?</summary><p>주민등록번호는 받지 않습니다. 계좌와 연락처는 나를 배정한 업체만 볼 수 있고, 다른 업체는 볼 수 없습니다.</p></details>
+      <details><summary>우리 업체가 안 쓰면 쓸모없지 않나요?</summary><p>강의 달력과 순수익·결산은 혼자 써도 됩니다. 앱 밖에서 잡은 강의도 직접 넣을 수 있습니다.</p></details>
+      <details><summary>업체: 이미 엑셀로 관리하고 있어요</summary><p>엑셀 내용을 복사해 붙여 넣으면 그대로 옮겨집니다. 처음 옮기는 일도 도와드립니다.</p></details>
+      <details><summary>업체: 강사들이 안 들어오면요?</summary><p>업체가 보내는 초대 링크 하나로 들어옵니다. 강사에게도 달력과 결산이 생기니 들어올 이유가 있습니다.</p></details>
+      <details><summary>업체: 우리 거래처와 강사 정보가 새지 않나요?</summary><p>업체의 학교·강의·강사 정보는 그 업체만 봅니다. 다른 업체는 물론 운영자도 열어 보지 않도록 막아 둡니다.</p></details>
+    </div>
+    <div class="price" style="grid-template-columns:1fr">
+      <div><span class="eyebrow t">시범 운영 중</span><strong>지금은 무료로 시범 운영 중입니다</strong></div>
+    </div>
+  </section>
+
+  <!-- 마무리 -->
+  <section class="end" id="try">
+    <h2>가입 전에 먼저 눌러 보세요</h2>
+    <p>체험판에는 예시 강의가 들어 있어요. 맨 위 "체험 중"에서 강사와 업체를 바꿔 가며 양쪽 화면을 모두 볼 수 있습니다. 가입이나 로그인은 필요 없고, 누른 내용은 내 휴대폰에만 남습니다.</p>
+    <div class="btns"><a class="btn primary" href="try/" target="_blank" rel="noopener">체험판 열기</a></div>
+    <hr style="border:0;border-top:1px solid var(--line);width:100%;margin:6px 0">
+    <h2 id="join">마음에 드시면 시범 가입을 신청하세요</h2>
+    <p>강사인지 업체인지, 연락처만 남기시면 시범 운영이 열릴 때 가장 먼저 안내해 드립니다. 있었으면 하는 기능도 한 줄 남겨 주세요. 직접 읽고 반영합니다.</p>
+    <div class="btns"><a class="btn primary" href="#join" target="_blank" rel="noopener">시범 가입 신청 (1분)</a></div>
+    <p class="note">만든 사람: 김준용 (현장 강사). 문의는 카카오톡 채널로 받습니다.</p>
+  </section>
+
+</div>
+
+</body>
+</html>

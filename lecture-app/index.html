@@ -1,0 +1,566 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<meta name="build" content="261027-1">
+<title>강의 진행 · THE MORE</title>
+<meta name="description" content="공고 붙여넣기 → 지원 메일 초안, 강의 단계별 안내문, 일정 겹침·요일·첨부 경고">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@700&family=IBM+Plex+Sans+KR:wght@400;500;600&display=swap">
+<style>
+/* 강의 진행 도우미 — 사이트와 같은 물빛 토큰, 휴대폰 한 손 사용 기준 */
+:root{
+  --bg:#F3F5F4;--surface:#FFFFFF;--ink:#16222B;--muted:#5B6A72;--line:#D5DDDC;
+  --flow:#1F6F78;--flow-soft:#E1EEEE;
+  --warn:#9A5B00;--warn-soft:#FFF3DC;--bad:#B3261E;--bad-soft:#FDE7E5;--ok:#2E7D4F;
+  --display:"Gowun Batang","Noto Serif KR",Georgia,serif;
+  --body:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0F171C;--surface:#16222A;--ink:#E7EEEE;--muted:#98A8AE;--line:#27363F;--flow:#6FC1C6;--flow-soft:#17333A;
+  --warn:#F2C66D;--warn-soft:#3A2E14;--bad:#FF8A80;--bad-soft:#3B1D1B;--ok:#7BD3A0;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0F171C;--surface:#16222A;--ink:#E7EEEE;--muted:#98A8AE;--line:#27363F;--flow:#6FC1C6;--flow-soft:#17333A;
+  --warn:#F2C66D;--warn-soft:#3A2E14;--bad:#FF8A80;--bad-soft:#3B1D1B;--ok:#7BD3A0;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.6}
+.wrap{max-width:760px;margin:0 auto;padding:0 16px 80px}
+header.top{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--line);margin:0 -16px 16px;padding:12px 16px 0}
+.brand{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.brand b{font-family:var(--display);font-size:22px}
+.brand small{color:var(--muted);font-size:13px}
+.tabs{display:flex;gap:4px;margin-top:8px;overflow-x:auto}
+.tabs button{border:0;background:none;padding:8px 12px;font:inherit;font-size:15px;color:var(--muted);border-bottom:3px solid transparent;cursor:pointer;white-space:nowrap}
+.tabs button[aria-current="page"]{color:var(--ink);border-color:var(--flow);font-weight:600}
+h2{font-family:var(--display);font-size:20px;margin:24px 0 8px}
+h3{font-size:16px;margin:0}
+p{margin:0 0 8px}
+.muted{color:var(--muted);font-size:14px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;margin:10px 0}
+label{display:block;font-size:13px;color:var(--muted)}
+input,select,textarea{width:100%;font:inherit;font-size:16px;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px 10px;margin-top:2px}
+textarea{resize:vertical;line-height:1.55}
+input[type=checkbox]{width:auto;margin:0 6px 0 0;transform:scale(1.2)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.grid .full{grid-column:1/-1}
+@media (max-width:520px){.grid{grid-template-columns:1fr}}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;align-items:center}
+.btn{border:1px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;font-size:15px;padding:8px 14px;border-radius:999px;cursor:pointer}
+.btn.pri{background:var(--flow);border-color:var(--flow);color:#fff;font-weight:600}
+:root[data-theme="dark"] .btn.pri{color:#0F171C}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .btn.pri{color:#0F171C}}
+.btn.bad{color:var(--bad);border-color:var(--bad)}
+.btn:focus-visible,.tabs button:focus-visible{outline:2px solid var(--flow);outline-offset:2px}
+.chip{display:inline-block;font-size:12px;padding:2px 8px;border-radius:999px;background:var(--flow-soft);color:var(--flow);font-weight:600;white-space:nowrap}
+.chip.s-지원{background:var(--flow-soft);color:var(--flow)}
+.chip.s-선정{background:#E6F4EA;color:#1E6B3A}
+.chip.s-준비{background:var(--warn-soft);color:var(--warn)}
+.chip.s-완료{background:var(--line);color:var(--muted)}
+.chip.s-미선정{background:var(--line);color:var(--muted);text-decoration:line-through}
+.steps{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}
+.steps button{flex:1;min-width:64px;border:1px solid var(--line);background:var(--surface);color:var(--muted);font:inherit;font-size:14px;padding:8px 4px;border-radius:8px;cursor:pointer}
+.steps button.on{background:var(--flow);border-color:var(--flow);color:#fff;font-weight:600}
+.steps button.done{color:var(--ink)}
+.warns{display:flex;flex-direction:column;gap:6px;margin:8px 0}
+.w{padding:8px 12px;border-radius:8px;font-size:14px;border-left:4px solid}
+.w.bad{background:var(--bad-soft);border-color:var(--bad)}
+.w.warn{background:var(--warn-soft);border-color:var(--warn)}
+.w.info{background:var(--flow-soft);border-color:var(--flow)}
+.w b{margin-right:4px}
+.lec{display:flex;gap:12px;align-items:flex-start;cursor:pointer}
+.lec .d{min-width:56px;text-align:center;font-weight:600;line-height:1.2}
+.lec .d small{display:block;font-weight:400;color:var(--muted);font-size:12px}
+.lec .t{flex:1;min-width:0}
+.lec .t h3{font-size:16px;overflow:hidden;text-overflow:ellipsis}
+.filters{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}
+.filters button{border:1px solid var(--line);background:var(--surface);color:var(--muted);font:inherit;font-size:14px;padding:4px 12px;border-radius:999px;cursor:pointer}
+.filters button[aria-pressed="true"]{border-color:var(--flow);color:var(--flow);font-weight:600}
+.tpl{border-top:1px solid var(--line);padding-top:12px;margin-top:12px}
+.tpl:first-child{border-top:0;margin-top:0;padding-top:0}
+.tpl-h{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:6px}
+.src{font-size:12px;color:var(--muted)}
+.vars{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:6px 0}
+@media (max-width:520px){.vars{grid-template-columns:1fr}}
+.checks label{display:flex;align-items:flex-start;gap:4px;color:var(--ink);font-size:14px;padding:3px 0}
+.dates{display:flex;flex-direction:column;gap:6px}
+.dates .dr{display:flex;gap:6px;align-items:center}
+.dates .dr input[type=date]{flex:1}
+details>summary{cursor:pointer;font-weight:600;padding:4px 0}
+#toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:999px;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:20;max-width:90vw}
+#toast.on{opacity:1}
+#big{position:fixed;inset:0;background:var(--bg);z-index:30;padding:5vh 6vw;overflow:auto;cursor:pointer}
+#big pre{white-space:pre-wrap;font-family:var(--body);font-size:clamp(24px,4.4vw,56px);line-height:1.45;margin:0}
+#big small{display:block;color:var(--muted);margin-top:24px;font-size:14px}
+.empty{text-align:center;color:var(--muted);padding:32px 0}
+.sale{display:grid;grid-template-columns:1fr auto;gap:4px 8px;align-items:center}
+.due{color:var(--bad);font-weight:600}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand"><b>강의 진행</b><small>공고 → 지원 → 선정 → 준비 → 완료</small></div>
+    <nav class="tabs" aria-label="화면">
+      <button data-tab="list">강의 목록</button>
+      <button data-tab="new">새 공고</button>
+      <button data-tab="sales">영업</button>
+      <button data-tab="set">설정</button>
+    </nav>
+  </header>
+  <main id="view"></main>
+</div>
+<div id="toast" role="status" aria-live="polite"></div>
+<div id="big" hidden></div>
+
+<script>
+/* ===== 저장: 이 기기(localStorage)에만. 서버로 아무것도 보내지 않는다 ===== */
+const KEY='lectureApp.v1';
+const STEPS=['지원','선정','준비','완료'];
+function blank(){return{settings:{강사명:'김준용',강사연락처:'',강사메일:'',거주지:'경기 수원',출발지:'수원',생년월일:'',경력목록:'',출강학교목록:'',학교프로필:'김준용강사 프로필(학교).png',기관프로필:'김준용강사 프로필(기관&법정교육).pdf'},lectures:[],cal:[],calAt:'',sales:[],salesForm:{}}}
+function load(){try{const d=JSON.parse(localStorage.getItem(KEY)||'null');if(d){const b=blank();d.settings=Object.assign(b.settings,d.settings||{});return Object.assign(b,d)}}catch(e){}return blank()}
+let db=load();
+function save(){try{localStorage.setItem(KEY,JSON.stringify(db))}catch(e){toast('이 기기에 저장이 안 돼요. 비공개 창인지 확인해 주세요')}}
+
+/* ===== 도우미 ===== */
+const $=(s,r=document)=>r.querySelector(s),$$=(s,r=document)=>[...r.querySelectorAll(s)];
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const DOW='일월화수목금토';
+const pad=n=>String(n).padStart(2,'0');
+const isoOf=(y,m,d)=>`${y}-${pad(m)}-${pad(d)}`;
+const dt=iso=>{const[y,m,d]=iso.split('-').map(Number);return new Date(y,m-1,d)};
+const dowOf=iso=>DOW[dt(iso).getDay()];
+const todayIso=()=>{const t=new Date();return isoOf(t.getFullYear(),t.getMonth()+1,t.getDate())};
+const md=iso=>{const d=dt(iso);return `${d.getMonth()+1}/${d.getDate()}`};
+const mdK=iso=>{const d=dt(iso);return `${d.getMonth()+1}월 ${d.getDate()}일`};
+const addDays=(iso,n)=>{const d=dt(iso);d.setDate(d.getDate()+n);return isoOf(d.getFullYear(),d.getMonth()+1,d.getDate())};
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+function batchim(w){const c=String(w||'').trim().slice(-1).charCodeAt(0);if(c>=0xAC00&&c<=0xD7A3)return(c-0xAC00)%28;return /[013678LMNR]$/i.test(String(w).trim())?1:0}
+const ro=w=>{const b=batchim(w);return b&&b!==8?'으로':'로'};
+const eul=w=>batchim(w)?'을':'를';
+function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(toast.h);toast.h=setTimeout(()=>t.classList.remove('on'),2200)}
+async function copy(text,what){try{await navigator.clipboard.writeText(text)}catch(e){const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove()}toast((what||'')+' 복사했어요')}
+function dateText(isos){if(!isos.length)return '';const ds=isos.map(dt);let out=`${ds[0].getMonth()+1}월 ${ds[0].getDate()}일(${DOW[ds[0].getDay()]})`;for(let i=1;i<ds.length;i++){const p=ds[i-1],d=ds[i];out+='·'+(d.getMonth()===p.getMonth()?'':`${d.getMonth()+1}월 `)+`${d.getDate()}일(${DOW[d.getDay()]})`}return out}
+
+/* ===== 공휴일 (kholidayz.com 2026·2027 목록 기준, 2026-10-27 확인) ===== */
+const HOL={'2026-01-01':'신정','2026-02-16':'설날 연휴','2026-02-17':'설날','2026-02-18':'설날 연휴','2026-03-01':'삼일절','2026-03-02':'대체공휴일','2026-05-01':'노동절','2026-05-05':'어린이날','2026-05-24':'부처님오신날','2026-05-25':'대체공휴일','2026-06-03':'지방선거','2026-06-06':'현충일','2026-07-17':'제헌절','2026-08-15':'광복절','2026-08-17':'대체공휴일','2026-09-24':'추석 연휴','2026-09-25':'추석','2026-09-26':'추석 연휴','2026-10-03':'개천절','2026-10-05':'대체공휴일','2026-10-09':'한글날','2026-12-25':'성탄절',
+'2027-01-01':'신정','2027-02-06':'설날 연휴','2027-02-07':'설날','2027-02-08':'설날 연휴','2027-02-09':'대체공휴일','2027-03-01':'삼일절','2027-05-01':'노동절','2027-05-03':'대체공휴일','2027-05-05':'어린이날','2027-05-13':'부처님오신날','2027-06-06':'현충일','2027-07-17':'제헌절','2027-07-19':'대체공휴일','2027-08-15':'광복절','2027-08-16':'대체공휴일','2027-09-14':'추석 연휴','2027-09-15':'추석','2027-09-16':'추석 연휴','2027-10-03':'개천절','2027-10-04':'대체공휴일','2027-10-09':'한글날','2027-10-11':'대체공휴일','2027-12-25':'성탄절','2027-12-27':'대체공휴일'};
+
+/* ===== 경력 한 줄·진행 방식 (보낸 원문 18통에서 모음, new = Claude가 새로 씀) ===== */
+const CAREERS=[
+ {t:'특성화고 학생 대상으로 면접·스피치, 비즈니스매너 수업을 꾸준히 하고 있습니다.'},
+ {t:'특성화고와 청년 대상으로 AI 자소서, 면접, 취업역량 강의를 꾸준히 하고 있습니다.'},
+ {t:'특성화고·직업계고 학생 대상 자기소개서 첨삭, AI 활용 자기소개서 완성, 모의면접 등 취업역량 강화 교육을 꾸준히 진행해 왔습니다.'},
+ {t:'진로·동기부여와 진로취업 분야 전문강사로 활동하며, 특성화고를 비롯한 여러 직업계고에서 학생 참여형 수업을 진행해 왔습니다.'},
+ {t:'기관·기업 대상으로 직장 내 괴롭힘·성희롱 예방, 장애인 인식개선 법정교육을 진행하고 있습니다.',new:1}
+];
+const TOPICS=[
+ {k:'legal',name:'법정교육',re:/성희롱|괴롭힘|장애인\s*인식|법정\s*의무|법정\s*교육|산업\s*안전/,c:4,org:1,way:'사례 중심으로, 참여자가 직접 상황을 판단해 보는 활동을 넣어 지루하지 않게 진행하겠습니다.',new:1},
+ {k:'aicover',name:'AI 자기소개서',re:/(AI|인공지능|생성형|챗\s*GPT|GPT|뤼튼).{0,20}(자소서|자기소개서)|(자소서|자기소개서).{0,20}(AI|인공지능|생성형|GPT)/i,c:1,way:'생성형 AI로 지원 직무에 맞춰 경험을 정리하고, 30분 안에 자기소개서 한 편을 완성하는 방식으로 컨설팅하겠습니다.'},
+ {k:'cover',name:'자기소개서',re:/자소서|자기소개서|이력서/,c:2,way:'학생들이 자기 경험을 직접 꺼내 정리하고, 그 자리에서 첨삭을 받아 한 편을 완성해 가는 실습 위주로 준비하겠습니다.',new:1},
+ {k:'interview',name:'면접·스피치',re:/면접|스피치|말하기/,c:0,way:'학생 한 명 한 명이 1분 자기소개와 모의면접을 직접 해 보고, 그 자리에서 피드백을 받는 실습 위주로 준비하겠습니다.',new:1},
+ {k:'manner',name:'비즈니스매너',re:/비즈니스\s*매너|직장\s*예절|매너|예절|고객\s*응대/,c:0,way:'인사, 명함 교환, 전화 응대, 자기소개를 학생들이 직접 해 보는 실습 위주로 준비하겠습니다.'},
+ {k:'labor',name:'노동인권',re:/노동\s*인권|노동법|근로\s*계약|근로\s*기준|노동\s*교육/,c:3,way:'첫 월급 명세서 읽기, 근로계약서 체크포인트, 부당한 상황에서 내 권리 지키기처럼 학생들이 곧 사회에 나가 바로 쓸 수 있는 내용으로, 사례와 실습 위주로 준비하겠습니다.'},
+ {k:'startup',name:'창업',re:/창업|기업가\s*정신/,c:3,way:'제공해 주시는 기본 교안을 바탕으로 학생들이 직접 아이디어를 내고 발표해 보는 실습 중심으로 진행하겠습니다.'},
+ {k:'career',name:'진로',re:/진로|동기\s*부여|취업\s*역량|취업\s*특강|직업\s*탐색/,c:3,way:'게임·팀 활동·발표로 학생들이 직접 움직이며, 자기 진로를 한 문장으로 정리해 가는 참여형으로 준비하겠습니다.',new:1},
+ {k:'etc',name:'기타',re:/$^/,c:3,way:'학생들이 직접 해 보는 실습과 팀 활동 위주로 준비하겠습니다.',new:1}
+];
+const topicOf=k=>TOPICS.find(t=>t.k===k)||TOPICS[TOPICS.length-1];
+
+/* ===== 공고 읽기 (규칙 기반, 외부 전송 없음) ===== */
+function parseNotice(raw){
+  const text=String(raw||'').replace(/\r/g,'');
+  const lines=text.split('\n');
+  const lab=re=>{const R=new RegExp('^[\\s\\-•·*▶■□○◎●◇◆※>☞①-⑳\\d.)]*\\s*(?:'+re+')\\s*[:：]\\s*(.+)$');for(const ln of lines){const m=ln.match(R);if(m)return m[1].trim()}return ''};
+  const r={dates:[],dows:{},deadline:'',기관명:'',담당자호칭:'',학교명:'',지역:'',시간:'',교시:'',대상:'',강의명:'',지원안:'',to:'',topic:'etc',profile:'school'};
+  // 날짜
+  const lineOf=idx=>{const s=text.lastIndexOf('\n',idx-1)+1;let e=text.indexOf('\n',idx);if(e<0)e=text.length;return text.slice(s,e)};
+  const found=[];
+  const now=new Date();
+  const add=(y,m,d,w,idx)=>{m=+m;d=+d;if(m<1||m>12||d<1||d>31)return;
+    if(!y){y=now.getFullYear();if((now-new Date(y,m-1,d))/864e5>60)y++}
+    const iso=isoOf(+y,m,d);if(dt(iso).getMonth()!==m-1)return;
+    const ln=lineOf(idx);
+    const dl=/마감|접수|지원\s*기한|모집\s*기간|까지|제출\s*기한|서류/.test(ln)&&!/교육\s*일|강의\s*일|일시|일정|출강/.test(ln);
+    found.push({iso,w:w||'',dl})};
+  const W='(?:\\s*\\(\\s*([월화수목금토일])\\s*\\)|\\s*([월화수목금토일])요일)?';
+  const RG='(?:\\s*[~∼\\-–]\\s*(\\d{1,2})\\s*일?(?![\\d/.:월])(?:\\s*\\(\\s*([월화수목금토일])\\s*\\))?)?';
+  let masked=text;
+  const run=(re,hasY)=>{masked=masked.replace(re,(...a)=>{const idx=a[a.length-2];const g=a.slice(1,a.length-2);
+      const [y,m,d,w1,w2,rd,rw]=hasY?g:[null,...g];add(y,m,d,w1||w2,idx);if(rd)add(y,m,rd,rw,idx);return ' '.repeat(a[0].length)})};
+  run(new RegExp('(20\\d{2})\\s*[.\\-/년]\\s*(\\d{1,2})\\s*[.\\-/월]\\s*(\\d{1,2})\\s*일?\\.?'+W+RG,'g'),1);
+  run(new RegExp('(\\d{1,2})\\s*월\\s*(\\d{1,2})\\s*일'+W+RG,'g'),0);
+  run(new RegExp('(?<![\\d.:/])(\\d{1,2})[./](\\d{1,2})(?![\\d:./])(?!\\s*(?:시간|교시|차시|명|%|점|배|만|원|kg|km))'+W+RG,'g'),0);
+  const seen=new Set();
+  for(const f of found){if(f.dl){if(!r.deadline)r.deadline=f.iso;continue}
+    if(!seen.has(f.iso)){seen.add(f.iso);r.dates.push(f.iso)}if(f.w)r.dows[f.iso]=f.w}
+  r.dates.sort();
+  // 시간
+  const fixH=h=>{h=+h;return h<8?h+12:h};
+  let m=text.match(/(\d{1,2})\s*:\s*(\d{2})\s*[~∼\-–]\s*(\d{1,2})\s*:\s*(\d{2})/);
+  if(m)r.시간=`${pad(fixH(m[1]))}:${m[2]}~${pad(fixH(m[3]))}:${m[4]}`;
+  else if(m=text.match(/(\d{1,2})\s*시(?:\s*(\d{1,2})\s*분)?\s*[~∼\-–]\s*(\d{1,2})\s*시(?:\s*(\d{1,2})\s*분)?/))r.시간=`${pad(fixH(m[1]))}:${pad(m[2]||0)}~${pad(fixH(m[3]))}:${pad(m[4]||0)}`;
+  // 교시
+  m=text.match(/\d{1,2}\s*[~∼\-]\s*\d{1,2}\s*교시|총?\s*\d{1,2}\s*(?:교시|차시)|\d{1,2}\s*시간(?![~:])/);
+  if(m)r.교시=m[0].replace(/\s+/g,'').replace(/^총/,'');
+  // 대상
+  let v=lab('교육\\s*대상|참여\\s*대상|수강\\s*대상|대상');
+  if(!v){m=text.match(/[1-3]\s*학년(?:\s*[가-힣]{2,10}과)?(?:\s*\d+\s*개?\s*반)?(?:\s*\(?\s*\d+\s*명\s*\)?)?/)||text.match(/청년|구직자|재직자|취업\s*준비생|대학생|중학생|고등학생|성인|학부모|교직원|임직원/);if(m)v=m[0]}
+  r.대상=v.replace(/\s+/g,' ').slice(0,30);
+  // 학교
+  const EXCL=/^(모집|채용|강사|재|수정|추가|긴급|입찰|안내|교육|강의|본|위|해당|최|참|광|보|신|경|원)공고$/;
+  const SCH=/[가-힣]{2,}(?:고등학교|중학교|초등학교|대학교|여자고|공업고|디자인고|정보고|과학고|마이스터고|상업고|여고|공고|여중|고교)/g;
+  const pickSchool=s=>{for(const x of String(s).match(SCH)||[]){if(!EXCL.test(x))return x}
+    m=String(s).match(/([가-힣]{2,5})고(?=\s*(?:[1-3]\s*학년|학생|에서|강의|특강|\(|,|$))/m);
+    if(m&&!/(하|되|있|없|이|라|지|보|주|오|며|고|최|참|광|신|경|재|원)$/.test(m[1]))return m[1]+'고';return ''};
+  const place=lab('학교명?|교육\\s*장소|강의\\s*장소|장소');
+  r.학교명=pickSchool(place)||pickSchool(text)||'';
+  // 기관(섭외 업체)
+  v=lab('업체명?|섭외\\s*업체|주관|주최|운영\\s*기관|운영사|교육\\s*업체|회사명?|기관명?');
+  if(v&&!pickSchool(v))r.기관명=v.replace(/\(.*?\)/g,'').trim().slice(0,20);
+  if(!r.기관명){const OR=/[가-힣A-Za-z]{2,}(?:교육|에듀|컴퍼니|아카데미|연구소|연구원|협회|재단|센터|컨설팅)/g;
+    const GEN=/^(진로|취업|직업|인성|법정|안전|예방|인권|노동인권|창업|금융|경제|통일|보건|소방|정보|특강|강사|외부|방과후|평생|의무|보수|직무|역량|학생|청소년|교사|학교|성|문화|예술|체험|대면|비대면|온라인|집합|현장|사전|맞춤|공교육|사교육|코딩|AI|진로체험|취업지원|교육)(교육|센터)$/;
+    for(const x of text.match(OR)||[]){if(!GEN.test(x)&&!pickSchool(x)){r.기관명=x;break}}}
+  // 담당자 호칭
+  v=lab('담당자?|문의');m=(v||text).match(/([가-힣]{2,4})\s*(대표|팀장|실장|과장|부장|선생|매니저|주임|대리|코디네이터|코디)/);
+  r.담당자호칭=m?`${m[1]} ${m[2]}님`:'담당자님';
+  // 받는 메일
+  m=text.match(/[\w.+-]+@[\w-]+(?:\.[\w-]+)+/);if(m)r.to=m[0];
+  // 지원안
+  m=text.match(/(?<![A-Za-z])([A-D])\s*안(?![가-힣])/);if(m)r.지원안=m[1]+'안';else if(/메인\s*강사/.test(text))r.지원안='메인강사';else if(/보조\s*강사/.test(text))r.지원안='보조강사';
+  // 지역
+  const SKIP=/^(오전|오후|종료|시작|점심|전체|진행|모집|소요|이전|이후|시간|당일|매일|평일|휴일|강의|교육|수업|학교|동시|현재|상세|일정|예정|장소|공지|추가|변경|해당|운영|개최)$/;
+  for(const x of text.matchAll(/([가-힣]{2,3})(시|군)(?=[\s,)\]·./(]|$)/gm)){if(!SKIP.test(x[1])){r.지역=x[1];break}}
+  if(!r.지역){m=text.match(/서울|부산|대구|인천|광주|대전|울산|세종|제주|경기|강원|충북|충남|전북|전남|경북|경남/);if(m)r.지역=m[0]}
+  // 주제·강의명
+  v=lab('강의\\s*주제|교육\\s*주제|주제|강의명|교육명|과목|프로그램명?|과정명?|교육\\s*내용|강의\\s*내용');
+  const t=TOPICS.find(t=>v&&t.re.test(v))||TOPICS.find(t=>t.re.test(text))||topicOf('etc');
+  r.topic=t.k;r.강의명=(v||(t.k==='etc'?'':t.name)).replace(/\(?\s*(?:[A-D]\s*안|메인\s*강사|보조\s*강사)\s*\)?/g,'').replace(/\s+/g,' ').trim().slice(0,40);
+  r.profile=(t.org||(!r.학교명&&!/학생|학년|고[1-3]|중[1-3]/.test(text)&&/법정|직장\s*내|재직자|임직원|공무원|CS|고객\s*응대|구직자|성인/.test(text)))?'org':'school';
+  return r;
+}
+
+/* ===== 강의 1건 ===== */
+function newLecture(p){const t=topicOf(p.topic);const l=Object.assign({id:uid(),created:new Date().toISOString(),status:'지원',variant:'basic',
+  career:CAREERS[t.c].t,way:t.way,subject:'',body:'',subjectEdited:false,bodyEdited:false,attached:false,askDow:true,withBirth:false,noSchoolContact:false,
+  extra:{},checks:{},memo:'',notice:'',history:[]},p);l.avail=l.dates.filter(d=>!conflicts(l,d).length);if(!l.avail.length)l.avail=[...l.dates];return l}
+const availDates=l=>(l.dates||[]).filter(d=>(l.avail||l.dates).includes(d));
+function conflicts(l,iso){const out=[];
+  for(const o of db.lectures){if(o.id===l.id||o.status==='미선정')continue;if(availDates(o).includes(iso))out.push(`${o.학교명||o.지역||''} ${o.강의명||''} (${o.status})`.trim())}
+  for(const e of db.cal){if(e.d!==iso)continue;const tt=e.t||'';if(l.학교명&&tt.includes(l.학교명))continue;out.push('캘린더: '+tt)}
+  return out}
+function dowIssues(l){const out=[];for(const iso of l.dates||[]){const w=(l.dows||{})[iso],a=dowOf(iso);
+  if(w&&w!==a)out.push({iso,kind:'mismatch',msg:`공고에는 ${mdK(iso)}(${w})인데 달력상 ${a}요일이에요`,para:`다만 공지에 일정이 ${mdK(iso)}(${w})로 되어 있는데, 달력상 ${mdK(iso)}은 ${a}요일이라 혹시 날짜나 요일을 잘못 적으신 것은 아닌지 조심스럽게 확인 부탁드립니다.`});
+  else if(HOL[iso])out.push({iso,kind:'holiday',msg:`${mdK(iso)}은 공휴일(${HOL[iso]})이에요`,para:`다만 공지된 ${mdK(iso)}이 달력상 공휴일(${HOL[iso]})이라, 날짜가 맞는지 조심스럽게 확인 부탁드립니다.`});
+  else if(a==='토'||a==='일')out.push({iso,kind:'weekend',msg:`${mdK(iso)}은 ${a}요일(주말)이에요`,para:`다만 공지된 ${mdK(iso)}이 달력상 ${a}요일이라, 날짜가 맞는지 조심스럽게 확인 부탁드립니다.`})}
+  return out}
+const needsAttach=l=>l.status==='지원'&&l.variant!=='renotice'&&/첨부/.test(l.body||'');
+function warnings(l){const W=[];
+  if(needsAttach(l)&&!l.attached)W.push(['bad','첨부',`본문에 "첨부"가 있어요. Gmail에서 ${profileFile(l)}${eul(profileFile(l))} 붙인 뒤 아래 "첨부했어요"를 체크하세요.`]);
+  for(const iso of availDates(l)){const c=conflicts(l,iso);if(c.length)W.push(['bad','일정 겹침',`${mdK(iso)}(${dowOf(iso)}): ${c.join(' / ')}`])}
+  for(const d of dowIssues(l))W.push(['warn','요일',d.msg]);
+  const t=todayIso();if(l.status==='지원'&&(l.dates||[]).some(d=>d<t))W.push(['warn','지난 날짜','이미 지난 날짜가 있어요. 연도를 확인하세요']);
+  if(l.status==='지원'&&l.dates.length&&!availDates(l).length)W.push(['bad','가능한 날 없음','모든 날짜가 다른 일정과 겹쳐요']);
+  const miss=[!l.dates.length&&'날짜',!l.시간&&'시간',!l.강의명&&'강의명',!(l.학교명||l.지역)&&'학교/지역',!l.to&&'받는 메일'].filter(Boolean);
+  if(miss.length)W.push(['info','빈칸',`공고에서 못 찾았어요: ${miss.join(', ')} (기본 정보에서 채우세요)`]);
+  return W}
+const profileFile=l=>l.profile==='org'?db.settings.기관프로필:db.settings.학교프로필;
+
+/* ===== 지원 메일 만들기 (보낸 원문 18통의 뼈대) ===== */
+function genSubject(l){const n=db.settings.강사명||'【강사명】';const av=availDates(l);
+  const head=l.지원안?`[${l.지원안} 지원]`:'[강사 지원]';
+  let s=[head,(av.length?av:l.dates).map(md).join('·'),l.지역||l.학교명,(l.대상&&l.대상.length<=14)?l.대상:'',l.강의명].filter(Boolean).join(' ')+` - ${n}`;
+  if(l.variant==='renotice')s+=' (재공지 재지원)';
+  else if(av.length&&av.length<l.dates.length)s+=av.length===1?' (1일 지원 문의)':' (일부 일정 지원 문의)';
+  else if(l.askDow&&dowIssues(l).length)s+=' (일정 확인 요청)';
+  return s}
+function genBody(l){const S=db.settings,n=S.강사명||'【강사명】',x=l.extra||{};
+  const av=availDates(l),use=av.length?av:l.dates;const anchor=l.지원안||'강사';
+  const place=l.학교명||l.지역||'';const dTxt=dateText(l.dates);
+  const greet=`안녕하세요, ${[l.기관명,l.담당자호칭||'담당자님'].filter(Boolean).join(' ')}.\n강사 ${n}입니다.`;
+  const phone=`연락처: ${S.강사연락처||'【강사연락처】'}`;const end=`감사합니다.\n${n} 드림`;
+  if(l.variant==='renotice')return `안녕하세요, ${n} 강사입니다.\n${[dTxt,place,l.강의명,x.바뀐내용||'【바뀐내용】'].filter(Boolean).join(' ')} 재공지(${l.시간||'【시간】'}, ${l.교시||'【교시】'}) 확인했습니다.\n변경된 일정과 조건으로 다시 지원합니다. 당일 ${l.시간||'【시간】'} 모두 가능합니다.\n프로필은 앞서 보내드린 메일에 첨부되어 있습니다. 필요하시면 다시 보내드리겠습니다.\n${end}`;
+  const lead=[dTxt,place,l.대상?l.대상+' 대상':'',(l.교시||'')+' 강의에'].filter(Boolean).join(' ').replace(/\s+/g,' ').trim()+` ${anchor}${ro(anchor)} 지원합니다.`;
+  const extraParas=[];
+  if(l.askDow)for(const d of dowIssues(l))extraParas.push(d.para);
+  if(av.length&&av.length<l.dates.length){const no=l.dates.filter(d=>!av.includes(d));
+    extraParas.push(`먼저 조심스럽게 여쭙고 싶은 점이 있습니다. ${dateText(no)}에는 이미 확정된 다른 강의 일정이 있어,\n${dateText(av)} ${av.length===1?'하루만':''} 지원이 가능한데 혹시 ${av.length===1?'1일':'일부 일정'} 지원도 가능할지 문의드립니다.\n어렵다면 너그러이 양해 부탁드립니다.`.replace(/\s+지원이/,' 지원이'))}
+  const info=use.map(iso=>`- 일시: ${md(iso)}(${dowOf(iso)})${l.시간?' '+l.시간:''}${l.교시?` (${l.교시})`:''}`);
+  if(l.강의명)info.push(`- 주제: ${l.강의명}`);
+  const blocks=[greet,lead];if(extraParas.length)blocks.push(extraParas.join('\n\n'));blocks.push(info.join('\n'));
+  if(l.variant==='form'){
+    blocks.push([`- 성함: ${n}`,`- 연락처: ${S.강사연락처||'【강사연락처】'}`,`- 거주지역: ${S.거주지||'【거주지】'}`,...(l.withBirth?[`- 생년월일: ${S.생년월일||'【생년월일】'}`]:[]),`- ${l.강의명||topicOf(l.topic).name} 관련 강의경력: ${S.경력목록||'【경력목록 — 설정에서 채우기】'}`].join('\n'));
+    blocks.push('프로필 첨부합니다.');blocks.push(end);}
+  else if(l.variant==='detail'){
+    const res=x.결과물||'【결과물】';
+    blocks.push(`[강사 소개]\n${l.career}`);
+    blocks.push(`[진행 계획]\n- 오전: ${x.오전계획||'【오전계획】'}\n- 오후: ${x.오후계획||'【오후계획】'}\n학생 한 명 한 명이 ${res}${eul(res)} 손에 쥐고 돌아가도록 진행하겠습니다.`);
+    blocks.push(`이력서 겸 프로필 첨부드리니 검토 부탁드립니다.\n${phone}`);blocks.push(end);}
+  else{blocks.push(`${l.career}\n${l.way}\n교안은 주신 커리큘럼에 맞춰 직접 준비하겠습니다.`);blocks.push(`프로필 첨부합니다.\n${phone}`);blocks.push(end);}
+  return blocks.join('\n\n')}
+
+/* ===== 단계별 템플릿 (강의앱 템플릿 모음 1027) ===== */
+const ASK31=['반별 인원이 몇 명인지','교실에 빔프로젝터·HDMI 연결이 되는지, 학생들 휴대폰 사용이 가능한지','활동지 인쇄를 학교에서 해 주실 수 있는지 ({{활동지분량}}, 파일 보내 드리겠습니다)','교통비 정산이 실비(영수증)인지, {{출발지}} 출발도 인정되는지, 역↔학교 이동 지원이 있는지','강사료 지급일과 필요 서류','당일 도착 장소와 담당 선생님 연락처','만족도 조사 QR이나 사진 촬영 등 진행팀 양식이 있는지'];
+const TPL=[
+ {id:'a7',st:'지원',ch:'메일',title:'프로필 요청 회신',src:'보낸 원문 10/20',mail:1,subject:'{{강사명}} 강사 프로필',text:'안녕하세요. 강사 {{강사명}}입니다.\n요청하신 프로필 첨부해서 보내드립니다.\n연락처: {{강사연락처}}\n감사합니다.\n{{강사명}} 드림'},
+ {id:'a8',st:'지원',ch:'메일',title:'첨부 빠졌을 때 재발송',src:'보낸 원문 10/20',mail:1,subject:'[재발송] {{강사명}} 강사 프로필',text:'안녕하세요, {{강사명}}입니다.\n앞서 보낸 메일에 프로필 파일이 빠져 다시 보내드립니다.\n첨부 확인 부탁드립니다.\n감사합니다.\n{{강사명}} 드림'},
+ {id:'b1',st:'선정',ch:'카톡',title:'진행팀 확인 질문 7가지',src:'초안 원문 10/12 경주',ask:ASK31,vars:['교시배정','활동지분량'],note:'이미 아는 항목은 "앎"에 체크하면 문장에서 빠져요.',
+  text:l=>'{{담당자호칭}}, 안녕하세요. {{월일}} {{학교명}} {{강의명}} 맡은 {{강사명}}입니다.\n일정안내 잘 받았습니다. {{교시배정}}로 준비하고 있고, 몇 가지만 여쭙겠습니다.\n\n'+ASK31.filter((q,i)=>!l.checks['b1_'+i]).map((q,i)=>`${i+1}. ${q}`).join('\n')+'\n\n감사합니다!'},
+ {id:'b2',st:'선정',ch:'단톡',title:'교안·기기 환경 문의',src:'초안 원문 10/22 정선',vars:['로그인방식','도구','활동지','실습실'],text:'{{담당자호칭}}, {{월/일}} {{학교명}} {{대상}} 담당 {{강사명}}입니다. 교안 잘 받았습니다. 준비하면서 세 가지만 여쭙겠습니다.\n1) 학생들이 {{로그인방식}}으로 {{도구}}에 로그인할 수 있는지, 교내 와이파이에서 {{도구}} 접속이 되는지 학교에 확인 가능할까요?\n2) 학생용 {{활동지}}는 {{기관명}}에서 인쇄해 주시는지, 강사가 준비하는지 궁금합니다.\n3) {{실습실}}에서 진행하는지, 일반 교실(학생 폰·태블릿)인지 알 수 있을까요?\n감사합니다.'},
+ {id:'b3',st:'선정',ch:'단톡',title:'공통 교안 받은 뒤 회신',src:'초안 원문 천안공고',vars:['학과','추가활동','확인필요내용'],text:"공통 강의자료 잘 받았습니다. 교시별 흐름은 그대로 두고 {{학과}} 맞춤 활동({{추가활동}})을 끼워 넣었습니다.\n자료에 '{{확인필요내용}}' 장이 있는데, 정확한 근거를 알려 주시면 확인해서 반영하겠습니다.\n반 인원도 알려 주시면 감사하겠습니다."},
+ {id:'b4',st:'선정',ch:'카톡',title:'같은 학생인지 확인',src:'새로 씀 (혜담·MTS 근거)',vars:['다른날짜','다른강의'],text:'{{담당자호칭}}, {{월일}} {{학교명}} 담당 {{강사명}}입니다.\n{{다른날짜}} {{다른강의}}에 오는 학생들과 같은 학생인지 여쭙고 싶습니다.\n같다면 활동이 겹치지 않게 바꿔서 준비하겠습니다. 감사합니다.'},
+ {id:'c1',st:'준비',ch:'메일·카톡',title:'기관에 좌석·준비물·촬영 동의 요청',src:'초안 원문 10/16 양구',vars:['진행형태','모둠수','모둠인원','준비물목록','추가요청','강사준비물'],text:'안녕하세요, {{날짜}} 「{{강의명}}」 강사 {{강사명}}입니다.\n이번 교육은 {{진행형태}} 방식으로 진행하려고 몇 가지 부탁드립니다.\n1. 좌석은 {{모둠수}}개 모둠({{모둠인원}}명)으로 조별 배치 부탁드립니다.\n2. {{준비물목록}}을 준비해 주실 수 있을까요? {{추가요청}}\n3. 활동 장면과 결과물 사진을 찍어도 될지, 참여자 얼굴이 나와도 되는지 {{기관명}} 방침을 알려 주세요.\n{{강사준비물}}은 제가 준비해 가겠습니다. 감사합니다.'},
+ {id:'c2',st:'준비',ch:'체크',title:'설문 QR 연동 점검',src:'확인 (10/14부터 사용)',vars:['설문링크'],todo:['학교 설문 링크 받으면: 새 프로젝트 "구글설문지 폼 복사 - {{학교명}}" → A_LINK·SCHOOL 바꿈 → readA → setup 딱 한 번','강의 당일 아침: checkA 실행 (setup 아님!) → ✅ 새 QR / ❌ 학교 QR 그대로','강의 후: 업체에 응답 도착 확인. 실패 메일 오면 retryFailed','금지: A에 시험 답 넣지 않기 · 업체 도착 확인 전 프로젝트 삭제 금지'],
+  note:'실패 알림 메일 본문에는 학생 이름이 들어 있어요. 여기에 옮겨 적지 말고 메모에 "실패 ○건"만 남기세요.'},
+ {id:'d1',st:'준비',ch:'화면',title:'당일 화면 ① 과제 제출 규칙',src:'확인 10/22 경기모바일',big:1,vars:['제출물'],text:'📮 제출: {{강사메일}}\n파일명 = 메일 제목 = "{{학교명}} {{학년}}학년 ○반 ○○번 이름"   (번호는 두 자리)\n보낼 것: {{제출물}}'},
+ {id:'d2',st:'준비',ch:'화면',title:'당일 화면 ② AI 개인정보 한 줄',src:'확인 경기모바일',big:1,text:'AI에 붙여 넣을 때 이름·학교·전화번호·주소는 빼고 넣는다. 제출 파일에만 이름을 쓴다.'},
+ {id:'d3',st:'준비',ch:'화면',title:'당일 화면 ③ AI 도구 로그인',src:'확인 10/22',big:1,vars:['AI도구','로그인방법'],text:'오늘 쓸 AI: {{AI도구}} ({{로그인방법}})'},
+ {id:'d4',st:'준비',ch:'화면',title:'당일 화면 ④ 만족도 설문 QR',src:'새로 씀',big:1,vars:['설문링크'],text:'📱 오늘 수업 어땠나요? QR 찍고 1분 설문!\n({{설문링크}})\n끝나면 화면 보여 주고 퇴장'},
+ {id:'e1',st:'완료',ch:'메일',title:'학생 제출물 전달',src:'새로 씀 (10/21 합의 기준)',mail:1,vars:['제출물','제출수','전체수','미제출반번호'],note:'학생 이름은 여기에 쓰지 마세요. 미제출은 반·번호만.',subject:'[{{학교명}} {{대상}}] {{강의명}} 학생 제출물 전달 - {{강사명}}',text:'{{담당자호칭}}, 안녕하세요. {{날짜}} {{학교명}} 강의 맡았던 {{강사명}}입니다.\n오늘 학생들이 제출한 {{제출물}}을 반·번호 순으로 정리해 전달드립니다.\n- 제출 {{제출수}}명 / 대상 {{전체수}}명 (미제출: {{미제출반번호}})\n첨부 확인 부탁드립니다. 감사합니다.\n{{강사명}} 드림'},
+ {id:'e2',st:'완료',ch:'단톡',title:'수업 사진 공유',src:'확인 규칙 (상서고)',vars:['장수'],todo:['활동·결과물 위주 10장 이상','가로 4:3, 얼굴 안 잘리게','현수막 단체사진 필수','블로그·인스타 게시는 업체 허락 있을 때만'],text:'{{날짜}} {{학교명}} 수업 사진 올립니다 ({{장수}}장, 단체사진 포함)'},
+ {id:'e3',st:'완료',ch:'문서',title:'결과보고서 틀 (강의 후 3일 안)',src:'초안 원문 요약 (수주준비)',vars:['인원','한줄성과','만족도'],text:'[결과보고서] {{학교명}} {{강의명}} ({{날짜}})\n1장 결과 요약\n- 학교·학년·인원: {{학교명}} / {{대상}} / {{인원}}명\n- 일시: {{날짜}} {{시간}} ({{교시}})\n- 강의명: {{강의명}}\n- 한 줄 성과: {{한줄성과}}\n- 만족도: {{만족도}}\n2장 수업 사진 4장 (얼굴 안 보이게)\n3장 결과물·학생 후기 3개 (이름 없이)\n4장 다음 단계 제안\n※ 만족도 5문항: 재미(1~5) · 도움(1~5) · 설명 이해(1~5) · 추천(예/아니오) · 가장 기억에 남는 것(주관식). 이름·학번은 받지 않음.'}
+];
+const SALES_TPL=[
+ {id:'f1',ch:'메일',title:'영업 첫 메일',src:'초안 원문 (수주준비)',mail:1,subject:'[특성화고 3학년 취업 특강] 연 1회 과정부터 시작하셔도 됩니다',text:'안녕하세요, {{학교명}} {{담당자호칭}}.\n특성화고 취업 강의를 하고 있는 강사 {{강사명}}입니다.\n\n선생님들께서 외부 강의를 고르실 때 가장 많이 하시는 걱정이 세 가지더라고요.\n"애들이 안 듣고 자요", "처음 보는 강사라 믿기 어려워요", "예산이 빠듯해요."\n\n그래서 이렇게 준비했습니다.\n- 강의만 하는 시간은 줄이고, 게임·팀 활동·1분 발표·모의면접으로 학생이 직접 움직입니다.\n- 올해 {{출강학교목록}} 등에서 자기소개서·1분 스피치·면접 수업을 진행했습니다.\n- 하루 4·6·7교시 중에서, 연 1회 과정부터 부담 없이 시작하실 수 있습니다.\n\n1장짜리 안내를 첨부드립니다. 내년 3학년 취업 프로그램을 계획하실 때 한 번만 봐 주세요.\n{{요일}}쯤 짧게 전화 한 통 드려도 괜찮을까요?\n\n{{강사명}} 드림 · {{강사연락처}} · {{강사메일}}'},
+ {id:'f2',ch:'전화',title:'3일 뒤 전화 대본',src:'초안 요약 · 반응별 답은 새로 씀',text:'① "지난주 3학년 취업 특강 메일 드린 강사 {{강사명}}입니다. 1분만 여쭤봐도 될까요?"\n② "내년 3학년 취업 프로그램은 보통 언제쯤 정하세요?"\n③ 반응별 답\n - 관심 있음 → "1장 안내를 다시 보내 드리고, 편하신 날 10분만 통화 드려도 될까요?"\n - 이미 업체 있음 → "좋습니다. 그 과정과 겹치지 않게 1회 특강(모의면접·1분 스피치)만 보태셔도 됩니다."\n - 예산 없음 → "연 1회 4교시 과정부터 가능합니다. 내년 예산 잡으실 때 참고만 해 주세요."\n - 담당 아님 → "실례지만 담당 선생님과 통화 가능한 시간을 여쭤봐도 될까요?"\n④ 아래 영업 기록에 결과 남기기'}
+];
+
+function vars(l){const S=db.settings,x=l.extra||{},av=availDates(l),d=av.length?av:(l.dates||[]);
+  const v={강사명:S.강사명,강사연락처:S.강사연락처,강사메일:S.강사메일,거주지:S.거주지,출발지:S.출발지,출강학교목록:S.출강학교목록,
+    기관명:l.기관명,담당자호칭:l.담당자호칭,학교명:l.학교명||l.지역,지역:l.지역||l.학교명,날짜:dateText(d),월일:d[0]?mdK(d[0]):'', '월/일':d.map(md).join('·'),
+    시간:l.시간,교시:l.교시,교시배정:l.교시,대상:l.대상,강의명:l.강의명,프로필파일:l.profile?profileFile(l):'',
+    학년:((l.대상||'').match(/([1-3])\s*학년/)||[])[1]||'',학과:((l.대상||'').match(/([가-힣]{2,10}과)/)||[])[1]||'',요일:x.요일||''};
+  for(const k in x)if(x[k])v[k]=x[k];return v}
+function fill(str,l){const v=vars(l);return String(str).replace(/\{\{([^}]+)\}\}/g,(_,k)=>v[k]?v[k]:`【${k}】`)}
+const tplText=(t,l)=>fill(typeof t.text==='function'?t.text(l):t.text,l);
+const gmailUrl=(to,su,body)=>`https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(to||'')}&su=${encodeURIComponent(su)}&body=${encodeURIComponent(body)}`;
+const mailtoUrl=(to,su,body)=>`mailto:${encodeURIComponent(to||'')}?subject=${encodeURIComponent(su)}&body=${encodeURIComponent(body)}`;
+
+/* ===== 화면 ===== */
+let tab='list',cur=null,filter='진행 중';
+function go(t){tab=t;cur=null;render();window.scrollTo(0,0)}
+function render(){$$('.tabs button').forEach(b=>{if(b.dataset.tab===(cur?'list':tab))b.setAttribute('aria-current','page');else b.removeAttribute('aria-current')});
+  const v=$('#view');
+  if(cur)return renderDetail(v);
+  ({list:renderList,new:renderNew,sales:renderSales,set:renderSettings})[tab](v)}
+$$('.tabs button').forEach(b=>b.onclick=()=>go(b.dataset.tab));
+
+function renderList(v){const t=todayIso();
+  const F=['진행 중','지원','선정','준비','완료','미선정','전체'];
+  let L=db.lectures.slice();
+  if(filter==='진행 중')L=L.filter(l=>['지원','선정','준비'].includes(l.status));else if(filter!=='전체')L=L.filter(l=>l.status===filter);
+  const first=l=>(availDates(l)[0]||(l.dates||[])[0])||'9999';
+  const up=L.filter(l=>first(l)>=t).sort((a,b)=>first(a).localeCompare(first(b))),past=L.filter(l=>first(l)<t).sort((a,b)=>first(b).localeCompare(first(a)));
+  const item=l=>{const f=first(l)==='9999'?'':first(l);const nd=availDates(l).length||l.dates.length;const w=warnings(l).filter(x=>x[0]!=='info').length;
+    return `<div class="card lec" data-open="${l.id}" role="button" tabindex="0"><div class="d">${f?md(f):'날짜?'}<small>${f?dowOf(f)+'요일':''}${nd>1?` 외 ${nd-1}일`:''}</small></div>
+    <div class="t"><h3>${esc(l.학교명||l.지역||'(장소 미정)')} · ${esc(l.강의명||'')}</h3><p class="muted">${esc(l.기관명||'')} ${l.시간?'· '+esc(l.시간):''}</p></div>
+    <div><span class="chip s-${l.status}">${l.status}</span>${w?`<div class="muted" style="color:var(--bad);font-size:12px;text-align:right">⚠ ${w}</div>`:''}</div></div>`};
+  v.innerHTML=`<div class="filters">${F.map(f=>`<button data-f="${f}" aria-pressed="${f===filter}">${f}</button>`).join('')}</div>
+  ${up.length?up.map(item).join(''):''}${past.length?`<h2>지난 강의</h2>${past.map(item).join('')}`:''}
+  ${!L.length?`<div class="empty"><p>아직 강의가 없어요.</p><button class="btn pri" data-go="new">새 공고 붙여넣기</button></div>`:''}`;
+  $$('[data-f]',v).forEach(b=>b.onclick=()=>{filter=b.dataset.f;render()});
+  $$('[data-open]',v).forEach(c=>{const o=()=>{cur=db.lectures.find(l=>l.id===c.dataset.open);render();scrollTo(0,0)};c.onclick=o;c.onkeydown=e=>{if(e.key==='Enter')o()}});
+  const g=$('[data-go]',v);if(g)g.onclick=()=>go('new')}
+
+function renderNew(v){v.innerHTML=`<h2>공고 붙여넣기</h2><p class="muted">카톡·메일·사이트에서 공고를 통째로 복사해 붙여 넣으세요. 이 기기 안에서만 읽고, 어디에도 보내지 않아요.</p>
+  <textarea id="notice" rows="12" placeholder="예) [강사 모집] 11월 17일(화) 경주디자인고 3학년 비즈니스매너 6차시 09:00~15:50 ..."></textarea>
+  <div class="row"><button class="btn pri" id="parse">읽어서 지원 메일 만들기</button><button class="btn" id="blankL">빈 강의로 시작</button></div>`;
+  $('#parse').onclick=()=>{const raw=$('#notice').value.trim();if(!raw)return toast('공고를 먼저 붙여 넣어 주세요');cur=newLecture(Object.assign(parseNotice(raw),{notice:raw}));cur._new=true;regen(cur);render();scrollTo(0,0)};
+  $('#blankL').onclick=()=>{cur=newLecture(parseNotice(''));cur._new=true;regen(cur);render()}}
+
+function regen(l){if(!l.subjectEdited)l.subject=genSubject(l);if(!l.bodyEdited)l.body=genBody(l)}
+function persist(l){if(!l._new){l.updated=new Date().toISOString();save()}}
+
+const FIELDS=[['기관명','섭외 업체·기관'],['담당자호칭','받는 사람 호칭'],['학교명','학교(장소)'],['지역','지역'],['시간','시간 (09:00~15:50)'],['교시','교시·차시'],['대상','대상'],['강의명','강의명·주제'],['지원안','지원안 (A안·메인강사, 없으면 비움)'],['to','받는 메일 주소']];
+function renderDetail(v){const l=cur;const isNew=!!l._new;
+  const stepIdx=STEPS.indexOf(l.status);
+  v.innerHTML=`<div class="row" style="margin-top:0"><button class="btn" id="back">← 목록</button>${isNew?'<button class="btn pri" id="saveNew">목록에 저장</button>':''}</div>
+  <h2 id="ttl"></h2>
+  <div class="steps">${STEPS.map((s,i)=>`<button data-st="${s}" class="${s===l.status?'on':(stepIdx>i?'done':'')}">${i+1}. ${s}</button>`).join('')}<button data-st="미선정" class="${l.status==='미선정'?'on':''}">미선정</button></div>
+  <div class="warns" id="warns"></div>
+
+  <details class="card" id="infoBox" ${isNew||l.status==='지원'?'open':''}><summary>기본 정보</summary>
+   <div class="grid" style="margin-top:8px">
+    <div class="full"><label>강의 날짜</label><div class="dates" id="dates"></div></div>
+    ${FIELDS.map(([k,lb])=>`<div class="${k==='강의명'||k==='to'?'full':''}"><label>${lb}<input data-f="${k}" value="${esc(l[k]||'')}" ${k==='to'?'type="email" inputmode="email"':''}></label></div>`).join('')}
+    <div><label>주제 (경력 문장 고르기)<select data-f="topic">${TOPICS.map(t=>`<option value="${t.k}" ${t.k===l.topic?'selected':''}>${t.name}</option>`).join('')}</select></label></div>
+    <div><label>보낼 프로필<select data-f="profile"><option value="school" ${l.profile==='school'?'selected':''}>학교용 (${esc(db.settings.학교프로필)})</option><option value="org" ${l.profile==='org'?'selected':''}>기관·법정교육용 (${esc(db.settings.기관프로필)})</option></select></label></div>
+    <div class="full checks"><label><input type="checkbox" data-c="noSchoolContact" ${l.noSchoolContact?'checked':''}>업체가 "학교에 직접 연락 금지"라고 했음 (질문은 업체 단톡으로만)</label></div>
+    <div class="full"><label>메모 (학생 이름은 적지 않기)<textarea data-f="memo" rows="2">${esc(l.memo||'')}</textarea></label></div>
+   </div></details>
+
+  <details class="card" id="mailBox" ${l.status==='지원'?'open':''}><summary>① 지원 메일</summary>
+   <div class="grid" style="margin-top:8px">
+    <div><label>형식<select data-f="variant">
+      <option value="basic" ${l.variant==='basic'?'selected':''}>기본형 (가장 많이 보낸 형식)</option>
+      <option value="detail" ${l.variant==='detail'?'selected':''}>상세형 (강사 소개 + 진행 계획)</option>
+      <option value="form" ${l.variant==='form'?'selected':''}>양식형 (공고가 항목을 정해 줄 때)</option>
+      <option value="renotice" ${l.variant==='renotice'?'selected':''}>재공지에 다시 지원 (답장)</option></select></label></div>
+    <div id="availBox"></div>
+    <div class="full" id="variantExtra"></div>
+    <div class="full"><label>경력 한 줄<select id="careerSel">${CAREERS.map((c,i)=>`<option value="${i}" ${c.t===l.career?'selected':''}>${esc(c.t.slice(0,34))}…${c.new?' (새로 씀)':''}</option>`).join('')}<option value="-1" ${CAREERS.some(c=>c.t===l.career)?'':'selected'}>직접 고침</option></select></label>
+      <textarea data-f="career" rows="2">${esc(l.career)}</textarea></div>
+    <div class="full"><label>진행 방식${topicOf(l.topic).new?' (새로 쓴 문장, 확인 필요)':''}<textarea data-f="way" rows="2">${esc(l.way)}</textarea></label></div>
+    <div class="full"><label>제목<input id="subj" value="${esc(l.subject)}"></label></div>
+    <div class="full"><label>본문<textarea id="body" rows="16">${esc(l.body)}</textarea></label></div>
+    <div class="full checks"><label><input type="checkbox" data-c="attached" ${l.attached?'checked':''}><span id="attLbl"></span></label></div>
+   </div>
+   <div class="row"><button class="btn" id="cpS">제목 복사</button><button class="btn" id="cpB">본문 복사</button><button class="btn pri" id="gm">Gmail로 열기</button><button class="btn" id="mt">메일 앱</button><button class="btn" id="re" hidden>공고 기준으로 다시 만들기</button></div>
+   <p class="muted" style="margin-top:8px">보내기는 직접 하세요. 앱은 초안까지만 만들어요. Gmail 창에서 프로필 파일을 첨부하는 것 잊지 마세요.</p>
+  </details>
+
+  <div class="card" id="nowBox"></div>
+  <details class="card"><summary>다른 단계 템플릿</summary><div id="otherBox" style="margin-top:8px"></div></details>
+  <div class="card" id="calBox"></div>
+  ${l.notice?`<details class="card"><summary>공고 원문</summary><textarea rows="10" readonly style="margin-top:8px">${esc(l.notice)}</textarea></details>`:''}
+  ${isNew?'':'<div class="row"><button class="btn bad" id="del">이 강의 지우기</button></div>'}`;
+
+  $('#back').onclick=()=>{if(isNew&&!confirm('저장하지 않고 나갈까요?'))return;go('list')};
+  if(isNew)$('#saveNew').onclick=()=>{delete l._new;l.history.push({s:l.status,at:new Date().toISOString()});db.lectures.push(l);save();toast('목록에 저장했어요');render()};
+  if(!isNew)$('#del').onclick=()=>{if(!confirm('이 강의를 지울까요? 되돌릴 수 없어요.'))return;db.lectures=db.lectures.filter(x=>x.id!==l.id);save();go('list')};
+  $$('[data-st]',v).forEach(b=>b.onclick=()=>{const s=b.dataset.st;if(s===l.status)return;
+    if(l.status==='지원'&&s!=='미선정'&&needsAttach(l)&&!l.attached&&!confirm('지원 메일에 프로필 첨부 체크가 안 돼 있어요. 그래도 단계를 바꿀까요?'))return;
+    l.status=s;l.history.push({s,at:new Date().toISOString()});persist(l);render();
+    if(s==='선정')toast('축하해요! 아래 "캘린더에 넣기"로 강의일정에 추가하세요')});
+  // 기본 정보 입력
+  $$('[data-f]',v).forEach(el=>{el.oninput=el.onchange=()=>{const k=el.dataset.f;l[k]=el.value;
+    if(k==='topic'){const t=topicOf(l.topic);l.career=CAREERS[t.c].t;l.way=t.way;$('[data-f="career"]').value=l.career;$('[data-f="way"]').value=l.way;$('#careerSel').value=String(t.c)}
+    if(k==='variant')drawVariantExtra();
+    if(k==='career')$('#careerSel').value=String(CAREERS.findIndex(c=>c.t===l.career));
+    regen(l);persist(l);refresh()}});
+  $$('[data-c]',v).forEach(el=>el.onchange=()=>{l[el.dataset.c]=el.checked;persist(l);refresh()});
+  $('#careerSel').onchange=e=>{const i=+e.target.value;if(i>=0){l.career=CAREERS[i].t;$('[data-f="career"]').value=l.career;regen(l);persist(l);refresh()}};
+  $('#subj').oninput=e=>{l.subject=e.target.value;l.subjectEdited=true;persist(l);refresh(true)};
+  $('#body').oninput=e=>{l.body=e.target.value;l.bodyEdited=true;persist(l);refresh(true)};
+  $('#re').onclick=()=>{l.subjectEdited=l.bodyEdited=false;regen(l);persist(l);refresh()};
+  $('#cpS').onclick=()=>copy(l.subject,'제목');
+  $('#cpB').onclick=()=>{if(needsAttach(l)&&!l.attached)toast('잊지 마세요: 프로필 첨부');copy(l.body,'본문')};
+  const send=(url)=>{if(needsAttach(l)&&!l.attached&&!confirm(`본문에 "첨부"가 있는데 아직 첨부 체크가 안 됐어요.\n열린 메일 창에서 ${profileFile(l)}${eul(profileFile(l))} 꼭 첨부하세요.\n\n메일 창을 열까요?`))return;window.open(url,'_blank')};
+  $('#gm').onclick=()=>send(gmailUrl(l.to,l.subject,l.body));
+  $('#mt').onclick=()=>send(mailtoUrl(l.to,l.subject,l.body));
+  drawDates();drawVariantExtra();drawTemplates();drawCal();refresh()}
+
+function drawDates(){const l=cur,box=$('#dates');
+  box.innerHTML=(l.dates.length?l.dates:[]).map((d,i)=>`<div class="dr"><input type="date" data-di="${i}" value="${d}"><span class="muted">${dowOf(d)}${l.dows&&l.dows[d]&&l.dows[d]!==dowOf(d)?` (공고: ${l.dows[d]})`:''}</span><button class="btn" data-dx="${i}" aria-label="날짜 빼기">✕</button></div>`).join('')+`<div><button class="btn" id="addD">+ 날짜</button>${l.deadline?` <span class="muted">지원 마감 ${md(l.deadline)}(${dowOf(l.deadline)})</span>`:''}</div>`;
+  $$('[data-di]',box).forEach(el=>el.onchange=()=>{if(!el.value)return;const old=l.dates[+el.dataset.di];l.dates[+el.dataset.di]=el.value;if(l.dows)delete l.dows[old];
+    l.avail=(l.avail||[]).map(a=>a===old?el.value:a);l.dates=[...new Set(l.dates)].sort();regen(l);persist(l);drawDates();refresh()});
+  $$('[data-dx]',box).forEach(b=>b.onclick=()=>{const d=l.dates.splice(+b.dataset.dx,1)[0];l.avail=(l.avail||[]).filter(a=>a!==d);regen(l);persist(l);drawDates();refresh()});
+  $('#addD').onclick=()=>{const last=l.dates[l.dates.length-1]||todayIso();const n=addDays(last,l.dates.length?1:7);l.dates.push(n);l.avail=[...(l.avail||[]),n];regen(l);persist(l);drawDates();refresh()};
+  drawAvail()}
+function drawAvail(){const l=cur,box=$('#availBox');if(!box)return;
+  if(l.dates.length<2&&!l.dates.some(d=>conflicts(l,d).length)){box.innerHTML='';return}
+  box.innerHTML=`<label>지원 가능한 날 (빼면 "일부 날짜만 가능" 문단이 들어가요)</label><div class="checks">${l.dates.map(d=>{const c=conflicts(l,d);return `<label><input type="checkbox" data-av="${d}" ${availDates(l).includes(d)?'checked':''}>${md(d)}(${dowOf(d)})${c.length?` <span style="color:var(--bad)">겹침</span>`:''}</label>`}).join('')}</div>`;
+  $$('[data-av]',box).forEach(el=>el.onchange=()=>{const s=new Set(availDates(l));el.checked?s.add(el.dataset.av):s.delete(el.dataset.av);l.avail=[...s];regen(l);persist(l);refresh()})}
+function drawVariantExtra(){const l=cur,box=$('#variantExtra');
+  const ks=l.variant==='detail'?['오전계획','오후계획','결과물']:l.variant==='renotice'?['바뀐내용']:[];
+  let h=ks.length?`<div class="vars">${ks.map(k=>`<label>${k}<input data-vx="${k}" value="${esc(l.extra[k]||'')}"></label>`).join('')}</div>`:'';
+  if(l.variant==='form')h+=`<div class="checks"><label><input type="checkbox" id="wb" ${l.withBirth?'checked':''}>생년월일 넣기 (공고가 요구할 때만, 값은 설정에서)</label></div>`;
+  if(dowIssues(l).length)h+=`<div class="checks"><label><input type="checkbox" id="ad" ${l.askDow?'checked':''}>본문에 "날짜 확인 부탁" 문단 넣기</label></div>`;
+  box.innerHTML=h;
+  $$('[data-vx]',box).forEach(el=>el.oninput=()=>{l.extra[el.dataset.vx]=el.value;regen(l);persist(l);refresh()});
+  const wb=$('#wb');if(wb)wb.onchange=()=>{l.withBirth=wb.checked;regen(l);persist(l);refresh()};
+  const ad=$('#ad');if(ad)ad.onchange=()=>{l.askDow=ad.checked;regen(l);persist(l);refresh()}}
+
+function tplCard(t,l){const vs=t.vars||[];
+  return `<div class="tpl" data-t="${t.id}"><div class="tpl-h"><h3>${esc(t.title)}</h3><span class="chip">${t.ch}</span><span class="src">${esc(t.src)}</span></div>
+  ${t.note?`<p class="muted">${esc(t.note)}</p>`:''}
+  ${t.id==='b1'&&l.noSchoolContact?'<p class="w warn">업체가 학교 직접 연락을 막았어요. 업체 단톡으로만 보내세요.</p>':''}
+  ${t.ask?`<div class="checks">${t.ask.map((q,i)=>`<label><input type="checkbox" data-ck="b1_${i}" ${l.checks['b1_'+i]?'checked':''}>앎 · ${esc(fill(q,l))}</label>`).join('')}</div>`:''}
+  ${t.todo?`<div class="checks">${t.todo.map((q,i)=>`<label><input type="checkbox" data-ck="${t.id}_${i}" ${l.checks[t.id+'_'+i]?'checked':''}>${esc(fill(q,l))}</label>`).join('')}</div>`:''}
+  ${vs.length?`<div class="vars">${vs.map(k=>`<label>${k}<input data-x="${k}" value="${esc((l.extra||{})[k]||'')}"></label>`).join('')}</div>`:''}
+  ${t.text?`<textarea class="out" rows="${Math.min(14,tplText(t,l).split('\n').length+1)}">${esc(tplText(t,l))}</textarea>
+  <div class="row"><button class="btn" data-cp>복사</button>${t.big?'<button class="btn" data-big>화면에 크게</button>':''}${t.mail?'<button class="btn pri" data-gm>Gmail로 열기</button>':''}</div>`:''}</div>`}
+function bindTpl(box,l,list,ctx){
+  $$('.tpl',box).forEach(card=>{const t=list.find(x=>x.id===card.dataset.t);const out=$('.out',card);
+    const upd=()=>{if(out)out.value=tplText(t,ctx())};
+    $$('[data-x]',card).forEach(el=>el.oninput=()=>{ctx().extra[el.dataset.x]=el.value;l.id?persist(l):save();upd()});
+    $$('[data-ck]',card).forEach(el=>el.onchange=()=>{ctx().checks[el.dataset.ck]=el.checked;l.id?persist(l):save();upd()});
+    const cp=$('[data-cp]',card);if(cp)cp.onclick=()=>copy(out.value,t.title);
+    const bg=$('[data-big]',card);if(bg)bg.onclick=()=>showBig(out.value);
+    const gm=$('[data-gm]',card);if(gm)gm.onclick=()=>{const to=t.id.startsWith('f')?(ctx().extra.받는메일||''):cur.to;
+      if(/첨부/.test(out.value))toast('메일 창에서 첨부 잊지 마세요');window.open(gmailUrl(to,fill(t.subject,ctx()),out.value),'_blank');if(ctx().onMail)ctx().onMail()}})}
+function drawTemplates(){const l=cur;const st=l.status==='미선정'?'':l.status;
+  const now=TPL.filter(t=>t.st===st),other=TPL.filter(t=>t.st!==st);
+  const nb=$('#nowBox');
+  nb.innerHTML=`<h3 style="margin-bottom:8px">${st?`지금 단계(${st})에 쓸 것`:'미선정 — 할 일 없음'}</h3>`+(st==='지원'?'<p class="muted">지원 메일은 위 ①에서. 프로필 요청이 오면 아래를 쓰세요.</p>':'')+now.map(t=>tplCard(t,l)).join('');
+  bindTpl(nb,l,TPL,()=>l);
+  const ob=$('#otherBox');ob.innerHTML=STEPS.filter(s=>s!==st).map(s=>`<h3 style="margin:12px 0 4px">${s}</h3>`+TPL.filter(t=>t.st===s).map(t=>tplCard(t,l)).join('')).join('');
+  bindTpl(ob,l,TPL,()=>l)}
+function calUrl(l,iso){const ymd=iso.replace(/-/g,'');let dates;const m=(l.시간||'').match(/(\d{2}):(\d{2})~(\d{2}):(\d{2})/);
+  if(m)dates=`${ymd}T${m[1]}${m[2]}00/${ymd}T${m[3]}${m[4]}00`;else dates=`${ymd}/${addDays(iso,1).replace(/-/g,'')}`;
+  const text=`[강의] ${l.학교명||l.지역||''} ${l.강의명||''}`.replace(/\s+/g,' ').trim();
+  const details=[l.기관명&&'기관: '+l.기관명,l.대상&&'대상: '+l.대상,l.교시&&'교시: '+l.교시,'상태: '+l.status].filter(Boolean).join('\n');
+  return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(text)}&dates=${dates}&details=${encodeURIComponent(details)}&location=${encodeURIComponent(l.학교명||l.지역||'')}&ctz=Asia/Seoul`}
+function drawCal(){const l=cur,b=$('#calBox');
+  b.innerHTML=`<h3>캘린더에 넣기</h3><p class="muted">선정되면 눌러서 '강의일정' 캘린더를 골라 저장하세요. (캘린더 선택은 구글 창에서)</p><div class="row">${l.dates.map(d=>`<a class="btn" target="_blank" rel="noopener" href="${calUrl(l,d)}">${md(d)}(${dowOf(d)}) 추가</a>`).join('')||'<span class="muted">날짜가 없어요</span>'}</div>`}
+function refresh(keepText){const l=cur;if(!l)return;
+  $('#ttl').textContent=`${l.학교명||l.지역||'(장소 미정)'} · ${l.강의명||'(강의명 미정)'}`;
+  $('#warns').innerHTML=warnings(l).map(([lv,k,m])=>`<div class="w ${lv}"><b>${k}</b>${esc(m)}</div>`).join('');
+  if(!keepText){const s=$('#subj'),b=$('#body');if(s&&document.activeElement!==s)s.value=l.subject;if(b&&document.activeElement!==b)b.value=l.body}
+  $('#re').hidden=!(l.subjectEdited||l.bodyEdited);
+  $('#attLbl').textContent=`Gmail에서 ${profileFile(l)} 첨부했어요`+(needsAttach(l)?'':' (이 형식은 첨부 없음)');
+  drawAvail();
+  $$('.tpl .out').forEach(o=>{const id=o.closest('.tpl').dataset.t;const t=TPL.find(x=>x.id===id);if(t&&document.activeElement!==o)o.value=tplText(t,l)});
+  drawCal()}
+function showBig(text){const b=$('#big');b.innerHTML=`<pre>${esc(text)}</pre><small>아무 데나 누르면 닫혀요</small>`;b.hidden=false;b.onclick=()=>{b.hidden=true}}
+
+/* ===== 영업 ===== */
+function renderSales(v){const f=db.salesForm;const S=db.settings;
+  if(!f.담당자호칭)f.담당자호칭='진로취업부장 선생님';
+  const logSale=()=>{if(!f.학교명)return;db.sales.unshift({id:uid(),학교:f.학교명,sent:todayIso(),call:bizDays(todayIso(),3),result:''});save();drawSalesList();toast(`전화 날짜를 ${md(db.sales[0].call)}로 잡았어요`)};
+  const sctx=()=>({extra:f,checks:{},dates:[],학교명:f.학교명,담당자호칭:f.담당자호칭,onMail:logSale});
+  v.innerHTML=`<h2>영업 (학교에 먼저 연락)</h2><p class="muted">첫 메일 → 3일(평일) 뒤 전화. 메일을 Gmail로 열면 아래 기록에 전화 날짜가 자동으로 잡혀요.</p>
+  <div class="card"><div class="grid"><label>학교명<input data-s="학교명" value="${esc(f.학교명||'')}"></label><label>담당자 호칭<input data-s="담당자호칭" value="${esc(f.담당자호칭)}"></label>
+  <label>받는 메일<input data-s="받는메일" type="email" value="${esc(f.받는메일||'')}"></label><label>전화 드릴 요일<input data-s="요일" value="${esc(f.요일||'')}" placeholder="목요일"></label></div>
+  ${S.출강학교목록?'':'<p class="w warn" style="margin-top:8px">설정에서 "올해 출강 학교 목록"을 채워야 첫 메일이 완성돼요.</p>'}</div>
+  <div class="card" id="salesTpl"></div><h2>영업 기록</h2><div id="salesList"></div>`;
+  const box=$('#salesTpl');box.innerHTML=SALES_TPL.map(t=>tplCard(t,sctx())).join('');bindTpl(box,{},SALES_TPL,sctx);
+  $$('[data-s]',v).forEach(el=>el.oninput=()=>{f[el.dataset.s]=el.value;save();$$('.out',box).forEach((o,i)=>{o.value=tplText(SALES_TPL[i],sctx())})});
+  drawSalesList()}
+function bizDays(iso,n){let d=iso;while(n>0){d=addDays(d,1);const w=dowOf(d);if(w!=='토'&&w!=='일'&&!HOL[d])n--}return d}
+function drawSalesList(){const box=$('#salesList');if(!box)return;const t=todayIso();
+  box.innerHTML=db.sales.length?db.sales.map(s=>`<div class="card sale"><div><b>${esc(s.학교)}</b> <span class="muted">메일 ${md(s.sent)} · 전화 <span class="${!s.result&&s.call<=t?'due':''}">${md(s.call)}(${dowOf(s.call)})</span></span></div>
+   <select data-sr="${s.id}" style="width:auto">${['','관심 있음','이미 업체 있음','예산 없음','담당 아님','부재중','계약'].map(r=>`<option ${r===s.result?'selected':''} value="${r}">${r||'결과?'}</option>`).join('')}</select></div>`).join(''):'<p class="muted">아직 기록이 없어요.</p>';
+  $$('[data-sr]',box).forEach(el=>el.onchange=()=>{const s=db.sales.find(x=>x.id===el.dataset.sr);s.result=el.value;save();drawSalesList()})}
+
+/* ===== 설정 ===== */
+function renderSettings(v){const S=db.settings;
+  const F=[['강사명','강사 이름'],['강사연락처','연락처 (메일에 들어감)'],['강사메일','학생 제출 받는 메일'],['거주지','거주지역 (양식형 지원)'],['출발지','출발지 (교통비 질문)'],['학교프로필','학교용 프로필 파일 이름'],['기관프로필','기관·법정교육용 프로필 파일 이름']];
+  v.innerHTML=`<h2>설정</h2><p class="muted">여기 값은 이 기기에만 저장돼요. 다른 기기에서 쓰려면 아래 "백업 파일"로 옮기세요.</p>
+  <div class="card grid">${F.map(([k,lb])=>`<label>${lb}<input data-k="${k}" value="${esc(S[k]||'')}"></label>`).join('')}
+   <label>생년월일 (양식형에서 체크할 때만 들어감)<input data-k="생년월일" value="${esc(S.생년월일||'')}" placeholder="비워 두어도 돼요"></label>
+   <label class="full">강의 경력 목록 (양식형)<textarea data-k="경력목록" rows="3">${esc(S.경력목록||'')}</textarea></label>
+   <label class="full">올해 출강 학교 목록 (영업 메일)<input data-k="출강학교목록" value="${esc(S.출강학교목록||'')}" placeholder="경주디자인고, 천안공고, 상서고"></label></div>
+
+  <h2>캘린더 일정 불러오기 (겹침 경고용)</h2>
+  <div class="card"><p class="muted">구글 캘린더(PC) → 설정 → '강의일정' → <b>캘린더 내보내기</b>로 받은 .ics 파일을 고르세요. zip이면 풀어서 안의 .ics를 고르면 돼요. 날짜와 제목만 이 기기에 저장해요.</p>
+   <input type="file" id="ics" accept=".ics,text/calendar"><p class="muted" id="calInfo" style="margin-top:6px">${db.cal.length?`불러온 일정 ${db.cal.length}개 (${esc(db.calAt)})`:'아직 불러온 일정이 없어요. 지금은 이 앱에 저장한 강의끼리만 겹침을 봐요.'}</p>
+   ${db.cal.length?'<button class="btn" id="calClr">불러온 일정 지우기</button>':''}</div>
+
+  <h2>백업</h2>
+  <div class="card"><p class="muted">강의 목록·설정을 파일로 저장하고, 다른 기기에서 불러올 수 있어요. 생년월일은 백업에 넣지 않아요.</p>
+   <div class="row"><button class="btn" id="exp">백업 파일 받기</button><label class="btn" style="display:inline-block">백업 불러오기<input type="file" id="imp" accept=".json,application/json" hidden></label></div></div>
+  <div class="row" style="margin-top:24px"><button class="btn bad" id="wipe">이 기기의 앱 데이터 모두 지우기</button></div>
+  <p class="muted" style="margin-top:16px">공휴일 목록: 2026·2027년 (2026-10-27 기준). 그 뒤 연도는 주말만 경고해요.</p>`;
+  $$('[data-k]',v).forEach(el=>el.oninput=()=>{S[el.dataset.k]=el.value;save()});
+  $('#ics').onchange=async e=>{const f=e.target.files[0];if(!f)return;const ev=parseIcs(await f.text());db.cal=ev;db.calAt=new Date().toLocaleDateString('ko-KR');save();toast(`일정 ${ev.length}개를 불러왔어요`);render()};
+  const cc=$('#calClr');if(cc)cc.onclick=()=>{db.cal=[];save();render()};
+  $('#exp').onclick=()=>{const d=JSON.parse(JSON.stringify(db));d.settings.생년월일='';const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(d,null,1)],{type:'application/json'}));a.download=`강의앱_백업_${todayIso()}.json`;a.click()};
+  $('#imp').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const d=JSON.parse(await f.text());if(!Array.isArray(d.lectures))throw 0;
+    const byId=new Map(db.lectures.map(l=>[l.id,l]));for(const l of d.lectures)byId.set(l.id,l);db.lectures=[...byId.values()];
+    const birth=db.settings.생년월일;db.settings=Object.assign(db.settings,d.settings||{},{생년월일:birth});if(d.cal&&d.cal.length){db.cal=d.cal;db.calAt=d.calAt||''}if(d.sales)db.sales=d.sales;save();toast(`강의 ${d.lectures.length}건을 불러왔어요`);render()}catch(err){toast('백업 파일이 아니에요')}};
+  $('#wipe').onclick=()=>{if(!confirm('이 기기의 강의 목록·설정·영업 기록을 모두 지울까요? 되돌릴 수 없어요.'))return;localStorage.removeItem(KEY);db=blank();render()}}
+function parseIcs(txt){const t=txt.replace(/\r?\n[ \t]/g,'');const out=[];const from=addDays(todayIso(),-60);
+  for(const b of t.split('BEGIN:VEVENT').slice(1)){const s=(b.match(/^DTSTART[^:\n]*:(\d{8})(T(\d{2})(\d{2})\d{2}(Z)?)?/m)||[]);if(!s[1])continue;
+    let y=+s[1].slice(0,4),mo=+s[1].slice(4,6),d=+s[1].slice(6,8);
+    if(s[5]){const u=new Date(Date.UTC(y,mo-1,d,+s[3],+s[4]));const k=new Date(u.getTime()+9*3600e3);y=k.getUTCFullYear();mo=k.getUTCMonth()+1;d=k.getUTCDate()}
+    const iso=isoOf(y,mo,d);if(iso<from)continue;
+    const sum=((b.match(/^SUMMARY[^:\n]*:(.*)$/m)||[])[1]||'').replace(/\\,/g,',').replace(/\\n/g,' ').trim();
+    if(/STATUS:CANCELLED/.test(b))continue;out.push({d:iso,t:sum})}
+  return out.sort((a,b)=>a.d.localeCompare(b.d))}
+
+render();
+</script>
+</body>
+</html>
