@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<meta name="build" content="261028-1313">
+<meta name="build" content="261028-1318">
 <title>강사로</title>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#1F6F78">
@@ -70,6 +70,9 @@ nav .plus{width:52px;height:52px;border-radius:26px;background:var(--ac);color:v
 #toast.on{opacity:1}
 details summary{cursor:pointer;font-weight:600;font-size:13px;color:var(--ac)}
 pre.pf{white-space:pre-wrap;font:inherit;font-size:13px;background:var(--bg);border-radius:10px;padding:10px;margin:0}
+/* 노트북·PC: 화면을 넓게, 달력 칸을 크게, 창은 가운데에 */
+@media (min-width:1024px){.app{max-width:960px}nav .in{max-width:960px}.day{height:96px}
+.sheet{align-items:center}.sheet .in{max-width:720px;border-radius:18px;max-height:88vh}}
 @media (prefers-reduced-motion:reduce){#toast{transition:none}}
 </style>
 </head>
@@ -763,6 +766,6 @@ document.addEventListener('paste',ev=>{if(ev.target.id==='pRaw')setTimeout(()=>{
 document.addEventListener('input',ev=>{if(['pDates','pRaw'].includes(ev.target.id))pWarn()});
 render();
 </script>
-<script type="module" src="real.js?v=261028-1313"></script>
+<script type="module" src="real.js?v=261028-1318"></script>
 </body>
 </html>

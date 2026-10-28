@@ -70,6 +70,9 @@ nav .plus{width:52px;height:52px;border-radius:26px;background:var(--ac);color:v
 #toast.on{opacity:1}
 details summary{cursor:pointer;font-weight:600;font-size:13px;color:var(--ac)}
 pre.pf{white-space:pre-wrap;font:inherit;font-size:13px;background:var(--bg);border-radius:10px;padding:10px;margin:0}
+/* 노트북·PC: 화면을 넓게, 달력 칸을 크게, 창은 가운데에 */
+@media (min-width:1024px){.app{max-width:960px}nav .in{max-width:960px}.day{height:96px}
+.sheet{align-items:center}.sheet .in{max-width:720px;border-radius:18px;max-height:88vh}}
 @media (prefers-reduced-motion:reduce){#toast{transition:none}}
 </style>
 </head>
