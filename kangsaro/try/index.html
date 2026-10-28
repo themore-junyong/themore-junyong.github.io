@@ -533,7 +533,7 @@ document.addEventListener('click',async ev=>{
   if(A==='unconfirm'){const a=S.apps.find(x=>x.id===D.a);a.status='지원';save();render();return toast('확정을 취소했어요')}
   if(A==='close'){const j=job(D.j);const cf=appsOf(j.id).filter(a=>a.status==='확정').length;
     if(!cf&&!el.dataset.sure){el.dataset.sure=1;el.textContent='확정한 강사가 없어요. 그래도 마감';return}
-    j.status='마감';let n=0;for(const a of appsOf(j.id))if(a.status==='지원'){a.status='미선정';n++}save();render();return toast(`마감했어요. 미선정 ${n}명은 달력에서 사라졌어요`)}
+    j.status='마감';let n=0;for(const a of appsOf(j.id))if(a.status==='지원'){a.status='미선정';n++;S.alerts.push({id:uid(),instId:a.instId,text:`[마감] ${co(j.coId).name} · ${j.region} ${j.school} ${j.title} (${j.dates.map(d=>`${md(d)}(${dowOf(d)})`).join('·')}) 모집이 마감되었어요. 이번에는 함께하지 못하게 되었어요. 그날은 다른 강의를 잡으셔도 돼요.`,at:new Date().toISOString(),read:false})}save();render();return toast(`마감했어요. 미선정 ${n}명에게 마감 알림이 가고, 그 달력에서 사라졌어요`)}
   if(A==='notice'){const j=job(D.j),tx=$('#ntText').value.trim();if(!tx&&!$('#ntImg').files[0])return toast('공지 내용을 쓰거나 이미지를 넣으세요');
     const f=$('#ntImg').files[0];const img=f?await shrink(f):'';
     j.notices.push({id:uid(),kind:$('#ntKind').value,text:tx,img,at:new Date().toISOString(),to:appsOf(j.id).filter(a=>a.status==='확정').map(a=>a.instId),reads:{}});save();render();return toast('공지를 보냈어요. 강사 일정 카드 맨 위에 떠요')}
