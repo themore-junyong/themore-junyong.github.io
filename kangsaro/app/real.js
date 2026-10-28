@@ -200,7 +200,7 @@ REAL.gate = () => {
     <label class="f">이메일로 시작 (비밀번호 없이, 메일로 온 링크를 누르면 로그인돼요)<input id="rMail" type="email" autocomplete="email" placeholder="you@example.com"></label>
     <button class="btn ${isKakaoUA ? 'pri' : ''}" data-real="mail">로그인 링크 받기</button>
     <span class="mu sm">가입하면 <a href="../privacy.html">개인정보 처리방침</a>에 동의하는 것으로 봐요.</span></div>
-    <a class="btn" href="../try/">먼저 체험판 써 보기</a>`;
+    <a class="btn" href="../try/">먼저 체험판 써 보기</a> <a class="btn" style="text-decoration:none;color:inherit" href="../guide/">사용설명서</a>`;
   if (!profileLoaded) return '<p class="mu">불러오는 중…</p>';
   return `<div class="card"><h2>어느 쪽으로 가입할까요?</h2>
     <span class="mu sm">${esc(auth.currentUser.email || '')}로 로그인했어요.</span>
@@ -216,7 +216,7 @@ REAL.gate = () => {
 REAL.acct = () => {
   const el = $('#acct'); if (!el) return;
   const pending = role === 'c' && me && !me.approved;
-  el.innerHTML = `<span class="sp">${esc(me ? me.name : '')} ${role === 'c' ? '(업체)' : ''}</span>${ADMINS.includes(auth.currentUser?.email) ? '<button class="btn sm" data-real="admin">업체 승인</button>' : ''}<button class="btn sm" data-real="ref">소개하기</button><button class="btn sm" data-real="out">로그아웃</button>`;
+  el.innerHTML = `<span class="sp">${esc(me ? me.name : '')} ${role === 'c' ? '(업체)' : ''}</span>${ADMINS.includes(auth.currentUser?.email) ? '<button class="btn sm" data-real="admin">업체 승인</button>' : ''}<a class="btn sm" style="text-decoration:none;color:inherit;display:inline-flex;align-items:center" href="../guide/${role === 'c' ? 'company' : 'instructor'}.html">사용법</a><button class="btn sm" data-real="ref">소개하기</button><button class="btn sm" data-real="out">로그아웃</button>`;
   if (pending && !$('#pendBar')) el.insertAdjacentHTML('afterend', '<div id="pendBar" class="alert">업체 확인 중이에요. 확인이 끝나면 공고를 올릴 수 있어요. (보통 하루 안)</div>');
 };
 
