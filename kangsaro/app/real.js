@@ -6,6 +6,9 @@ const V = '10.12.2', G = `https://www.gstatic.com/firebasejs/${V}`;
 const ADMINS = ['tobadyclub87@gmail.com'];
 const Q = new URLSearchParams(location.search);
 const EMU = Q.has('emu');
+// 소개 링크(?ref=소개한 사람)는 로그인 전에 기억해 둠
+const lsGet = k => { try { return localStorage.getItem(k) || ''; } catch (e) { return ''; } };
+if (Q.get('ref')) try { localStorage.setItem('kangsaro.ref', Q.get('ref')); } catch (e) { }
 
 if (!firebaseConfig && !EMU) {
   REAL.gate = () => `<div class="card"><h2>강사로 준비 중이에요</h2><p class="mu">곧 열려요. 그동안 체험판으로 미리 써 보세요.</p><a class="btn pri" href="../try/">체험판 열기</a></div>`;
@@ -23,7 +26,7 @@ if (EMU) { A.connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarning
 const { doc, collection, getDoc, getDocs, setDoc, updateDoc, deleteDoc, deleteField, query, where, limit, onSnapshot } = F;
 
 /* ===== 문서 나누기 ===== */
-const PUB = { i: ['name', 'region', 'topics', 'intro', 'career', 'photo', 'joined', 'beta'], c: ['name', 'contact', 'joined', 'approved'] };
+const PUB = { i: ['name', 'region', 'topics', 'intro', 'career', 'photo', 'joined', 'beta', 'refBy'], c: ['name', 'contact', 'joined', 'approved', 'refBy'] };
 const PRIV = { i: ['phone', 'email', 'bank', 'acct', 'holder', 'kmpl', 'fuel', 'vault'], c: ['phone', 'email'] };
 const pick = (o, ks) => { const r = {}; for (const k of ks) if (o[k] !== undefined) r[k] = o[k]; return r; };
 const omit = (o, ks) => { const r = { ...o }; for (const k of ks) delete r[k]; return r; };
@@ -201,6 +204,7 @@ REAL.gate = () => {
   if (!profileLoaded) return '<p class="mu">불러오는 중…</p>';
   return `<div class="card"><h2>어느 쪽으로 가입할까요?</h2>
     <span class="mu sm">${esc(auth.currentUser.email || '')}로 로그인했어요.</span>
+    ${lsGet('kangsaro.ref') ? '<div class="alert">소개로 오셨어요. 가입하면 소개한 분과 함께 무료 기간이 늘어요 (업체 1개월, 강사 1주일).</div>' : ''}
     <div class="row"><label class="sm"><input type="radio" name="rRole" value="i" checked> 강사예요</label><label class="sm"><input type="radio" name="rRole" value="c"> 강의 업체예요</label></div>
     <label class="f">이름 (업체는 업체명)<input id="rName" autocomplete="name"></label>
     <label class="f">연락처<input id="rPhone" type="tel" autocomplete="tel" placeholder="010-0000-0000"></label>
@@ -212,7 +216,7 @@ REAL.gate = () => {
 REAL.acct = () => {
   const el = $('#acct'); if (!el) return;
   const pending = role === 'c' && me && !me.approved;
-  el.innerHTML = `<span class="sp">${esc(me ? me.name : '')} ${role === 'c' ? '(업체)' : ''}</span>${ADMINS.includes(auth.currentUser?.email) ? '<button class="btn sm" data-real="admin">업체 승인</button>' : ''}<button class="btn sm" data-real="out">로그아웃</button>`;
+  el.innerHTML = `<span class="sp">${esc(me ? me.name : '')} ${role === 'c' ? '(업체)' : ''}</span>${ADMINS.includes(auth.currentUser?.email) ? '<button class="btn sm" data-real="admin">업체 승인</button>' : ''}<button class="btn sm" data-real="ref">소개하기</button><button class="btn sm" data-real="out">로그아웃</button>`;
   if (pending && !$('#pendBar')) el.insertAdjacentHTML('afterend', '<div id="pendBar" class="alert">업체 확인 중이에요. 확인이 끝나면 공고를 올릴 수 있어요. (보통 하루 안)</div>');
 };
 
@@ -235,21 +239,65 @@ document.addEventListener('click', async e => {
     if (!name) return toast('이름을 넣어 주세요'); if (!phone) return toast('연락처를 넣어 주세요');
     const t = todayIso(), email = auth.currentUser.email || '';
     const pub = r === 'i' ? { role: 'i', name, region: $('#rRegion').value, topics: '', intro: '', career: '', joined: t, beta: true } : { role: 'c', name, contact: $('#rContact').value.trim(), joined: t, approved: false };
+    const ref = lsGet('kangsaro.ref');
+    if (ref && ref !== uidMe) { const rd = await getDoc(doc(db, 'users', ref)).catch(() => null); if (rd && rd.exists()) pub.refBy = ref; }
     const priv = r === 'i' ? { phone, email, bank: '', acct: '', holder: name, kmpl: 15, fuel: 1650, vault: {} } : { phone, email };
     try { await setDoc(doc(db, 'users', uidMe), pub); await setDoc(doc(db, 'users', uidMe, 'private', 'main'), priv); }
     catch (err) { return toast('가입하지 못했어요: ' + err.code); }
+    try { localStorage.removeItem('kangsaro.ref'); } catch (err) { }
     toast(r === 'i' ? '가입했어요. 프로필을 채우면 지원할 때 같이 가요' : '가입했어요. 업체 확인이 끝나면 공고를 올릴 수 있어요');
     await start(auth.currentUser);
     if (r === 'i') { ui.tab = 'me'; render(); }
   }
   if (k === 'admin') return adminSheet();
+  if (k === 'ref') return refSheet();
+  if (k === 'refCopy') { const t = refText(); try { await navigator.clipboard.writeText(t); toast('복사했어요. 카톡에 붙여 넣으세요'); } catch (err) { prompt('길게 눌러 복사해 주세요', t); } return; }
+  if (k === 'refShare') { try { await navigator.share({ title: '강사로', text: refText() }); } catch (err) { } return; }
   if (k === 'approve') { await updateDoc(doc(db, 'users', b.dataset.u), { approved: true }); toast('승인했어요'); return adminSheet(); }
 });
+/* ===== 소개하기: 업체가 가입하면 양쪽 1개월, 강사가 가입하면 양쪽 1주일 무료 (최대 6개월) ===== */
+const REF_MAX = 180, refDays = r => r === 'c' ? 30 : 7;
+const dayTxt = d => [Math.floor(d / 30) && Math.floor(d / 30) + '개월', d % 30 && d % 30 + '일'].filter(Boolean).join(' ') || '0일';
+const refLink = () => location.origin + location.pathname + '?ref=' + uidMe;
+const refText = () => `강사 일정·강사료 관리, 강의 업체 강사 관리를 한 앱에서 하는 '강사로'예요. 이 링크로 가입하면 무료 기간을 더 드려요 (업체 1개월, 강사 1주일).\n${refLink()}`;
+// 인정 조건: 강사는 프로필(분야·소개) 완성, 업체는 승인 후 공고 1건
+async function refDone(u) {
+  if (u.role === 'i') return !!((u.topics || '').trim() && (u.intro || '').trim());
+  if (!u.approved) return false;
+  const j = await getDocs(query(collection(db, 'jobs'), where('coId', '==', u.id), limit(1))).catch(() => null);
+  return !!(j && !j.empty);
+}
+async function refSheet() {
+  const d = await getDocs(query(collection(db, 'users'), where('refBy', '==', uidMe))).catch(() => null);
+  const rows = await Promise.all((d ? d.docs : []).map(async x => { const u = { id: x.id, ...x.data() }; u.done = await refDone(u); return u; }));
+  const mine = me && me.refBy && await refDone({ ...me, id: uidMe }) ? refDays(role) : 0;
+  const got = Math.min(REF_MAX, mine + rows.filter(r => r.done).reduce((t, r) => t + refDays(r.role), 0));
+  const can = !!navigator.share;
+  openSheet(`<div class="row"><h2 class="sp">소개하기</h2><button class="btn sm" data-act="closeSheet">닫기</button></div>
+    <p>내 링크로 가입하면 소개한 분과 가입한 분 모두 무료 기간이 늘어요. <b>업체가 가입하면 1개월, 강사가 가입하면 1주일</b>씩이에요.</p>
+    <span class="mu sm">강사는 프로필(분야·소개)을 채우면, 업체는 확인 후 공고를 1건 올리면 인정돼요. 최대 ${dayTxt(REF_MAX)}까지 쌓여요.</span>
+    <label class="f">내 소개 링크<input readonly value="${esc(refLink())}" onclick="this.select()"></label>
+    <div class="row"><button class="btn pri" data-real="refCopy">소개 문구 복사</button>${can ? '<button class="btn" data-real="refShare">공유하기</button>' : ''}</div>
+    <div class="card"><b>쌓인 무료 기간: ${dayTxt(got)}</b><span class="mu sm">유료로 바뀔 때 이 기간만큼 무료로 써요.${mine ? ` (소개로 가입한 ${dayTxt(mine)} 포함)` : ''}</span></div>
+    <h3>내가 소개한 분 (${rows.length})</h3>
+    ${rows.map(r => `<div class="row"><span class="sp">${esc(r.name || '')} <span class="mu sm">${r.role === 'c' ? '업체' : '강사'} · 가입 ${esc(r.joined || '')}</span></span><span class="sm">${r.done ? `✓ ${dayTxt(refDays(r.role))}` : (r.role === 'c' ? '공고 전' : '프로필 작성 전')}</span></div>`).join('') || '<p class="mu">아직 없어요. 링크를 톡방이나 지인에게 보내 보세요.</p>'}`);
+}
+
 async function adminSheet() {
   const d = await getDocs(query(collection(db, 'users'), where('role', '==', 'c'), where('approved', '==', false)));
   const rows = await Promise.all(d.docs.map(async x => { let p = {}; try { const s = await getDoc(doc(db, 'users', x.id, 'private', 'main')); p = s.data() || {}; } catch (e) { } return { id: x.id, ...x.data(), ...p }; }));
   openSheet(`<div class="row"><h2 class="sp">업체 승인</h2><button class="btn sm" data-act="closeSheet">닫기</button></div>
+    ${await refAdmin()}
     ${rows.map(r => `<div class="card"><b>${esc(r.name)}</b><span class="mu sm">${esc(r.contact || '')} · ${esc(r.phone || '')} · ${esc(r.email || '')} · 가입 ${esc(r.joined || '')}</span><button class="btn pri sm" data-real="approve" data-u="${r.id}">승인</button></div>`).join('') || '<p class="mu">기다리는 업체가 없어요.</p>'}`);
+}
+
+async function refAdmin() {
+  const d = await getDocs(query(collection(db, 'users'), where('refBy', '>', ''))).catch(() => null);
+  if (!d || d.empty) return '';
+  const by = new Map();
+  for (const x of d.docs) { const r = x.data().refBy; by.set(r, (by.get(r) || 0) + 1); }
+  const names = await Promise.all([...by.keys()].map(async id => { const u = await getDoc(doc(db, 'users', id)).catch(() => null); return [id, u && u.exists() ? u.data().name : id.slice(0, 6)]; }));
+  return `<div class="card"><b>소개 현황 (가입 기준)</b>${names.map(([id, n]) => `<span class="sm">${esc(n)}: ${by.get(id)}명</span>`).join('')}<span class="mu sm">인정 여부는 각자 '소개하기' 화면에서 봐요.</span></div>`;
 }
 
 /* ===== 파일 (서류 사진은 줄여서 Firestore에 저장, 1MB 한도) ===== */
