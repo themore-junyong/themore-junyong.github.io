@@ -241,7 +241,7 @@ function entries(iid){const t=todayIso(),me=inst(iid),out=[];
   for(const e of S.evs){if(e.instId!==iid||e.st==='no')continue;
     const st=e.st==='confirmed'&&last(e.dates)<t?'done':e.st;
     for(const d of e.dates)out.push({kind:'ev',ref:e,d,st,title:e.title,org:e.org,time:e.time,fee:+e.fee||0,trv:travel(e,me)})}
-  for(const a of S.apps){if(a.instId!==iid||a.status==='미선정')continue;const j=job(a.jobId);if(!j)continue;
+  for(const a of S.apps){if(a.instId!==iid||a.status==='미선정'||a.status==='취소')continue;const j=job(a.jobId);if(!j)continue;
     const st=a.status==='지원'?'applied':a.paidAt?'paid':last(j.dates)<t?'done':'confirmed';
     for(const d of j.dates)out.push({kind:'app',ref:a,job:j,d,st,title:`${j.region} ${j.school} ${j.title}`,org:co(j.coId).name,time:j.time,fee:+j.fee||0,trv:travel(a,me)})}
   return out.sort((x,y)=>x.d<y.d?-1:x.d>y.d?1:0)}
@@ -319,7 +319,7 @@ function dayBoard(cid){const t=todayIso(),tm=addDays(t,1),now=nowIso(),rows=[];
    <span class="mu sm">시작 1시간 전까지 출발을 안 누르거나, 시작보다 늦게 도착할 예정이면 빨간색이에요.</span></div>`}
 function entryCard(e){const tx=tax(e.fee);
   const ctrl=e.kind==='ev'?`<div class="row">${[['applied','지원'],['confirmed','확정'],['done','강의 끝'],['paid','지급 완료'],['no','안 됨']].map(([k,l])=>`<button class="btn sm" data-act="evst" data-id="${e.ref.id}" data-st="${k}" ${e.ref.st===k||(k==='done'&&e.st==='done')?'style="border-color:var(--ac);color:var(--ac)"':''}>${l}</button>`).join('')}<button class="btn sm" data-act="evdel" data-id="${e.ref.id}">지우기</button></div>`
-    :`<p class="mu sm">강사로 안에서 지원한 강의예요. 회사가 확정·지급하면 자동으로 바뀌어요.</p>`;
+    :`<p class="mu sm">강사로 안에서 지원한 강의예요. 회사가 확정·지급하면 자동으로 바뀌어요.</p>${e.st==='applied'?`<button class="btn sm" data-act="cancelApp" data-a="${e.ref.id}">지원 취소</button>`:e.st==='confirmed'?`<button class="btn sm" data-act="cancelApp" data-a="${e.ref.id}">확정 강의 취소 (업체에 사유 전달)</button>`:''}`;
   return `<div class="card"><div class="row">${chip(e.st)}<h3 class="sp">${esc(e.title)}</h3></div>
   ${e.kind==='app'?noticeBox(e.job,meId())+dayBox(e):''}
   <span class="mu">${esc(e.org)} · ${esc(e.time||'시간 미정')}</span>
@@ -365,7 +365,7 @@ function vJobs(){const iid=meId(),t=todayIso();
       <tr><th>예상 순수익</th><th>${won(g.net)}</th></tr></tbody></table><span class="mu sm">시·군 중심 거리로 어림했어요. 통행료·주차비는 빠져 있어요. 연비·기름값은 프로필에서 바꿀 수 있어요.</span></div>`:''})()}${j.desc?`<pre class="pf">${esc(j.desc)}</pre>`:'<span class="mu">업체가 적은 추가 내용이 없어요.</span>'}</div></details>
     ${(()=>{const g=netGuess(j,inst(iid));return g?`<span class="money" style="color:var(--ac);font-weight:700">예상 순수익 약 ${won(g.net)}</span><span class="mu sm">${esc(inst(iid).region)}→${esc(j.region)} 편도 약 ${hmText(g.min)} · 왕복 약 ${g.km}km · 자세한 계산은 아래 "공고 자세히 보기"</span>`:`<span class="mu sm">프로필에 사는 곳(시·군)을 넣으면 예상 순수익이 보여요.</span>`})()}
     ${cl.length?`<div class="alert">이날 이미 일정이 있어요: ${cl.map(e=>`${esc(e.title)}(${ST[e.st]})`).join(', ')}</div>`:''}
-    ${a?`<span class="mu sm">지원했어요. 회사가 확정하면 달력이 파란색으로 바뀌어요.</span>`:`<button class="btn pri" data-act="apply" data-j="${j.id}">버튼 한 번으로 지원하기</button>`}</div>`}).join(''):'<p class="mu">지금 모집 중인 공고가 없어요.</p>'}`}
+    ${a&&a.status!=='취소'?`<div class="row"><span class="mu sm sp">지원했어요. 회사가 확정하면 달력이 파란색으로 바뀌어요.</span>${a.status==='지원'?`<button class="btn sm" data-act="cancelApp" data-a="${a.id}">지원 취소</button>`:''}</div>`:`<button class="btn pri" data-act="apply" data-j="${j.id}">${a?'다시 지원하기':'버튼 한 번으로 지원하기'}</button>`}</div>`}).join(''):'<p class="mu">지금 모집 중인 공고가 없어요.</p>'}`}
 
 /* ===== 강사: 공고 붙여넣기 / 직접 입력 ===== */
 function sheetPaste(pre){const p=pre||{};
@@ -422,20 +422,20 @@ function vMe(){const p=inst(meId());
 function jobStats(j){const A=appsOf(j.id),cf=A.filter(a=>a.status==='확정');
   const miss=cf.reduce((n,a)=>n+j.needs.filter(x=>x!=='프로필'&&!a.docs[x]).length,0);
   const unread=j.notices.reduce((n,nt)=>n+(nt.to||[]).filter(i=>!nt.reads[i]).length,0);
-  return {ap:A.filter(a=>a.status==='지원').length,cf:cf.length,miss,unread}}
+  return {ap:A.filter(a=>a.status==='지원').length,cf:cf.length,miss,unread,cx:cf.length?0:A.filter(a=>a.status==='취소'&&a.cxConfirmed).length}}
 function vCJobs(){if(ui.jobId&&job(ui.jobId))return vCJob(job(ui.jobId));const t=todayIso();
   const J=S.jobs.filter(j=>j.coId===meId()).sort((a,b)=>a.dates[0]<b.dates[0]?-1:1);
   const up=J.filter(j=>last(j.dates)>=t),past=J.filter(j=>last(j.dates)<t);
   const card=j=>{const s=jobStats(j);return `<button class="card" style="text-align:left;cursor:pointer" data-act="openJob" data-j="${j.id}"><div class="row"><span class="chip ${j.status==='모집'?'applied':'confirmed'}">${j.status==='모집'?'모집 중':'마감'}</span><h3 class="sp">${esc(j.region)} ${esc(j.school)} ${esc(j.title)}</h3></div>
     <span class="mu">${j.dates.map(d=>`${md(d)}(${dowOf(d)})`).join('·')} ${esc(j.time)} · 1일 ${won(j.fee)}</span>
-    <div class="row">${s.ap?`<span class="chip applied">지원 ${s.ap}</span>`:''}${s.cf?`<span class="chip confirmed">확정 ${s.cf}</span>`:''}${s.miss?`<span class="chip warn">빠진 서류 ${s.miss}</span>`:''}${s.unread?`<span class="chip warn">공지 안 읽음 ${s.unread}</span>`:''}${!s.cf&&j.status==='마감'?'<span class="chip warn">확정 강사 없음</span>':''}</div></button>`};
-  const todo=up.filter(j=>{const s=jobStats(j);return s.miss||s.unread||(!s.cf&&j.status==='마감')});
+    <div class="row">${s.ap?`<span class="chip applied">지원 ${s.ap}</span>`:''}${s.cf?`<span class="chip confirmed">확정 ${s.cf}</span>`:''}${s.miss?`<span class="chip warn">빠진 서류 ${s.miss}</span>`:''}${s.unread?`<span class="chip warn">공지 안 읽음 ${s.unread}</span>`:''}${s.cx?`<span class="chip warn">확정 강사 취소 ${s.cx}</span>`:''}${!s.cf&&j.status==='마감'?'<span class="chip warn">확정 강사 없음</span>':''}</div></button>`};
+  const todo=up.filter(j=>{const s=jobStats(j);return s.miss||s.unread||s.cx||(!s.cf&&j.status==='마감')});
   return `<h2>${esc(co(meId()).name)} 강의 운영판</h2>${dayBoard(meId())}
   ${todo.length?`<div class="alert">챙길 강의 ${todo.length}건: 빠진 서류, 안 읽은 공지, 확정 강사 없음을 확인하세요.</div>`:'<div class="ok">다가오는 강의에 빠진 것이 없어요.</div>'}
   <h3>다가오는 강의</h3>${up.map(card).join('')||'<p class="mu">아래 + 로 강의를 등록하세요.</p>'}
   <details><summary>지난 강의 ${past.length}건</summary>${past.map(card).join('')}</details>`}
 function vCJob(j){const A=appsOf(j.id),s=jobStats(j);
-  const prof=a=>{const p=inst(a.instId);const cf=a.status==='확정';return `<div class="card"><div class="row"><h3 class="sp">${esc(p.name)} <span class="mu sm">${esc(p.region)} · ${esc(p.topics)}</span></h3>${cf?chip('confirmed'):a.status==='미선정'?'<span class="chip off">미선정</span>':chip('applied')}</div>
+  const prof=a=>{const p=inst(a.instId);const cf=a.status==='확정';return `<div class="card"><div class="row"><h3 class="sp">${esc(p.name)} <span class="mu sm">${esc(p.region)} · ${esc(p.topics)}</span></h3>${cf?chip('confirmed'):a.status==='미선정'?'<span class="chip off">미선정</span>':a.status==='취소'?`<span class="chip ${a.cxConfirmed?'warn':'off'}">${a.cxConfirmed?'확정 후 취소':'지원 취소'}</span>`:chip('applied')}</div>
     <span class="mu sm">${esc(p.intro)}</span>
     <details><summary>프로필 보기</summary><pre class="pf">${esc(profileText(cf?p:{...p,phone:'확정하면 보여요',email:'확정하면 보여요'}))}</pre>${cf?`<span class="mu sm">계좌: ${esc(p.bank)} ${esc(p.acct)} ${esc(p.holder)}</span><button class="btn sm" data-act="copyPfOf" data-i="${p.id}">학교 제출용으로 복사</button>`:''}</details>
     ${cf?`<div class="mu sm">받을 것: ${j.needs.map(n=>n==='프로필'?'프로필 ✓':a.docs[n]?`${esc(n)} ✓ <span class="sm">(${esc(a.docs[n])})</span>`:`<b style="color:var(--r2)">${esc(n)} 빠짐</b>`).join(' · ')}</div>`:''}
@@ -448,8 +448,9 @@ function vCJob(j){const A=appsOf(j.id),s=jobStats(j);
   <span class="mu">${esc(j.교시)} · ${esc(j.대상)} · 1일 강사료 ${won(j.fee)} (강사에게 공개)</span>
   <label class="f">공고 내용<textarea data-act="jedit" data-k="desc" rows="4">${esc(j.desc||'')}</textarea></label>
   ${j.status==='모집'?`<button class="btn nv" data-act="close" data-j="${j.id}">모집 마감</button><span class="mu sm">마감하면 확정하지 않은 지원자는 미선정이 되고, 그 강사 달력에서 사라져요.</span>`:''}</div>
-  <h3>지원자 ${A.filter(a=>a.status!=='미선정').length}명${A.some(a=>a.status==='미선정')?` · 미선정 ${A.filter(a=>a.status==='미선정').length}명`:''}</h3>
-  ${A.filter(a=>a.status!=='미선정').map(prof).join('')||'<p class="mu">아직 지원자가 없어요.</p>'}
+  ${A.filter(a=>a.cxConfirmed&&a.status==='취소').map(a=>`<div class="alert">확정했던 ${esc(inst(a.instId).name)} 강사가 취소했어요. 사유: ${esc(a.cxWhy||'없음')} (${new Date(a.cxAt).toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}) · 다른 지원자를 확정하거나 다시 모집해 주세요.</div>`).join('')}
+  <h3>지원자 ${A.filter(a=>a.status!=='미선정'&&a.status!=='취소').length}명${A.some(a=>a.status==='미선정')?` · 미선정 ${A.filter(a=>a.status==='미선정').length}명`:''}${A.some(a=>a.status==='취소')?` · 취소 ${A.filter(a=>a.status==='취소').length}명`:''}</h3>
+  ${A.filter(a=>a.status!=='미선정'&&a.status!=='취소').map(prof).join('')||'<p class="mu">아직 지원자가 없어요.</p>'}${A.filter(a=>a.status==='취소').map(a=>`<div class="row mu sm">${esc(inst(a.instId).name)} · ${a.cxConfirmed?'확정 후 취소':'지원 취소'}</div>`).join('')}
   ${missPeople.length?`<button class="btn" data-act="nudgeDocs" data-j="${j.id}">서류 빠진 ${missPeople.length}명에게 요청 공지 보내기</button>`:''}
   <h3>공지</h3>
   <div class="card"><label class="f">종류<select id="ntKind"><option>일반</option><option>시간표</option><option>집결 장소</option><option>주의사항</option><option>준비물</option></select></label><textarea class="f" id="ntText" rows="3" placeholder="도착 장소, 주차, 기자재, 인원, 준비물, 주의사항 등"></textarea><label class="f">사진·이미지 (시간표, 약도 등, 선택)<input type="file" id="ntImg" accept="image/*"></label><button class="btn pri" data-act="notice" data-j="${j.id}" ${s.cf?'':'disabled'}>확정 강사 ${s.cf}명에게 공지 보내기</button></div>
@@ -536,7 +537,11 @@ document.addEventListener('click',async ev=>{
     S.evs.push({id:uid(),instId:meId(),dates:p.dates,title:p.title,org:p.org,time:p.time,fee:p.fee,km:p.km,toll:p.toll,st:A==='addMail'?'applied':'confirmed',to:p.to});save();
     if(A==='addMail'){const m=mailOf(p);const w=window.open(m.url,'_blank');if(!w)copy(m.body,'메일 본문')}
     closeSheet();ui.tab='cal';ui.sel=p.dates[0];ui.month=ym(p.dates[0]);render();return toast(A==='addMail'?'달력에 "지원"으로 넣고 Gmail을 열었어요':'달력에 "확정"으로 넣었어요')}
-  if(A==='apply'){const j=job(D.j);S.apps.push({id:uid(),jobId:j.id,instId:meId(),status:'지원',docs:{},paidAt:null,km:kmBetween(inst(meId()).region,j.region)||0,toll:0});save();render();return toast('지원했어요. 프로필이 같이 갔어요')}
+  if(A==='cancelApp'){const a=S.apps.find(x=>x.id===D.a),j=job(a.jobId);
+    if(a.status==='확정'){const why=prompt('확정된 강의를 취소하면 업체에 바로 알려져요. 업체가 대신할 강사를 찾을 수 있게 사유를 적어 주세요.');if(why===null)return;if(!why.trim())return toast('사유를 적어야 확정 강의를 취소할 수 있어요');
+      Object.assign(a,{status:'취소',cxConfirmed:true,cxWhy:why.trim(),cxAt:new Date().toISOString()});if(j.status==='마감')j.status='모집';save();render();return toast('취소했어요. 업체에 사유와 함께 알렸어요')}
+    if(!confirm(`${j.school} ${j.title} 지원을 취소할까요?`))return;Object.assign(a,{status:'취소',cxAt:new Date().toISOString()});save();render();return toast('지원을 취소했어요. 달력에서도 빠졌어요')}
+  if(A==='apply'){const j=job(D.j),old=S.apps.find(x=>x.jobId===j.id&&x.instId===meId());if(old){Object.assign(old,{status:'지원',cxConfirmed:false,cxWhy:''});save();render();return toast('다시 지원했어요')}S.apps.push({id:uid(),jobId:j.id,instId:meId(),status:'지원',docs:{},paidAt:null,km:kmBetween(inst(meId()).region,j.region)||0,toll:0});save();render();return toast('지원했어요. 프로필이 같이 갔어요')}
   if(A==='copyPf')return copy(profileText(inst(meId())),'프로필');
   if(A==='copyPfOf')return copy(profileText(inst(D.i)),'프로필');
   if(A==='copyYear'||A==='copyCSum')return copy(tableText(),'결산표');
