@@ -20,6 +20,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 header{position:sticky;top:0;z-index:5;background:var(--bg);padding:10px 16px 6px;display:flex;flex-direction:column;gap:6px;border-bottom:1px solid var(--ln)}
 .brand{display:flex;align-items:center;gap:8px;justify-content:space-between}
 .brand b{font-size:20px}.beta{font-size:11px;font-weight:700;background:var(--acs);color:var(--ac);padding:2px 8px;border-radius:99px}
+.pic{width:56px;height:56px;border-radius:50%;object-fit:cover;flex:none;background:var(--acs);color:var(--ac);display:inline-grid;place-items:center;font-weight:700;font-size:20px}.pic.s{width:36px;height:36px;font-size:14px}
 .who{display:flex;gap:6px;align-items:center;font-size:12px;color:var(--mu)}
 .who select{flex:1;min-width:0;padding:6px 8px;border:1px solid var(--ln);border-radius:8px;background:var(--sf)}
 main{padding:12px 16px;display:flex;flex-direction:column;gap:12px}
@@ -314,7 +315,7 @@ function dayBoard(cid){const t=todayIso(),tm=addDays(t,1),now=nowIso(),rows=[];
       else{s='아직 출발 안 함';const lim=new Date(`${d}T${st}`);lim.setMinutes(lim.getMinutes()-60);bad=new Date(now)>=lim}
       rows.push({d,j,p,s,bad,late:x.late,st})}}
   if(!rows.length)return '';rows.sort((a,b)=>(a.d+a.st)<(b.d+b.st)?-1:1);
-  return `<div class="card"><h3>오늘·내일 강의 현황</h3>${rows.map(r=>`<div style="border-top:1px solid var(--ln);padding-top:6px;display:flex;flex-direction:column;gap:2px"><div class="row"><b>${esc(r.p.name)}</b><span class="mu sm sp">${r.d===todayIso()?'오늘':'내일'} ${r.st} ${esc(r.j.school)} ${esc(r.j.title)}</span></div>
+  return `<div class="card"><h3>오늘·내일 강의 현황</h3>${rows.map(r=>`<div style="border-top:1px solid var(--ln);padding-top:6px;display:flex;flex-direction:column;gap:2px"><div class="row">${pic(r.p,1)}<b>${esc(r.p.name)}</b><span class="mu sm sp">${r.d===todayIso()?'오늘':'내일'} ${r.st} ${esc(r.j.school)} ${esc(r.j.title)}</span></div>
    <span class="chip ${r.bad?'warn':'paid'}" style="align-self:flex-start">${esc(r.s)}</span>${r.late?`<div class="alert">강사 알림: ${esc(r.late)}</div>`:''}${r.bad||r.late?`<span class="mu sm">연락처 ${esc(r.p.phone)}</span>`:''}</div>`).join('')}
    <span class="mu sm">시작 1시간 전까지 출발을 안 누르거나, 시작보다 늦게 도착할 예정이면 빨간색이에요.</span></div>`}
 function entryCard(e){const tx=tax(e.fee);
@@ -415,6 +416,8 @@ const PF=[['name','이름'],['phone','연락처'],['email','메일'],['region','
 function profileText(p){return `■ 강사 프로필\n이름: ${p.name}\n연락처: ${p.phone}\n메일: ${p.email}\n지역: ${p.region}\n강의 분야: ${p.topics}\n\n${p.intro}\n\n[강의 경력]\n${p.career}`}
 function vMe(){const p=inst(meId());
   return `<h2>내 프로필</h2><p class="mu sm">한 번만 쓰면 지원할 때마다 같이 가요. 주민등록번호는 받지 않아요. 계좌는 나를 확정한 회사만 볼 수 있어요.</p>
+  <div class="card"><div class="row">${pic(p)}<div class="sp" style="display:flex;flex-direction:column;gap:4px"><b>프로필 사진</b><span class="mu sm">얼굴이 잘 보이는 정면 사진이 좋아요. 업체가 지원자 목록과 당일 현황에서 봐요.</span></div></div>
+  <div class="row"><label class="btn sm">${p.photo?'사진 바꾸기':'사진 올리기'}<input type="file" accept="image/*" data-act="photo" hidden></label>${p.photo?'<button class="btn sm" data-act="photoDel">사진 지우기</button>':''}</div></div>
   <div class="card">${PF.map(([k,l])=>`<label class="f">${l}${k==='intro'||k==='career'?`<textarea rows="${k==='career'?4:2}" data-act="pf" data-k="${k}">${esc(p[k])}</textarea>`:`<input data-act="pf" data-k="${k}" value="${esc(p[k])}" ${k==='kmpl'||k==='fuel'?'type="number" inputmode="decimal"':''}>`}</label>`).join('')}</div>
   <div class="card"><h3>회사에 보이는 프로필 카드</h3><pre class="pf">${esc(profileText(p))}</pre><button class="btn" data-act="copyPf">프로필 복사</button></div>
   <p class="mu sm">가입일 ${esc(p.joined)} · ${p.beta?'시범 운영 회원 (정식 운영 때 감사 혜택 대상)':''}</p>`}
@@ -436,7 +439,7 @@ function vCJobs(){if(ui.jobId&&job(ui.jobId))return vCJob(job(ui.jobId));const t
   <h3>다가오는 강의</h3>${up.map(card).join('')||'<p class="mu">아래 + 로 강의를 등록하세요.</p>'}
   <details><summary>지난 강의 ${past.length}건</summary>${past.map(card).join('')}</details>`}
 function vCJob(j){const A=appsOf(j.id),s=jobStats(j);
-  const prof=a=>{const p=inst(a.instId);const cf=a.status==='확정';return `<div class="card"><div class="row"><h3 class="sp">${esc(p.name)} <span class="mu sm">${esc(p.region)} · ${esc(p.topics)}</span></h3>${cf?chip('confirmed'):a.status==='미선정'?'<span class="chip off">미선정</span>':a.status==='취소'?`<span class="chip ${a.cxConfirmed?'warn':'off'}">${a.cxConfirmed?'확정 후 취소':'지원 취소'}</span>`:chip('applied')}</div>
+  const prof=a=>{const p=inst(a.instId);const cf=a.status==='확정';return `<div class="card"><div class="row">${pic(p)}<h3 class="sp">${esc(p.name)} <span class="mu sm">${esc(p.region)} · ${esc(p.topics)}</span></h3>${cf?chip('confirmed'):a.status==='미선정'?'<span class="chip off">미선정</span>':a.status==='취소'?`<span class="chip ${a.cxConfirmed?'warn':'off'}">${a.cxConfirmed?'확정 후 취소':'지원 취소'}</span>`:chip('applied')}</div>
     <span class="mu sm">${esc(p.intro)}</span>
     <details><summary>프로필 보기</summary><pre class="pf">${esc(profileText(cf?p:{...p,phone:'확정하면 보여요',email:'확정하면 보여요'}))}</pre>${cf?`<span class="mu sm">계좌: ${esc(p.bank)} ${esc(p.acct)} ${esc(p.holder)}</span><button class="btn sm" data-act="copyPfOf" data-i="${p.id}">학교 제출용으로 복사</button>`:''}</details>
     ${cf?`<div class="mu sm">받을 것: ${j.needs.map(n=>n==='프로필'?'프로필 ✓':a.docs[n]?`${esc(n)} ✓ <span class="sm">(${esc(a.docs[n])})</span>`:`<b style="color:var(--r2)">${esc(n)} 빠짐</b>`).join(' · ')}</div>`:''}
@@ -473,7 +476,8 @@ function sheetNewJob(p){p=p||{};const N=['프로필','교안','통장사본','�
 function jDateChips(ds){return ds.length?ds.map(d=>`<button class="btn sm" data-act="jdel" data-d="${d}" aria-label="${mdK(d)} 빼기">${mdK(d)}(${dowOf(d)}) ✕</button>`).join(''):'<span class="mu sm">날짜를 고르면 여기에 요일과 함께 보여요. 여러 날이면 계속 고르세요.</span>'}
 function jWarn(){const ds=$('#jDates').value.split(/[,\s]+/).filter(x=>/^\d{4}-\d{2}-\d{2}$/.test(x));$('#jWarn').innerHTML=dateWarn(ds).map(w=>`<div class="alert">${esc(w)}</div>`).join('')}
 // 이미지는 긴 변 1200px JPEG로 줄여 저장 (체험판은 기기 저장 공간이 작음)
-function shrink(f){return new Promise(res=>{const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{const k=Math.min(1,1200/Math.max(im.width,im.height));const c=document.createElement('canvas');c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext('2d').drawImage(im,0,0,c.width,c.height);res(c.toDataURL('image/jpeg',0.7))};im.onerror=()=>res('');im.src=r.result};r.onerror=()=>res('');r.readAsDataURL(f)})}
+const pic=(p,sm)=>p.photo?`<img class="pic${sm?' s':''}" src="${p.photo}" alt="${esc(p.name)} 사진">`:`<span class="pic${sm?' s':''}" aria-hidden="true">${esc((p.name||'?')[0])}</span>`;
+function shrink(f,max=1200){return new Promise(res=>{const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{const k=Math.min(1,max/Math.max(im.width,im.height));const c=document.createElement('canvas');c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext('2d').drawImage(im,0,0,c.width,c.height);res(c.toDataURL('image/jpeg',0.7))};im.onerror=()=>res('');im.src=r.result};r.onerror=()=>res('');r.readAsDataURL(f)})}
 /* ===== 회사: 지급 ===== */
 function unpaidOf(cid){const t=todayIso();return S.apps.filter(a=>{const j=job(a.jobId);return j&&j.coId===cid&&a.status==='확정'&&!a.paidAt&&last(j.dates)<t}).map(a=>{const j=job(a.jobId),amt=j.fee*j.dates.length;return {a,j,p:inst(a.instId),amt,tx:tax(amt)}})}
 function vPay(){const U=unpaidOf(meId());const tot=U.reduce((s,x)=>s+x.tx.net,0);
@@ -538,6 +542,7 @@ document.addEventListener('click',async ev=>{
     S.evs.push({id:uid(),instId:meId(),dates:p.dates,title:p.title,org:p.org,time:p.time,fee:p.fee,km:p.km,toll:p.toll,st:A==='addMail'?'applied':'confirmed',to:p.to});save();
     if(A==='addMail'){const m=mailOf(p);const w=window.open(m.url,'_blank');if(!w)copy(m.body,'메일 본문')}
     closeSheet();ui.tab='cal';ui.sel=p.dates[0];ui.month=ym(p.dates[0]);render();return toast(A==='addMail'?'달력에 "지원"으로 넣고 Gmail을 열었어요':'달력에 "확정"으로 넣었어요')}
+  if(A==='photoDel'){delete inst(meId()).photo;save();render();return toast('사진을 지웠어요')}
   if(A==='cancelApp'){const a=S.apps.find(x=>x.id===D.a),j=job(a.jobId);
     if(a.status==='확정'){const why=prompt('확정된 강의를 취소하면 업체에 바로 알려져요. 업체가 대신할 강사를 찾을 수 있게 사유를 적어 주세요.');if(why===null)return;if(!why.trim())return toast('사유를 적어야 확정 강의를 취소할 수 있어요');
       Object.assign(a,{status:'취소',cxConfirmed:true,cxWhy:why.trim(),cxAt:new Date().toISOString()});if(j.status==='마감')j.status='모집';save();render();return toast('취소했어요. 업체에 사유와 함께 알렸어요')}
@@ -583,6 +588,7 @@ document.addEventListener('change',ev=>{const el=ev.target,D=el.dataset||{};
   if(D.act==='jf'){ui.jf[D.k]=el.type==='checkbox'?el.checked:el.value.trim();render();return}
   if(D.act==='km'||D.act==='toll'){const o=D.kind==='ev'?S.evs.find(x=>x.id===D.id):S.apps.find(x=>x.id===D.id);o[D.act]=+el.value||0;save();render()}
   if(D.act==='pf'){const p=inst(meId());p[D.k]=D.k==='kmpl'||D.k==='fuel'?+el.value||0:el.value;save();render()}
+  if(D.act==='photo'&&el.files[0]){shrink(el.files[0],480).then(u=>{if(!u)return toast('사진을 읽지 못했어요');inst(meId()).photo=u;save();render();toast('프로필 사진을 올렸어요')});return}
   if(D.act==='doc'&&el.files[0]){const a=S.apps.find(x=>x.id===D.a);a.docs[D.n]=el.files[0].name;save();render();toast(`${D.n} 냈어요 (체험판은 파일 이름만 저장해요)`)}
   if(D.act==='jedit'){const j=job(ui.jobId);const old=j[D.k];let v=el.value.trim();
     if(D.k==='dates'){v=v.split(/[,\s]+/).filter(x=>/^\d{4}-\d{2}-\d{2}$/.test(x)).sort();if(!v.length)return toast('날짜는 2026-11-18처럼 넣어 주세요');if(v.join()===old.join())return}else if(v===old)return;
