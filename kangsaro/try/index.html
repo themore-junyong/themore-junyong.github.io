@@ -6,6 +6,11 @@
 <meta name="robots" content="noindex">
 <meta name="build" content="261028-2">
 <title>강사로 (시범 운영)</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#1F6F78">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="강사로">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
 <style>
 :root{--bg:#F3F5F4;--sf:#FFFFFF;--fg:#16222B;--mu:#4F5D66;--ln:#D5DDDC;--ac:#1F6F78;--acs:#E1EEEE;--nv:#2D3E73;--nvs:#E3E7F4;
@@ -71,7 +76,8 @@ pre.pf{white-space:pre-wrap;font:inherit;font-size:13px;background:var(--bg);bor
 <body>
 <div class="app">
 <header>
-  <div class="brand"><b>강사로</b><span class="beta">무료 시범 운영</span><span class="sp"></span><button class="btn sm" data-act="reset" title="체험 데이터 처음으로">처음으로</button></div>
+  <div class="brand"><b>강사로</b><span class="beta">무료 시범 운영</span><span class="sp"></span><button class="btn sm pri" id="instBtn" data-act="install" hidden>앱 설치</button><button class="btn sm" data-act="reset" title="체험 데이터 처음으로">처음으로</button></div>
+  <div id="kakaoBar" class="alert" hidden>카카오톡 안에서는 앱 설치가 안 돼요. <a id="kakaoOut" href="#" style="font-weight:700;color:inherit">다른 브라우저로 열기 →</a></div>
   <div class="who"><span>체험 중:</span><select id="who" aria-label="누구로 써 볼지 고르기"></select></div>
 </header>
 <main id="main"></main>
@@ -580,6 +586,7 @@ document.addEventListener('click',async ev=>{
   if(A==='sel'){ui.sel=D.d;return render()}
   if(A==='mon'){const n=+D.n;if(!n){ui.month=todayIso().slice(0,7);ui.sel=todayIso()}else{const [y,m]=ui.month.split('-').map(Number);const d=new Date(y,m-1+n,1);ui.month=`${d.getFullYear()}-${pad(d.getMonth()+1)}`}return render()}
   if(A==='year'){const y=+ui.month.slice(0,4)+ +D.n;ui.month=`${y}-${ui.month.slice(5)}`;return render()}
+  if(A==='install'){if(INST.ev){INST.ev.prompt();INST.ev.userChoice.then(c=>{if(c.outcome==='accepted'){$('#instBtn').hidden=true;toast('홈 화면에 강사로를 설치했어요')}INST.ev=null});return}return sheetInstall()}
   if(A==='unpaid')return sheetUnpaid();
   if(A==='gotPaid'){if(D.kind==='ev'){S.evs.find(x=>x.id===D.id).st='paid'}else{const a=S.apps.find(x=>x.id===D.id);a.selfPaid=true;a.recv='ok'}save();render();sheetUnpaid();return toast('입금 완료로 바꿨어요')}
   if(A==='evst'){const e=S.evs.find(x=>x.id===D.id);e.st=D.st;save();render();return toast(D.st==='no'?'달력에서 숨겼어요':'바꿨어요')}
@@ -660,6 +667,19 @@ document.addEventListener('change',ev=>{const el=ev.target,D=el.dataset||{};
     if(to.length)j.notices.push({id:uid(),text:`[일정 변경] ${j.school} ${j.title}: ${D.k==='dates'?'날짜':'시간'}이 ${D.k==='dates'?old.map(md).join('·'):old} → ${D.k==='dates'?v.map(md).join('·'):v}(으)로 바뀌었어요.`,at:new Date().toISOString(),to,reads:{}});
     save();render();toast(to.length?`바꿨어요. 확정 강사 ${to.length}명에게 변경 공지가 갔어요`:'바꿨어요')}
 });
+// 앱 설치: 안드로이드 크롬은 버튼 한 번, 아이폰은 그림 안내, 카톡 안에서는 바깥 브라우저로 넘기기
+const INST={ev:null,ua:navigator.userAgent,standalone:matchMedia('(display-mode: standalone)').matches||navigator.standalone===true};
+const isIOS=/iPhone|iPad|iPod/.test(INST.ua)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1),isKakao=/KAKAOTALK/i.test(INST.ua),isAndroid=/Android/.test(INST.ua);
+function sheetInstall(){openSheet(`<div class="row"><h2 class="sp">홈 화면에 강사로 두기</h2><button class="btn sm" data-act="closeSheet">닫기</button></div>
+  ${isIOS?`<ol style="margin:0;padding-left:20px;line-height:2"><li>사파리 화면 아래(아이패드는 위)의 <b>공유 버튼</b> <span aria-hidden="true">⬆︎</span>을 눌러요</li><li>목록을 올려서 <b>'홈 화면에 추가'</b>를 눌러요</li><li>오른쪽 위 <b>'추가'</b>를 누르면 끝이에요</li></ol><p class="mu sm">사파리에서만 돼요. 다른 앱 안에서 열었다면 사파리로 열어 주세요.</p>`
+  :`<ol style="margin:0;padding-left:20px;line-height:2"><li>크롬 오른쪽 위 <b>점 세 개(⋮)</b>를 눌러요</li><li><b>'앱 설치'</b> 또는 <b>'홈 화면에 추가'</b>를 눌러요</li><li><b>'설치'</b>를 누르면 끝이에요</li></ol><p class="mu sm">삼성 인터넷은 아래 메뉴(≡) → '현재 페이지 추가' → '홈 화면'이에요.</p>`}`)}
+if(!INST.standalone){
+  if(isKakao){const u=location.href;$('#kakaoBar').hidden=false;$('#kakaoOut').href='kakaotalk://web/openExternal?url='+encodeURIComponent(u)}
+  else if(isIOS||isAndroid)$('#instBtn').hidden=false;
+  addEventListener('beforeinstallprompt',e=>{e.preventDefault();INST.ev=e;if(!isKakao)$('#instBtn').hidden=false});
+  addEventListener('appinstalled',()=>{$('#instBtn').hidden=true});
+}
+if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw.js').catch(()=>{});
 // 붙여넣기만 하면 바로 읽기 ('공고 읽기' 버튼을 안 눌러도 됨)
 document.addEventListener('paste',ev=>{if(ev.target.id==='pRaw')setTimeout(()=>{const b=document.querySelector('[data-act="parse"]');if(b&&$('#pRaw').value.trim().length>20)b.click()},0)});
 document.addEventListener('input',ev=>{if(['pDates','pRaw'].includes(ev.target.id))pWarn()});
