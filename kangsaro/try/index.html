@@ -333,7 +333,9 @@ const GEO={서울:[37.57,126.98],수원:[37.26,127.03],안양:[37.39,126.95],성
 const geoOf=t=>{t=String(t||'');for(const k in GEO)if(t.includes(k))return GEO[k];return null};
 function kmBetween(a,b){const A=geoOf(a),B=geoOf(b);if(!A||!B)return null;const R=6371,r=x=>x*Math.PI/180;const dl=r(B[0]-A[0]),dn=r(B[1]-A[1]);
   const h=Math.sin(dl/2)**2+Math.cos(r(A[0]))*Math.cos(r(B[0]))*Math.sin(dn/2)**2;return Math.max(10,Math.round(2*R*Math.asin(Math.sqrt(h))*1.3*2))}
-function netGuess(j,p){const km=kmBetween(p.region,j.region);if(km==null)return null;const amt=j.fee*j.dates.length,fuel=Math.round(km*j.dates.length/(+p.kmpl||15)*(+p.fuel||1650));return {km,fuel,net:tax(amt).net-fuel}}
+// 편도 시간: 평균 시속 약 65km(시내·고속 섞임)로 어림
+function netGuess(j,p){const km=kmBetween(p.region,j.region);if(km==null)return null;const amt=j.fee*j.dates.length,fuel=Math.round(km*j.dates.length/(+p.kmpl||15)*(+p.fuel||1650)),min=Math.max(15,Math.round(km/2/65*60/5)*5);return {km,fuel,amt,tx:tax(amt),min,net:tax(amt).net-fuel}}
+const hmText=m=>m>=60?`${Math.floor(m/60)}시간${m%60?` ${m%60}분`:''}`:`${m}분`;
 /* ===== 강사: 공고 + 내 확정 강의 ===== */
 function vJobs(){const iid=meId(),t=todayIso();
   const mine=S.apps.filter(a=>a.instId===iid&&a.status==='확정'&&last(job(a.jobId).dates)>=t).map(a=>({a,j:job(a.jobId)}));
@@ -355,8 +357,13 @@ function vJobs(){const iid=meId(),t=todayIso();
     return `<div class="card"><div class="row"><h3 class="sp">${esc(j.region)} ${esc(j.school)} ${esc(j.title)}</h3>${a?chip(a.status==='확정'?'confirmed':'applied'):''}</div>
     <span class="mu">${esc(co(j.coId).name)} · ${j.dates.map(d=>`${md(d)}(${dowOf(d)})`).join('·')} ${esc(j.time)} · ${esc(j.교시)} · ${esc(j.대상)}</span>
     <b class="money">1일 강사료 ${won(j.fee)}</b>
-    <details><summary>공고 자세히 보기</summary><div class="sm" style="display:flex;flex-direction:column;gap:4px;margin-top:6px"><span>업체: ${esc(co(j.coId).name)}</span><span>장소: ${esc(j.region)} ${esc(j.school)}</span><span>날짜: ${j.dates.map(d=>`${mdK(d)}(${dowOf(d)})`).join(', ')}</span><span>시간: ${esc(j.time)} (${esc(j.교시)})</span><span>대상: ${esc(j.대상)}</span><span>내야 할 것: ${j.needs.map(esc).join(', ')}</span>${j.desc?`<pre class="pf">${esc(j.desc)}</pre>`:'<span class="mu">업체가 적은 추가 내용이 없어요.</span>'}</div></details>
-    ${(()=>{const g=netGuess(j,inst(iid));return g?`<span class="money" style="color:var(--ac);font-weight:700">예상 순수익 약 ${won(g.net)}</span><span class="mu sm">${esc(inst(iid).region)}→${esc(j.region)} 왕복 약 ${g.km}km${j.dates.length>1?` × ${j.dates.length}일`:''} · 기름값 약 ${won(g.fuel)} · 3.3% 뗀 금액 기준 · 통행료 제외 · 대략 계산</span>`:`<span class="mu sm">프로필에 사는 곳(시·군)을 넣으면 예상 순수익이 보여요.</span>`})()}
+    <details><summary>공고 자세히 보기 (거리·시간·순수익)</summary><div class="sm" style="display:flex;flex-direction:column;gap:4px;margin-top:6px"><span>업체: ${esc(co(j.coId).name)}</span><span>장소: ${esc(j.region)} ${esc(j.school)}</span><span>날짜: ${j.dates.map(d=>`${mdK(d)}(${dowOf(d)})`).join(', ')}</span><span>시간: ${esc(j.time)} (${esc(j.교시)})</span><span>대상: ${esc(j.대상)}</span><span>내야 할 것: ${j.needs.map(esc).join(', ')}</span>
+    ${(()=>{const g=netGuess(j,inst(iid));return g?`<div style="background:var(--acs);border-radius:10px;padding:10px;margin:4px 0"><b>내 지역(${esc(inst(iid).region)}) 기준 계산</b><table style="margin-top:4px"><tbody>
+      <tr><td>강사료 (${j.dates.length}일)</td><td>${won(g.amt)}</td></tr><tr><td>3.3% 원천징수</td><td>− ${won(g.tx.all)}</td></tr>
+      <tr><td>거리</td><td>편도 약 ${Math.round(g.km/2)}km · 왕복 약 ${g.km}km${j.dates.length>1?` × ${j.dates.length}일`:''}</td></tr>
+      <tr><td>가는 시간</td><td>편도 약 ${hmText(g.min)}</td></tr><tr><td>기름값</td><td>− ${won(g.fuel)}</td></tr>
+      <tr><th>예상 순수익</th><th>${won(g.net)}</th></tr></tbody></table><span class="mu sm">시·군 중심 거리로 어림했어요. 통행료·주차비는 빠져 있어요. 연비·기름값은 프로필에서 바꿀 수 있어요.</span></div>`:''})()}${j.desc?`<pre class="pf">${esc(j.desc)}</pre>`:'<span class="mu">업체가 적은 추가 내용이 없어요.</span>'}</div></details>
+    ${(()=>{const g=netGuess(j,inst(iid));return g?`<span class="money" style="color:var(--ac);font-weight:700">예상 순수익 약 ${won(g.net)}</span><span class="mu sm">${esc(inst(iid).region)}→${esc(j.region)} 편도 약 ${hmText(g.min)} · 왕복 약 ${g.km}km · 자세한 계산은 아래 "공고 자세히 보기"</span>`:`<span class="mu sm">프로필에 사는 곳(시·군)을 넣으면 예상 순수익이 보여요.</span>`})()}
     ${cl.length?`<div class="alert">이날 이미 일정이 있어요: ${cl.map(e=>`${esc(e.title)}(${ST[e.st]})`).join(', ')}</div>`:''}
     ${a?`<span class="mu sm">지원했어요. 회사가 확정하면 달력이 파란색으로 바뀌어요.</span>`:`<button class="btn pri" data-act="apply" data-j="${j.id}">버튼 한 번으로 지원하기</button>`}</div>`}).join(''):'<p class="mu">지금 모집 중인 공고가 없어요.</p>'}`}
 
