@@ -13,9 +13,12 @@ service cloud.firestore {
     // 공개 프로필 (이름·지역·분야·소개·경력·사진). 연락처·계좌는 private에
     match /users/{u} {
       allow read: if signed();
+      // refBy(소개한 사람)는 가입할 때 한 번만, 있는 사용자·자기 아님
       allow create: if me() == u && request.resource.data.role in ['i', 'c']
-        && (request.resource.data.role == 'i' || request.resource.data.approved == false);
-      allow update: if (me() == u && !changed().hasAny(['role', 'approved']))
+        && (request.resource.data.role == 'i' || request.resource.data.approved == false)
+        && (!('refBy' in request.resource.data) || (request.resource.data.refBy is string && request.resource.data.refBy != me()
+            && exists(/databases/$(db)/documents/users/$(request.resource.data.refBy))));
+      allow update: if (me() == u && !changed().hasAny(['role', 'approved', 'refBy']))
         || (admin() && changed().hasOnly(['approved']));
       allow delete: if false;
 
