@@ -351,6 +351,7 @@ function vJobs(){const iid=meId(),t=todayIso();
     ${miss.map(n=>`<label class="f">${esc(n)} 올리기 <input type="file" data-act="doc" data-a="${a.id}" data-n="${esc(n)}"></label>`).join('')}
     </div>`}).join(''):'<p class="mu">곧 있을 확정 강의가 없어요.</p>'}
   <h2>모집 중인 공고</h2><p class="mu sm">강사로에 들어온 회사의 공고예요. 강사료가 모두 공개돼요. 지원하면 프로필이 같이 가요.</p>
+  ${(()=>{const me=inst(iid);return `<div class="card" style="background:var(--acs)"><b>내 지역을 고르면 공고마다 예상 순수익이 계산돼요</b><div class="grid2"><label class="f">출발 지역<select data-act="pf" data-k="region">${GEO[me.region]?'':`<option selected>${esc(me.region||'고르기')}</option>`}${Object.keys(GEO).map(r=>`<option ${me.region===r?'selected':''}>${r}</option>`).join('')}</select></label><label class="f">내 차 연비(km/L)<input type="number" inputmode="decimal" data-act="pf" data-k="kmpl" value="${+me.kmpl||15}"></label></div><span class="mu sm">기름값은 리터당 ${won(+me.fuel||1650)} 기준이에요. '내 정보'에서 바꿀 수 있어요.</span></div>`})()}
   <div class="grid2"><label class="f">지역<select data-act="jf" data-k="r"><option value="">전체</option>${[...new Set(all.map(j=>j.region))].map(r=>`<option ${F.r===r?'selected':''}>${esc(r)}</option>`).join('')}</select></label><label class="f">분야·강의명<input data-act="jf" data-k="q" value="${esc(F.q)}" placeholder="면접, 진로…"></label></div>
   <label class="sm"><input type="checkbox" data-act="jf" data-k="free" ${F.free?'checked':''}> 내 일정과 안 겹치는 것만</label>
   ${open.length?open.map(j=>{const a=S.apps.find(x=>x.jobId===j.id&&x.instId===iid);const cl=clashes(iid,j.dates);
