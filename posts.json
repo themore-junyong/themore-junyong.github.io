@@ -1,6 +1,16 @@
 {
- "updated": "2026-10-27T21:17:48.323436+00:00",
+ "updated": "2026-10-28T01:19:28.588348+00:00",
  "posts": [
+  {
+   "kind": "말씀",
+   "src": "tistory",
+   "title": "감정 이름 붙이기, 그거 진짜 짜증이었을까? | 마음은 왜 그럴까 ③",
+   "link": "https://changenavigator.tistory.com/entry/%EA%B0%90%EC%A0%95-%EC%9D%B4%EB%A6%84-%EB%B6%99%EC%9D%B4%EA%B8%B0-%EA%B7%B8%EA%B1%B0-%EC%A7%84%EC%A7%9C-%EC%A7%9C%EC%A6%9D%EC%9D%B4%EC%97%88%EC%9D%84%EA%B9%8C-%EB%A7%88%EC%9D%8C%EC%9D%80-%EC%99%9C-%EA%B7%B8%EB%9F%B4%EA%B9%8C-%E2%91%A2",
+   "date": "2026-10-27T22:00:59+00:00",
+   "summary": "하루 종일 \"아, 짜증 나\" 했는데, 그거 진짜 짜증이었을까요? 단톡방에 올린 내 말에만 아무도 답이 없던 날이 있잖아요. 휴대폰을 툭 내려놓고 \"아, 짜증 나.…",
+   "image": "https://blog.kakaocdn.net/dn/pTgiB/dJMcabFYo4k/t5v0QbuLryTCGQYnD1amEK/img.png",
+   "cat": "마음은 왜 그럴까"
+  },
   {
    "kind": "영상",
    "src": "youtube",
@@ -1084,5 +1094,7 @@
    "cat": "설교&middot;묵상"
   }
  ],
- "errors": []
+ "errors": [
+  "youtube: HTTP Error 404: Not Found"
+ ]
 }
