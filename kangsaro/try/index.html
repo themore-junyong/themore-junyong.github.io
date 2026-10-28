@@ -341,7 +341,9 @@ const hmText=m=>m>=60?`${Math.floor(m/60)}시간${m%60?` ${m%60}분`:''}`:`${m}�
 function vJobs(){const iid=meId(),t=todayIso();
   const mine=S.apps.filter(a=>a.instId===iid&&a.status==='확정'&&last(job(a.jobId).dates)>=t).map(a=>({a,j:job(a.jobId)}));
   const all=S.jobs.filter(j=>j.status==='모집'&&j.dates[0]>=t).sort((a,b)=>a.dates[0]<b.dates[0]?-1:1),F=ui.jf||(ui.jf={r:'',q:'',free:false});
-  const open=all.filter(j=>(!F.r||j.region===F.r)&&(!F.q||`${j.title} ${j.school} ${j.대상}`.includes(F.q))&&(!F.free||!clashes(iid,j.dates).length));
+  // 공고가 많아도 느려지지 않게 내 일정·내 지원을 한 번만 모아 둠
+  const myE=entries(iid),myA=new Map(S.apps.filter(a=>a.instId===iid).map(a=>[a.jobId,a])),clash=ds=>myE.filter(e=>ds.includes(e.d));
+  const open=all.filter(j=>(!F.r||j.region===F.r)&&(!F.q||`${j.title} ${j.school} ${j.대상}`.includes(F.q))&&(!F.free||!clash(j.dates).length)),more=ui.jmore||20;
   setTimeout(()=>{let c=0;for(const {j} of mine)c+=markRead(j,iid);if(c){const nb=$('[data-tab="jobs"]');if(nb)nb.innerHTML='공고'}},1500);
   return `<h2>확정된 강의</h2>${mine.length?mine.map(({a,j})=>{const nts=j.notices.filter(n=>(n.to||[]).includes(iid));const un=nts.filter(n=>!n.reads[iid]).length;const miss=j.needs.filter(n=>n!=='프로필'&&!a.docs[n]);
     return `<div class="card"><div class="row">${chip('confirmed')}<h3 class="sp">${esc(j.region)} ${esc(j.school)} ${esc(j.title)}</h3></div>
@@ -355,7 +357,7 @@ function vJobs(){const iid=meId(),t=todayIso();
   ${(()=>{const me=inst(iid);return `<div class="card" style="background:var(--acs)"><b>내 지역을 고르면 공고마다 예상 순수익이 계산돼요</b><div class="grid2"><label class="f">출발 지역<select data-act="pf" data-k="region">${GEO[me.region]?'':`<option selected>${esc(me.region||'고르기')}</option>`}${Object.keys(GEO).map(r=>`<option ${me.region===r?'selected':''}>${r}</option>`).join('')}</select></label><label class="f">내 차 연비(km/L)<input type="number" inputmode="decimal" data-act="pf" data-k="kmpl" value="${+me.kmpl||15}"></label></div><span class="mu sm">기름값은 리터당 ${won(+me.fuel||1650)} 기준이에요. '내 정보'에서 바꿀 수 있어요.</span></div>`})()}
   <div class="grid2"><label class="f">지역<select data-act="jf" data-k="r"><option value="">전체</option>${[...new Set(all.map(j=>j.region))].map(r=>`<option ${F.r===r?'selected':''}>${esc(r)}</option>`).join('')}</select></label><label class="f">분야·강의명<input data-act="jf" data-k="q" value="${esc(F.q)}" placeholder="면접, 진로…"></label></div>
   <label class="sm"><input type="checkbox" data-act="jf" data-k="free" ${F.free?'checked':''}> 내 일정과 안 겹치는 것만</label>
-  ${open.length?open.map(j=>{const a=S.apps.find(x=>x.jobId===j.id&&x.instId===iid);const cl=clashes(iid,j.dates);
+  ${open.length?open.slice(0,more).map(j=>{const a=myA.get(j.id);const cl=clash(j.dates);
     return `<div class="card"><div class="row"><h3 class="sp">${esc(j.region)} ${esc(j.school)} ${esc(j.title)}</h3>${a?chip(a.status==='확정'?'confirmed':'applied'):''}</div>
     <span class="mu">${esc(co(j.coId).name)} · ${j.dates.map(d=>`${md(d)}(${dowOf(d)})`).join('·')} ${esc(j.time)} · ${esc(j.교시)} · ${esc(j.대상)}</span>
     <b class="money">1일 강사료 ${won(j.fee)}</b>
@@ -367,7 +369,7 @@ function vJobs(){const iid=meId(),t=todayIso();
       <tr><th>예상 순수익</th><th>${won(g.net)}</th></tr></tbody></table><span class="mu sm">시·군 중심 거리로 어림했어요. 통행료·주차비는 빠져 있어요. 연비·기름값은 프로필에서 바꿀 수 있어요.</span></div>`:''})()}${j.desc?`<pre class="pf">${esc(j.desc)}</pre>`:'<span class="mu">업체가 적은 추가 내용이 없어요.</span>'}</div></details>
     ${(()=>{const g=netGuess(j,inst(iid));return g?`<span class="money" style="color:var(--ac);font-weight:700">예상 순수익 약 ${won(g.net)}</span><span class="mu sm">${esc(inst(iid).region)}→${esc(j.region)} 편도 약 ${hmText(g.min)} · 왕복 약 ${g.km}km · 자세한 계산은 아래 "공고 자세히 보기"</span>`:`<span class="mu sm">프로필에 사는 곳(시·군)을 넣으면 예상 순수익이 보여요.</span>`})()}
     ${cl.length?`<div class="alert">이날 이미 일정이 있어요: ${cl.map(e=>`${esc(e.title)}(${ST[e.st]})`).join(', ')}</div>`:''}
-    ${a&&a.status!=='취소'?`<div class="row"><span class="mu sm sp">지원했어요. 회사가 확정하면 달력이 파란색으로 바뀌어요.</span>${a.status==='지원'?`<button class="btn sm" data-act="cancelApp" data-a="${a.id}">지원 취소</button>`:''}</div>`:`<button class="btn pri" data-act="apply" data-j="${j.id}">${a?'다시 지원하기':'버튼 한 번으로 지원하기'}</button>`}</div>`}).join(''):'<p class="mu">지금 모집 중인 공고가 없어요.</p>'}`}
+    ${a&&a.status!=='취소'?`<div class="row"><span class="mu sm sp">지원했어요. 회사가 확정하면 달력이 파란색으로 바뀌어요.</span>${a.status==='지원'?`<button class="btn sm" data-act="cancelApp" data-a="${a.id}">지원 취소</button>`:''}</div>`:`<button class="btn pri" data-act="apply" data-j="${j.id}">${a?'다시 지원하기':'버튼 한 번으로 지원하기'}</button>`}</div>`}).join('')+(open.length>more?`<button class="btn" data-act="jmore">공고 더 보기 (${open.length-more}개 남음)</button>`:''):'<p class="mu">지금 모집 중인 공고가 없어요.</p>'}`}
 
 /* ===== 강사: 공고 붙여넣기 / 직접 입력 ===== */
 function sheetPaste(pre){const p=pre||{};
@@ -548,6 +550,7 @@ document.addEventListener('click',async ev=>{
     S.evs.push({id:uid(),instId:meId(),dates:p.dates,title:p.title,org:p.org,time:p.time,fee:p.fee,km:p.km,toll:p.toll,st:A==='addMail'?'applied':'confirmed',to:p.to});save();
     if(A==='addMail'){const m=mailOf(p);const w=window.open(m.url,'_blank');if(!w)copy(m.body,'메일 본문')}
     closeSheet();ui.tab='cal';ui.sel=p.dates[0];ui.month=ym(p.dates[0]);render();return toast(A==='addMail'?'달력에 "지원"으로 넣고 Gmail을 열었어요':'달력에 "확정"으로 넣었어요')}
+  if(A==='jmore'){ui.jmore=(ui.jmore||20)+20;return render()}
   if(A==='photoDel'){delete inst(meId()).photo;save();render();return toast('사진을 지웠어요')}
   if(A==='cancelApp'){const a=S.apps.find(x=>x.id===D.a),j=job(a.jobId);
     if(a.status==='확정'){const why=prompt('확정된 강의를 취소하면 업체에 바로 알려져요. 업체가 대신할 강사를 찾을 수 있게 사유를 적어 주세요.');if(why===null)return;if(!why.trim())return toast('사유를 적어야 확정 강의를 취소할 수 있어요');
@@ -591,7 +594,7 @@ document.addEventListener('toggle',ev=>{const el=ev.target;if(el.dataset&&el.dat
 document.addEventListener('change',ev=>{const el=ev.target,D=el.dataset||{};
   if(el.id==='who'){S.me=el.value;ui.jobId=null;ui.tab=NAV[meRole()][0][0];save();render();return toast(el.options[el.selectedIndex].text+'(으)로 보고 있어요')}
   if(D.act==='jpick'&&el.value){const ds=[...new Set([...$('#jDates').value.split(/[,\s]+/).filter(Boolean),el.value])].sort();$('#jDates').value=ds.join(', ');$('#jDateList').innerHTML=jDateChips(ds);el.value='';jWarn();return}
-  if(D.act==='jf'){ui.jf[D.k]=el.type==='checkbox'?el.checked:el.value.trim();render();return}
+  if(D.act==='jf'){ui.jmore=0;ui.jf[D.k]=el.type==='checkbox'?el.checked:el.value.trim();render();return}
   if(D.act==='km'||D.act==='toll'){const o=D.kind==='ev'?S.evs.find(x=>x.id===D.id):S.apps.find(x=>x.id===D.id);o[D.act]=+el.value||0;save();render()}
   if(D.act==='pf'){const p=inst(meId());p[D.k]=D.k==='kmpl'||D.k==='fuel'?+el.value||0:el.value;save();render()}
   if(D.act==='photo'&&el.files[0]){shrink(el.files[0],480).then(u=>{if(!u)return toast('사진을 읽지 못했어요');inst(meId()).photo=u;save();render();toast('프로필 사진을 올렸어요')});return}
