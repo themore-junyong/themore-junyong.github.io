@@ -1,0 +1,103 @@
+rules_version = '2';
+// 강사로 보안 규칙. Firebase 콘솔 → Firestore → 규칙에 통째로 붙여 넣고 '게시'.
+service cloud.firestore {
+  match /databases/{db}/documents {
+    function signed() { return request.auth != null; }
+    function me() { return request.auth.uid; }
+    function admin() { return signed() && request.auth.token.email in ['tobadyclub87@gmail.com'] && request.auth.token.email_verified == true; }
+    function user(u) { return get(/databases/$(db)/documents/users/$(u)).data; }
+    function approvedCo() { return signed() && user(me()).role == 'c' && user(me()).approved == true; }
+    function linked(co, inst) { return exists(/databases/$(db)/documents/links/$(co + '_' + inst)); }
+    function changed() { return request.resource.data.diff(resource.data).affectedKeys(); }
+
+    // 공개 프로필 (이름·지역·분야·소개·경력·사진). 연락처·계좌는 private에
+    match /users/{u} {
+      allow read: if signed();
+      allow create: if me() == u && request.resource.data.role in ['i', 'c']
+        && (request.resource.data.role == 'i' || request.resource.data.approved == false);
+      allow update: if (me() == u && !changed().hasAny(['role', 'approved']))
+        || (admin() && changed().hasOnly(['approved']));
+      allow delete: if false;
+
+      // 연락처·계좌·서류: 본인, 나를 확정한 업체, 관리자(업체 승인용)만
+      match /private/{d} {
+        allow read: if me() == u || (signed() && linked(me(), u)) || admin();
+        allow write: if me() == u;
+      }
+      match /files/{f} {
+        allow read: if me() == u || (signed() && linked(me(), u));
+        allow write: if me() == u;
+      }
+    }
+
+    // 업체가 강사를 확정하면 생기는 표시 (서류 열람 허락)
+    match /links/{id} {
+      allow read: if signed() && (resource.data.coId == me() || resource.data.instId == me());
+      allow create: if signed() && id == me() + '_' + request.resource.data.instId
+        && request.resource.data.coId == me()
+        && get(/databases/$(db)/documents/apps/$(request.resource.data.appId)).data.coId == me()
+        && get(/databases/$(db)/documents/apps/$(request.resource.data.appId)).data.instId == request.resource.data.instId
+        && get(/databases/$(db)/documents/apps/$(request.resource.data.appId)).data.status == '확정';
+      allow update: if false;
+      allow delete: if signed() && resource.data.coId == me();
+    }
+
+    match /jobs/{j} {
+      allow read: if signed();
+      allow create: if approvedCo() && request.resource.data.coId == me();
+      allow update: if signed() && resource.data.coId == me() && request.resource.data.coId == me();
+      allow delete: if signed() && resource.data.coId == me();
+    }
+
+    // 공지: 업체가 쓰고, 받는 강사는 자기 '읽음'만 고침
+    match /notices/{n} {
+      allow read: if signed() && (resource.data.coId == me() || me() in resource.data.to);
+      allow create: if signed() && request.resource.data.coId == me()
+        && get(/databases/$(db)/documents/jobs/$(request.resource.data.jobId)).data.coId == me();
+      allow update: if signed() && ((resource.data.coId == me() && request.resource.data.coId == me())
+        || (me() in resource.data.to && changed().hasOnly(['reads'])
+            && request.resource.data.reads.diff(resource.data.reads).affectedKeys().hasOnly([me()])));
+      allow delete: if signed() && resource.data.coId == me();
+    }
+
+    // 지원: 강사가 만들고, 강사와 그 공고의 업체만 봄
+    match /apps/{a} {
+      function party() { return resource.data.instId == me() || resource.data.coId == me(); }
+      allow read: if signed() && party();
+      allow create: if signed() && request.resource.data.instId == me() && request.resource.data.status == '지원'
+        && request.resource.data.coId == get(/databases/$(db)/documents/jobs/$(request.resource.data.jobId)).data.coId
+        && !('paidAt' in request.resource.data && request.resource.data.paidAt != null);
+      // 강사는 확정·미선정·지급을 스스로 못 바꿈. 업체는 강사 서류·주민번호를 못 넣음
+      allow update: if signed() && party()
+        && request.resource.data.instId == resource.data.instId && request.resource.data.coId == resource.data.coId
+        && request.resource.data.jobId == resource.data.jobId
+        && (
+          (resource.data.instId == me() && !changed().hasAny(['paidAt', 'rem'])
+            && (!changed().hasAny(['status']) || request.resource.data.status in ['지원', '취소']))
+          || (resource.data.coId == me() && !changed().hasAny(['km', 'toll', 'selfPaid', 'day', 'cxWhy', 'cxConfirmed'])
+            && (!changed().hasAny(['rrn']) || !('rrn' in request.resource.data))
+            && (!changed().hasAny(['status']) || request.resource.data.status in ['지원', '확정', '미선정']))
+        );
+      allow delete: if false;
+      match /files/{f} {
+        allow read: if signed() && (get(/databases/$(db)/documents/apps/$(a)).data.instId == me()
+          || (get(/databases/$(db)/documents/apps/$(a)).data.coId == me() && get(/databases/$(db)/documents/apps/$(a)).data.status == '확정'));
+        allow write: if signed() && get(/databases/$(db)/documents/apps/$(a)).data.instId == me();
+      }
+    }
+
+    // 강사 개인 달력 (톡방 공고 등)
+    match /evs/{e} {
+      allow read, delete: if signed() && resource.data.instId == me();
+      allow create, update: if signed() && request.resource.data.instId == me();
+    }
+
+    // 알림: 보낸 사람(by)과 받는 강사(instId)만
+    match /alerts/{x} {
+      allow read: if signed() && (resource.data.instId == me() || resource.data.by == me());
+      allow create: if signed() && request.resource.data.by == me();
+      allow update: if signed() && (resource.data.by == me() || (resource.data.instId == me() && changed().hasOnly(['read'])));
+      allow delete: if signed() && resource.data.by == me();
+    }
+  }
+}

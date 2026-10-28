@@ -660,8 +660,8 @@ document.addEventListener('click',async ev=>{
     if(!confirm(`${j.school} ${j.title} 지원을 취소할까요?`))return;Object.assign(a,{status:'취소',cxAt:new Date().toISOString()});save();render();return toast('지원을 취소했어요. 달력에서도 빠졌어요')}
   if(A==='apply'){const j=job(D.j),old=S.apps.find(x=>x.jobId===j.id&&x.instId===meId());if(old){Object.assign(old,{status:'지원',cxConfirmed:false,cxWhy:''});save();render();return toast('다시 지원했어요')}S.apps.push({id:uid(),jobId:j.id,instId:meId(),status:'지원',docs:{},paidAt:null,km:kmBetween(inst(meId()).region,j.region)||0,toll:0});save();render();return toast('지원했어요. 프로필이 같이 갔어요')}
   if(A==='vaultDel'){const p=inst(meId());delete (p.vault||{})[D.n];save();render();return toast(`${D.n}을(를) 지웠어요`)}
-  if(A==='rrnSend'){const a=S.apps.find(x=>x.id===D.a),v=(prompt('주민등록번호 13자리 (이 업체에만 한 번 전달돼요)')||'').replace(/\D/g,'');if(!v)return;if(v.length!==13)return toast('13자리 숫자로 넣어 주세요');a.rrn=v.slice(0,6)+'-'+v.slice(6);a.docs[RRN]='전달됨';save();render();return toast('보냈어요. 업체가 확인하면 바로 지워져요')}
-  if(A==='rrnTake'){const a=S.apps.find(x=>x.id===D.a);const v=a.rrn;delete a.rrn;a.docs[RRN]='업체 확인 완료';save();render();return copy(v,'주민등록번호 (강사로에서는 지웠어요)')}
+  if(A==='rrnSend'){const a=S.apps.find(x=>x.id===D.a),v=(prompt('주민등록번호 13자리 (이 업체에만 한 번 전달돼요)')||'').replace(/\D/g,'');if(!v)return;if(v.length!==13)return toast('13자리 숫자로 넣어 주세요');a.rrn=v.slice(0,6)+'-'+v.slice(6);a.rrnAt=new Date().toISOString();a.docs[RRN]='전달됨';save();render();return toast('보냈어요. 업체가 확인하면 바로 지워져요')}
+  if(A==='rrnTake'){const a=S.apps.find(x=>x.id===D.a);const v=a.rrn;delete a.rrn;delete a.rrnAt;a.docs[RRN]='업체 확인 완료';save();render();return copy(v,'주민등록번호 (강사로에서는 지웠어요)')}
   if(A==='copyPf')return copy(profileText(inst(meId())),'프로필');
   if(A==='copyPfOf')return copy(profileText(inst(D.i)),'프로필');
   if(A==='copyYear'||A==='copyCSum')return copy(tableText(),'결산표');

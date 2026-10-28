@@ -1,0 +1,735 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="build" content="261028-1149">
+<title>강사로</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#1F6F78">
+<link rel="apple-touch-icon" href="../try/icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="강사로">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
+<style>
+:root{--bg:#F3F5F4;--sf:#FFFFFF;--fg:#16222B;--mu:#4F5D66;--ln:#D5DDDC;--ac:#1F6F78;--acs:#E1EEEE;--nv:#2D3E73;--nvs:#E3E7F4;
+--g1:#E3E7E9;--g2:#3B4650;--b1:#DCEBFA;--b2:#1A4F8A;--p1:#ECE2F7;--p2:#5B3A8C;--k1:#DDF1E4;--k2:#1E6B3A;--r1:#FDECE3;--r2:#9A3608;--sun:#B3261E;
+font-family:'IBM Plex Sans KR','Apple SD Gothic Neo','Malgun Gothic',sans-serif}
+@media (prefers-color-scheme:dark){:root{--bg:#0F1719;--sf:#172225;--fg:#E7EEEE;--mu:#A3B2B5;--ln:#2C3A3E;--ac:#5FB7BF;--acs:#183338;--nv:#9DAEE6;--nvs:#1E2640;
+--g1:#2A3337;--g2:#C9D2D6;--b1:#1B2F47;--b2:#9CC6F2;--p1:#2E2540;--p2:#CDB5EE;--k1:#173426;--k2:#94D9AE;--r1:#3A2116;--r2:#F2A57E;--sun:#F28B82;color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font-size:15px;line-height:1.55}
+button,input,select,textarea{font:inherit;color:inherit}
+.app{max-width:560px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;padding-bottom:84px}
+header{position:sticky;top:0;z-index:5;background:var(--bg);padding:10px 16px 6px;display:flex;flex-direction:column;gap:6px;border-bottom:1px solid var(--ln)}
+.brand{display:flex;align-items:center;gap:8px;justify-content:space-between}
+.brand b{font-size:20px}.beta{font-size:11px;font-weight:700;background:var(--acs);color:var(--ac);padding:2px 8px;border-radius:99px}
+.pic{width:56px;height:56px;border-radius:50%;object-fit:cover;flex:none;background:var(--acs);color:var(--ac);display:inline-grid;place-items:center;font-weight:700;font-size:20px}.pic.s{width:36px;height:36px;font-size:14px}
+.who{display:flex;gap:6px;align-items:center;font-size:12px;color:var(--mu)}
+.who select{flex:1;min-width:0;padding:6px 8px;border:1px solid var(--ln);border-radius:8px;background:var(--sf)}
+main{padding:12px 16px;display:flex;flex-direction:column;gap:12px}
+h2{font-size:18px;margin:4px 0 0}h3{font-size:15px;margin:0}
+.card{background:var(--sf);border:1px solid var(--ln);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.sp{flex:1}
+.mu{color:var(--mu);font-size:13px}.sm{font-size:12px}
+.btn{min-height:44px;padding:0 14px;border-radius:10px;border:1px solid var(--ln);background:var(--sf);font-weight:600;cursor:pointer}
+.btn.pri{background:var(--ac);border-color:var(--ac);color:var(--bg)}.btn.nv{background:var(--nv);border-color:var(--nv);color:var(--bg)}
+.btn.sm{min-height:36px;padding:0 10px;font-size:13px}.btn:disabled{opacity:.45;cursor:default}
+.btn:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--ac);outline-offset:1px}
+.chip{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:99px;white-space:nowrap}
+.applied{background:var(--g1);color:var(--g2)}.confirmed{background:var(--b1);color:var(--b2)}.done{background:var(--p1);color:var(--p2)}.paid{background:var(--k1);color:var(--k2)}.warn{background:var(--r1);color:var(--r2)}.off{background:var(--g1);color:var(--mu)}
+.alert{background:var(--r1);color:var(--r2);border-radius:10px;padding:8px 10px;font-size:13px;font-weight:600}
+.ok{background:var(--k1);color:var(--k2);border-radius:10px;padding:8px 10px;font-size:13px;font-weight:600}
+label.f{display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--mu);font-weight:600;min-width:0}
+label.f input,label.f select,label.f textarea,textarea.f{padding:9px 10px;border:1px solid var(--ln);border-radius:10px;background:var(--sf);font-size:15px;color:var(--fg);font-weight:400;width:100%}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+/* 달력 */
+.dow,.cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px}
+.dow span{text-align:center;font-size:11px;font-weight:600;color:var(--mu)}.dow span:first-child{color:var(--sun)}.dow span:last-child{color:var(--b2)}
+.day{height:62px;padding:3px;border:1px solid var(--ln);border-radius:8px;background:var(--sf);display:flex;flex-direction:column;gap:2px;overflow:hidden;text-align:left;cursor:pointer}
+.day.blank{background:transparent;border-color:transparent;cursor:default}.day.sel{border:2px solid var(--ac);background:var(--acs)}.day.clash{border:2px solid var(--r2)}
+.day .n{font-size:11px;font-weight:500}.day .n.red{color:var(--sun)}.day .n.blue{color:var(--b2)}.day .n.today{background:var(--ac);color:var(--bg);border-radius:99px;width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;font-weight:700}
+.bar{display:block;font-size:10px;font-weight:600;line-height:1.3;padding:1px 3px;border-radius:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sum{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.sum div{background:var(--sf);border:1px solid var(--ln);border-radius:12px;padding:8px 10px;display:flex;flex-direction:column}
+.sum b{font-size:15px;font-variant-numeric:tabular-nums}
+.money{font-variant-numeric:tabular-nums}
+table{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums}
+th,td{padding:6px 4px;border-bottom:1px solid var(--ln);text-align:right;white-space:nowrap}th:first-child,td:first-child{text-align:left}
+.tw{overflow-x:auto}
+nav{position:fixed;bottom:0;left:0;right:0;background:var(--sf);border-top:1px solid var(--ln);display:flex;justify-content:center;padding-bottom:env(safe-area-inset-bottom,0px);z-index:6}
+nav .in{max-width:560px;width:100%;display:flex;justify-content:space-around;align-items:center;height:64px}
+nav button{background:none;border:0;font-size:12px;color:var(--mu);padding:10px 8px;min-height:44px;cursor:pointer;position:relative}
+nav button.on{color:var(--ac);font-weight:700}
+nav .plus{width:52px;height:52px;border-radius:26px;background:var(--ac);color:var(--bg);font-size:26px;margin-top:-26px;padding:0}
+.dot{position:absolute;top:4px;right:0;background:var(--r2);color:var(--bg);font-size:10px;border-radius:99px;padding:0 5px}
+.sheet{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:10;display:flex;align-items:flex-end;justify-content:center}
+.sheet .in{background:var(--bg);width:100%;max-width:560px;max-height:92vh;overflow:auto;border-radius:18px 18px 0 0;padding:16px;display:flex;flex-direction:column;gap:10px}
+#toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:8px 14px;border-radius:10px;font-size:13px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:20}
+#toast.on{opacity:1}
+details summary{cursor:pointer;font-weight:600;font-size:13px;color:var(--ac)}
+pre.pf{white-space:pre-wrap;font:inherit;font-size:13px;background:var(--bg);border-radius:10px;padding:10px;margin:0}
+@media (prefers-reduced-motion:reduce){#toast{transition:none}}
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+  <div class="brand"><b>강사로</b><span class="beta">무료 시범 운영</span><span class="sp"></span><button class="btn sm pri" id="instBtn" data-act="install" hidden>앱 설치</button></div>
+  <div id="kakaoBar" class="alert" hidden>카카오톡 안에서는 앱 설치가 안 돼요. <a id="kakaoOut" href="#" style="font-weight:700;color:inherit">다른 브라우저로 열기 →</a></div>
+  <div class="who" id="acct"></div>
+</header>
+<main id="main"></main>
+</div>
+<nav><div class="in" id="nav"></div></nav>
+<div id="toast" role="status"></div>
+<div id="sheet"></div>
+<script>
+/* ===== 도우미·공고 읽기 (lecture-app v1에서 가져옴) ===== */
+
+/* ===== 도우미 ===== */
+const $=(s,r=document)=>r.querySelector(s),$$=(s,r=document)=>[...r.querySelectorAll(s)];
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const DOW='일월화수목금토';
+const pad=n=>String(n).padStart(2,'0');
+const isoOf=(y,m,d)=>`${y}-${pad(m)}-${pad(d)}`;
+const dt=iso=>{const[y,m,d]=iso.split('-').map(Number);return new Date(y,m-1,d)};
+const dowOf=iso=>DOW[dt(iso).getDay()];
+const todayIso=()=>{const t=new Date();return isoOf(t.getFullYear(),t.getMonth()+1,t.getDate())};
+const md=iso=>{const d=dt(iso);return `${d.getMonth()+1}/${d.getDate()}`};
+const mdK=iso=>{const d=dt(iso);return `${d.getMonth()+1}월 ${d.getDate()}일`};
+const addDays=(iso,n)=>{const d=dt(iso);d.setDate(d.getDate()+n);return isoOf(d.getFullYear(),d.getMonth()+1,d.getDate())};
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+function batchim(w){const c=String(w||'').trim().slice(-1).charCodeAt(0);if(c>=0xAC00&&c<=0xD7A3)return(c-0xAC00)%28;return /[013678LMNR]$/i.test(String(w).trim())?1:0}
+const ro=w=>{const b=batchim(w);return b&&b!==8?'으로':'로'};
+const eul=w=>batchim(w)?'을':'를';
+
+/* ===== 공휴일 (kholidayz.com 2026·2027 목록 기준, 2026-10-27 확인) ===== */
+const HOL={'2026-01-01':'신정','2026-02-16':'설날 연휴','2026-02-17':'설날','2026-02-18':'설날 연휴','2026-03-01':'삼일절','2026-03-02':'대체공휴일','2026-05-01':'노동절','2026-05-05':'어린이날','2026-05-24':'부처님오신날','2026-05-25':'대체공휴일','2026-06-03':'지방선거','2026-06-06':'현충일','2026-07-17':'제헌절','2026-08-15':'광복절','2026-08-17':'대체공휴일','2026-09-24':'추석 연휴','2026-09-25':'추석','2026-09-26':'추석 연휴','2026-10-03':'개천절','2026-10-05':'대체공휴일','2026-10-09':'한글날','2026-12-25':'성탄절',
+'2027-01-01':'신정','2027-02-06':'설날 연휴','2027-02-07':'설날','2027-02-08':'설날 연휴','2027-02-09':'대체공휴일','2027-03-01':'삼일절','2027-05-01':'노동절','2027-05-03':'대체공휴일','2027-05-05':'어린이날','2027-05-13':'부처님오신날','2027-06-06':'현충일','2027-07-17':'제헌절','2027-07-19':'대체공휴일','2027-08-15':'광복절','2027-08-16':'대체공휴일','2027-09-14':'추석 연휴','2027-09-15':'추석','2027-09-16':'추석 연휴','2027-10-03':'개천절','2027-10-04':'대체공휴일','2027-10-09':'한글날','2027-10-11':'대체공휴일','2027-12-25':'성탄절','2027-12-27':'대체공휴일'};
+
+const TOPICS=[
+ {k:'legal',name:'법정교육',re:/성희롱|괴롭힘|장애인\s*인식|법정\s*의무|법정\s*교육|산업\s*안전/,c:4,org:1,way:'사례 중심으로, 참여자가 직접 상황을 판단해 보는 활동을 넣어 지루하지 않게 진행하겠습니다.',new:1},
+ {k:'aicover',name:'AI 자기소개서',re:/(AI|인공지능|생성형|챗\s*GPT|GPT|뤼튼).{0,20}(자소서|자기소개서)|(자소서|자기소개서).{0,20}(AI|인공지능|생성형|GPT)/i,c:1,way:'생성형 AI로 지원 직무에 맞춰 경험을 정리하고, 30분 안에 자기소개서 한 편을 완성하는 방식으로 컨설팅하겠습니다.'},
+ {k:'cover',name:'자기소개서',re:/자소서|자기소개서|이력서/,c:2,way:'학생들이 자기 경험을 직접 꺼내 정리하고, 그 자리에서 첨삭을 받아 한 편을 완성해 가는 실습 위주로 준비하겠습니다.',new:1},
+ {k:'interview',name:'면접·스피치',re:/면접|스피치|말하기/,c:0,way:'학생 한 명 한 명이 1분 자기소개와 모의면접을 직접 해 보고, 그 자리에서 피드백을 받는 실습 위주로 준비하겠습니다.',new:1},
+ {k:'manner',name:'비즈니스매너',re:/비즈니스\s*매너|직장\s*예절|매너|예절|고객\s*응대/,c:0,way:'인사, 명함 교환, 전화 응대, 자기소개를 학생들이 직접 해 보는 실습 위주로 준비하겠습니다.'},
+ {k:'labor',name:'노동인권',re:/노동\s*인권|노동법|근로\s*계약|근로\s*기준|노동\s*교육/,c:3,way:'첫 월급 명세서 읽기, 근로계약서 체크포인트, 부당한 상황에서 내 권리 지키기처럼 학생들이 곧 사회에 나가 바로 쓸 수 있는 내용으로, 사례와 실습 위주로 준비하겠습니다.'},
+ {k:'startup',name:'창업',re:/창업|기업가\s*정신/,c:3,way:'제공해 주시는 기본 교안을 바탕으로 학생들이 직접 아이디어를 내고 발표해 보는 실습 중심으로 진행하겠습니다.'},
+ {k:'career',name:'진로',re:/진로|동기\s*부여|취업\s*역량|취업\s*특강|직업\s*탐색/,c:3,way:'게임·팀 활동·발표로 학생들이 직접 움직이며, 자기 진로를 한 문장으로 정리해 가는 참여형으로 준비하겠습니다.',new:1},
+ {k:'etc',name:'기타',re:/$^/,c:3,way:'학생들이 직접 해 보는 실습과 팀 활동 위주로 준비하겠습니다.',new:1}
+];
+const topicOf=k=>TOPICS.find(t=>t.k===k)||TOPICS[TOPICS.length-1];
+
+/* ===== 공고 읽기 (규칙 기반, 외부 전송 없음) ===== */
+// 강사료: '강사비·강의료·페이' 줄 우선, '총 ○만원' 우선, '시간당 ○' 은 시간 수를 곱함 (톡방 공고 293건 시험으로 맞춤)
+function feeOf(raw){const T=String(raw||''),L=T.split('\n'),KW=/강사비|강의료|강사료|강의비|교육비|페이|사례비|보수|수당/;
+  const amt=t=>{const x=String(t).match(/(\d{1,3}(?:,\d{3})+|\d+(?:\.\d+)?)(?!\s*(?:H|h|시간|교시|차시|명|회|일|월|%|\d))\s*(만)?\s*(원)?/);if(!x)return 0;let v=+x[1].replace(/,/g,'');if(x[2])v*=1e4;else if(!x[3]&&v<=50)v*=1e4;return v>=3e4&&v<=3e6?Math.round(v):0};
+  const hrs=()=>{let x=T.match(/(\d)\s*[~\-∼]\s*(\d)\s*교시/);if(x)return x[2]-x[1]+1;x=T.match(/(\d)\s*(?:시간|차시|교시)/);return x?+x[1]:1};
+  for(let i=0;i<L.length;i++){const k=L[i].match(KW);if(!k)continue;let t=L[i].slice(k.index+k[0].length);if(!/\d/.test(t)&&L[i+1])t+=' '+L[i+1];
+    let x=t.match(/총\s*([\d,]+\s*만?\s*원?)/);if(x&&amt(x[1]))return amt(x[1]);
+    x=t.match(/(?:시간|차시|교시)\s*당\s*([\d,.]+\s*만?\s*원?)/);if(x&&amt(x[1]))return amt(x[1])*hrs();
+    if(amt(t))return amt(t)}
+  for(const x of T.matchAll(/(\d{1,3}(?:,\d{3})+\s*원|\d+\s*만\s*원)/g))if(amt(x[1]))return amt(x[1]);return ''}
+function parseNotice(raw){
+  const text=String(raw||'').replace(/\r/g,'');
+  const lines=text.split('\n');
+  const lab=re=>{const R=new RegExp('^[\\s\\-•·*▶■□○◎●◇◆※>☞①-⑳\\d.)]*\\s*(?:'+re+')\\s*(?:[:：_]|-(?!\\d))\\s*(.+)$');for(const ln of lines){const m=ln.match(R);if(m)return m[1].trim()}return ''};
+  const r={dates:[],dows:{},deadline:'',기관명:'',담당자호칭:'',학교명:'',지역:'',시간:'',교시:'',대상:'',강의명:'',지원안:'',to:'',topic:'etc',profile:'school'};
+  // 날짜
+  const lineOf=idx=>{const s=text.lastIndexOf('\n',idx-1)+1;let e=text.indexOf('\n',idx);if(e<0)e=text.length;return text.slice(s,e)};
+  const found=[];
+  const now=new Date();
+  const add=(y,m,d,w,idx)=>{m=+m;d=+d;if(m<1||m>12||d<1||d>31)return;
+    if(!y){y=now.getFullYear();if((now-new Date(y,m-1,d))/864e5>60)y++}
+    const iso=isoOf(+y,m,d);if(dt(iso).getMonth()!==m-1)return;
+    const ln=lineOf(idx);
+    const dl=/마감|접수|지원\s*기한|모집\s*기간|까지|제출\s*기한|서류/.test(ln)&&!/교육\s*일|강의\s*일|일시|일정|출강/.test(ln);
+    found.push({iso,w:w||'',dl})};
+  const W='(?:\\s*\\(\\s*([월화수목금토일])\\s*\\)|\\s*([월화수목금토일])요일)?';
+  const RG='(?:\\s*[~∼\\-–]\\s*(\\d{1,2})\\s*일?(?![\\d/.:월])(?:\\s*\\(\\s*([월화수목금토일])\\s*\\))?)?';
+  let masked=text;
+  const run=(re,hasY)=>{masked=masked.replace(re,(...a)=>{const idx=a[a.length-2];const g=a.slice(1,a.length-2);
+      const [y,m,d,w1,w2,rd,rw]=hasY?g:[null,...g];add(y,m,d,w1||w2,idx);if(rd)add(y,m,rd,rw,idx);return ' '.repeat(a[0].length)})};
+  run(new RegExp('(20\\d{2})\\s*[.\\-/년]\\s*(\\d{1,2})\\s*[.\\-/월]\\s*(\\d{1,2})\\s*일?\\.?'+W+RG,'g'),1);
+  run(new RegExp('(\\d{1,2})\\s*월\\s*(\\d{1,2})\\s*일'+W+RG,'g'),0);
+  run(new RegExp('(?<![\\d.:/])(\\d{1,2})[./](\\d{1,2})(?![\\d:./])(?!\\s*(?:시간|교시|차시|명|%|점|배|만|원|kg|km))'+W+RG,'g'),0);
+  const seen=new Set();
+  for(const f of found){if(f.dl){if(!r.deadline)r.deadline=f.iso;continue}
+    if(!seen.has(f.iso)){seen.add(f.iso);r.dates.push(f.iso)}if(f.w)r.dows[f.iso]=f.w}
+  r.dates.sort();
+  // 시간
+  const fixH=h=>{h=+h;return h<8?h+12:h};
+  let m=text.match(/(\d{1,2})\s*:\s*(\d{2})\s*[~∼\-–]\s*(\d{1,2})\s*:\s*(\d{2})/);
+  if(m)r.시간=`${pad(fixH(m[1]))}:${m[2]}~${pad(fixH(m[3]))}:${m[4]}`;
+  else if(m=text.match(/(\d{1,2})\s*시(?:\s*(\d{1,2})\s*분)?\s*[~∼\-–]\s*(\d{1,2})\s*시(?:\s*(\d{1,2})\s*분)?/))r.시간=`${pad(fixH(m[1]))}:${pad(m[2]||0)}~${pad(fixH(m[3]))}:${pad(m[4]||0)}`;
+  // 교시
+  m=text.match(/\d{1,2}\s*[~∼\-]\s*\d{1,2}\s*교시|총?\s*\d{1,2}\s*(?:교시|차시)|\d{1,2}\s*시간(?![~:])/);
+  if(m)r.교시=m[0].replace(/\s+/g,'').replace(/^총/,'');
+  // 대상
+  let v=lab('교육\\s*대상|참여\\s*대상|수강\\s*대상|대상');
+  if(!v){m=text.match(/[1-3]\s*학년(?:\s*[가-힣]{2,10}과)?(?:\s*\d+\s*개?\s*반)?(?:\s*\(?\s*\d+\s*명\s*\)?)?/)||text.match(/청년|구직자|재직자|취업\s*준비생|대학생|중학생|고등학생|성인|학부모|교직원|임직원/);if(m)v=m[0]}
+  r.대상=v.replace(/\s+/g,' ').slice(0,30);
+  // 학교
+  const EXCL=/^(모집|채용|강사|재|수정|추가|긴급|입찰|안내|교육|강의|본|위|해당|최|참|광|보|신|경|원)공고$/;
+  const SCH=/[가-힣]{2,}(?:고등학교|중학교|초등학교|대학교|여자고|공업고|디자인고|정보고|과학고|마이스터고|상업고|여고|공고|여중|고교)/g;
+  const pickSchool=s=>{for(const x of String(s).match(SCH)||[]){if(!EXCL.test(x))return x}
+    m=String(s).match(/([가-힣]{2,5})고(?=\s*(?:[1-3]\s*학년|학생|에서|강의|특강|\(|,|$))/m);
+    if(m&&!/(하|되|있|없|이|라|지|보|주|오|며|고|최|참|광|신|경|재|원)$/.test(m[1]))return m[1]+'고';return ''};
+  const place=lab('학교명?|교육\\s*장소|강의\\s*장소|장소');
+  r.학교명=pickSchool(place)||pickSchool(text)||'';
+  // 기관(섭외 업체)
+  v=lab('업체명?|섭외\\s*업체|주관|주최|운영\\s*기관|운영사|교육\\s*업체|회사명?|기관명?');
+  if(v&&!pickSchool(v))r.기관명=v.replace(/\(.*?\)/g,'').trim().slice(0,20);
+  if(!r.기관명){const OR=/[가-힣A-Za-z]{2,}(?:교육|에듀|컴퍼니|아카데미|연구소|연구원|협회|재단|센터|컨설팅)/g;
+    const GEN=/^(진로|취업|직업|인성|법정|안전|예방|인권|노동인권|창업|금융|경제|통일|보건|소방|정보|특강|강사|외부|방과후|평생|의무|보수|직무|역량|학생|청소년|교사|학교|성|문화|예술|체험|대면|비대면|온라인|집합|현장|사전|맞춤|공교육|사교육|코딩|AI|진로체험|취업지원|교육)(교육|센터)$/;
+    for(const x of text.match(OR)||[]){if(!GEN.test(x)&&!pickSchool(x)){r.기관명=x;break}}}
+  if(!r.기관명)for(const ln of lines.slice(0,6)){const x=ln.match(/(?:교육\s*회사|교육\s*기관|\(주\)|㈜)?\s*([가-힣A-Za-z0-9&]{2,15})\s*입니다/);if(x&&!/안녕|강사|모집|섭외|급구|요청|담당/.test(x[1])){r.기관명=x[1];break}}
+  // 담당자 호칭
+  v=lab('담당자?|문의');m=(v||text).match(/([가-힣]{2,4})\s*(대표|팀장|실장|과장|부장|선생|매니저|주임|대리|코디네이터|코디)/);
+  r.담당자호칭=m?`${m[1]} ${m[2]}님`:'담당자님';
+  // 받는 메일
+  m=text.match(/[\w.+-]+@[\w-]+(?:\.[\w-]+)+/);if(m)r.to=m[0];
+  // 지원안
+  m=text.match(/(?<![A-Za-z])([A-D])\s*안(?![가-힣])/);if(m)r.지원안=m[1]+'안';else if(/메인\s*강사/.test(text))r.지원안='메인강사';else if(/보조\s*강사/.test(text))r.지원안='보조강사';
+  // 지역
+  const SKIP=/^(오전|오후|종료|시작|점심|전체|진행|모집|소요|이전|이후|시간|당일|매일|평일|휴일|강의|교육|수업|학교|동시|현재|상세|일정|예정|장소|공지|추가|변경|해당|운영|개최)$/;
+  // 실제 톡방 공고 시험(10/28)에서 '교육일시'→교육일 같은 오인이 나와서: 광역시 → '○○ 소재/지역' → 아는 시·군 → 기존 규칙 순서
+  const NOTP=/학생|교시|교육|강의|해당|대상|현장|전국|일정|학교|기업|기관|센터|도내|관내|출발|희망|거주|근무|활동|리터|에이/;
+  if(m=text.match(/([가-힣]{2})광역시/))r.지역=m[1];
+  if(!r.지역)for(const x of text.matchAll(/([가-힣]{2,3}?)(?:시|군|구)?\s*(?:지역|소재)/g)){const ln=lineOf(x.index),g=typeof GEO!=='undefined'&&Object.keys(GEO).find(k=>ln.includes(k));if(g){r.지역=g;break}if(typeof GEO!=='undefined'&&GEO[x[1]]||x[1].length===2&&!NOTP.test(x[1])&&!SKIP.test(x[1])){r.지역=x[1];break}}
+  if(!r.지역&&typeof GEO!=='undefined')for(const g of Object.keys(GEO))if(text.includes(g)){r.지역=g;break}
+  if(!r.지역)for(const x of text.matchAll(/([가-힣]{2,3})(시|군)(?=[\s,)\]·./(]|$)/gm)){if(!SKIP.test(x[1])&&!NOTP.test(x[1])){r.지역=x[1];break}}
+  if(!r.지역){m=text.match(/서울|부산|대구|인천|광주|대전|울산|세종|제주|경기|강원|충북|충남|전북|전남|경북|경남/);if(m)r.지역=m[0]}
+  // 주제·강의명
+  v=lab('강의\\s*주제|교육\\s*주제|주제|강의명|교육명|과목|프로그램명?|과정명?|교육\\s*내용|강의\\s*내용|의뢰\\s*내용|내용');
+  const t=TOPICS.find(t=>v&&t.re.test(v))||TOPICS.find(t=>t.re.test(text))||topicOf('etc');
+  r.topic=t.k;r.강의명=(v||(t.k==='etc'?'':t.name)).replace(/\(?\s*(?:[A-D]\s*안|메인\s*강사|보조\s*강사)\s*\)?/g,'').replace(/\s+/g,' ').trim().slice(0,40);
+  r.profile=(t.org||(!r.학교명&&!/학생|학년|고[1-3]|중[1-3]/.test(text)&&/법정|직장\s*내|재직자|임직원|공무원|CS|고객\s*응대|구직자|성인/.test(text)))?'org':'school';
+  return r;
+}
+
+
+/* ===== 강사로: 저장 (체험판은 이 기기에만 저장. 서버 연결은 다음 단계) ===== */
+const KEY='kangsaro.demo.v3';
+const ST={applied:'지원',confirmed:'확정',done:'미입금',paid:'입금 완료'};
+const won=n=>Math.round(n||0).toLocaleString('ko-KR')+'원';
+const last=a=>a[a.length-1];
+const ym=iso=>iso.slice(0,7);
+// 3.3% = 소득세 3% + 지방소득세 0.3%. 10원 미만 절사, 소득세 1,000원 미만은 떼지 않음(소액부징수)
+function tax(amt){let it=Math.floor(amt*0.03/10)*10;if(it<1000)it=0;const lt=Math.floor(it*0.1/10)*10;return {it,lt,all:it+lt,net:amt-it-lt}}
+let S,ui={tab:'cal',month:todayIso().slice(0,7),sel:todayIso(),jobId:null};
+
+function seed(){const t=todayIso(),d=n=>addDays(t,n);
+  return {v:1,me:'i:i1',
+    insts:[
+      {id:'i1',name:'김하늘',phone:'010-0000-0001',email:'sky@example.com',region:'수원',topics:'진로, 면접, AI 자기소개서',intro:'특성화고와 청년 대상으로 AI 자소서, 면접, 취업역량 강의를 꾸준히 하고 있습니다.',career:'2024~ 특성화고 취업 특강 40회\n2023~ 청년 면접 컨설팅',bank:'국민',acct:'000000-00-000001',holder:'김하늘',kmpl:20,fuel:1650,joined:t,beta:true},
+      {id:'i2',name:'이도윤',phone:'010-0000-0002',email:'doyun@example.com',region:'안양',topics:'비즈니스매너, 면접',intro:'기업 CS와 비즈니스매너 강의를 10년째 하고 있습니다.',career:'2016~ 기업 CS 교육',bank:'신한',acct:'110-000-000002',holder:'이도윤',kmpl:15,fuel:1650,joined:t,beta:true},
+      {id:'i3',name:'박서연',phone:'010-0000-0003',email:'seoyeon@example.com',region:'인천',topics:'노동인권, 진로',intro:'노동인권과 진로 수업을 참여형으로 진행합니다.',career:'2020~ 노동인권 교육',bank:'농협',acct:'000-0000-0000-03',holder:'박서연',kmpl:14,fuel:1650,joined:t,beta:true}],
+    cos:[{id:'c1',name:'○○교육',contact:'최 팀장',email:'job@example.com'},{id:'c2',name:'△△에듀',contact:'정 실장',email:'edu@example.com'}],
+    jobs:[
+      {id:'j1',coId:'c1',title:'면접 특강',school:'○○고',region:'평택',dates:[d(-20)],time:'09:00~15:50',교시:'6교시',대상:'3학년',fee:300000,status:'마감',needs:['프로필','교안','통장사본'],notices:[],created:d(-35)},
+      {id:'j2',coId:'c1',title:'AI 자기소개서',school:'○○공고',region:'안양',dates:[d(-6)],time:'09:00~12:30',교시:'4교시',대상:'3학년',fee:200000,status:'마감',needs:['프로필','교안'],notices:[],created:d(-25)},
+      {id:'j3',coId:'c1',title:'취업 특강',school:'○○공고',region:'천안',dates:[d(1)],time:'09:00~15:50',교시:'6교시',대상:'2학년 120명',fee:300000,status:'마감',needs:['프로필','교안','통장사본'],notices:[{id:'n1',text:'도착하시면 본관 1층 교무실로 오세요. 주차는 운동장 옆입니다. 노트북 연결 HDMI 있습니다.',at:new Date().toISOString(),to:['i1'],reads:{}}],created:d(-12)},
+      {id:'j4',coId:'c1',title:'진로 캠프',school:'○○중',region:'서울',dates:[d(9),d(10)],time:'09:00~12:00',교시:'3교시',대상:'1학년',fee:180000,status:'모집',needs:['프로필','교안'],notices:[],created:d(-2),desc:'1학년 진로 캠프 이틀 과정입니다.\n- 반별 진행(1반 25명), 팀 활동과 발표 위주\n- 장소: 서울 ○○중학교 본관 3층 진로실\n- 기자재: 노트북, 빔프로젝터, HDMI 있음\n- 주차: 운동장 옆 가능\n- 교안은 강의 3일 전까지 제출 부탁드립니다.'},
+      {id:'j6',coId:'c1',title:'면접 캠프',school:'○○고',region:'수원',dates:[t],time:'13:00~15:00',교시:'2교시',대상:'3학년 60명',fee:120000,status:'마감',needs:['프로필','교안'],notices:[],created:d(-10)},
+      {id:'j5',coId:'c2',title:'비즈니스매너',school:'○○여고',region:'인천',dates:[d(14)],time:'10:00~14:00',교시:'4교시',대상:'3학년',fee:220000,status:'모집',needs:['프로필','통장사본'],notices:[],created:d(-1),desc:'3학년 취업 대비 비즈니스매너(인사, 명함, 전화 응대, 자기소개) 실습입니다.\n- 인원: 3학년 2개 반 60명\n- 장소: 인천 ○○여고 강당\n- 마이크·빔프로젝터 있음, 점심 제공'}],
+    apps:[
+      {id:'a1',jobId:'j1',instId:'i1',status:'확정',docs:{교안:'면접특강.pptx',통장사본:'통장.jpg'},paidAt:d(-5),recv:'ok',km:120,toll:6000},
+      {id:'a2',jobId:'j2',instId:'i1',status:'확정',docs:{교안:'AI자소서.pptx'},paidAt:null,km:40,toll:0},
+      {id:'a3',jobId:'j3',instId:'i1',status:'확정',docs:{교안:'취업특강.pptx'},paidAt:null,km:150,toll:7000},
+      {id:'a4',jobId:'j3',instId:'i3',status:'미선정',docs:{},paidAt:null,km:0,toll:0},
+      {id:'a5',jobId:'j4',instId:'i2',status:'지원',docs:{},paidAt:null,km:0,toll:0},
+      {id:'a6',jobId:'j4',instId:'i3',status:'지원',docs:{},paidAt:null,km:0,toll:0},
+      {id:'a7',jobId:'j6',instId:'i1',status:'확정',docs:{교안:'면접캠프.pptx'},paidAt:null,km:20,toll:0},
+      {id:'a8',jobId:'j6',instId:'i2',status:'확정',docs:{교안:'면접캠프2.pptx'},paidAt:null,km:30,toll:0,day:{[t]:{ack:d(-1)+'T20:00',dep:t+'T11:40',eta:'12:30'}}}],
+    evs:[
+      {id:'e1',instId:'i1',dates:[d(-13)],title:'분당 ○○고 진로',org:'□□교육',time:'13:00~15:00',fee:150000,km:50,toll:2000,st:'paid',to:''},
+      {id:'e2',instId:'i1',dates:[d(5)],title:'경주 ○○고 비즈니스매너',org:'◇◇에듀',time:'09:00~15:50',fee:360000,km:640,toll:38000,st:'confirmed',to:''},
+      {id:'e3',instId:'i1',dates:[d(9)],title:'수원 기관 법정교육',org:'☆☆컨설팅',time:'14:00~16:00',fee:160000,km:20,toll:0,st:'applied',to:''}]}}
+let firstVisit=false;
+function load(){try{const s=JSON.parse(localStorage.getItem(KEY));if(s&&s.v===1)return s}catch(e){}firstVisit=true;return seed()}
+function save(){if(SYNC)SYNC()}
+S={v:1,me:'',insts:[],cos:[],jobs:[],apps:[],evs:[],alerts:[]};let SYNC=null;const REAL={};
+
+const meRole=()=>S.me.split(':')[0],meId=()=>S.me.split(':')[1];
+const inst=id=>S.insts.find(x=>x.id===id)||{id,name:'강사',region:'',topics:'',intro:'',career:'',phone:'',email:''},co=id=>S.cos.find(x=>x.id===id)||{id,name:'업체',contact:'',email:''},job=id=>S.jobs.find(x=>x.id===id);
+const appsOf=jid=>S.apps.filter(a=>a.jobId===jid);
+
+/* ===== 강사: 달력 항목 모으기 ===== */
+function travel(x,who){const p=who||inst(meId());return Math.round((+x.km||0)/(+p.kmpl||15)*(+p.fuel||1650))+(+x.toll||0)}
+function entries(iid){const t=todayIso(),me=inst(iid),out=[];
+  for(const e of S.evs){if(e.instId!==iid||e.st==='no')continue;
+    const st=e.st==='confirmed'&&isOver(e.dates,e.time)?'done':e.st;
+    for(const d of e.dates)out.push({kind:'ev',ref:e,d,st,title:e.title,org:e.org,time:e.time,fee:+e.fee||0,trv:travel(e,me)})}
+  for(const a of S.apps){if(a.instId!==iid||a.status==='미선정'||a.status==='취소')continue;const j=job(a.jobId);if(!j)continue;
+    const st=a.status==='지원'?'applied':a.paidAt||a.selfPaid?'paid':isOver(j.dates,j.time)?'done':'confirmed';
+    for(const d of j.dates)out.push({kind:'app',ref:a,job:j,d,st,title:`${j.region} ${j.school} ${j.title}`,org:co(j.coId).name,time:j.time,fee:+j.fee||0,trv:travel(a,me)})}
+  return out.sort((x,y)=>x.d<y.d?-1:x.d>y.d?1:0)}
+const netOf=e=>tax(e.fee).net-e.trv;
+// 마지막 강의 날 끝나는 시각이 지나면 바로 미입금 (시간을 모르면 그날 18시 기준)
+function isOver(dates,time){const L=last(dates),t=todayIso();if(L<t)return true;if(L>t)return false;
+  const m=String(time||'').match(/[~∼\-–]\s*(\d{1,2}):(\d{2})/),n=new Date();return n.getHours()*60+n.getMinutes()>=(m?+m[1]*60+ +m[2]:18*60)}
+// 편도 시간(분): 왕복 km ÷ 2 ÷ 평균 65km/h, 5분 단위
+const oneWayMin=km=>Math.max(15,Math.round(km/2/65*60/5)*5);
+function departText(time,km){const m=String(time||'').match(/(\d{1,2}):(\d{2})/);if(!m||!km)return '';const go=oneWayMin(km),s=+m[1]*60+ +m[2]-go-20;if(s<0)return '';
+  return `늦어도 ${pad(Math.floor(s/60))}:${pad(s%60)} 출발 (편도 약 ${hmText(go)} + 여유 20분)`}
+function clashes(iid,dates,skip){const E=entries(iid).filter(e=>dates.includes(e.d)&&e.ref!==skip);return E}
+function dateWarn(dates,dows){const W=[];for(const iso of dates){const a=dowOf(iso),w=(dows||{})[iso];
+  if(w&&w!==a)W.push(`${mdK(iso)}: 공고에는 ${w}요일인데 달력상 ${a}요일이에요`);
+  else if(HOL[iso])W.push(`${mdK(iso)}은 공휴일(${HOL[iso]})이에요`);
+  else if(a==='토'||a==='일')W.push(`${mdK(iso)}은 ${a}요일이에요`);
+  if(iso<todayIso())W.push(`${mdK(iso)}은 이미 지난 날짜예요`)}return W}
+
+/* ===== 화면 공통 ===== */
+const NAV={i:[['cal','달력'],['jobs','공고'],['plus','+'],['money','결산'],['me','프로필']],c:[['cjobs','강의'],['cnew','+'],['pay','지급'],['csum','결산']]};
+function unreadCount(){const id=meId();let n=0;for(const j of S.jobs)for(const nt of j.notices)if((nt.to||[]).includes(id)&&!nt.reads[id])n++;return n}
+// 리마인드: 확정 강사에게 강의 7일·3일·1일 전 한 번씩 알림 (서버판에서는 매일 아침 자동 발송)
+function runReminders(){const t=todayIso();let ch=0;
+  for(const a of S.apps){if(a.status!=='확정')continue;const j=job(a.jobId);if(!j)continue;const left=Math.round((dt(j.dates[0])-dt(t))/864e5);if(left<1||left>7)continue;
+    a.rem=a.rem||{};const stage=[1,3,7].find(n=>left<=n);if(a.rem[stage])continue;
+    for(const n of [1,3,7])if(n>=stage)a.rem[n]=a.rem[n]||new Date().toISOString();
+    const nts=j.notices.filter(n=>(n.to||[]).includes(a.instId)&&!n.reads[a.instId]).length;
+    S.alerts.push({id:uid(),instId:a.instId,text:`[D-${left} 리마인드] ${co(j.coId).name} · ${j.region} ${j.school} ${j.title} ${j.dates.map(d=>`${md(d)}(${dowOf(d)})`).join('·')} ${j.time}${nts?` · 안 읽은 공지 ${nts}개가 있어요`:''}${stage===1?' · 내일 강의예요. 일정 카드에서 "확인했어요"를 눌러 주세요':''}`,at:new Date().toISOString(),read:false});ch++}
+  if(ch)save()}
+const remText=a=>{const j=job(a.jobId);return [7,3,1].map(n=>{const at=a.rem&&a.rem[n],d=addDays(j.dates[0],-n);return at?`D-${n} 보냄 ✓`:d<todayIso()?`D-${n} 지남`:`D-${n} ${md(d)} 예정`}).join(' · ')};
+const smsHref=(ph,body)=>`sms:${String(ph).replace(/[^\d]/g,'')}${isIOS?'&':'?'}body=${encodeURIComponent(body)}`;
+function contactBtns(p,body){return `<a class="btn sm" href="tel:${esc(String(p.phone).replace(/[^\d]/g,''))}">📞 전화</a><a class="btn sm" href="${esc(smsHref(p.phone,body))}">💬 문자</a><button class="btn sm" data-act="copyMsg" data-t="${esc(body)}">카톡용 문구 복사</button>`}
+function render(){if(meRole()==='c')runReminders();
+  if(!S.me){$('#nav').innerHTML='';$('#main').innerHTML=REAL.gate?REAL.gate():'<p class="mu">불러오는 중…</p>';return}if(REAL.acct)REAL.acct();
+  const r=meRole();if(!NAV[r].some(n=>n[0]===ui.tab))ui.tab=NAV[r][0][0];
+  const un=r==='i'?unreadCount():0;
+  $('#nav').innerHTML=NAV[r].map(([k,l])=>k==='plus'||k==='cnew'?`<button class="plus" data-act="${k}" aria-label="${r==='i'?'일정 넣기':'강의 등록'}">+</button>`:`<button data-tab="${k}" class="${ui.tab===k?'on':''}">${l}${k==='jobs'&&un?`<span class="dot">${un}</span>`:''}</button>`).join('');
+  const al=r==='i'?S.alerts.filter(a=>a.instId===meId()&&!a.read):[];
+  $('#main').innerHTML=(al.length?`<div class="card" style="border-color:var(--b2);background:var(--b1)" role="status"><b style="color:var(--b2)">알림 ${al.length}개</b>${al.map(a=>`<div class="row"><span class="sp">${esc(a.text)}</span>${a.kind==='pay'?`<button class="btn sm pri" data-act="recv" data-id="${a.id}" data-v="ok">입금 확인했어요</button><button class="btn sm" data-act="recv" data-id="${a.id}" data-v="no">아직 안 들어왔어요</button>`:`<button class="btn sm" data-act="alertOk" data-id="${a.id}">확인</button>`}</div>`).join('')}</div>`:'')+(VIEWS[ui.tab]||(()=>''))();
+}
+function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(toast.h);toast.h=setTimeout(()=>t.classList.remove('on'),2400)}
+// 지원자 프로필 PDF: 인쇄 창을 열어 'PDF로 저장'으로 받게 함 (연락처는 확정한 강사만)
+function pdfPage(p,cf){const V=verified(p.id),cr=String(p.career||'').split('\n').filter(x=>x.trim());
+  return `<section><div class="hd"><span>강사 프로필</span><span>강사로</span></div><div class="top">${p.photo?`<img src="${p.photo}" alt="">`:''}<div><h1>${esc(p.name)}</h1><p>${esc(p.region)} · ${esc(p.topics)}</p>
+  <p>${cf?`연락처 ${esc(p.phone)} · 메일 ${esc(p.email)}`:'연락처는 확정한 뒤에 보여요'}</p></div></div><p class="intro">${esc(p.intro)}</p>
+  ${V.length?`<h2>강사로 인증 강의 ${V.length}회</h2><p class="mu">업체 확정, 강의, 강사료 입금까지 강사로에서 확인된 기록이에요.</p><ul>${V.map(v=>`<li>✓ ${esc(vLine(v))}</li>`).join('')}</ul>`:''}
+  <h2>강의 경력 (본인 작성)</h2><ul>${cr.map(x=>`<li>${esc(x)}</li>`).join('')||'<li>적은 내용 없음</li>'}</ul>
+  <p class="ft">강사로에서 받은 프로필 · ${todayIso().replace(/-/g,'.')}</p></section>`}
+function printPdf(title,pages){const html=`<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>${esc(title)}</title><style>
+  body{font-family:'Pretendard','Noto Sans KR',system-ui,sans-serif;color:#1d2329;margin:0}section{padding:28px 32px;page-break-after:always}section:last-child{page-break-after:auto}
+  .hd{display:flex;justify-content:space-between;font-size:12px;color:#5b6670;border-bottom:2px solid #1f6f78;padding-bottom:6px;margin-bottom:18px}.top{display:flex;gap:18px;align-items:center}
+  img{width:110px;height:110px;border-radius:50%;object-fit:cover}h1{font-size:26px;margin:0 0 6px}h2{font-size:16px;margin:22px 0 4px;color:#1f6f78}p{margin:4px 0;font-size:14px;line-height:1.6}
+  .intro{margin-top:14px}.mu{color:#5b6670;font-size:12px}ul{margin:6px 0;padding-left:18px;font-size:14px;line-height:1.7}.ft{margin-top:28px;font-size:11px;color:#8a949c}
+  @page{size:A4;margin:12mm}</style></head><body>${pages.join('')}</body></html>`;
+  const w=window.open('','_blank');if(w){w.document.write(html);w.document.close();w.onload=()=>w.print();setTimeout(()=>{try{w.print()}catch(e){}},600);return toast("인쇄 창에서 'PDF로 저장'을 고르세요")}
+  const f=document.createElement('iframe');f.style.cssText='position:fixed;width:0;height:0;border:0';document.body.appendChild(f);f.contentDocument.write(html);f.contentDocument.close();setTimeout(()=>{f.contentWindow.print();setTimeout(()=>f.remove(),2000)},400);toast("인쇄 창에서 'PDF로 저장'을 고르세요")}
+async function copy(text,what){try{await navigator.clipboard.writeText(text)}catch(e){const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();try{document.execCommand('copy')}catch(_){}ta.remove()}toast((what||'')+' 복사했어요')}
+function openSheet(html){$('#sheet').innerHTML=`<div class="sheet" data-act="closeSheetBg"><div class="in" role="dialog" aria-modal="true">${html}</div></div>`}
+function closeSheet(){$('#sheet').innerHTML=''}
+const chip=st=>`<span class="chip ${st}">${ST[st]}</span>`;
+
+/* ===== 강사: 달력 ===== */
+function vCal(){const iid=meId(),E=entries(iid),t=todayIso();const [Y,M]=ui.month.split('-').map(Number);
+  const first=new Date(Y,M-1,1).getDay(),days=new Date(Y,M,0).getDate();const cells=[];
+  for(let i=0;i<first;i++)cells.push('<div class="day blank"></div>');
+  for(let n=1;n<=days;n++){const iso=isoOf(Y,M,n),es=E.filter(e=>e.d===iso),dw=dt(iso).getDay();
+    const cls=['day',iso===ui.sel?'sel':'',es.length>1?'clash':''].join(' ');
+    const nc=iso===t?'today':(dw===0||HOL[iso])?'red':dw===6?'blue':'';
+    cells.push(`<button class="${cls}" data-act="sel" data-d="${iso}" aria-label="${M}월 ${n}일 일정 ${es.length}개"><span class="n ${nc}">${n}</span>${es.slice(0,2).map(e=>`<span class="bar ${e.st}">${esc(e.title.split(' ')[0])}</span>`).join('')}</button>`)}
+  const ME=E.filter(e=>ym(e.d)===ui.month);
+  const paid=ME.filter(e=>e.st==='paid').reduce((a,e)=>a+tax(e.fee).net,0),unpaid=ME.filter(e=>e.st==='done').reduce((a,e)=>a+tax(e.fee).net,0),net=ME.filter(e=>e.st!=='applied').reduce((a,e)=>a+netOf(e),0);
+  const DE=E.filter(e=>e.d===ui.sel);const late=E.filter(e=>e.st==='done'&&addDays(e.d,30)<t);
+  return `<div class="row"><h2>${Y}년 ${M}월</h2><span class="sp"></span><button class="btn sm" data-act="mon" data-n="-1" aria-label="이전 달">‹</button><button class="btn sm" data-act="mon" data-n="0">오늘</button><button class="btn sm" data-act="mon" data-n="1" aria-label="다음 달">›</button></div>
+  <div class="row">${Object.keys(ST).map(chip).join('')}<span class="chip warn">빨간 테두리 = 겹침</span></div>
+  ${(()=>{const U=unpaidList(iid);return U.length?`<button class="btn" data-act="unpaid" style="border-color:var(--r2);color:var(--r2)">미입금 ${U.length}건 · ${won(U.reduce((a,u)=>a+u.net,0))} 보기</button>`:''})()}
+  ${late.length?`<div class="alert">강의 끝나고 30일이 지났는데 아직 못 받은 강사료가 ${late.length}건 있어요.</div>`:''}
+  <div class="dow">${[...DOW].map(x=>`<span>${x}</span>`).join('')}</div><div class="cal">${cells.join('')}</div>
+  <div class="sum"><div><span class="mu sm">받은 돈</span><b>${won(paid)}</b></div><div><span class="mu sm">받을 돈</span><b>${won(unpaid)}</b></div><div><span class="mu sm">이달 순수익</span><b>${won(net)}</b></div></div>
+  <h3>${mdK(ui.sel)} (${dowOf(ui.sel)})${HOL[ui.sel]?' · '+HOL[ui.sel]:''}</h3>
+  ${DE.length>1?'<div class="alert">같은 날 일정이 두 개예요. 시간과 거리를 확인하세요.</div>':''}
+  ${DE.length?DE.map(entryCard).join('')+(DE.some(e=>e.kind==='app'&&markRead(e.job,iid))?'':''):'<p class="mu">이날은 일정이 없어요. 아래 + 로 공고를 붙여 넣거나 직접 넣을 수 있어요.</p>'}`}
+// 미입금 목록: 날짜별이 아니라 강의(일정) 하나당 한 줄
+function unpaidList(iid){const M=new Map();for(const e of entries(iid))if(e.st==='done'){const k=e.ref.id;if(!M.has(k))M.set(k,{e,dates:[],fee:0});const x=M.get(k);x.dates.push(e.d);x.fee+=e.fee}
+  return [...M.values()].map(x=>({...x,net:tax(x.fee).net,days:Math.round((dt(todayIso())-dt(last(x.dates)))/864e5)})).sort((a,b)=>b.days-a.days)}
+function sheetUnpaid(){const U=unpaidList(meId());
+  openSheet(`<div class="row"><h2 class="sp">미입금 ${U.length}건</h2><button class="btn sm" data-act="closeSheet">닫기</button></div>
+  <p class="mu sm">강의가 끝났는데 아직 입금 확인이 안 된 강의예요. 오래된 것부터 보여요. 합계 ${won(U.reduce((a,u)=>a+u.net,0))} (3.3% 뗀 금액)</p>
+  ${U.map(u=>`<div class="card"><div class="row"><b class="sp">${esc(u.e.title)}</b><span class="chip ${u.days>=30?'warn':'done'}">${u.days}일 지남</span></div>
+   <span class="mu sm">${esc(u.e.org)} · ${u.dates.map(d=>`${md(d)}(${dowOf(d)})`).join('·')}</span><span class="money">받을 돈 ${won(u.net)}</span>
+   <div class="row"><button class="btn sm pri" data-act="gotPaid" data-kind="${u.e.kind}" data-id="${u.e.ref.id}">입금 받았어요</button>${u.e.kind==='app'?'<span class="mu sm">업체가 지급 완료를 누르면 자동으로 빠져요</span>':''}</div></div>`).join('')||'<p class="mu">미입금이 없어요.</p>'}`)}
+function noticeBox(j,iid){const nts=j.notices.filter(n=>(n.to||[]).includes(iid)).slice().reverse().sort((a,b)=>(b.kind==='주의사항')-(a.kind==='주의사항'));if(!nts.length)return '';
+  return `<div style="background:var(--nvs);border-radius:10px;padding:8px 10px;display:flex;flex-direction:column;gap:6px"><b class="sm" style="color:var(--nv)">회사 공지 ${nts.length}개 (주의사항·최신이 위)</b>${nts.map(n=>`<div class="sm">${n.reads[iid]?'':'<span class="chip warn">새 공지</span> '}${n.kind?`<b>[${esc(n.kind)}]</b> `:''}${esc(n.text).replace(/\n/g,'<br>')}${n.img?`<img src="${n.img}" alt="${esc(n.kind||'공지')} 이미지" style="display:block;width:100%;border-radius:8px;margin-top:6px">`:''}<div class="mu sm">${n.at.slice(5,10).replace('-','/')} ${n.at.slice(11,16)}</div></div>`).join('')}</div>`}
+function markRead(j,iid){let ch=0;for(const n of j.notices)if((n.to||[]).includes(iid)&&!n.reads[iid]){n.reads[iid]=new Date().toISOString();ch++}if(ch)save();return ch}
+/* ===== 당일 확인 (전날 확인 → 출발 → 도착, 위치 추적 없이 버튼으로) ===== */
+const hm=iso=>iso?iso.slice(11,16):'';const nowIso=()=>{const n=new Date();return `${todayIso()}T${pad(n.getHours())}:${pad(n.getMinutes())}`};
+const startOf=j=>(String(j.time).match(/^(\d{2}:\d{2})/)||[])[1]||'09:00';
+function dayOf(a,d){a.day=a.day||{};return a.day[d]=a.day[d]||{}}
+function dayBox(e){if(e.kind!=='app'||e.ref.status!=='확정')return '';const t=todayIso(),a=e.ref,x=(a.day||{})[e.d]||{};
+  if(e.d===addDays(t,1))return x.ack?`<div class="ok">내일 강의 확인했어요 (${hm(x.ack)})</div>`:`<button class="btn nv" data-act="dayack" data-a="${a.id}" data-d="${e.d}">내일 강의 확인했어요</button><span class="mu sm">업체가 전날 확인 여부를 봐요.</span>`;
+  if(e.d!==t)return '';
+  const st=startOf(e.job);
+  return `<div style="background:var(--acs);border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:8px"><b class="sm">오늘 강의 · ${st} 시작</b>
+   ${x.arr?`<div class="ok">도착했어요 (${hm(x.arr)})</div>`:x.dep?`<div class="ok">출발했어요 (${hm(x.dep)}) · 도착 예정 ${esc(x.eta||'')}</div><button class="btn pri" data-act="dayarr" data-a="${a.id}" data-d="${e.d}">도착했어요</button>`
+   :`<div class="grid2"><label class="f">예상 도착 시간<input type="time" id="eta-${a.id}" value="${x.eta||''}"></label><span></span></div><button class="btn pri" data-act="daydep" data-a="${a.id}" data-d="${e.d}">출발했어요</button>`}
+   ${x.arr?'':`<details><summary>늦거나 못 갈 것 같아요</summary><textarea class="f" id="late-${a.id}" rows="2" placeholder="예) 사고로 20분 늦어요">${esc(x.late||'')}</textarea><button class="btn sm" data-act="daylate" data-a="${a.id}" data-d="${e.d}">업체에 알리기</button></details>`}
+   ${x.late?`<div class="alert">업체에 알림: ${esc(x.late)}</div>`:''}</div>`}
+function dayBoard(cid){const t=todayIso(),tm=addDays(t,1),now=nowIso(),rows=[];
+  for(const a of S.apps){const j=job(a.jobId);if(!j||j.coId!==cid||a.status!=='확정')continue;
+    for(const d of j.dates){if(d!==t&&d!==tm)continue;const x=(a.day||{})[d]||{},p=inst(a.instId),st=startOf(j);let s,bad=false;
+      if(d===tm){s=x.ack?`전날 확인 ✓ ${hm(x.ack)}`:'전날 확인 안 함';bad=!x.ack}
+      else if(x.arr)s=`도착 ✓ ${hm(x.arr)}`;
+      else if(x.dep){s=`출발 ${hm(x.dep)} · 도착 예정 ${x.eta||'?'}`;bad=!!x.eta&&x.eta>st}
+      else{s='아직 출발 안 함';const lim=new Date(`${d}T${st}`);lim.setMinutes(lim.getMinutes()-60);bad=new Date(now)>=lim}
+      rows.push({d,j,p,s,bad,late:x.late,st})}}
+  if(!rows.length)return '';rows.sort((a,b)=>(a.d+a.st)<(b.d+b.st)?-1:1);
+  return `<div class="card"><h3>오늘·내일 강의 현황</h3>${rows.map(r=>`<div style="border-top:1px solid var(--ln);padding-top:6px;display:flex;flex-direction:column;gap:2px"><div class="row">${pic(r.p,1)}<b>${esc(r.p.name)}</b><span class="mu sm sp">${r.d===todayIso()?'오늘':'내일'} ${r.st} ${esc(r.j.school)} ${esc(r.j.title)}</span></div>
+   <span class="chip ${r.bad?'warn':'paid'}" style="align-self:flex-start">${esc(r.s)}</span>${r.late?`<div class="alert">강사 알림: ${esc(r.late)}</div>`:''}${r.bad||r.late?`<span class="mu sm">연락처 ${esc(r.p.phone)}</span>`:''}</div>`).join('')}
+   <span class="mu sm">시작 1시간 전까지 출발을 안 누르거나, 시작보다 늦게 도착할 예정이면 빨간색이에요.</span></div>`}
+function entryCard(e){const tx=tax(e.fee);
+  const ctrl=e.kind==='ev'?`<div class="row">${[['applied','지원'],['confirmed','확정'],['done','미입금'],['paid','입금 완료'],['no','안 됨']].map(([k,l])=>`<button class="btn sm" data-act="evst" data-id="${e.ref.id}" data-st="${k}" ${e.ref.st===k||(k==='done'&&e.st==='done')?'style="border-color:var(--ac);color:var(--ac)"':''}>${l}</button>`).join('')}<button class="btn sm" data-act="evdel" data-id="${e.ref.id}">지우기</button></div>`
+    :`<p class="mu sm">강사로 안에서 지원한 강의예요. 회사가 확정·지급하면 자동으로 바뀌어요.</p>${e.st==='applied'?`<button class="btn sm" data-act="cancelApp" data-a="${e.ref.id}">지원 취소</button>`:e.st==='confirmed'?`<button class="btn sm" data-act="cancelApp" data-a="${e.ref.id}">확정 강의 취소 (업체에 사유 전달)</button>`:''}`;
+  return `<div class="card"><div class="row">${chip(e.st)}<h3 class="sp">${esc(e.title)}</h3></div>
+  ${e.kind==='app'?noticeBox(e.job,meId())+dayBox(e):''}
+  <span class="mu">${esc(e.org)} · ${esc(e.time||'시간 미정')}</span>
+  <span class="mu sm money">강사료 ${won(e.fee)} · 3.3% 뗀 뒤 ${won(tx.net)} · 왕복 교통비 ${won(e.trv)}</span>
+  <b class="money" style="color:var(--ac)">순수익 ${won(netOf(e))}</b>
+  ${departText(e.time,+e.ref.km)&&(e.st==='confirmed'||e.st==='applied')?`<span class="sm" style="font-weight:700">🚗 ${departText(e.time,+e.ref.km)}</span>`:''}
+  <div class="grid2"><label class="f">왕복 거리(km)<input type="number" inputmode="numeric" data-act="km" data-kind="${e.kind}" data-id="${e.ref.id}" value="${+e.ref.km||0}"></label><label class="f">통행료(원)<input type="number" inputmode="numeric" data-act="toll" data-kind="${e.kind}" data-id="${e.ref.id}" value="${+e.ref.toll||0}"></label></div>
+  ${ctrl}</div>`}
+
+/* ===== 거리 어림 (시·군 중심 좌표 직선거리 × 1.3 도로 보정 × 왕복). 정확한 길찾기는 서버 단계에서 ===== */
+const GEO={서울:[37.57,126.98],수원:[37.26,127.03],안양:[37.39,126.95],성남:[37.42,127.13],분당:[37.38,127.12],용인:[37.24,127.18],화성:[37.2,126.83],평택:[36.99,127.11],안산:[37.32,126.83],시흥:[37.38,126.8],광명:[37.48,126.86],군포:[37.36,126.94],의왕:[37.34,126.97],오산:[37.15,127.07],인천:[37.46,126.71],부천:[37.5,126.78],김포:[37.62,126.72],고양:[37.66,126.83],파주:[37.76,126.78],의정부:[37.74,127.05],남양주:[37.64,127.22],하남:[37.54,127.21],이천:[37.27,127.44],천안:[36.81,127.15],아산:[36.79,127],청주:[36.64,127.49],충주:[36.99,127.93],대전:[36.35,127.38],세종:[36.48,127.29],원주:[37.34,127.92],춘천:[37.88,127.73],강릉:[37.75,128.88],정선:[37.38,128.66],전주:[35.82,127.15],광주:[35.16,126.85],목포:[34.81,126.39],여수:[34.76,127.66],순천:[34.95,127.49],대구:[35.87,128.6],구미:[36.12,128.34],안동:[36.57,128.73],포항:[36.02,129.34],경주:[35.86,129.22],울산:[35.54,129.31],부산:[35.18,129.08],창원:[35.23,128.68],김해:[35.23,128.89],제주:[33.5,126.53]};
+const geoOf=t=>{t=String(t||'');for(const k in GEO)if(t.includes(k))return GEO[k];return null};
+function kmBetween(a,b){const A=geoOf(a),B=geoOf(b);if(!A||!B)return null;const R=6371,r=x=>x*Math.PI/180;const dl=r(B[0]-A[0]),dn=r(B[1]-A[1]);
+  const h=Math.sin(dl/2)**2+Math.cos(r(A[0]))*Math.cos(r(B[0]))*Math.sin(dn/2)**2;return Math.max(10,Math.round(2*R*Math.asin(Math.sqrt(h))*1.3*2))}
+// 편도 시간: 평균 시속 약 65km(시내·고속 섞임)로 어림
+function netGuess(j,p){const km=kmBetween(p.region,j.region);if(km==null)return null;const amt=j.fee*j.dates.length,fuel=Math.round(km*j.dates.length/(+p.kmpl||15)*(+p.fuel||1650)),min=Math.max(15,Math.round(km/2/65*60/5)*5);return {km,fuel,amt,tx:tax(amt),min,net:tax(amt).net-fuel}}
+const hmText=m=>m>=60?`${Math.floor(m/60)}시간${m%60?` ${m%60}분`:''}`:`${m}분`;
+/* ===== 강사: 공고 + 내 확정 강의 ===== */
+function vJobs(){const iid=meId(),t=todayIso();
+  const mine=S.apps.filter(a=>a.instId===iid&&a.status==='확정'&&last(job(a.jobId).dates)>=t).map(a=>({a,j:job(a.jobId)}));
+  const all=S.jobs.filter(j=>j.status==='모집'&&j.dates[0]>=t).sort((a,b)=>a.dates[0]<b.dates[0]?-1:1),F=ui.jf||(ui.jf={r:'',q:'',free:false});
+  // 공고가 많아도 느려지지 않게 내 일정·내 지원을 한 번만 모아 둠
+  const myE=entries(iid),myA=new Map(S.apps.filter(a=>a.instId===iid).map(a=>[a.jobId,a])),clash=ds=>myE.filter(e=>ds.includes(e.d));
+  const open=all.filter(j=>(!F.r||j.region===F.r)&&(!F.q||`${j.title} ${j.school} ${j.대상}`.includes(F.q))&&(!F.free||!clash(j.dates).length)),more=ui.jmore||20;
+  setTimeout(()=>{let c=0;for(const {j} of mine)c+=markRead(j,iid);if(c){const nb=$('[data-tab="jobs"]');if(nb)nb.innerHTML='공고'}},1500);
+  return `<h2>확정된 강의</h2>${mine.length?mine.map(({a,j})=>{const nts=j.notices.filter(n=>(n.to||[]).includes(iid));const un=nts.filter(n=>!n.reads[iid]).length;const miss=j.needs.filter(n=>n!=='프로필'&&n!==RRN&&!docOf(a,n));
+    return `<div class="card"><div class="row">${chip('confirmed')}<h3 class="sp">${esc(j.region)} ${esc(j.school)} ${esc(j.title)}</h3></div>
+    ${nts.length?noticeBox(j,iid):'<span class="mu sm">아직 공지가 없어요.</span>'}
+    ${j.desc?`<details><summary>공고 내용 보기</summary><pre class="pf">${esc(j.desc)}</pre></details>`:''}
+    <span class="mu">${esc(co(j.coId).name)} · ${j.dates.map(d=>`${md(d)}(${dowOf(d)})`).join('·')} ${esc(j.time)}</span>
+    <div class="mu sm">낼 것: ${j.needs.map(n=>n==='프로필'?'프로필 ✓(자동)':docOf(a,n)?`${esc(n)} ✓${docOf(a,n).endsWith('(자동)')?'(자동)':''}`:`<b style="color:var(--r2)">${esc(n)} 빠짐</b>`).join(' · ')}</div>
+    ${miss.map(n=>`<label class="f">${esc(n)} 올리기 <input type="file" data-act="doc" data-a="${a.id}" data-n="${esc(n)}"></label>`).join('')}
+    ${j.needs.includes(RRN)&&!a.docs[RRN]?`<div class="row"><span class="mu sm sp">원천징수(3.3%) 신고에 필요해서 이 업체만 요청했어요. 업체가 확인하면 바로 지워지고 강사로에는 남지 않아요.</span><button class="btn sm" data-act="rrnSend" data-a="${a.id}">주민등록번호 보내기</button></div>`:''}
+    </div>`}).join(''):'<p class="mu">곧 있을 확정 강의가 없어요.</p>'}
+  <h2>모집 중인 공고</h2><p class="mu sm">강사로에 들어온 회사의 공고예요. 강사료가 모두 공개돼요. 지원하면 프로필이 같이 가요.</p>
+  ${(()=>{const me=inst(iid);return `<div class="card" style="background:var(--acs)"><b>내 지역을 고르면 공고마다 예상 순수익이 계산돼요</b><div class="grid2"><label class="f">출발 지역<select data-act="pf" data-k="region">${GEO[me.region]?'':`<option selected>${esc(me.region||'고르기')}</option>`}${Object.keys(GEO).map(r=>`<option ${me.region===r?'selected':''}>${r}</option>`).join('')}</select></label><label class="f">내 차 연비(km/L)<input type="number" inputmode="decimal" data-act="pf" data-k="kmpl" value="${+me.kmpl||15}"></label></div><span class="mu sm">기름값은 리터당 ${won(+me.fuel||1650)} 기준이에요. '내 정보'에서 바꿀 수 있어요.</span></div>`})()}
+  <div class="grid2"><label class="f">지역<select data-act="jf" data-k="r"><option value="">전체</option>${[...new Set(all.map(j=>j.region))].map(r=>`<option ${F.r===r?'selected':''}>${esc(r)}</option>`).join('')}</select></label><label class="f">분야·강의명<input data-act="jf" data-k="q" value="${esc(F.q)}" placeholder="면접, 진로…"></label></div>
+  <label class="sm"><input type="checkbox" data-act="jf" data-k="free" ${F.free?'checked':''}> 내 일정과 안 겹치는 것만</label>
+  ${open.length?open.slice(0,more).map(j=>{const a=myA.get(j.id);const cl=clash(j.dates);
+    return `<div class="card"><div class="row"><h3 class="sp">${esc(j.region)} ${esc(j.school)} ${esc(j.title)}</h3>${a?chip(a.status==='확정'?'confirmed':'applied'):''}</div>
+    <span class="mu">${esc(co(j.coId).name)} · ${j.dates.map(d=>`${md(d)}(${dowOf(d)})`).join('·')} ${esc(j.time)} · ${esc(j.교시)} · ${esc(j.대상)}</span>
+    <b class="money">1일 강사료 ${won(j.fee)}</b>
+    <details><summary>공고 자세히 보기 (거리·시간·순수익)</summary><div class="sm" style="display:flex;flex-direction:column;gap:4px;margin-top:6px"><span>업체: ${esc(co(j.coId).name)}</span><span>장소: ${esc(j.region)} ${esc(j.school)}</span><span>날짜: ${j.dates.map(d=>`${mdK(d)}(${dowOf(d)})`).join(', ')}</span><span>시간: ${esc(j.time)} (${esc(j.교시)})</span><span>대상: ${esc(j.대상)}</span><span>내야 할 것: ${j.needs.map(esc).join(', ')}</span>
+    ${(()=>{const g=netGuess(j,inst(iid));return g?`<div style="background:var(--acs);border-radius:10px;padding:10px;margin:4px 0"><b>내 지역(${esc(inst(iid).region)}) 기준 계산</b><table style="margin-top:4px"><tbody>
+      <tr><td>강사료 (${j.dates.length}일)</td><td>${won(g.amt)}</td></tr><tr><td>3.3% 원천징수</td><td>− ${won(g.tx.all)}</td></tr>
+      <tr><td>거리</td><td>편도 약 ${Math.round(g.km/2)}km · 왕복 약 ${g.km}km${j.dates.length>1?` × ${j.dates.length}일`:''}</td></tr>
+      <tr><td>가는 시간</td><td>편도 약 ${hmText(g.min)}</td></tr>${departText(j.time,g.km)?`<tr><td>출발 시간</td><td>${departText(j.time,g.km).replace(/ \(.*/,'')}</td></tr>`:''}<tr><td>기름값</td><td>− ${won(g.fuel)}</td></tr>
+      <tr><th>예상 순수익</th><th>${won(g.net)}</th></tr></tbody></table><span class="mu sm">시·군 중심 거리로 어림했어요. 통행료·주차비는 빠져 있어요. 연비·기름값은 프로필에서 바꿀 수 있어요.</span></div>`:''})()}${j.desc?`<pre class="pf">${esc(j.desc)}</pre>`:'<span class="mu">업체가 적은 추가 내용이 없어요.</span>'}</div></details>
+    ${(()=>{const g=netGuess(j,inst(iid));return g?`<span class="money" style="color:var(--ac);font-weight:700">예상 순수익 약 ${won(g.net)}</span><span class="mu sm">${esc(inst(iid).region)}→${esc(j.region)} 편도 약 ${hmText(g.min)} · 왕복 약 ${g.km}km · 자세한 계산은 아래 "공고 자세히 보기"</span>`:`<span class="mu sm">프로필에 사는 곳(시·군)을 넣으면 예상 순수익이 보여요.</span>`})()}
+    ${cl.length?`<div class="alert">이날 이미 일정이 있어요: ${cl.map(e=>`${esc(e.title)}(${ST[e.st]})`).join(', ')}</div>`:''}
+    ${a&&a.status!=='취소'?`<div class="row"><span class="mu sm sp">지원했어요. 회사가 확정하면 달력이 파란색으로 바뀌어요.</span>${a.status==='지원'?`<button class="btn sm" data-act="cancelApp" data-a="${a.id}">지원 취소</button>`:''}</div>`:`<button class="btn pri" data-act="apply" data-j="${j.id}">${a?'다시 지원하기':'버튼 한 번으로 지원하기'}</button>`}</div>`}).join('')+(open.length>more?`<button class="btn" data-act="jmore">공고 더 보기 (${open.length-more}개 남음)</button>`:''):'<p class="mu">지금 모집 중인 공고가 없어요.</p>'}`}
+
+/* ===== 강사: 공고 붙여넣기 / 직접 입력 ===== */
+function sheetPaste(pre){const p=pre||{};
+  openSheet(`<div class="row"><h2 class="sp">일정 넣기</h2><button class="btn sm" data-act="closeSheet">닫기</button></div>
+  <label class="f">단톡방·메일 공고를 그대로 붙여 넣으세요<textarea id="pRaw" rows="6" placeholder="예) 11/18(화) 천안 ○○고 3학년 면접 특강 09:00~15:50 강사료 30만원 지원: job@example.com">${esc(p.raw||'')}</textarea></label>
+  <button class="btn" data-act="parse">공고 읽기</button>
+  <div class="grid2">
+   <label class="f">강의<input id="pTitle" value="${esc(p.title||'')}"></label><label class="f">업체<input id="pOrg" value="${esc(p.org||'')}"></label>
+   <label class="f">날짜 (쉼표로)<input id="pDates" value="${esc((p.dates||[]).join(', '))}" placeholder="2026-11-18"></label><label class="f">시간<input id="pTime" value="${esc(p.time||'')}"></label>
+   <label class="f">1일 강사료(원)<input id="pFee" type="number" inputmode="numeric" value="${p.fee||''}"></label><label class="f">받는 메일<input id="pTo" type="email" value="${esc(p.to||'')}"></label>
+   <label class="f">왕복 거리(km)<input id="pKm" type="number" inputmode="numeric" value="${p.km||''}"></label><label class="f">통행료(원)<input id="pToll" type="number" inputmode="numeric" value="${p.toll||''}"></label>
+  </div>
+  <div id="pWarn"></div>
+  <button class="btn pri" data-act="addMail">달력에 넣고 Gmail 열기</button>
+  <div class="grid2"><button class="btn" data-act="addApplied">'지원'으로만 넣기</button><button class="btn" data-act="addOnly">'확정'으로 넣기</button></div>
+  <p class="mu sm">Gmail이 받는 사람·제목·본문이 채워진 채로 열려요. 프로필 파일을 붙이고 보내기는 직접 누르세요.</p>`);
+  ui.dows=p.dows||{};pWarn()}
+function readPaste(){const g=id=>$('#'+id).value.trim();
+  const dates=g('pDates').split(/[,\s]+/).filter(x=>/^\d{4}-\d{2}-\d{2}$/.test(x)).sort();
+  return {raw:g('pRaw'),title:g('pTitle'),org:g('pOrg'),dates,time:g('pTime'),fee:+g('pFee')||0,to:g('pTo'),km:+g('pKm')||0,toll:+g('pToll')||0,dows:ui.dows||{}}}
+function pWarn(){if(!$('#pWarn'))return;const p=readPaste();const W=dateWarn(p.dates,p.dows);
+  const cl=clashes(meId(),p.dates);for(const e of cl)W.push(`${mdK(e.d)}에 이미 "${e.title}"(${ST[e.st]})이 있어요`);
+  if(!p.dates.length)W.push('날짜를 못 찾았어요. 2026-11-18처럼 넣어 주세요');
+  $('#pWarn').innerHTML=W.map(w=>`<div class="alert">${esc(w)}</div>`).join('')}
+function mailOf(p){const me=inst(meId());const place=p.title;
+  const su=`[강사 지원] ${p.dates.map(md).join('·')} ${p.title} - ${me.name}`;
+  const body=`안녕하세요, ${p.org?p.org+' ':''}담당자님.\n강사 ${me.name}입니다.\n\n${p.dates.map(d=>`${mdK(d)}(${dowOf(d)})`).join('·')} ${place} 강의에 지원합니다.\n${p.dates.map(d=>`- 일시: ${md(d)}(${dowOf(d)})${p.time?' '+p.time:''}`).join('\n')}\n\n${me.intro}\n주제: ${me.topics}\n\n프로필 첨부합니다.\n연락처: ${me.phone}\n\n감사합니다.\n${me.name} 드림`;
+  return {su,body,url:`https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(p.to)}&su=${encodeURIComponent(su)}&body=${encodeURIComponent(body)}`}}
+
+/* ===== 강사: 결산 ===== */
+function vMoney(){const E=entries(meId()).filter(e=>e.st!=='applied');const Y=ui.month.slice(0,4);
+  const rows=[];let T={n:0,fee:0,tx:0,net:0,trv:0,pn:0,un:0};
+  for(let m=1;m<=12;m++){const k=`${Y}-${pad(m)}`,es=E.filter(e=>ym(e.d)===k);if(!es.length)continue;
+    const r={m,n:es.length,fee:0,tx:0,net:0,trv:0,un:0};for(const e of es){const x=tax(e.fee);r.fee+=e.fee;r.tx+=x.all;r.trv+=e.trv;r.net+=x.net-e.trv;if(e.st==='done')r.un+=x.net}
+    rows.push(r);for(const k2 of ['n','fee','tx','net','trv','un'])T[k2]+=r[k2]}
+  return `<div class="row"><h2 class="sp">${Y}년 결산</h2><button class="btn sm" data-act="year" data-n="-1">‹</button><button class="btn sm" data-act="year" data-n="1">›</button></div>
+  <div class="sum"><div><span class="mu sm">강사료 합계</span><b>${won(T.fee)}</b></div><div><span class="mu sm">떼인 3.3%</span><b>${won(T.tx)}</b></div><div><span class="mu sm">순수익</span><b>${won(T.net)}</b></div></div>
+  <div class="card tw"><table><thead><tr><th>월</th><th>강의</th><th>강사료</th><th>3.3%</th><th>교통비</th><th>순수익</th><th>못 받음</th></tr></thead><tbody>
+  ${rows.map(r=>`<tr><td>${r.m}월</td><td>${r.n}</td><td>${won(r.fee)}</td><td>${won(r.tx)}</td><td>${won(r.trv)}</td><td>${won(r.net)}</td><td>${r.un?won(r.un):'-'}</td></tr>`).join('')||'<tr><td colspan="7">아직 기록이 없어요</td></tr>'}
+  ${rows.length?`<tr><th>합계</th><th>${T.n}</th><th>${won(T.fee)}</th><th>${won(T.tx)}</th><th>${won(T.trv)}</th><th>${won(T.net)}</th><th>${T.un?won(T.un):'-'}</th></tr>`:''}</tbody></table></div>
+  <button class="btn" data-act="copyYear">결산표 복사 (종합소득세 준비용)</button>
+  <p class="mu sm">강의한 날짜 기준으로 모았어요. 3.3%는 소득세 3%와 지방소득세 0.3%예요. 참고용이며 실제 신고는 홈택스 지급명세서 기준으로 하세요.</p>`}
+
+/* ===== 강사: 프로필 ===== */
+const PF=[['name','이름'],['phone','연락처'],['email','메일'],['region','사는 곳 (시·군, 예: 수원)'],['topics','강의 분야'],['intro','한 줄 소개'],['career','강의 경력 (줄마다 한 개)'],['bank','은행'],['acct','계좌번호'],['holder','예금주'],['kmpl','내 차 연비 (km/L)'],['fuel','기름값 (원/L)']];
+// 인증 강의: 강사로 안에서 업체가 확정하고 강의를 마친 뒤 지급 완료까지 된 강의 (강사가 '안 들어옴'이라 답한 건 제외)
+function verified(iid){const t=todayIso();return S.apps.filter(a=>a.instId===iid&&a.status==='확정'&&a.paidAt&&a.recv!=='no'&&last(job(a.jobId).dates)<t).map(a=>{const j=job(a.jobId);return {d:j.dates[0],n:j.dates.length,co:co(j.coId).name,j}}).sort((a,b)=>a.d<b.d?1:-1)}
+const vLine=v=>`${v.d.replace(/-/g,'.')}${v.n>1?` 외 ${v.n-1}일`:''} ${v.co} · ${v.j.region} ${v.j.school} ${v.j.title}`;
+const VAULT=['통장사본','신분증 사본'],RRN='주민등록번호';
+// 확정된 업체에만: 업체가 따로 올린 서류가 없으면 강사가 '내 서류'에 저장한 파일을 자동으로 넘겨요
+function docOf(a,n){if(a.docs[n])return a.docs[n];const v=(inst(a.instId).vault||{})[n];return a.status==='확정'&&VAULT.includes(n)&&v?v+' (자동)':''}
+function profileText(p){const V=verified(p.id);return `■ 강사 프로필\n이름: ${p.name}\n연락처: ${p.phone}\n메일: ${p.email}\n지역: ${p.region}\n강의 분야: ${p.topics}\n\n${p.intro}\n\n${V.length?`[강사로 인증 강의 ${V.length}회] 업체 확정·강의·입금까지 끝난 강의\n${V.map(v=>'✓ '+vLine(v)).join('\n')}\n\n`:''}[강의 경력 (본인 작성)]\n${p.career}`}
+function vMe(){const p=inst(meId());
+  return `<h2>내 프로필</h2><p class="mu sm">한 번만 쓰면 지원할 때마다 같이 가요. 계좌·통장사본·신분증 사본은 나를 확정한 회사만 볼 수 있어요. 주민등록번호는 저장하지 않아요.</p>
+  <div class="card"><div class="row">${pic(p)}<div class="sp" style="display:flex;flex-direction:column;gap:4px"><b>프로필 사진</b><span class="mu sm">얼굴이 잘 보이는 정면 사진이 좋아요. 업체가 지원자 목록과 당일 현황에서 봐요.</span></div></div>
+  <div class="row"><label class="btn sm">${p.photo?'사진 바꾸기':'사진 올리기'}<input type="file" accept="image/*" data-act="photo" hidden></label>${p.photo?'<button class="btn sm" data-act="photoDel">사진 지우기</button>':''}</div></div>
+  <div class="card"><h3>내 서류</h3><span class="mu sm">한 번 올려 두면, 확정된 업체가 달라고 할 때 자동으로 가요. 지원만 한 업체나 떨어진 업체에는 가지 않아요.</span>
+    ${VAULT.map(n=>{const v=(p.vault||{})[n];return `<div class="row sm"><span class="sp">${esc(n)} ${v?`<span class="chip paid">✓ ${esc(v)}</span>`:'<span class="mu">없음</span>'}</span><label class="btn sm">${v?'바꾸기':'올리기'}<input type="file" accept="image/*,.pdf" data-act="vault" data-n="${n}" hidden></label>${v?`<button class="btn sm" data-act="vaultDel" data-n="${n}">지우기</button>`:''}</div>`}).join('')}
+    <span class="mu sm">주민등록번호는 원천징수 신고 때문에 업체가 요청할 때만, 확정된 강의 화면에서 그 업체에 한 번 보내요. 강사로에는 남지 않아요.</span></div>
+  <div class="card">${PF.map(([k,l])=>`<label class="f">${l}${k==='intro'||k==='career'?`<textarea rows="${k==='career'?4:2}" data-act="pf" data-k="${k}">${esc(p[k])}</textarea>`:`<input data-act="pf" data-k="${k}" value="${esc(p[k])}" ${k==='kmpl'||k==='fuel'?'type="number" inputmode="decimal"':''}>`}</label>`).join('')}</div>
+  ${(()=>{const V=verified(p.id);return `<div class="card"><h3>강의 이력</h3><span class="mu sm">강사로에서 업체가 확정하고, 강의를 마치고, 강사료 입금까지 끝난 강의만 자동으로 쌓이고 <span class="chip paid">✓ 강사로 인증</span>이 붙어요. 그 전 경력은 위 '강의 경력'에 직접 쓰면 '본인 작성'으로 보여요.</span>
+    ${V.map(v=>`<div class="row sm"><span class="chip paid">✓ 인증</span><span class="sp">${esc(vLine(v))}</span></div>`).join('')||'<span class="mu sm">아직 입금까지 끝난 강사로 강의가 없어요.</span>'}
+    ${String(p.career||'').split('\n').filter(x=>x.trim()).map(x=>`<div class="row sm"><span class="chip off">본인 작성</span><span class="sp">${esc(x)}</span></div>`).join('')}</div>`})()}
+  <div class="card"><h3>회사에 보이는 프로필 카드</h3><pre class="pf">${esc(profileText(p))}</pre><button class="btn" data-act="copyPf">프로필 복사</button></div>
+  <p class="mu sm">가입일 ${esc(p.joined)} · ${p.beta?'시범 운영 회원 (정식 운영 때 감사 혜택 대상)':''}</p>`}
+
+/* ===== 회사: 강의 목록·상세 ===== */
+function jobStats(j){const A=appsOf(j.id),cf=A.filter(a=>a.status==='확정');
+  const miss=cf.reduce((n,a)=>n+j.needs.filter(x=>x!=='프로필'&&!docOf(a,x)).length,0);
+  const unread=j.notices.reduce((n,nt)=>n+(nt.to||[]).filter(i=>!nt.reads[i]).length,0);
+  return {ap:A.filter(a=>a.status==='지원').length,cf:cf.length,miss,unread,cx:cf.length?0:A.filter(a=>a.status==='취소'&&a.cxConfirmed).length}}
+// 업체 달력: 강의 있는 날에 점, 날짜를 누르면 그날 강의만
+function coCal(J){const [Y,M]=(ui.cmonth||todayIso().slice(0,7)).split('-').map(Number),first=new Date(Y,M-1,1).getDay(),days=new Date(Y,M,0).getDate(),t=todayIso();const cells=[];
+  for(let i=0;i<first;i++)cells.push('<div class="day blank"></div>');
+  for(let n=1;n<=days;n++){const iso=isoOf(Y,M,n),js=J.filter(j=>j.dates.includes(iso)),warn=js.some(j=>{const s=jobStats(j);return s.miss||s.unread||!s.cf});
+    cells.push(`<button class="day ${iso===ui.csel?'sel':''}" data-act="csel" data-d="${iso}" aria-label="${M}월 ${n}일 강의 ${js.length}개"><span class="n ${iso===t?'today':''}">${n}</span>${js.length?`<span class="bar ${warn?'done':'confirmed'}">${js.length}건</span>`:''}</button>`)}
+  const SJ=ui.csel?J.filter(j=>j.dates.includes(ui.csel)):[];
+  return `<div class="row"><h3 class="sp">${Y}년 ${M}월 강의 달력</h3><button class="btn sm" data-act="cmon" data-n="-1" aria-label="이전 달">‹</button><button class="btn sm" data-act="cmon" data-n="0">오늘</button><button class="btn sm" data-act="cmon" data-n="1" aria-label="다음 달">›</button></div>
+  <span class="mu sm">초록 = 준비 끝, 보라 = 확정 강사 없음·서류·공지 확인 필요</span>
+  <div class="dow">${[...DOW].map(x=>`<span>${x}</span>`).join('')}</div><div class="cal">${cells.join('')}</div>
+  ${ui.csel?`<h3>${mdK(ui.csel)} (${dowOf(ui.csel)}) 강의 ${SJ.length}건</h3>${SJ.map(j=>`<button class="card" style="text-align:left" data-act="openJob" data-j="${j.id}"><b>${esc(j.region)} ${esc(j.school)} ${esc(j.title)}</b><span class="mu sm">${esc(j.time)} · 확정 ${jobStats(j).cf}명 · 지원 ${jobStats(j).ap}명</span></button>`).join('')||'<p class="mu">이날은 강의가 없어요.</p>'}`:''}`}
+function vCJobs(){if(ui.jobId&&job(ui.jobId))return vCJob(job(ui.jobId));const t=todayIso();
+  const J=S.jobs.filter(j=>j.coId===meId()).sort((a,b)=>a.dates[0]<b.dates[0]?-1:1);
+  const up=J.filter(j=>last(j.dates)>=t),past=J.filter(j=>last(j.dates)<t);
+  const card=j=>{const s=jobStats(j);return `<button class="card" style="text-align:left;cursor:pointer" data-act="openJob" data-j="${j.id}"><div class="row"><span class="chip ${j.status==='모집'?'applied':'confirmed'}">${j.status==='모집'?'모집 중':'마감'}</span><h3 class="sp">${esc(j.region)} ${esc(j.school)} ${esc(j.title)}</h3></div>
+    <span class="mu">${j.dates.map(d=>`${md(d)}(${dowOf(d)})`).join('·')} ${esc(j.time)} · 1일 ${won(j.fee)}</span>
+    <div class="row">${s.ap?`<span class="chip applied">지원 ${s.ap}</span>`:''}${s.cf?`<span class="chip confirmed">확정 ${s.cf}</span>`:''}${s.miss?`<span class="chip warn">빠진 서류 ${s.miss}</span>`:''}${s.unread?`<span class="chip warn">공지 안 읽음 ${s.unread}</span>`:''}${s.cx?`<span class="chip warn">확정 강사 취소 ${s.cx}</span>`:''}${!s.cf&&j.status==='마감'?'<span class="chip warn">확정 강사 없음</span>':''}</div></button>`};
+  const todo=up.filter(j=>{const s=jobStats(j);return s.miss||s.unread||s.cx||(!s.cf&&j.status==='마감')});
+  return `<h2>${esc(co(meId()).name)} 강의 운영판</h2>${dayBoard(meId())}
+  ${todo.length?`<div class="alert">챙길 강의 ${todo.length}건: 빠진 서류, 안 읽은 공지, 확정 강사 없음을 확인하세요.</div>`:'<div class="ok">다가오는 강의에 빠진 것이 없어요.</div>'}
+  ${coCal(J)}
+  <h3>다가오는 강의</h3>${up.map(card).join('')||'<p class="mu">아래 + 로 강의를 등록하세요.</p>'}
+  <details><summary>지난 강의 ${past.length}건</summary>${past.map(card).join('')}</details>`}
+function vCJob(j){const A=appsOf(j.id),s=jobStats(j);
+  const prof=a=>{const p=inst(a.instId);const cf=a.status==='확정';return `<div class="card"><div class="row">${pic(p)}<h3 class="sp">${esc(p.name)} <span class="mu sm">${esc(p.region)} · ${esc(p.topics)}</span>${verified(p.id).length?` <span class="chip paid">✓ 인증 강의 ${verified(p.id).length}회</span>`:''}</h3>${cf?chip('confirmed'):a.status==='미선정'?'<span class="chip off">미선정</span>':a.status==='취소'?`<span class="chip ${a.cxConfirmed?'warn':'off'}">${a.cxConfirmed?'확정 후 취소':'지원 취소'}</span>`:chip('applied')}</div>
+    <span class="mu sm">${esc(p.intro)}</span>
+    <button class="btn sm" style="align-self:flex-start" data-act="pdf" data-a="${a.id}">프로필 PDF 받기</button>
+    <details><summary>프로필 보기</summary><pre class="pf">${esc(profileText(cf?p:{...p,phone:'확정하면 보여요',email:'확정하면 보여요'}))}</pre>${cf?`<span class="mu sm">계좌: ${esc(p.bank)} ${esc(p.acct)} ${esc(p.holder)}</span><button class="btn sm" data-act="copyPfOf" data-i="${p.id}">학교 제출용으로 복사</button>`:''}</details>
+    ${cf?`<span class="mu sm">리마인드: ${remText(a)}</span><div class="row">${contactBtns(p,`[${co(j.coId).name}] ${p.name} 강사님, ${j.dates.map(d=>`${md(d)}(${dowOf(d)})`).join('·')} ${j.school} ${j.title} 강의 관련 연락드립니다.`)}</div>`:''}
+    ${cf?`<div class="mu sm">받을 것: ${j.needs.map(n=>n==='프로필'?'프로필 ✓':n===RRN&&a.rrn?`${RRN} ✓ <button class="btn sm" data-act="rrnTake" data-a="${a.id}">복사하고 지우기</button>`:docOf(a,n)?`${esc(n)} ✓ <span class="sm">(${esc(docOf(a,n))})</span>`:`<b style="color:var(--r2)">${esc(n)} 빠짐</b>`).join(' · ')}</div>`:''}
+    ${a.status==='지원'?`<button class="btn pri" data-act="confirm" data-a="${a.id}">이 강사로 확정</button>`:cf&&!a.paidAt?`<button class="btn sm" data-act="unconfirm" data-a="${a.id}">확정 취소</button>`:''}</div>`};
+  const missPeople=A.filter(a=>a.status==='확정'&&j.needs.some(n=>n!=='프로필'&&!docOf(a,n)));
+  return `<button class="btn sm" data-act="back">‹ 목록</button>
+  <div class="card"><div class="row"><span class="chip ${j.status==='모집'?'applied':'confirmed'}">${j.status==='모집'?'모집 중':'마감'}</span><h2 class="sp">${esc(j.region)} ${esc(j.school)} ${esc(j.title)}</h2></div>
+  <div class="grid2"><label class="f">날짜 (쉼표로)<input data-act="jedit" data-k="dates" value="${j.dates.join(', ')}"></label><label class="f">시간<input data-act="jedit" data-k="time" value="${esc(j.time)}"></label></div>
+  <span class="mu sm">날짜·시간을 고치면 확정된 강사 달력에도 바로 바뀌고, 강사에게 변경 공지가 가요.</span>
+  <span class="mu">${esc(j.교시)} · ${esc(j.대상)} · 1일 강사료 ${won(j.fee)} (강사에게 공개)</span>
+  <label class="f">공고 내용<textarea data-act="jedit" data-k="desc" rows="4">${esc(j.desc||'')}</textarea></label>
+  ${j.status==='모집'?`<button class="btn nv" data-act="close" data-j="${j.id}">모집 마감</button><span class="mu sm">마감하면 확정하지 않은 지원자는 미선정이 되고, 그 강사 달력에서 사라져요.</span>`:''}</div>
+  ${A.filter(a=>a.cxConfirmed&&a.status==='취소').map(a=>`<div class="alert">확정했던 ${esc(inst(a.instId).name)} 강사가 취소했어요. 사유: ${esc(a.cxWhy||'없음')} (${new Date(a.cxAt).toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}) · 다른 지원자를 확정하거나 다시 모집해 주세요.</div>`).join('')}
+  ${A.some(a=>a.status==='지원'||a.status==='확정')?`<button class="btn" data-act="pdfAll" data-j="${j.id}">지원자 프로필 PDF 한 번에 받기 (${A.filter(a=>a.status==='지원'||a.status==='확정').length}명)</button>`:''}
+  <h3>지원자 ${A.filter(a=>a.status!=='미선정'&&a.status!=='취소').length}명${A.some(a=>a.status==='미선정')?` · 미선정 ${A.filter(a=>a.status==='미선정').length}명`:''}${A.some(a=>a.status==='취소')?` · 취소 ${A.filter(a=>a.status==='취소').length}명`:''}</h3>
+  ${A.filter(a=>a.status!=='미선정'&&a.status!=='취소').map(prof).join('')||'<p class="mu">아직 지원자가 없어요.</p>'}${A.filter(a=>a.status==='취소').map(a=>`<div class="row mu sm">${esc(inst(a.instId).name)} · ${a.cxConfirmed?'확정 후 취소':'지원 취소'}</div>`).join('')}
+  ${missPeople.length?`<button class="btn" data-act="nudgeDocs" data-j="${j.id}">서류 빠진 ${missPeople.length}명에게 요청 공지 보내기</button>`:''}
+  <h3>공지</h3>
+  <div class="card"><label class="f">종류<select id="ntKind"><option>일반</option><option>시간표</option><option>집결 장소</option><option>주의사항</option><option>준비물</option></select></label><textarea class="f" id="ntText" rows="3" placeholder="도착 장소, 주차, 기자재, 인원, 준비물, 주의사항 등"></textarea><label class="f">사진·이미지 (시간표, 약도 등, 선택)<input type="file" id="ntImg" accept="image/*"></label><button class="btn pri" data-act="notice" data-j="${j.id}" ${s.cf?'':'disabled'}>확정 강사 ${s.cf}명에게 공지 보내기</button></div>
+  ${j.notices.slice().reverse().map(n=>{const to=n.to||[],rd=to.filter(i=>n.reads[i]);return `<div class="card">${n.kind?`<b class="sm">[${esc(n.kind)}]</b>`:''}<pre class="pf">${esc(n.text)}</pre>${n.img?`<img src="${n.img}" alt="공지 이미지" style="width:100%;border-radius:8px">`:''}<span class="mu sm">읽음 ${rd.length}/${to.length}${to.length>rd.length?` · 안 읽음: ${to.filter(i=>!n.reads[i]).map(i=>esc(inst(i).name)).join(', ')}`:''}</span>
+   ${to.filter(i=>!n.reads[i]).map(i=>{const p=inst(i);return `<div class="row"><b class="sm sp">${esc(p.name)} (안 읽음)</b>${contactBtns(p,`[${co(j.coId).name}] ${p.name} 강사님, ${j.school} ${j.title} 공지가 올라왔어요. 강사로 앱에서 확인 부탁드립니다.\n\n${n.text.slice(0,120)}`)}</div>`}).join('')}</div>`}).join('')}`}
+function sheetNewJob(p){p=p||{};const N=['프로필','교안','통장사본','신분증 사본','주민등록번호','강사 확인서','범죄경력 조회 동의서','결과보고서','수업 사진'];
+  openSheet(`<div class="row"><h2 class="sp">강의 등록</h2><button class="btn sm" data-act="closeSheet">닫기</button></div>
+  <div class="card" style="background:var(--acs)"><h3>강사가 헷갈리지 않는 공고</h3><span class="sm">① 날짜는 달력에서 고르세요. 요일이 자동으로 붙어요.<br>② 시간은 09:00~15:50처럼, 교시도 함께 적어 주세요.<br>③ 대상은 학년과 인원까지 (예: 3학년 100명).<br>④ 장소는 학교 이름과 지역을 모두.<br>⑤ 1일 강사료와 받을 서류를 정해 주세요. 빠지면 등록되지 않아요.</span></div>
+  <label class="f">학교 요청이나 기존 공고를 붙여 넣으면 채워져요<textarea id="jRaw" rows="4">${esc(p.raw||'')}</textarea></label><button class="btn" data-act="jparse">읽기</button>
+  <div class="grid2"><label class="f">강의<input id="jTitle" value="${esc(p.title||'')}"></label><label class="f">학교·기관<input id="jSchool" value="${esc(p.school||'')}"></label>
+  <label class="f">지역<input id="jRegion" value="${esc(p.region||'')}"></label><label class="f">날짜 고르기<input id="jPick" type="date" data-act="jpick"></label></div>
+  <input type="hidden" id="jDates" value="${esc((p.dates||[]).join(', '))}"><div class="row" id="jDateList">${jDateChips(p.dates||[])}</div><div id="jWarn"></div><div class="grid2">
+  <label class="f">시간<input id="jTime" value="${esc(p.time||'')}" placeholder="09:00~15:50"></label><label class="f">교시<input id="jPer" value="${esc(p.per||'')}" placeholder="6교시"></label>
+  <label class="f">대상·인원<input id="jFor" value="${esc(p.for||'')}" placeholder="3학년 100명"></label><label class="f">1일 강사료(원)<input id="jFee" type="number" inputmode="numeric" value="${p.fee||''}"></label></div>
+  <label class="f">공고 내용 (강의 내용, 장소 주소, 기자재, 준비물, 참고 사항)<textarea id="jDesc" rows="5" placeholder="예) 3학년 대상 면접 실습. 노트북·HDMI 있음. 주차 가능. 점심 제공.">${esc(p.desc||'')}</textarea></label>
+  <fieldset class="card"><legend class="mu sm">강사에게 받을 것</legend><div class="row">${N.map(n=>`<label class="sm"><input type="checkbox" class="jNeed" value="${n}" ${['프로필','교안','통장사본'].includes(n)?'checked':''} ${n==='프로필'?'disabled':''}> ${n}</label>`).join('')}</div></fieldset>
+  <p class="mu sm">강사료는 공고에 공개돼요. 공개 공고에 지원이 더 많이 와요.</p>
+  <button class="btn pri" data-act="jsave">등록하고 모집 시작</button>`)}
+
+function jDateChips(ds){return ds.length?ds.map(d=>`<button class="btn sm" data-act="jdel" data-d="${d}" aria-label="${mdK(d)} 빼기">${mdK(d)}(${dowOf(d)}) ✕</button>`).join(''):'<span class="mu sm">날짜를 고르면 여기에 요일과 함께 보여요. 여러 날이면 계속 고르세요.</span>'}
+function jWarn(){const ds=$('#jDates').value.split(/[,\s]+/).filter(x=>/^\d{4}-\d{2}-\d{2}$/.test(x));$('#jWarn').innerHTML=dateWarn(ds).map(w=>`<div class="alert">${esc(w)}</div>`).join('')}
+// 이미지는 긴 변 1200px JPEG로 줄여 저장 (체험판은 기기 저장 공간이 작음)
+const pic=(p,sm)=>p.photo?`<img class="pic${sm?' s':''}" src="${p.photo}" alt="${esc(p.name)} 사진">`:`<span class="pic${sm?' s':''}" aria-hidden="true">${esc((p.name||'?')[0])}</span>`;
+function shrink(f,max=1200){return new Promise(res=>{const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{const k=Math.min(1,max/Math.max(im.width,im.height));const c=document.createElement('canvas');c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext('2d').drawImage(im,0,0,c.width,c.height);res(c.toDataURL('image/jpeg',0.7))};im.onerror=()=>res('');im.src=r.result};r.onerror=()=>res('');r.readAsDataURL(f)})}
+/* ===== 회사: 지급 ===== */
+function unpaidOf(cid){const t=todayIso();return S.apps.filter(a=>{const j=job(a.jobId);return j&&j.coId===cid&&a.status==='확정'&&!a.paidAt&&last(j.dates)<t}).map(a=>{const j=job(a.jobId),amt=j.fee*j.dates.length;return {a,j,p:inst(a.instId),amt,tx:tax(amt)}})}
+function vPay(){const U=unpaidOf(meId());const tot=U.reduce((s,x)=>s+x.tx.net,0);
+  return `<h2>강사비 지급</h2>
+  ${U.length?`<div class="alert">강의가 끝났는데 아직 안 보낸 강사비 ${U.length}건, ${won(tot)}</div>`:'<div class="ok">밀린 강사비가 없어요.</div>'}
+  ${U.map(x=>`<div class="card"><div class="row"><h3 class="sp">${esc(x.p.name)}</h3>${chip('done')}</div><span class="mu">${esc(x.j.school)} ${esc(x.j.title)} · ${x.j.dates.map(md).join('·')}</span>
+   <span class="mu sm money">강사료 ${won(x.amt)} − 소득세 ${won(x.tx.it)} − 지방소득세 ${won(x.tx.lt)}</span><b class="money">보낼 돈 ${won(x.tx.net)}</b><span class="mu sm">${esc(x.p.bank)} ${esc(x.p.acct)} ${esc(x.p.holder)}</span><button class="btn" data-act="payOne" data-a="${x.a.id}">지급 완료</button></div>`).join('')}
+  ${U.length?`<div class="card"><h3>1. 은행 대량이체 파일</h3><p class="mu sm">인터넷뱅킹 "대량이체(다계좌 이체)"에 올리는 파일이에요. 통장 내역은 앱에 올리지 않아요. 은행마다 칸 순서가 조금 달라요.</p>
+   <button class="btn pri" data-act="bulk">대량이체 파일 받기 (CSV)</button><button class="btn" data-act="bulkCopy">내용 복사</button></div>
+  <div class="card"><h3>2. 이체한 뒤 지급 완료 누르기</h3><p class="mu sm">위 강사 카드에서 "지급 완료"를 누르거나, 아래 버튼으로 한 번에 처리하세요. 강사에게 "입금 확인하기" 알림이 가고, 강사가 확인하면 여기에 표시돼요.</p>
+   <button class="btn pri" data-act="payAll">이 목록 ${U.length}명 모두 지급 완료</button></div>`:''}
+  ${(()=>{const R=recentPaid(meId());return R.length?`<h3>최근 30일 지급 · 강사 입금 확인</h3>${R.map(x=>`<div class="card"><div class="row"><b class="sp">${esc(x.p.name)} · ${won(x.net)}</b><span class="chip ${x.a.recv==='no'?'warn':x.a.recv==='ok'?'paid':'applied'}">${x.a.recv==='ok'?'강사 확인 ✓':x.a.recv==='no'?'강사: 아직 안 들어옴':'강사 확인 전'}</span></div><span class="mu sm">${esc(x.j.school)} ${esc(x.j.title)} · 지급 ${md(x.a.paidAt)}</span></div>`).join('')}`:''})()}`}
+function recentPaid(cid){const t=todayIso();return S.apps.filter(a=>{const j=job(a.jobId);return j&&j.coId===cid&&a.paidAt&&a.paidAt>=addDays(t,-30)}).map(a=>{const j=job(a.jobId);return {a,j,p:inst(a.instId),net:tax(j.fee*j.dates.length).net}})}
+function markPaid(a){const j=job(a.jobId),net=tax(j.fee*j.dates.length).net;a.paidAt=todayIso();a.recv='';
+  S.alerts.push({id:uid(),instId:a.instId,kind:'pay',appId:a.id,text:`[입금 확인] ${co(j.coId).name}에서 ${j.school} ${j.title}(${j.dates.map(md).join('·')}) 강사료 ${won(net)}을 보냈다고 알려 왔어요. 통장에서 확인해 주세요.`,at:new Date().toISOString(),read:false})}
+function bulkCsv(){const U=unpaidOf(meId());const c=co(meId()).name;
+  return '﻿입금은행,입금계좌번호,예금주,이체금액,받는분통장표시,내통장표시\n'+U.map(x=>[x.p.bank,x.p.acct,x.p.holder,x.tx.net,`${c} 강사료`,`${x.p.name} ${x.j.dates.map(md).join('.')}`].map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n')}
+
+/* ===== 회사: 결산 ===== */
+function taxCsv(Y){const P=S.apps.filter(a=>a.paidAt&&a.paidAt.startsWith(Y)&&job(a.jobId).coId===meId()).map(a=>{const j=job(a.jobId),amt=j.fee*j.dates.length;return {m:ym(a.paidAt),p:inst(a.instId),amt,tx:tax(amt)}});
+  const M={};for(const x of P){const k=x.m+'|'+x.p.id;M[k]=M[k]||{m:x.m,p:x.p,amt:0,it:0,lt:0};M[k].amt+=x.amt;M[k].it+=x.tx.it;M[k].lt+=x.tx.lt}
+  return '\ufeff지급연월,성명,주민등록번호(직접 입력),업종코드(직접 입력),지급액,소득세,지방소득세,실지급액\n'+Object.values(M).sort((a,b)=>a.m<b.m?-1:1).map(r=>[r.m,r.p.name,'','',r.amt,r.it,r.lt,r.amt-r.it-r.lt].map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n')}
+function vCSum(){const Y=ui.month.slice(0,4),P=S.apps.filter(a=>a.paidAt&&a.paidAt.startsWith(Y)&&job(a.jobId).coId===meId()).map(a=>{const j=job(a.jobId),amt=j.fee*j.dates.length;return {a,j,p:inst(a.instId),amt,tx:tax(amt)}});
+  const rows=[];for(let m=1;m<=12;m++){const k=`${Y}-${pad(m)}`,xs=P.filter(x=>ym(x.a.paidAt)===k);if(xs.length)rows.push({m,n:xs.length,amt:xs.reduce((s,x)=>s+x.amt,0),it:xs.reduce((s,x)=>s+x.tx.it,0),lt:xs.reduce((s,x)=>s+x.tx.lt,0),net:xs.reduce((s,x)=>s+x.tx.net,0)})}
+  const per={};for(const x of P){const k=x.p.id;per[k]=per[k]||{p:x.p,n:0,amt:0,it:0,lt:0};per[k].n++;per[k].amt+=x.amt;per[k].it+=x.tx.it;per[k].lt+=x.tx.lt}
+  const T=rows.reduce((t,r)=>({n:t.n+r.n,amt:t.amt+r.amt,it:t.it+r.it,lt:t.lt+r.lt,net:t.net+r.net}),{n:0,amt:0,it:0,lt:0,net:0});
+  return `<div class="row"><h2 class="sp">${Y}년 지급 결산</h2><button class="btn sm" data-act="year" data-n="-1">‹</button><button class="btn sm" data-act="year" data-n="1">›</button></div>
+  <p class="mu sm">지급한 날 기준이에요. 원천세는 다음 달 10일까지 신고·납부해요.</p>
+  ${(()=>{const k=todayIso().slice(0,7),xs=P.filter(x=>ym(x.a.paidAt)===k),it=xs.reduce((s,x)=>s+x.tx.it,0),lt=xs.reduce((s,x)=>s+x.tx.lt,0);const nm=new Date();nm.setMonth(nm.getMonth()+1);
+    return `<div class="card" style="background:var(--acs)"><b>이번 달 원천세 (${+k.slice(5)}월 지급분)</b><span class="money">소득세 ${won(it)} · 지방소득세 ${won(lt)} · 합계 ${won(it+lt)}</span><span class="mu sm">${nm.getMonth()+1}월 10일까지 홈택스(소득세)·위택스(지방소득세)에 신고·납부해요. 강사 ${xs.length}명분이에요.</span></div>`})()}
+  <div class="card tw"><table><thead><tr><th>월</th><th>건</th><th>강사료</th><th>소득세 3%</th><th>지방세 0.3%</th><th>실지급</th></tr></thead><tbody>
+  ${rows.map(r=>`<tr><td>${r.m}월</td><td>${r.n}</td><td>${won(r.amt)}</td><td>${won(r.it)}</td><td>${won(r.lt)}</td><td>${won(r.net)}</td></tr>`).join('')||'<tr><td colspan="6">아직 지급 기록이 없어요</td></tr>'}
+  ${rows.length?`<tr><th>합계</th><th>${T.n}</th><th>${won(T.amt)}</th><th>${won(T.it)}</th><th>${won(T.lt)}</th><th>${won(T.net)}</th></tr>`:''}</tbody></table></div>
+  <div class="card tw"><h3>강사별 (지급명세서 준비용)</h3><table><thead><tr><th>강사</th><th>건</th><th>강사료</th><th>원천세</th></tr></thead><tbody>${Object.values(per).map(r=>`<tr><td>${esc(r.p.name)}</td><td>${r.n}</td><td>${won(r.amt)}</td><td>${won(r.it+r.lt)}</td></tr>`).join('')||'<tr><td colspan="4">-</td></tr>'}</tbody></table></div>
+  <button class="btn" data-act="copyCSum">결산표 복사</button><button class="btn" data-act="taxCsv">지급명세서 준비 파일 받기 (CSV)</button>
+  <p class="mu sm">파일에는 지급월·강사 이름·지급액·소득세·지방소득세가 강사별로 들어가요. 주민등록번호는 앱에 저장하지 않으니, 홈택스에 올릴 때 직접 채워 주세요.</p><p class="mu sm">참고용이에요. 실제 신고는 홈택스와 세무사 확인을 거치세요.</p>`}
+
+const VIEWS={cal:vCal,jobs:vJobs,money:vMoney,me:vMe,cjobs:vCJobs,pay:vPay,csum:vCSum};
+
+/* ===== 동작 ===== */
+function tableText(){return [...$$('#main table')].map(t=>[...t.rows].map(r=>[...r.cells].map(c=>c.textContent).join('\t')).join('\n')).join('\n\n')}
+document.addEventListener('click',async ev=>{
+  const tb=ev.target.closest('[data-tab]');if(tb){ui.tab=tb.dataset.tab;ui.jobId=null;render();scrollTo(0,0);return}
+  const el=ev.target.closest('[data-act]');if(!el)return;const A=el.dataset.act,D=el.dataset;
+  if(A==='closeSheetBg'){if(ev.target===el)closeSheet();return}
+  if(A==='closeSheet')return closeSheet();
+  if(A==='reset'){if(el.dataset.sure){try{localStorage.removeItem(KEY)}catch(e){}S=seed();ui.jobId=null;delete el.dataset.sure;el.textContent='처음으로';render();toast('체험 데이터를 처음으로 되돌렸어요');}else{el.dataset.sure=1;el.textContent='한 번 더 누르면 초기화';setTimeout(()=>{delete el.dataset.sure;el.textContent='처음으로'},3000)}return}
+  if(A==='sel'){ui.sel=D.d;return render()}
+  if(A==='mon'){const n=+D.n;if(!n){ui.month=todayIso().slice(0,7);ui.sel=todayIso()}else{const [y,m]=ui.month.split('-').map(Number);const d=new Date(y,m-1+n,1);ui.month=`${d.getFullYear()}-${pad(d.getMonth()+1)}`}return render()}
+  if(A==='year'){const y=+ui.month.slice(0,4)+ +D.n;ui.month=`${y}-${ui.month.slice(5)}`;return render()}
+  if(A==='install'){if(INST.ev){INST.ev.prompt();INST.ev.userChoice.then(c=>{if(c.outcome==='accepted'){$('#instBtn').hidden=true;toast('홈 화면에 강사로를 설치했어요')}INST.ev=null});return}return sheetInstall()}
+  if(A==='unpaid')return sheetUnpaid();
+  if(A==='csel'){ui.csel=ui.csel===D.d?null:D.d;return render()}
+  if(A==='cmon'){const n=+D.n;if(!n){ui.cmonth=todayIso().slice(0,7)}else{const [y,m]=(ui.cmonth||todayIso().slice(0,7)).split('-').map(Number);const x=new Date(y,m-1+n,1);ui.cmonth=`${x.getFullYear()}-${pad(x.getMonth()+1)}`}return render()}
+  if(A==='copyMsg')return copy(D.t,'카톡용 문구');
+  if(A==='taxCsv'){const blob=new Blob([taxCsv(ui.month.slice(0,4))],{type:'text/csv'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`사업소득_지급명세_${ui.month.slice(0,4)}.csv`;document.body.appendChild(a);a.click();a.remove();return toast('파일을 받았어요')}
+  if(A==='gotPaid'){if(D.kind==='ev'){S.evs.find(x=>x.id===D.id).st='paid'}else{const a=S.apps.find(x=>x.id===D.id);a.selfPaid=true;a.recv='ok'}save();render();sheetUnpaid();return toast('입금 완료로 바꿨어요')}
+  if(A==='evst'){const e=S.evs.find(x=>x.id===D.id);e.st=D.st;save();render();return toast(D.st==='no'?'달력에서 숨겼어요':'바꿨어요')}
+  if(A==='evdel'){S.evs=S.evs.filter(x=>x.id!==D.id);save();render();return toast('지웠어요')}
+  if(A==='dayack'||A==='daydep'||A==='dayarr'||A==='daylate'){const a=S.apps.find(x=>x.id===D.a),x=dayOf(a,D.d);
+    if(A==='dayack')x.ack=nowIso();
+    if(A==='daydep'){const eta=$('#eta-'+a.id).value;if(!eta)return toast('예상 도착 시간을 넣어 주세요');x.dep=nowIso();x.eta=eta}
+    if(A==='dayarr')x.arr=nowIso();
+    if(A==='daylate'){const v=$('#late-'+a.id).value.trim();if(!v)return toast('사유를 짧게 써 주세요');x.late=v}
+    save();render();return toast({dayack:'확인했어요. 업체에 표시돼요',daydep:'출발을 업체에 알렸어요',dayarr:'도착을 업체에 알렸어요',daylate:'업체에 알렸어요'}[A])}
+  if(A==='payOne'){markPaid(S.apps.find(x=>x.id===D.a));save();render();return toast('지급 완료로 바꾸고 강사에게 입금 확인 알림을 보냈어요')}
+  if(A==='payAll'){const U=unpaidOf(meId());for(const x of U)markPaid(x.a);save();render();return toast(`${U.length}명 지급 완료, 입금 확인 알림을 보냈어요`)}
+  if(A==='recv'){const al=S.alerts.find(x=>x.id===D.id),a=S.apps.find(x=>x.id===al.appId);al.read=true;if(a)a.recv=D.v;save();render();return toast(D.v==='ok'?'입금 확인을 업체에 알렸어요':'아직 안 들어왔다고 업체에 알렸어요')}
+  if(A==='alertOk'){const a=S.alerts.find(x=>x.id===D.id);if(a)a.read=true;save();return render()}
+  if(A==='plus')return sheetPaste();
+  if(A==='parse'){const raw=$('#pRaw').value;const r=parseNotice(raw);const feeV=feeOf(raw),fee=[0,feeV?String(feeV):'',''];
+    sheetPaste({raw,km:kmBetween(inst(meId()).region,r.지역)||'',title:[r.지역,r.학교명,r.강의명].filter(Boolean).join(' '),org:r.기관명,dates:r.dates,time:r.시간,to:r.to,dows:r.dows,fee:fee[1]?(+fee[1].replace(/,/g,''))*(fee[2]?10000:1):''});return toast('공고를 읽었어요. 빈칸만 확인하세요')}
+  if(A==='addMail'||A==='addOnly'||A==='addApplied'){const p=readPaste();if(!p.dates.length){pWarn();return toast('날짜를 넣어 주세요')}if(!p.title)return toast('강의 이름을 넣어 주세요');
+    if(A==='addMail'&&!p.to)return toast('받는 메일을 넣어 주세요');
+    S.evs.push({id:uid(),instId:meId(),dates:p.dates,title:p.title,org:p.org,time:p.time,fee:p.fee,km:p.km,toll:p.toll,st:A==='addOnly'?'confirmed':'applied',to:p.to});save();
+    if(A==='addMail'){const m=mailOf(p);const w=window.open(m.url,'_blank');if(!w)copy(m.body,'메일 본문')}
+    closeSheet();ui.tab='cal';ui.sel=p.dates[0];ui.month=ym(p.dates[0]);render();return toast(A==='addMail'?'달력에 "지원"으로 넣고 Gmail을 열었어요':A==='addApplied'?'달력에 "지원"으로 넣었어요':'달력에 "확정"으로 넣었어요')}
+  if(A==='pdf'){const a=S.apps.find(x=>x.id===D.a),p=inst(a.instId);return printPdf(`${p.name} 강사 프로필`,[pdfPage(p,a.status==='확정')])}
+  if(A==='pdfAll'){const j=job(D.j),L=appsOf(j.id).filter(a=>a.status==='지원'||a.status==='확정');return printPdf(`${j.school} ${j.title} 지원자 프로필`,L.map(a=>pdfPage(inst(a.instId),a.status==='확정')))}
+  if(A==='jmore'){ui.jmore=(ui.jmore||20)+20;return render()}
+  if(A==='photoDel'){delete inst(meId()).photo;save();render();return toast('사진을 지웠어요')}
+  if(A==='cancelApp'){const a=S.apps.find(x=>x.id===D.a),j=job(a.jobId);
+    if(a.status==='확정'){const why=prompt('확정된 강의를 취소하면 업체에 바로 알려져요. 업체가 대신할 강사를 찾을 수 있게 사유를 적어 주세요.');if(why===null)return;if(!why.trim())return toast('사유를 적어야 확정 강의를 취소할 수 있어요');
+      Object.assign(a,{status:'취소',cxConfirmed:true,cxWhy:why.trim(),cxAt:new Date().toISOString()});if(j.status==='마감')j.status='모집';save();render();return toast('취소했어요. 업체에 사유와 함께 알렸어요')}
+    if(!confirm(`${j.school} ${j.title} 지원을 취소할까요?`))return;Object.assign(a,{status:'취소',cxAt:new Date().toISOString()});save();render();return toast('지원을 취소했어요. 달력에서도 빠졌어요')}
+  if(A==='apply'){const j=job(D.j),old=S.apps.find(x=>x.jobId===j.id&&x.instId===meId());if(old){Object.assign(old,{status:'지원',cxConfirmed:false,cxWhy:''});save();render();return toast('다시 지원했어요')}S.apps.push({id:uid(),jobId:j.id,instId:meId(),status:'지원',docs:{},paidAt:null,km:kmBetween(inst(meId()).region,j.region)||0,toll:0});save();render();return toast('지원했어요. 프로필이 같이 갔어요')}
+  if(A==='vaultDel'){const p=inst(meId());delete (p.vault||{})[D.n];save();render();return toast(`${D.n}을(를) 지웠어요`)}
+  if(A==='rrnSend'){const a=S.apps.find(x=>x.id===D.a),v=(prompt('주민등록번호 13자리 (이 업체에만 한 번 전달돼요)')||'').replace(/\D/g,'');if(!v)return;if(v.length!==13)return toast('13자리 숫자로 넣어 주세요');a.rrn=v.slice(0,6)+'-'+v.slice(6);a.rrnAt=new Date().toISOString();a.docs[RRN]='전달됨';save();render();return toast('보냈어요. 업체가 확인하면 바로 지워져요')}
+  if(A==='rrnTake'){const a=S.apps.find(x=>x.id===D.a);const v=a.rrn;delete a.rrn;delete a.rrnAt;a.docs[RRN]='업체 확인 완료';save();render();return copy(v,'주민등록번호 (강사로에서는 지웠어요)')}
+  if(A==='copyPf')return copy(profileText(inst(meId())),'프로필');
+  if(A==='copyPfOf')return copy(profileText(inst(D.i)),'프로필');
+  if(A==='copyYear'||A==='copyCSum')return copy(tableText(),'결산표');
+  // 회사
+  if(A==='openJob'){ui.jobId=D.j;render();return scrollTo(0,0)}
+  if(A==='back'){ui.jobId=null;return render()}
+  if(A==='confirm'){const a=S.apps.find(x=>x.id===D.a),j=job(a.jobId);
+    const other=S.apps.filter(x=>x.instId===a.instId&&x.status==='확정'&&x.id!==a.id&&job(x.jobId).dates.some(d=>j.dates.includes(d)));
+    if(other.length&&!el.dataset.sure){el.dataset.sure=1;el.textContent='그날 다른 확정 강의가 있어요. 그래도 확정';return}
+    a.status='확정';S.alerts.push({id:uid(),instId:a.instId,text:`[확정] ${co(j.coId).name} · ${j.region} ${j.school} ${j.title} (${j.dates.map(d=>`${md(d)}(${dowOf(d)})`).join('·')} ${j.time}) 강의가 확정되었어요.`,at:new Date().toISOString(),read:false});
+    save();render();return toast(`${inst(a.instId).name} 강사로 확정했어요. 강사에게 확정 알림이 갔어요`)}
+  if(A==='unconfirm'){const a=S.apps.find(x=>x.id===D.a);a.status='지원';save();render();return toast('확정을 취소했어요')}
+  if(A==='close'){const j=job(D.j);const cf=appsOf(j.id).filter(a=>a.status==='확정').length;
+    if(!cf&&!el.dataset.sure){el.dataset.sure=1;el.textContent='확정한 강사가 없어요. 그래도 마감';return}
+    j.status='마감';let n=0;for(const a of appsOf(j.id))if(a.status==='지원'){a.status='미선정';n++;S.alerts.push({id:uid(),instId:a.instId,text:`[마감] ${co(j.coId).name} · ${j.region} ${j.school} ${j.title} (${j.dates.map(d=>`${md(d)}(${dowOf(d)})`).join('·')}) 모집이 마감되었어요. 이번에는 함께하지 못하게 되었어요. 그날은 다른 강의를 잡으셔도 돼요.`,at:new Date().toISOString(),read:false})}save();render();return toast(`마감했어요. 미선정 ${n}명에게 마감 알림이 가고, 그 달력에서 사라졌어요`)}
+  if(A==='notice'){const j=job(D.j),tx=$('#ntText').value.trim();if(!tx&&!$('#ntImg').files[0])return toast('공지 내용을 쓰거나 이미지를 넣으세요');
+    const f=$('#ntImg').files[0];const img=f?await shrink(f):'';
+    j.notices.push({id:uid(),kind:$('#ntKind').value,text:tx,img,at:new Date().toISOString(),to:appsOf(j.id).filter(a=>a.status==='확정').map(a=>a.instId),reads:{}});save();render();return toast('공지를 보냈어요. 강사 일정 카드 맨 위에 떠요')}
+  if(A==='nudgeDocs'){const j=job(D.j);const ms=appsOf(j.id).filter(a=>a.status==='확정'&&j.needs.some(n=>n!=='프로필'&&!docOf(a,n)));
+    for(const a of ms)j.notices.push({id:uid(),text:`[서류 요청] ${j.school} ${j.title} 강의에 ${j.needs.filter(n=>n!=='프로필'&&!docOf(a,n)).join(', ')}이(가) 아직 없어요. 강사로 앱 "공고 > 확정된 강의"에서 올려 주세요.`,at:new Date().toISOString(),to:[a.instId],reads:{}});
+    save();render();return toast(`${ms.length}명에게 요청 공지를 보냈어요`)}
+  if(A==='cnew')return sheetNewJob();
+  if(A==='jparse'){const raw=$('#jRaw').value,r=parseNotice(raw);const feeV=feeOf(raw),fee=[0,feeV?String(feeV):'',''];
+    sheetNewJob({raw,desc:raw,title:r.강의명,school:r.학교명,region:r.지역,dates:r.dates,time:r.시간,per:r.교시,for:r.대상,fee:fee[1]?(+fee[1].replace(/,/g,''))*(fee[2]?10000:1):''});jWarn();return toast('읽었어요. 빈칸만 확인하세요')}
+  if(A==='jdel'){const ds=$('#jDates').value.split(/[,\s]+/).filter(x=>x&&x!==D.d);$('#jDates').value=ds.join(', ');$('#jDateList').innerHTML=jDateChips(ds);return jWarn()}
+  if(A==='jsave'){const g=id=>$('#'+id).value.trim();const dates=g('jDates').split(/[,\s]+/).filter(x=>/^\d{4}-\d{2}-\d{2}$/.test(x)).sort();
+    const miss=[!g('jTitle')&&'강의',!dates.length&&'날짜',!/^\d{2}:\d{2}\s*~\s*\d{2}:\d{2}$/.test(g('jTime'))&&'시간(09:00~15:50 형식)',!g('jPer')&&'교시',!g('jFor')&&'대상',!(g('jSchool')&&g('jRegion'))&&'학교·지역',!+g('jFee')&&'강사료'].filter(Boolean);
+    if(miss.length)return toast('빠졌어요: '+miss.join(', '));
+    const j={id:uid(),coId:meId(),title:g('jTitle'),school:g('jSchool'),region:g('jRegion'),dates,time:g('jTime'),교시:g('jPer'),대상:g('jFor'),desc:g('jDesc'),fee:+g('jFee'),status:'모집',needs:['프로필',...$$('.jNeed:checked').map(x=>x.value).filter(x=>x!=='프로필')],notices:[],created:todayIso()};
+    S.jobs.push(j);save();closeSheet();ui.tab='cjobs';ui.jobId=j.id;render();const W=dateWarn(dates);return toast(W.length?W[0]:'등록했어요. 강사 공고 목록에 바로 올라가요')}
+  if(A==='bulk'){const blob=new Blob([bulkCsv()],{type:'text/csv'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`대량이체_${todayIso()}.csv`;document.body.appendChild(a);a.click();a.remove();return toast('파일을 받았어요')}
+  if(A==='bulkCopy')return copy(bulkCsv().replace('﻿',''),'대량이체 내용');
+});
+document.addEventListener('toggle',ev=>{const el=ev.target;if(el.dataset&&el.dataset.act==='readNotices'&&el.open){const j=job(el.dataset.j),id=meId();let ch=0;for(const n of j.notices)if((n.to||[]).includes(id)&&!n.reads[id]){n.reads[id]=new Date().toISOString();ch++}if(ch){save();const un=unreadCount();const nb=$('[data-tab="jobs"]');if(nb)nb.innerHTML='공고'+(un?`<span class="dot">${un}</span>`:'')}}},true);
+document.addEventListener('change',ev=>{const el=ev.target,D=el.dataset||{};
+  if(el.id==='who'){S.me=el.value;ui.jobId=null;ui.tab=NAV[meRole()][0][0];save();render();return toast(el.options[el.selectedIndex].text+'(으)로 보고 있어요')}
+  if(D.act==='jpick'&&el.value){const ds=[...new Set([...$('#jDates').value.split(/[,\s]+/).filter(Boolean),el.value])].sort();$('#jDates').value=ds.join(', ');$('#jDateList').innerHTML=jDateChips(ds);el.value='';jWarn();return}
+  if(D.act==='jf'){ui.jmore=0;ui.jf[D.k]=el.type==='checkbox'?el.checked:el.value.trim();render();return}
+  if(D.act==='km'||D.act==='toll'){const o=D.kind==='ev'?S.evs.find(x=>x.id===D.id):S.apps.find(x=>x.id===D.id);o[D.act]=+el.value||0;save();render()}
+  if(D.act==='pf'){const p=inst(meId());p[D.k]=D.k==='kmpl'||D.k==='fuel'?+el.value||0:el.value;save();render()}
+  if(D.act==='vault'&&el.files[0]){REAL.vault(D.n,el.files[0]);return}
+  if(D.act==='photo'&&el.files[0]){shrink(el.files[0],480).then(u=>{if(!u)return toast('사진을 읽지 못했어요');inst(meId()).photo=u;save();render();toast('프로필 사진을 올렸어요')});return}
+  if(D.act==='doc'&&el.files[0]){REAL.doc(D.a,D.n,el.files[0]);return}
+  if(D.act==='jedit'){const j=job(ui.jobId);const old=j[D.k];let v=el.value.trim();
+    if(D.k==='dates'){v=v.split(/[,\s]+/).filter(x=>/^\d{4}-\d{2}-\d{2}$/.test(x)).sort();if(!v.length)return toast('날짜는 2026-11-18처럼 넣어 주세요');if(v.join()===old.join())return}else if(v===old)return;
+    j[D.k]=v;const to=appsOf(j.id).filter(a=>a.status==='확정').map(a=>a.instId);
+    if(D.k==='desc'){if(to.length)j.notices.push({id:uid(),kind:'일반',text:`[공고 내용 변경] ${j.school} ${j.title} 공고 내용이 바뀌었어요. "공고 내용 보기"에서 확인해 주세요.`,at:new Date().toISOString(),to,reads:{}});save();render();return toast('공고 내용을 고쳤어요')}
+    if(to.length)j.notices.push({id:uid(),text:`[일정 변경] ${j.school} ${j.title}: ${D.k==='dates'?'날짜':'시간'}이 ${D.k==='dates'?old.map(md).join('·'):old} → ${D.k==='dates'?v.map(md).join('·'):v}(으)로 바뀌었어요.`,at:new Date().toISOString(),to,reads:{}});
+    save();render();toast(to.length?`바꿨어요. 확정 강사 ${to.length}명에게 변경 공지가 갔어요`:'바꿨어요')}
+});
+// 앱 설치: 안드로이드 크롬은 버튼 한 번, 아이폰은 그림 안내, 카톡 안에서는 바깥 브라우저로 넘기기
+const INST={ev:null,ua:navigator.userAgent,standalone:matchMedia('(display-mode: standalone)').matches||navigator.standalone===true};
+const isIOS=/iPhone|iPad|iPod/.test(INST.ua)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1),isKakao=/KAKAOTALK/i.test(INST.ua),isAndroid=/Android/.test(INST.ua);
+function sheetInstall(){openSheet(`<div class="row"><h2 class="sp">홈 화면에 강사로 두기</h2><button class="btn sm" data-act="closeSheet">닫기</button></div>
+  ${isIOS?`<ol style="margin:0;padding-left:20px;line-height:2"><li>사파리 화면 아래(아이패드는 위)의 <b>공유 버튼</b> <span aria-hidden="true">⬆︎</span>을 눌러요</li><li>목록을 올려서 <b>'홈 화면에 추가'</b>를 눌러요</li><li>오른쪽 위 <b>'추가'</b>를 누르면 끝이에요</li></ol><p class="mu sm">사파리에서만 돼요. 다른 앱 안에서 열었다면 사파리로 열어 주세요.</p>`
+  :`<ol style="margin:0;padding-left:20px;line-height:2"><li>크롬 오른쪽 위 <b>점 세 개(⋮)</b>를 눌러요</li><li><b>'앱 설치'</b> 또는 <b>'홈 화면에 추가'</b>를 눌러요</li><li><b>'설치'</b>를 누르면 끝이에요</li></ol><p class="mu sm">삼성 인터넷은 아래 메뉴(≡) → '현재 페이지 추가' → '홈 화면'이에요.</p>`}`)}
+if(!INST.standalone){
+  if(isKakao){const u=location.href;$('#kakaoBar').hidden=false;$('#kakaoOut').href='kakaotalk://web/openExternal?url='+encodeURIComponent(u)}
+  else if(isIOS||isAndroid)$('#instBtn').hidden=false;
+  addEventListener('beforeinstallprompt',e=>{e.preventDefault();INST.ev=e;if(!isKakao)$('#instBtn').hidden=false});
+  addEventListener('appinstalled',()=>{$('#instBtn').hidden=true});
+}
+if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw.js').catch(()=>{});
+// 붙여넣기만 하면 바로 읽기 ('공고 읽기' 버튼을 안 눌러도 됨)
+document.addEventListener('paste',ev=>{if(ev.target.id==='pRaw')setTimeout(()=>{const b=document.querySelector('[data-act="parse"]');if(b&&$('#pRaw').value.trim().length>20)b.click()},0)});
+document.addEventListener('input',ev=>{if(['pDates','pRaw'].includes(ev.target.id))pWarn()});
+render();
+</script>
+<script type="module" src="real.js?v=261028-1149"></script>
+</body>
+</html>

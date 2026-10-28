@@ -1,0 +1,17 @@
+{
+  "name": "강사로",
+  "short_name": "강사로",
+  "description": "강사와 강의 업체가 함께 쓰는 강의 일정·정산 앱",
+  "lang": "ko",
+  "id": "/kangsaro/app/",
+  "start_url": "/kangsaro/app/?src=app",
+  "scope": "/kangsaro/app/",
+  "display": "standalone",
+  "background_color": "#F3F5F4",
+  "theme_color": "#1F6F78",
+  "icons": [
+    {"src": "../try/icons/icon-192.png", "sizes": "192x192", "type": "image/png"},
+    {"src": "../try/icons/icon-512.png", "sizes": "512x512", "type": "image/png"},
+    {"src": "../try/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}
+  ]
+}
