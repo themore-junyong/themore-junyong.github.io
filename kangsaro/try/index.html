@@ -413,12 +413,18 @@ function vMoney(){const E=entries(meId()).filter(e=>e.st!=='applied');const Y=ui
 
 /* ===== 강사: 프로필 ===== */
 const PF=[['name','이름'],['phone','연락처'],['email','메일'],['region','사는 곳 (시·군, 예: 수원)'],['topics','강의 분야'],['intro','한 줄 소개'],['career','강의 경력 (줄마다 한 개)'],['bank','은행'],['acct','계좌번호'],['holder','예금주'],['kmpl','내 차 연비 (km/L)'],['fuel','기름값 (원/L)']];
-function profileText(p){return `■ 강사 프로필\n이름: ${p.name}\n연락처: ${p.phone}\n메일: ${p.email}\n지역: ${p.region}\n강의 분야: ${p.topics}\n\n${p.intro}\n\n[강의 경력]\n${p.career}`}
+// 인증 강의: 강사로 안에서 업체가 확정하고 강의를 마친 뒤 지급 완료까지 된 강의 (강사가 '안 들어옴'이라 답한 건 제외)
+function verified(iid){const t=todayIso();return S.apps.filter(a=>a.instId===iid&&a.status==='확정'&&a.paidAt&&a.recv!=='no'&&last(job(a.jobId).dates)<t).map(a=>{const j=job(a.jobId);return {d:j.dates[0],n:j.dates.length,co:co(j.coId).name,j}}).sort((a,b)=>a.d<b.d?1:-1)}
+const vLine=v=>`${v.d.replace(/-/g,'.')}${v.n>1?` 외 ${v.n-1}일`:''} ${v.co} · ${v.j.region} ${v.j.school} ${v.j.title}`;
+function profileText(p){const V=verified(p.id);return `■ 강사 프로필\n이름: ${p.name}\n연락처: ${p.phone}\n메일: ${p.email}\n지역: ${p.region}\n강의 분야: ${p.topics}\n\n${p.intro}\n\n${V.length?`[강사로 인증 강의 ${V.length}회] 업체 확정·강의·입금까지 끝난 강의\n${V.map(v=>'✓ '+vLine(v)).join('\n')}\n\n`:''}[강의 경력 (본인 작성)]\n${p.career}`}
 function vMe(){const p=inst(meId());
   return `<h2>내 프로필</h2><p class="mu sm">한 번만 쓰면 지원할 때마다 같이 가요. 주민등록번호는 받지 않아요. 계좌는 나를 확정한 회사만 볼 수 있어요.</p>
   <div class="card"><div class="row">${pic(p)}<div class="sp" style="display:flex;flex-direction:column;gap:4px"><b>프로필 사진</b><span class="mu sm">얼굴이 잘 보이는 정면 사진이 좋아요. 업체가 지원자 목록과 당일 현황에서 봐요.</span></div></div>
   <div class="row"><label class="btn sm">${p.photo?'사진 바꾸기':'사진 올리기'}<input type="file" accept="image/*" data-act="photo" hidden></label>${p.photo?'<button class="btn sm" data-act="photoDel">사진 지우기</button>':''}</div></div>
   <div class="card">${PF.map(([k,l])=>`<label class="f">${l}${k==='intro'||k==='career'?`<textarea rows="${k==='career'?4:2}" data-act="pf" data-k="${k}">${esc(p[k])}</textarea>`:`<input data-act="pf" data-k="${k}" value="${esc(p[k])}" ${k==='kmpl'||k==='fuel'?'type="number" inputmode="decimal"':''}>`}</label>`).join('')}</div>
+  ${(()=>{const V=verified(p.id);return `<div class="card"><h3>강의 이력</h3><span class="mu sm">강사로에서 업체가 확정하고, 강의를 마치고, 강사료 입금까지 끝난 강의만 자동으로 쌓이고 <span class="chip paid">✓ 강사로 인증</span>이 붙어요. 그 전 경력은 위 '강의 경력'에 직접 쓰면 '본인 작성'으로 보여요.</span>
+    ${V.map(v=>`<div class="row sm"><span class="chip paid">✓ 인증</span><span class="sp">${esc(vLine(v))}</span></div>`).join('')||'<span class="mu sm">아직 입금까지 끝난 강사로 강의가 없어요.</span>'}
+    ${String(p.career||'').split('\n').filter(x=>x.trim()).map(x=>`<div class="row sm"><span class="chip off">본인 작성</span><span class="sp">${esc(x)}</span></div>`).join('')}</div>`})()}
   <div class="card"><h3>회사에 보이는 프로필 카드</h3><pre class="pf">${esc(profileText(p))}</pre><button class="btn" data-act="copyPf">프로필 복사</button></div>
   <p class="mu sm">가입일 ${esc(p.joined)} · ${p.beta?'시범 운영 회원 (정식 운영 때 감사 혜택 대상)':''}</p>`}
 
@@ -439,7 +445,7 @@ function vCJobs(){if(ui.jobId&&job(ui.jobId))return vCJob(job(ui.jobId));const t
   <h3>다가오는 강의</h3>${up.map(card).join('')||'<p class="mu">아래 + 로 강의를 등록하세요.</p>'}
   <details><summary>지난 강의 ${past.length}건</summary>${past.map(card).join('')}</details>`}
 function vCJob(j){const A=appsOf(j.id),s=jobStats(j);
-  const prof=a=>{const p=inst(a.instId);const cf=a.status==='확정';return `<div class="card"><div class="row">${pic(p)}<h3 class="sp">${esc(p.name)} <span class="mu sm">${esc(p.region)} · ${esc(p.topics)}</span></h3>${cf?chip('confirmed'):a.status==='미선정'?'<span class="chip off">미선정</span>':a.status==='취소'?`<span class="chip ${a.cxConfirmed?'warn':'off'}">${a.cxConfirmed?'확정 후 취소':'지원 취소'}</span>`:chip('applied')}</div>
+  const prof=a=>{const p=inst(a.instId);const cf=a.status==='확정';return `<div class="card"><div class="row">${pic(p)}<h3 class="sp">${esc(p.name)} <span class="mu sm">${esc(p.region)} · ${esc(p.topics)}</span>${verified(p.id).length?` <span class="chip paid">✓ 인증 강의 ${verified(p.id).length}회</span>`:''}</h3>${cf?chip('confirmed'):a.status==='미선정'?'<span class="chip off">미선정</span>':a.status==='취소'?`<span class="chip ${a.cxConfirmed?'warn':'off'}">${a.cxConfirmed?'확정 후 취소':'지원 취소'}</span>`:chip('applied')}</div>
     <span class="mu sm">${esc(p.intro)}</span>
     <details><summary>프로필 보기</summary><pre class="pf">${esc(profileText(cf?p:{...p,phone:'확정하면 보여요',email:'확정하면 보여요'}))}</pre>${cf?`<span class="mu sm">계좌: ${esc(p.bank)} ${esc(p.acct)} ${esc(p.holder)}</span><button class="btn sm" data-act="copyPfOf" data-i="${p.id}">학교 제출용으로 복사</button>`:''}</details>
     ${cf?`<div class="mu sm">받을 것: ${j.needs.map(n=>n==='프로필'?'프로필 ✓':a.docs[n]?`${esc(n)} ✓ <span class="sm">(${esc(a.docs[n])})</span>`:`<b style="color:var(--r2)">${esc(n)} 빠짐</b>`).join(' · ')}</div>`:''}
