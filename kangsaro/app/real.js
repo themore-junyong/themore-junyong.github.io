@@ -26,7 +26,17 @@ if (EMU) { A.connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarning
 const { doc, collection, getDoc, getDocs, setDoc, updateDoc, deleteDoc, deleteField, query, where, limit, onSnapshot } = F;
 
 /* ===== 문서 나누기 ===== */
-const PUB = { i: ['name', 'region', 'topics', 'intro', 'career', 'photo', 'joined', 'beta', 'refBy'], c: ['name', 'contact', 'joined', 'approved', 'refBy'] };
+const PUB = { i: ['name', 'region', 'topics', 'intro', 'career', 'photo', 'joined', 'beta', 'refBy'], c: ['name', 'contact', 'joined', 'approved', 'refBy', 'biz', 'blocked'] };
+// 사업자등록번호: 숫자 10자리 + 국세청 검증 숫자 (보안 규칙도 같은 계산)
+const bizNum = v => String(v || '').replace(/\D/g, '');
+const bizOk = n => { if (!/^\d{10}$/.test(n)) return false; const d = [...n].map(Number), w = [1, 3, 7, 1, 3, 7, 1, 3, 5]; let t = w.reduce((a, x, i) => a + d[i] * x, 0) + Math.floor(d[8] * 5 / 10); return (10 - t % 10) % 10 === d[9]; };
+const bizFmt = n => n ? `${n.slice(0, 3)}-${n.slice(3, 5)}-${n.slice(5)}` : '';
+// 번호 하나에 업체 하나: biz/{번호} 문서를 먼저 잡고 나서 승인
+async function claimBiz(n) {
+  const r = doc(db, 'biz', n), d = await getDoc(r);
+  if (d.exists()) { if (d.data().uid === uidMe) return true; toast('이미 가입된 사업자등록번호예요. 문의: tobadyclup@naver.com'); return false; }
+  await setDoc(r, { uid: uidMe, at: new Date().toISOString() }); return true;
+}
 const PRIV = { i: ['phone', 'email', 'bank', 'acct', 'holder', 'kmpl', 'fuel', 'vault'], c: ['phone', 'email'] };
 const pick = (o, ks) => { const r = {}; for (const k of ks) if (o[k] !== undefined) r[k] = o[k]; return r; };
 const omit = (o, ks) => { const r = { ...o }; for (const k of ks) delete r[k]; return r; };
@@ -195,7 +205,7 @@ async function start(user) {
 const isKakaoUA = /KAKAOTALK/i.test(navigator.userAgent);
 REAL.gate = () => {
   if (!auth.currentUser) return `<div class="card"><h2>강사로 시작하기</h2>
-    <p class="mu">강사는 무료예요. 강의 업체는 가입 후 확인을 거쳐 공고를 올릴 수 있어요.</p>
+    <p class="mu">강사는 무료예요. 강의 업체는 사업자등록번호를 넣으면 바로 공고를 올릴 수 있어요.</p>
     ${isKakaoUA ? '<div class="alert">카카오톡 안에서는 구글 로그인이 막혀요. 아래 이메일로 로그인하거나, 위의 "다른 브라우저로 열기"를 눌러 주세요.</div>' : `<button class="btn pri" data-real="google">구글 계정으로 시작</button>`}
     <label class="f">이메일로 시작 (비밀번호 없이, 메일로 온 링크를 누르면 로그인돼요)<input id="rMail" type="email" autocomplete="email" placeholder="you@example.com"></label>
     <button class="btn ${isKakaoUA ? 'pri' : ''}" data-real="mail">로그인 링크 받기</button>
@@ -210,17 +220,21 @@ REAL.gate = () => {
     <label class="f">연락처<input id="rPhone" type="tel" autocomplete="tel" placeholder="010-0000-0000"></label>
     <label class="f" id="rRegionF">사는 곳 (순수익·거리 계산용)<select id="rRegion">${Object.keys(GEO).map(k => `<option>${k}</option>`).join('')}</select></label>
     <label class="f" id="rContactF" hidden>담당자 (예: 김○○ 팀장)<input id="rContact"></label>
+    <label class="f" id="rBizF" hidden>사업자등록번호 (공고 등록에 꼭 필요해요)<input id="rBiz" inputmode="numeric" placeholder="000-00-00000"></label>
     <button class="btn pri" data-real="join">가입하기</button>
     <button class="btn sm" data-real="out">다른 계정으로</button></div>`;
 };
 REAL.acct = () => {
   const el = $('#acct'); if (!el) return;
-  const pending = role === 'c' && me && !me.approved;
-  el.innerHTML = `<span class="sp">${esc(me ? me.name : '')} ${role === 'c' ? '(업체)' : ''}</span>${ADMINS.includes(auth.currentUser?.email) ? '<button class="btn sm" data-real="admin">업체 승인</button>' : ''}<a class="btn sm" style="text-decoration:none;color:inherit;display:inline-flex;align-items:center" href="../guide/${role === 'c' ? 'company' : 'instructor'}.html">사용법</a><button class="btn sm" data-real="ref">소개하기</button><button class="btn sm" data-real="out">로그아웃</button>`;
-  if (pending && !$('#pendBar')) el.insertAdjacentHTML('afterend', '<div id="pendBar" class="alert">업체 확인 중이에요. 확인이 끝나면 공고를 올릴 수 있어요. (보통 하루 안)</div>');
+  const pending = role === 'c' && me && !me.approved, isAdmin = ADMINS.includes(auth.currentUser?.email);
+  el.innerHTML = `<span class="sp">${esc(me ? me.name : '')} ${role === 'c' ? '(업체)' : ''}</span>${isAdmin ? '<button class="btn sm" data-real="admin">업체 관리</button>' : ''}<a class="btn sm" style="text-decoration:none;color:inherit;display:inline-flex;align-items:center" href="../guide/${role === 'c' ? 'company' : 'instructor'}.html">사용법</a><button class="btn sm" data-real="ref">소개하기</button><button class="btn sm" data-real="out">로그아웃</button>`;
+  const bar = $('#pendBar'); if (bar && !pending) bar.remove();
+  if (pending && !bar) el.insertAdjacentHTML('afterend', me.blocked
+    ? '<div id="pendBar" class="alert">운영자가 이 업체의 공고 등록을 멈췄어요. 문의: tobadyclup@naver.com</div>'
+    : `<div id="pendBar" class="alert">사업자등록번호를 넣으면 바로 공고를 올릴 수 있어요.<div class="row"><input id="pBiz" inputmode="numeric" placeholder="000-00-00000" value="${esc(bizFmt(me.biz || ''))}"><button class="btn pri sm" data-real="bizSet">등록</button></div></div>`);
 };
 
-document.addEventListener('change', e => { if (e.target.name === 'rRole') { const c = e.target.value === 'c'; $('#rRegionF').hidden = c; $('#rContactF').hidden = !c; } });
+document.addEventListener('change', e => { if (e.target.name === 'rRole') { const c = e.target.value === 'c'; $('#rRegionF').hidden = c; $('#rContactF').hidden = !c; $('#rBizF').hidden = !c; } });
 document.addEventListener('click', async e => {
   const b = e.target.closest('[data-real]'); if (!b) return;
   const k = b.dataset.real;
@@ -238,14 +252,17 @@ document.addEventListener('click', async e => {
     const r = document.querySelector('[name=rRole]:checked').value, name = $('#rName').value.trim(), phone = $('#rPhone').value.trim();
     if (!name) return toast('이름을 넣어 주세요'); if (!phone) return toast('연락처를 넣어 주세요');
     const t = todayIso(), email = auth.currentUser.email || '';
-    const pub = r === 'i' ? { role: 'i', name, region: $('#rRegion').value, topics: '', intro: '', career: '', joined: t, beta: true } : { role: 'c', name, contact: $('#rContact').value.trim(), joined: t, approved: false };
+    const biz = bizNum($('#rBiz').value);
+    if (r === 'c' && !bizOk(biz)) return toast('사업자등록번호 10자리를 확인해 주세요');
+    if (r === 'c') { try { if (!await claimBiz(biz)) return; } catch (err) { return toast('사업자등록번호를 저장하지 못했어요: ' + err.code); } }
+    const pub = r === 'i' ? { role: 'i', name, region: $('#rRegion').value, topics: '', intro: '', career: '', joined: t, beta: true } : { role: 'c', name, contact: $('#rContact').value.trim(), joined: t, approved: true, biz };
     const ref = lsGet('kangsaro.ref');
     if (ref && ref !== uidMe) { const rd = await getDoc(doc(db, 'users', ref)).catch(() => null); if (rd && rd.exists()) pub.refBy = ref; }
     const priv = r === 'i' ? { phone, email, bank: '', acct: '', holder: name, kmpl: 15, fuel: 1650, vault: {} } : { phone, email };
     try { await setDoc(doc(db, 'users', uidMe), pub); await setDoc(doc(db, 'users', uidMe, 'private', 'main'), priv); }
     catch (err) { return toast('가입하지 못했어요: ' + err.code); }
     try { localStorage.removeItem('kangsaro.ref'); } catch (err) { }
-    toast(r === 'i' ? '가입했어요. 프로필을 채우면 지원할 때 같이 가요' : '가입했어요. 업체 확인이 끝나면 공고를 올릴 수 있어요');
+    toast(r === 'i' ? '가입했어요. 프로필을 채우면 지원할 때 같이 가요' : '가입했어요. 바로 공고를 올릴 수 있어요');
     await start(auth.currentUser);
     if (r === 'i') { ui.tab = 'me'; render(); }
   }
@@ -253,7 +270,14 @@ document.addEventListener('click', async e => {
   if (k === 'ref') return refSheet();
   if (k === 'refCopy') { const t = refText(); try { await navigator.clipboard.writeText(t); toast('복사했어요. 카톡에 붙여 넣으세요'); } catch (err) { prompt('길게 눌러 복사해 주세요', t); } return; }
   if (k === 'refShare') { try { await navigator.share({ title: '강사로', text: refText() }); } catch (err) { } return; }
-  if (k === 'approve') { await updateDoc(doc(db, 'users', b.dataset.u), { approved: true }); toast('승인했어요'); return adminSheet(); }
+  if (k === 'approve') { await updateDoc(doc(db, 'users', b.dataset.u), { approved: true, blocked: false }); toast('승인했어요'); return adminSheet(); }
+  if (k === 'block') { if (!confirm('이 업체의 공고 등록을 멈출까요? 이미 올린 공고는 그대로 있어요.')) return; await updateDoc(doc(db, 'users', b.dataset.u), { approved: false, blocked: true }); toast('승인을 취소했어요'); return adminSheet(); }
+  if (k === 'bizSet') {
+    const n = bizNum($('#pBiz').value); if (!bizOk(n)) return toast('사업자등록번호 10자리를 확인해 주세요');
+    try { if (!await claimBiz(n)) return; await updateDoc(doc(db, 'users', uidMe), { biz: n, approved: true }); }
+    catch (err) { return toast('등록하지 못했어요: ' + err.code); }
+    me.biz = n; me.approved = true; prime(new Set([`users/${uidMe}`])); toast('등록했어요. 이제 공고를 올릴 수 있어요'); render();
+  }
 });
 /* ===== 소개하기: 업체가 가입하면 양쪽 1개월, 강사가 가입하면 양쪽 1주일 무료 (최대 6개월) ===== */
 const REF_MAX = 180, refDays = r => r === 'c' ? 30 : 7;
@@ -275,7 +299,7 @@ async function refSheet() {
   const can = !!navigator.share;
   openSheet(`<div class="row"><h2 class="sp">소개하기</h2><button class="btn sm" data-act="closeSheet">닫기</button></div>
     <p>내 링크로 가입하면 소개한 분과 가입한 분 모두 무료 기간이 늘어요. <b>업체가 가입하면 1개월, 강사가 가입하면 1주일</b>씩이에요.</p>
-    <span class="mu sm">강사는 프로필(분야·소개)을 채우면, 업체는 확인 후 공고를 1건 올리면 인정돼요. 최대 ${dayTxt(REF_MAX)}까지 쌓여요.</span>
+    <span class="mu sm">강사는 프로필(분야·소개)을 채우면, 업체는 공고를 1건 올리면 인정돼요. 최대 ${dayTxt(REF_MAX)}까지 쌓여요.</span>
     <label class="f">내 소개 링크<input readonly value="${esc(refLink())}" onclick="this.select()"></label>
     <div class="row"><button class="btn pri" data-real="refCopy">소개 문구 복사</button>${can ? '<button class="btn" data-real="refShare">공유하기</button>' : ''}</div>
     <div class="card"><b>쌓인 무료 기간: ${dayTxt(got)}</b><span class="mu sm">유료로 바뀔 때 이 기간만큼 무료로 써요.${mine ? ` (소개로 가입한 ${dayTxt(mine)} 포함)` : ''}</span></div>
@@ -284,11 +308,14 @@ async function refSheet() {
 }
 
 async function adminSheet() {
-  const d = await getDocs(query(collection(db, 'users'), where('role', '==', 'c'), where('approved', '==', false)));
-  const rows = await Promise.all(d.docs.map(async x => { let p = {}; try { const s = await getDoc(doc(db, 'users', x.id, 'private', 'main')); p = s.data() || {}; } catch (e) { } return { id: x.id, ...x.data(), ...p }; }));
-  openSheet(`<div class="row"><h2 class="sp">업체 승인</h2><button class="btn sm" data-act="closeSheet">닫기</button></div>
+  const d = await getDocs(query(collection(db, 'users'), where('role', '==', 'c')));
+  const rows = (await Promise.all(d.docs.map(async x => { let p = {}; try { const s = await getDoc(doc(db, 'users', x.id, 'private', 'main')); p = s.data() || {}; } catch (e) { } return { id: x.id, ...x.data(), ...p }; })))
+    .sort((a, b) => (b.joined || '').localeCompare(a.joined || ''));
+  const card = r => `<div class="card"><b>${esc(r.name)} ${r.blocked ? '<span class="mu sm">(멈춤)</span>' : ''}</b><span class="mu sm">사업자 ${esc(bizFmt(r.biz || '') || '없음')} · ${esc(r.contact || '')} · ${esc(r.phone || '')} · ${esc(r.email || '')} · 가입 ${esc(r.joined || '')}</span>${r.approved ? `<button class="btn sm" data-real="block" data-u="${r.id}">승인 취소</button>` : `<button class="btn pri sm" data-real="approve" data-u="${r.id}">승인</button>`}</div>`;
+  openSheet(`<div class="row"><h2 class="sp">업체 관리</h2><button class="btn sm" data-act="closeSheet">닫기</button></div>
+    <p class="mu sm">업체는 사업자등록번호를 넣으면 바로 공고를 올려요. 이상한 업체는 '승인 취소'로 멈출 수 있어요. 홈택스 '사업자 상태 조회'로 휴·폐업 여부를 볼 수 있어요.</p>
     ${await refAdmin()}
-    ${rows.map(r => `<div class="card"><b>${esc(r.name)}</b><span class="mu sm">${esc(r.contact || '')} · ${esc(r.phone || '')} · ${esc(r.email || '')} · 가입 ${esc(r.joined || '')}</span><button class="btn pri sm" data-real="approve" data-u="${r.id}">승인</button></div>`).join('') || '<p class="mu">기다리는 업체가 없어요.</p>'}`);
+    ${rows.map(card).join('') || '<p class="mu">가입한 업체가 없어요.</p>'}`);
 }
 
 async function refAdmin() {
