@@ -285,7 +285,18 @@ function dateWarn(dates,dows){const W=[];for(const iso of dates){const a=dowOf(i
 /* ===== 화면 공통 ===== */
 const NAV={i:[['cal','달력'],['jobs','공고'],['plus','+'],['money','결산'],['me','프로필']],c:[['cjobs','강의'],['cnew','+'],['pay','지급'],['csum','결산']]};
 function unreadCount(){const id=meId();let n=0;for(const j of S.jobs)for(const nt of j.notices)if((nt.to||[]).includes(id)&&!nt.reads[id])n++;return n}
-function render(){
+// 리마인드: 확정 강사에게 강의 7일·3일·1일 전 한 번씩 알림 (서버판에서는 매일 아침 자동 발송)
+function runReminders(){const t=todayIso();let ch=0;
+  for(const a of S.apps){if(a.status!=='확정')continue;const j=job(a.jobId);if(!j)continue;const left=Math.round((dt(j.dates[0])-dt(t))/864e5);if(left<1||left>7)continue;
+    a.rem=a.rem||{};const stage=[1,3,7].find(n=>left<=n);if(a.rem[stage])continue;
+    for(const n of [1,3,7])if(n>=stage)a.rem[n]=a.rem[n]||new Date().toISOString();
+    const nts=j.notices.filter(n=>(n.to||[]).includes(a.instId)&&!n.reads[a.instId]).length;
+    S.alerts.push({id:uid(),instId:a.instId,text:`[D-${left} 리마인드] ${co(j.coId).name} · ${j.region} ${j.school} ${j.title} ${j.dates.map(d=>`${md(d)}(${dowOf(d)})`).join('·')} ${j.time}${nts?` · 안 읽은 공지 ${nts}개가 있어요`:''}${stage===1?' · 내일 강의예요. 일정 카드에서 "확인했어요"를 눌러 주세요':''}`,at:new Date().toISOString(),read:false});ch++}
+  if(ch)save()}
+const remText=a=>{const j=job(a.jobId);return [7,3,1].map(n=>{const at=a.rem&&a.rem[n],d=addDays(j.dates[0],-n);return at?`D-${n} 보냄 ✓`:d<todayIso()?`D-${n} 지남`:`D-${n} ${md(d)} 예정`}).join(' · ')};
+const smsHref=(ph,body)=>`sms:${String(ph).replace(/[^\d]/g,'')}${isIOS?'&':'?'}body=${encodeURIComponent(body)}`;
+function contactBtns(p,body){return `<a class="btn sm" href="tel:${esc(String(p.phone).replace(/[^\d]/g,''))}">📞 전화</a><a class="btn sm" href="${esc(smsHref(p.phone,body))}">💬 문자</a><button class="btn sm" data-act="copyMsg" data-t="${esc(body)}">카톡용 문구 복사</button>`}
+function render(){runReminders();
   const who=$('#who');who.innerHTML=`<optgroup label="강사">${S.insts.map(i=>`<option value="i:${i.id}">강사 ${esc(i.name)} (예시)</option>`).join('')}</optgroup><optgroup label="회사">${S.cos.map(c=>`<option value="c:${c.id}">회사 ${esc(c.name)} (예시)</option>`).join('')}</optgroup>`;who.value=S.me;
   const r=meRole();if(!NAV[r].some(n=>n[0]===ui.tab))ui.tab=NAV[r][0][0];
   const un=r==='i'?unreadCount():0;
@@ -489,6 +500,16 @@ function jobStats(j){const A=appsOf(j.id),cf=A.filter(a=>a.status==='확정');
   const miss=cf.reduce((n,a)=>n+j.needs.filter(x=>x!=='프로필'&&!a.docs[x]).length,0);
   const unread=j.notices.reduce((n,nt)=>n+(nt.to||[]).filter(i=>!nt.reads[i]).length,0);
   return {ap:A.filter(a=>a.status==='지원').length,cf:cf.length,miss,unread,cx:cf.length?0:A.filter(a=>a.status==='취소'&&a.cxConfirmed).length}}
+// 업체 달력: 강의 있는 날에 점, 날짜를 누르면 그날 강의만
+function coCal(J){const [Y,M]=(ui.cmonth||todayIso().slice(0,7)).split('-').map(Number),first=new Date(Y,M-1,1).getDay(),days=new Date(Y,M,0).getDate(),t=todayIso();const cells=[];
+  for(let i=0;i<first;i++)cells.push('<div class="day blank"></div>');
+  for(let n=1;n<=days;n++){const iso=isoOf(Y,M,n),js=J.filter(j=>j.dates.includes(iso)),warn=js.some(j=>{const s=jobStats(j);return s.miss||s.unread||!s.cf});
+    cells.push(`<button class="day ${iso===ui.csel?'sel':''}" data-act="csel" data-d="${iso}" aria-label="${M}월 ${n}일 강의 ${js.length}개"><span class="n ${iso===t?'today':''}">${n}</span>${js.length?`<span class="bar ${warn?'done':'confirmed'}">${js.length}건</span>`:''}</button>`)}
+  const SJ=ui.csel?J.filter(j=>j.dates.includes(ui.csel)):[];
+  return `<div class="row"><h3 class="sp">${Y}년 ${M}월 강의 달력</h3><button class="btn sm" data-act="cmon" data-n="-1" aria-label="이전 달">‹</button><button class="btn sm" data-act="cmon" data-n="0">오늘</button><button class="btn sm" data-act="cmon" data-n="1" aria-label="다음 달">›</button></div>
+  <span class="mu sm">초록 = 준비 끝, 보라 = 확정 강사 없음·서류·공지 확인 필요</span>
+  <div class="dow">${[...DOW].map(x=>`<span>${x}</span>`).join('')}</div><div class="cal">${cells.join('')}</div>
+  ${ui.csel?`<h3>${mdK(ui.csel)} (${dowOf(ui.csel)}) 강의 ${SJ.length}건</h3>${SJ.map(j=>`<button class="card" style="text-align:left" data-act="openJob" data-j="${j.id}"><b>${esc(j.region)} ${esc(j.school)} ${esc(j.title)}</b><span class="mu sm">${esc(j.time)} · 확정 ${jobStats(j).cf}명 · 지원 ${jobStats(j).ap}명</span></button>`).join('')||'<p class="mu">이날은 강의가 없어요.</p>'}`:''}`}
 function vCJobs(){if(ui.jobId&&job(ui.jobId))return vCJob(job(ui.jobId));const t=todayIso();
   const J=S.jobs.filter(j=>j.coId===meId()).sort((a,b)=>a.dates[0]<b.dates[0]?-1:1);
   const up=J.filter(j=>last(j.dates)>=t),past=J.filter(j=>last(j.dates)<t);
@@ -498,6 +519,7 @@ function vCJobs(){if(ui.jobId&&job(ui.jobId))return vCJob(job(ui.jobId));const t
   const todo=up.filter(j=>{const s=jobStats(j);return s.miss||s.unread||s.cx||(!s.cf&&j.status==='마감')});
   return `<h2>${esc(co(meId()).name)} 강의 운영판</h2>${dayBoard(meId())}
   ${todo.length?`<div class="alert">챙길 강의 ${todo.length}건: 빠진 서류, 안 읽은 공지, 확정 강사 없음을 확인하세요.</div>`:'<div class="ok">다가오는 강의에 빠진 것이 없어요.</div>'}
+  ${coCal(J)}
   <h3>다가오는 강의</h3>${up.map(card).join('')||'<p class="mu">아래 + 로 강의를 등록하세요.</p>'}
   <details><summary>지난 강의 ${past.length}건</summary>${past.map(card).join('')}</details>`}
 function vCJob(j){const A=appsOf(j.id),s=jobStats(j);
@@ -505,6 +527,7 @@ function vCJob(j){const A=appsOf(j.id),s=jobStats(j);
     <span class="mu sm">${esc(p.intro)}</span>
     <button class="btn sm" style="align-self:flex-start" data-act="pdf" data-a="${a.id}">프로필 PDF 받기</button>
     <details><summary>프로필 보기</summary><pre class="pf">${esc(profileText(cf?p:{...p,phone:'확정하면 보여요',email:'확정하면 보여요'}))}</pre>${cf?`<span class="mu sm">계좌: ${esc(p.bank)} ${esc(p.acct)} ${esc(p.holder)}</span><button class="btn sm" data-act="copyPfOf" data-i="${p.id}">학교 제출용으로 복사</button>`:''}</details>
+    ${cf?`<span class="mu sm">리마인드: ${remText(a)}</span><div class="row">${contactBtns(p,`[${co(j.coId).name}] ${p.name} 강사님, ${j.dates.map(d=>`${md(d)}(${dowOf(d)})`).join('·')} ${j.school} ${j.title} 강의 관련 연락드립니다.`)}</div>`:''}
     ${cf?`<div class="mu sm">받을 것: ${j.needs.map(n=>n==='프로필'?'프로필 ✓':a.docs[n]?`${esc(n)} ✓ <span class="sm">(${esc(a.docs[n])})</span>`:`<b style="color:var(--r2)">${esc(n)} 빠짐</b>`).join(' · ')}</div>`:''}
     ${a.status==='지원'?`<button class="btn pri" data-act="confirm" data-a="${a.id}">이 강사로 확정</button>`:cf&&!a.paidAt?`<button class="btn sm" data-act="unconfirm" data-a="${a.id}">확정 취소</button>`:''}</div>`};
   const missPeople=A.filter(a=>a.status==='확정'&&j.needs.some(n=>n!=='프로필'&&!a.docs[n]));
@@ -522,7 +545,8 @@ function vCJob(j){const A=appsOf(j.id),s=jobStats(j);
   ${missPeople.length?`<button class="btn" data-act="nudgeDocs" data-j="${j.id}">서류 빠진 ${missPeople.length}명에게 요청 공지 보내기</button>`:''}
   <h3>공지</h3>
   <div class="card"><label class="f">종류<select id="ntKind"><option>일반</option><option>시간표</option><option>집결 장소</option><option>주의사항</option><option>준비물</option></select></label><textarea class="f" id="ntText" rows="3" placeholder="도착 장소, 주차, 기자재, 인원, 준비물, 주의사항 등"></textarea><label class="f">사진·이미지 (시간표, 약도 등, 선택)<input type="file" id="ntImg" accept="image/*"></label><button class="btn pri" data-act="notice" data-j="${j.id}" ${s.cf?'':'disabled'}>확정 강사 ${s.cf}명에게 공지 보내기</button></div>
-  ${j.notices.slice().reverse().map(n=>{const to=n.to||[],rd=to.filter(i=>n.reads[i]);return `<div class="card">${n.kind?`<b class="sm">[${esc(n.kind)}]</b>`:''}<pre class="pf">${esc(n.text)}</pre>${n.img?`<img src="${n.img}" alt="공지 이미지" style="width:100%;border-radius:8px">`:''}<span class="mu sm">읽음 ${rd.length}/${to.length}${to.length>rd.length?` · 안 읽음: ${to.filter(i=>!n.reads[i]).map(i=>esc(inst(i).name)).join(', ')}`:''}</span></div>`}).join('')}`}
+  ${j.notices.slice().reverse().map(n=>{const to=n.to||[],rd=to.filter(i=>n.reads[i]);return `<div class="card">${n.kind?`<b class="sm">[${esc(n.kind)}]</b>`:''}<pre class="pf">${esc(n.text)}</pre>${n.img?`<img src="${n.img}" alt="공지 이미지" style="width:100%;border-radius:8px">`:''}<span class="mu sm">읽음 ${rd.length}/${to.length}${to.length>rd.length?` · 안 읽음: ${to.filter(i=>!n.reads[i]).map(i=>esc(inst(i).name)).join(', ')}`:''}</span>
+   ${to.filter(i=>!n.reads[i]).map(i=>{const p=inst(i);return `<div class="row"><b class="sm sp">${esc(p.name)} (안 읽음)</b>${contactBtns(p,`[${co(j.coId).name}] ${p.name} 강사님, ${j.school} ${j.title} 공지가 올라왔어요. 강사로 앱에서 확인 부탁드립니다.\n\n${n.text.slice(0,120)}`)}</div>`}).join('')}</div>`}).join('')}`}
 function sheetNewJob(p){p=p||{};const N=['프로필','교안','통장사본','신분증 사본','강사 확인서','범죄경력 조회 동의서','결과보고서','수업 사진'];
   openSheet(`<div class="row"><h2 class="sp">강의 등록</h2><button class="btn sm" data-act="closeSheet">닫기</button></div>
   <div class="card" style="background:var(--acs)"><h3>강사가 헷갈리지 않는 공고</h3><span class="sm">① 날짜는 달력에서 고르세요. 요일이 자동으로 붙어요.<br>② 시간은 09:00~15:50처럼, 교시도 함께 적어 주세요.<br>③ 대상은 학년과 인원까지 (예: 3학년 100명).<br>④ 장소는 학교 이름과 지역을 모두.<br>⑤ 1일 강사료와 받을 서류를 정해 주세요. 빠지면 등록되지 않아요.</span></div>
@@ -561,17 +585,23 @@ function bulkCsv(){const U=unpaidOf(meId());const c=co(meId()).name;
   return '﻿입금은행,입금계좌번호,예금주,이체금액,받는분통장표시,내통장표시\n'+U.map(x=>[x.p.bank,x.p.acct,x.p.holder,x.tx.net,`${c} 강사료`,`${x.p.name} ${x.j.dates.map(md).join('.')}`].map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n')}
 
 /* ===== 회사: 결산 ===== */
+function taxCsv(Y){const P=S.apps.filter(a=>a.paidAt&&a.paidAt.startsWith(Y)&&job(a.jobId).coId===meId()).map(a=>{const j=job(a.jobId),amt=j.fee*j.dates.length;return {m:ym(a.paidAt),p:inst(a.instId),amt,tx:tax(amt)}});
+  const M={};for(const x of P){const k=x.m+'|'+x.p.id;M[k]=M[k]||{m:x.m,p:x.p,amt:0,it:0,lt:0};M[k].amt+=x.amt;M[k].it+=x.tx.it;M[k].lt+=x.tx.lt}
+  return '\ufeff지급연월,성명,주민등록번호(직접 입력),업종코드(직접 입력),지급액,소득세,지방소득세,실지급액\n'+Object.values(M).sort((a,b)=>a.m<b.m?-1:1).map(r=>[r.m,r.p.name,'','',r.amt,r.it,r.lt,r.amt-r.it-r.lt].map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n')}
 function vCSum(){const Y=ui.month.slice(0,4),P=S.apps.filter(a=>a.paidAt&&a.paidAt.startsWith(Y)&&job(a.jobId).coId===meId()).map(a=>{const j=job(a.jobId),amt=j.fee*j.dates.length;return {a,j,p:inst(a.instId),amt,tx:tax(amt)}});
   const rows=[];for(let m=1;m<=12;m++){const k=`${Y}-${pad(m)}`,xs=P.filter(x=>ym(x.a.paidAt)===k);if(xs.length)rows.push({m,n:xs.length,amt:xs.reduce((s,x)=>s+x.amt,0),it:xs.reduce((s,x)=>s+x.tx.it,0),lt:xs.reduce((s,x)=>s+x.tx.lt,0),net:xs.reduce((s,x)=>s+x.tx.net,0)})}
   const per={};for(const x of P){const k=x.p.id;per[k]=per[k]||{p:x.p,n:0,amt:0,it:0,lt:0};per[k].n++;per[k].amt+=x.amt;per[k].it+=x.tx.it;per[k].lt+=x.tx.lt}
   const T=rows.reduce((t,r)=>({n:t.n+r.n,amt:t.amt+r.amt,it:t.it+r.it,lt:t.lt+r.lt,net:t.net+r.net}),{n:0,amt:0,it:0,lt:0,net:0});
   return `<div class="row"><h2 class="sp">${Y}년 지급 결산</h2><button class="btn sm" data-act="year" data-n="-1">‹</button><button class="btn sm" data-act="year" data-n="1">›</button></div>
   <p class="mu sm">지급한 날 기준이에요. 원천세는 다음 달 10일까지 신고·납부해요.</p>
+  ${(()=>{const k=todayIso().slice(0,7),xs=P.filter(x=>ym(x.a.paidAt)===k),it=xs.reduce((s,x)=>s+x.tx.it,0),lt=xs.reduce((s,x)=>s+x.tx.lt,0);const nm=new Date();nm.setMonth(nm.getMonth()+1);
+    return `<div class="card" style="background:var(--acs)"><b>이번 달 원천세 (${+k.slice(5)}월 지급분)</b><span class="money">소득세 ${won(it)} · 지방소득세 ${won(lt)} · 합계 ${won(it+lt)}</span><span class="mu sm">${nm.getMonth()+1}월 10일까지 홈택스(소득세)·위택스(지방소득세)에 신고·납부해요. 강사 ${xs.length}명분이에요.</span></div>`})()}
   <div class="card tw"><table><thead><tr><th>월</th><th>건</th><th>강사료</th><th>소득세 3%</th><th>지방세 0.3%</th><th>실지급</th></tr></thead><tbody>
   ${rows.map(r=>`<tr><td>${r.m}월</td><td>${r.n}</td><td>${won(r.amt)}</td><td>${won(r.it)}</td><td>${won(r.lt)}</td><td>${won(r.net)}</td></tr>`).join('')||'<tr><td colspan="6">아직 지급 기록이 없어요</td></tr>'}
   ${rows.length?`<tr><th>합계</th><th>${T.n}</th><th>${won(T.amt)}</th><th>${won(T.it)}</th><th>${won(T.lt)}</th><th>${won(T.net)}</th></tr>`:''}</tbody></table></div>
   <div class="card tw"><h3>강사별 (지급명세서 준비용)</h3><table><thead><tr><th>강사</th><th>건</th><th>강사료</th><th>원천세</th></tr></thead><tbody>${Object.values(per).map(r=>`<tr><td>${esc(r.p.name)}</td><td>${r.n}</td><td>${won(r.amt)}</td><td>${won(r.it+r.lt)}</td></tr>`).join('')||'<tr><td colspan="4">-</td></tr>'}</tbody></table></div>
-  <button class="btn" data-act="copyCSum">결산표 복사</button><p class="mu sm">참고용이에요. 실제 신고는 홈택스와 세무사 확인을 거치세요.</p>`}
+  <button class="btn" data-act="copyCSum">결산표 복사</button><button class="btn" data-act="taxCsv">지급명세서 준비 파일 받기 (CSV)</button>
+  <p class="mu sm">파일에는 지급월·강사 이름·지급액·소득세·지방소득세가 강사별로 들어가요. 주민등록번호는 앱에 저장하지 않으니, 홈택스에 올릴 때 직접 채워 주세요.</p><p class="mu sm">참고용이에요. 실제 신고는 홈택스와 세무사 확인을 거치세요.</p>`}
 
 const VIEWS={cal:vCal,jobs:vJobs,money:vMoney,me:vMe,cjobs:vCJobs,pay:vPay,csum:vCSum};
 
@@ -588,6 +618,10 @@ document.addEventListener('click',async ev=>{
   if(A==='year'){const y=+ui.month.slice(0,4)+ +D.n;ui.month=`${y}-${ui.month.slice(5)}`;return render()}
   if(A==='install'){if(INST.ev){INST.ev.prompt();INST.ev.userChoice.then(c=>{if(c.outcome==='accepted'){$('#instBtn').hidden=true;toast('홈 화면에 강사로를 설치했어요')}INST.ev=null});return}return sheetInstall()}
   if(A==='unpaid')return sheetUnpaid();
+  if(A==='csel'){ui.csel=ui.csel===D.d?null:D.d;return render()}
+  if(A==='cmon'){const n=+D.n;if(!n){ui.cmonth=todayIso().slice(0,7)}else{const [y,m]=(ui.cmonth||todayIso().slice(0,7)).split('-').map(Number);const x=new Date(y,m-1+n,1);ui.cmonth=`${x.getFullYear()}-${pad(x.getMonth()+1)}`}return render()}
+  if(A==='copyMsg')return copy(D.t,'카톡용 문구');
+  if(A==='taxCsv'){const blob=new Blob([taxCsv(ui.month.slice(0,4))],{type:'text/csv'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`사업소득_지급명세_${ui.month.slice(0,4)}.csv`;document.body.appendChild(a);a.click();a.remove();return toast('파일을 받았어요')}
   if(A==='gotPaid'){if(D.kind==='ev'){S.evs.find(x=>x.id===D.id).st='paid'}else{const a=S.apps.find(x=>x.id===D.id);a.selfPaid=true;a.recv='ok'}save();render();sheetUnpaid();return toast('입금 완료로 바꿨어요')}
   if(A==='evst'){const e=S.evs.find(x=>x.id===D.id);e.st=D.st;save();render();return toast(D.st==='no'?'달력에서 숨겼어요':'바꿨어요')}
   if(A==='evdel'){S.evs=S.evs.filter(x=>x.id!==D.id);save();render();return toast('지웠어요')}
