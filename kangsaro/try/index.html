@@ -410,13 +410,14 @@ function vJobs(){const iid=meId(),t=todayIso();
   const myE=entries(iid),myA=new Map(S.apps.filter(a=>a.instId===iid).map(a=>[a.jobId,a])),clash=ds=>myE.filter(e=>ds.includes(e.d));
   const open=all.filter(j=>(!F.r||j.region===F.r)&&(!F.q||`${j.title} ${j.school} ${j.대상}`.includes(F.q))&&(!F.free||!clash(j.dates).length)),more=ui.jmore||20;
   setTimeout(()=>{let c=0;for(const {j} of mine)c+=markRead(j,iid);if(c){const nb=$('[data-tab="jobs"]');if(nb)nb.innerHTML='공고'}},1500);
-  return `<h2>확정된 강의</h2>${mine.length?mine.map(({a,j})=>{const nts=j.notices.filter(n=>(n.to||[]).includes(iid));const un=nts.filter(n=>!n.reads[iid]).length;const miss=j.needs.filter(n=>n!=='프로필'&&!a.docs[n]);
+  return `<h2>확정된 강의</h2>${mine.length?mine.map(({a,j})=>{const nts=j.notices.filter(n=>(n.to||[]).includes(iid));const un=nts.filter(n=>!n.reads[iid]).length;const miss=j.needs.filter(n=>n!=='프로필'&&n!==RRN&&!docOf(a,n));
     return `<div class="card"><div class="row">${chip('confirmed')}<h3 class="sp">${esc(j.region)} ${esc(j.school)} ${esc(j.title)}</h3></div>
     ${nts.length?noticeBox(j,iid):'<span class="mu sm">아직 공지가 없어요.</span>'}
     ${j.desc?`<details><summary>공고 내용 보기</summary><pre class="pf">${esc(j.desc)}</pre></details>`:''}
     <span class="mu">${esc(co(j.coId).name)} · ${j.dates.map(d=>`${md(d)}(${dowOf(d)})`).join('·')} ${esc(j.time)}</span>
-    <div class="mu sm">낼 것: ${j.needs.map(n=>n==='프로필'?'프로필 ✓(자동)':a.docs[n]?`${esc(n)} ✓`:`<b style="color:var(--r2)">${esc(n)} 빠짐</b>`).join(' · ')}</div>
+    <div class="mu sm">낼 것: ${j.needs.map(n=>n==='프로필'?'프로필 ✓(자동)':docOf(a,n)?`${esc(n)} ✓${docOf(a,n).endsWith('(자동)')?'(자동)':''}`:`<b style="color:var(--r2)">${esc(n)} 빠짐</b>`).join(' · ')}</div>
     ${miss.map(n=>`<label class="f">${esc(n)} 올리기 <input type="file" data-act="doc" data-a="${a.id}" data-n="${esc(n)}"></label>`).join('')}
+    ${j.needs.includes(RRN)&&!a.docs[RRN]?`<div class="row"><span class="mu sm sp">원천징수(3.3%) 신고에 필요해서 이 업체만 요청했어요. 업체가 확인하면 바로 지워지고 강사로에는 남지 않아요.</span><button class="btn sm" data-act="rrnSend" data-a="${a.id}">주민등록번호 보내기</button></div>`:''}
     </div>`}).join(''):'<p class="mu">곧 있을 확정 강의가 없어요.</p>'}
   <h2>모집 중인 공고</h2><p class="mu sm">강사로에 들어온 회사의 공고예요. 강사료가 모두 공개돼요. 지원하면 프로필이 같이 가요.</p>
   ${(()=>{const me=inst(iid);return `<div class="card" style="background:var(--acs)"><b>내 지역을 고르면 공고마다 예상 순수익이 계산돼요</b><div class="grid2"><label class="f">출발 지역<select data-act="pf" data-k="region">${GEO[me.region]?'':`<option selected>${esc(me.region||'고르기')}</option>`}${Object.keys(GEO).map(r=>`<option ${me.region===r?'selected':''}>${r}</option>`).join('')}</select></label><label class="f">내 차 연비(km/L)<input type="number" inputmode="decimal" data-act="pf" data-k="kmpl" value="${+me.kmpl||15}"></label></div><span class="mu sm">기름값은 리터당 ${won(+me.fuel||1650)} 기준이에요. '내 정보'에서 바꿀 수 있어요.</span></div>`})()}
@@ -483,11 +484,17 @@ const PF=[['name','이름'],['phone','연락처'],['email','메일'],['region','
 // 인증 강의: 강사로 안에서 업체가 확정하고 강의를 마친 뒤 지급 완료까지 된 강의 (강사가 '안 들어옴'이라 답한 건 제외)
 function verified(iid){const t=todayIso();return S.apps.filter(a=>a.instId===iid&&a.status==='확정'&&a.paidAt&&a.recv!=='no'&&last(job(a.jobId).dates)<t).map(a=>{const j=job(a.jobId);return {d:j.dates[0],n:j.dates.length,co:co(j.coId).name,j}}).sort((a,b)=>a.d<b.d?1:-1)}
 const vLine=v=>`${v.d.replace(/-/g,'.')}${v.n>1?` 외 ${v.n-1}일`:''} ${v.co} · ${v.j.region} ${v.j.school} ${v.j.title}`;
+const VAULT=['통장사본','신분증 사본'],RRN='주민등록번호';
+// 확정된 업체에만: 업체가 따로 올린 서류가 없으면 강사가 '내 서류'에 저장한 파일을 자동으로 넘겨요
+function docOf(a,n){if(a.docs[n])return a.docs[n];const v=(inst(a.instId).vault||{})[n];return a.status==='확정'&&VAULT.includes(n)&&v?v+' (자동)':''}
 function profileText(p){const V=verified(p.id);return `■ 강사 프로필\n이름: ${p.name}\n연락처: ${p.phone}\n메일: ${p.email}\n지역: ${p.region}\n강의 분야: ${p.topics}\n\n${p.intro}\n\n${V.length?`[강사로 인증 강의 ${V.length}회] 업체 확정·강의·입금까지 끝난 강의\n${V.map(v=>'✓ '+vLine(v)).join('\n')}\n\n`:''}[강의 경력 (본인 작성)]\n${p.career}`}
 function vMe(){const p=inst(meId());
-  return `<h2>내 프로필</h2><p class="mu sm">한 번만 쓰면 지원할 때마다 같이 가요. 주민등록번호는 받지 않아요. 계좌는 나를 확정한 회사만 볼 수 있어요.</p>
+  return `<h2>내 프로필</h2><p class="mu sm">한 번만 쓰면 지원할 때마다 같이 가요. 계좌·통장사본·신분증 사본은 나를 확정한 회사만 볼 수 있어요. 주민등록번호는 저장하지 않아요.</p>
   <div class="card"><div class="row">${pic(p)}<div class="sp" style="display:flex;flex-direction:column;gap:4px"><b>프로필 사진</b><span class="mu sm">얼굴이 잘 보이는 정면 사진이 좋아요. 업체가 지원자 목록과 당일 현황에서 봐요.</span></div></div>
   <div class="row"><label class="btn sm">${p.photo?'사진 바꾸기':'사진 올리기'}<input type="file" accept="image/*" data-act="photo" hidden></label>${p.photo?'<button class="btn sm" data-act="photoDel">사진 지우기</button>':''}</div></div>
+  <div class="card"><h3>내 서류</h3><span class="mu sm">한 번 올려 두면, 확정된 업체가 달라고 할 때 자동으로 가요. 지원만 한 업체나 떨어진 업체에는 가지 않아요.</span>
+    ${VAULT.map(n=>{const v=(p.vault||{})[n];return `<div class="row sm"><span class="sp">${esc(n)} ${v?`<span class="chip paid">✓ ${esc(v)}</span>`:'<span class="mu">없음</span>'}</span><label class="btn sm">${v?'바꾸기':'올리기'}<input type="file" accept="image/*,.pdf" data-act="vault" data-n="${n}" hidden></label>${v?`<button class="btn sm" data-act="vaultDel" data-n="${n}">지우기</button>`:''}</div>`}).join('')}
+    <span class="mu sm">주민등록번호는 원천징수 신고 때문에 업체가 요청할 때만, 확정된 강의 화면에서 그 업체에 한 번 보내요. 강사로에는 남지 않아요.</span></div>
   <div class="card">${PF.map(([k,l])=>`<label class="f">${l}${k==='intro'||k==='career'?`<textarea rows="${k==='career'?4:2}" data-act="pf" data-k="${k}">${esc(p[k])}</textarea>`:`<input data-act="pf" data-k="${k}" value="${esc(p[k])}" ${k==='kmpl'||k==='fuel'?'type="number" inputmode="decimal"':''}>`}</label>`).join('')}</div>
   ${(()=>{const V=verified(p.id);return `<div class="card"><h3>강의 이력</h3><span class="mu sm">강사로에서 업체가 확정하고, 강의를 마치고, 강사료 입금까지 끝난 강의만 자동으로 쌓이고 <span class="chip paid">✓ 강사로 인증</span>이 붙어요. 그 전 경력은 위 '강의 경력'에 직접 쓰면 '본인 작성'으로 보여요.</span>
     ${V.map(v=>`<div class="row sm"><span class="chip paid">✓ 인증</span><span class="sp">${esc(vLine(v))}</span></div>`).join('')||'<span class="mu sm">아직 입금까지 끝난 강사로 강의가 없어요.</span>'}
@@ -497,7 +504,7 @@ function vMe(){const p=inst(meId());
 
 /* ===== 회사: 강의 목록·상세 ===== */
 function jobStats(j){const A=appsOf(j.id),cf=A.filter(a=>a.status==='확정');
-  const miss=cf.reduce((n,a)=>n+j.needs.filter(x=>x!=='프로필'&&!a.docs[x]).length,0);
+  const miss=cf.reduce((n,a)=>n+j.needs.filter(x=>x!=='프로필'&&!docOf(a,x)).length,0);
   const unread=j.notices.reduce((n,nt)=>n+(nt.to||[]).filter(i=>!nt.reads[i]).length,0);
   return {ap:A.filter(a=>a.status==='지원').length,cf:cf.length,miss,unread,cx:cf.length?0:A.filter(a=>a.status==='취소'&&a.cxConfirmed).length}}
 // 업체 달력: 강의 있는 날에 점, 날짜를 누르면 그날 강의만
@@ -528,9 +535,9 @@ function vCJob(j){const A=appsOf(j.id),s=jobStats(j);
     <button class="btn sm" style="align-self:flex-start" data-act="pdf" data-a="${a.id}">프로필 PDF 받기</button>
     <details><summary>프로필 보기</summary><pre class="pf">${esc(profileText(cf?p:{...p,phone:'확정하면 보여요',email:'확정하면 보여요'}))}</pre>${cf?`<span class="mu sm">계좌: ${esc(p.bank)} ${esc(p.acct)} ${esc(p.holder)}</span><button class="btn sm" data-act="copyPfOf" data-i="${p.id}">학교 제출용으로 복사</button>`:''}</details>
     ${cf?`<span class="mu sm">리마인드: ${remText(a)}</span><div class="row">${contactBtns(p,`[${co(j.coId).name}] ${p.name} 강사님, ${j.dates.map(d=>`${md(d)}(${dowOf(d)})`).join('·')} ${j.school} ${j.title} 강의 관련 연락드립니다.`)}</div>`:''}
-    ${cf?`<div class="mu sm">받을 것: ${j.needs.map(n=>n==='프로필'?'프로필 ✓':a.docs[n]?`${esc(n)} ✓ <span class="sm">(${esc(a.docs[n])})</span>`:`<b style="color:var(--r2)">${esc(n)} 빠짐</b>`).join(' · ')}</div>`:''}
+    ${cf?`<div class="mu sm">받을 것: ${j.needs.map(n=>n==='프로필'?'프로필 ✓':n===RRN&&a.rrn?`${RRN} ✓ <button class="btn sm" data-act="rrnTake" data-a="${a.id}">복사하고 지우기</button>`:docOf(a,n)?`${esc(n)} ✓ <span class="sm">(${esc(docOf(a,n))})</span>`:`<b style="color:var(--r2)">${esc(n)} 빠짐</b>`).join(' · ')}</div>`:''}
     ${a.status==='지원'?`<button class="btn pri" data-act="confirm" data-a="${a.id}">이 강사로 확정</button>`:cf&&!a.paidAt?`<button class="btn sm" data-act="unconfirm" data-a="${a.id}">확정 취소</button>`:''}</div>`};
-  const missPeople=A.filter(a=>a.status==='확정'&&j.needs.some(n=>n!=='프로필'&&!a.docs[n]));
+  const missPeople=A.filter(a=>a.status==='확정'&&j.needs.some(n=>n!=='프로필'&&!docOf(a,n)));
   return `<button class="btn sm" data-act="back">‹ 목록</button>
   <div class="card"><div class="row"><span class="chip ${j.status==='모집'?'applied':'confirmed'}">${j.status==='모집'?'모집 중':'마감'}</span><h2 class="sp">${esc(j.region)} ${esc(j.school)} ${esc(j.title)}</h2></div>
   <div class="grid2"><label class="f">날짜 (쉼표로)<input data-act="jedit" data-k="dates" value="${j.dates.join(', ')}"></label><label class="f">시간<input data-act="jedit" data-k="time" value="${esc(j.time)}"></label></div>
@@ -547,7 +554,7 @@ function vCJob(j){const A=appsOf(j.id),s=jobStats(j);
   <div class="card"><label class="f">종류<select id="ntKind"><option>일반</option><option>시간표</option><option>집결 장소</option><option>주의사항</option><option>준비물</option></select></label><textarea class="f" id="ntText" rows="3" placeholder="도착 장소, 주차, 기자재, 인원, 준비물, 주의사항 등"></textarea><label class="f">사진·이미지 (시간표, 약도 등, 선택)<input type="file" id="ntImg" accept="image/*"></label><button class="btn pri" data-act="notice" data-j="${j.id}" ${s.cf?'':'disabled'}>확정 강사 ${s.cf}명에게 공지 보내기</button></div>
   ${j.notices.slice().reverse().map(n=>{const to=n.to||[],rd=to.filter(i=>n.reads[i]);return `<div class="card">${n.kind?`<b class="sm">[${esc(n.kind)}]</b>`:''}<pre class="pf">${esc(n.text)}</pre>${n.img?`<img src="${n.img}" alt="공지 이미지" style="width:100%;border-radius:8px">`:''}<span class="mu sm">읽음 ${rd.length}/${to.length}${to.length>rd.length?` · 안 읽음: ${to.filter(i=>!n.reads[i]).map(i=>esc(inst(i).name)).join(', ')}`:''}</span>
    ${to.filter(i=>!n.reads[i]).map(i=>{const p=inst(i);return `<div class="row"><b class="sm sp">${esc(p.name)} (안 읽음)</b>${contactBtns(p,`[${co(j.coId).name}] ${p.name} 강사님, ${j.school} ${j.title} 공지가 올라왔어요. 강사로 앱에서 확인 부탁드립니다.\n\n${n.text.slice(0,120)}`)}</div>`}).join('')}</div>`}).join('')}`}
-function sheetNewJob(p){p=p||{};const N=['프로필','교안','통장사본','신분증 사본','강사 확인서','범죄경력 조회 동의서','결과보고서','수업 사진'];
+function sheetNewJob(p){p=p||{};const N=['프로필','교안','통장사본','신분증 사본','주민등록번호','강사 확인서','범죄경력 조회 동의서','결과보고서','수업 사진'];
   openSheet(`<div class="row"><h2 class="sp">강의 등록</h2><button class="btn sm" data-act="closeSheet">닫기</button></div>
   <div class="card" style="background:var(--acs)"><h3>강사가 헷갈리지 않는 공고</h3><span class="sm">① 날짜는 달력에서 고르세요. 요일이 자동으로 붙어요.<br>② 시간은 09:00~15:50처럼, 교시도 함께 적어 주세요.<br>③ 대상은 학년과 인원까지 (예: 3학년 100명).<br>④ 장소는 학교 이름과 지역을 모두.<br>⑤ 1일 강사료와 받을 서류를 정해 주세요. 빠지면 등록되지 않아요.</span></div>
   <label class="f">학교 요청이나 기존 공고를 붙여 넣으면 채워져요<textarea id="jRaw" rows="4">${esc(p.raw||'')}</textarea></label><button class="btn" data-act="jparse">읽기</button>
@@ -652,6 +659,9 @@ document.addEventListener('click',async ev=>{
       Object.assign(a,{status:'취소',cxConfirmed:true,cxWhy:why.trim(),cxAt:new Date().toISOString()});if(j.status==='마감')j.status='모집';save();render();return toast('취소했어요. 업체에 사유와 함께 알렸어요')}
     if(!confirm(`${j.school} ${j.title} 지원을 취소할까요?`))return;Object.assign(a,{status:'취소',cxAt:new Date().toISOString()});save();render();return toast('지원을 취소했어요. 달력에서도 빠졌어요')}
   if(A==='apply'){const j=job(D.j),old=S.apps.find(x=>x.jobId===j.id&&x.instId===meId());if(old){Object.assign(old,{status:'지원',cxConfirmed:false,cxWhy:''});save();render();return toast('다시 지원했어요')}S.apps.push({id:uid(),jobId:j.id,instId:meId(),status:'지원',docs:{},paidAt:null,km:kmBetween(inst(meId()).region,j.region)||0,toll:0});save();render();return toast('지원했어요. 프로필이 같이 갔어요')}
+  if(A==='vaultDel'){const p=inst(meId());delete (p.vault||{})[D.n];save();render();return toast(`${D.n}을(를) 지웠어요`)}
+  if(A==='rrnSend'){const a=S.apps.find(x=>x.id===D.a),v=(prompt('주민등록번호 13자리 (이 업체에만 한 번 전달돼요)')||'').replace(/\D/g,'');if(!v)return;if(v.length!==13)return toast('13자리 숫자로 넣어 주세요');a.rrn=v.slice(0,6)+'-'+v.slice(6);a.docs[RRN]='전달됨';save();render();return toast('보냈어요. 업체가 확인하면 바로 지워져요')}
+  if(A==='rrnTake'){const a=S.apps.find(x=>x.id===D.a);const v=a.rrn;delete a.rrn;a.docs[RRN]='업체 확인 완료';save();render();return copy(v,'주민등록번호 (강사로에서는 지웠어요)')}
   if(A==='copyPf')return copy(profileText(inst(meId())),'프로필');
   if(A==='copyPfOf')return copy(profileText(inst(D.i)),'프로필');
   if(A==='copyYear'||A==='copyCSum')return copy(tableText(),'결산표');
@@ -670,8 +680,8 @@ document.addEventListener('click',async ev=>{
   if(A==='notice'){const j=job(D.j),tx=$('#ntText').value.trim();if(!tx&&!$('#ntImg').files[0])return toast('공지 내용을 쓰거나 이미지를 넣으세요');
     const f=$('#ntImg').files[0];const img=f?await shrink(f):'';
     j.notices.push({id:uid(),kind:$('#ntKind').value,text:tx,img,at:new Date().toISOString(),to:appsOf(j.id).filter(a=>a.status==='확정').map(a=>a.instId),reads:{}});save();render();return toast('공지를 보냈어요. 강사 일정 카드 맨 위에 떠요')}
-  if(A==='nudgeDocs'){const j=job(D.j);const ms=appsOf(j.id).filter(a=>a.status==='확정'&&j.needs.some(n=>n!=='프로필'&&!a.docs[n]));
-    for(const a of ms)j.notices.push({id:uid(),text:`[서류 요청] ${j.school} ${j.title} 강의에 ${j.needs.filter(n=>n!=='프로필'&&!a.docs[n]).join(', ')}이(가) 아직 없어요. 강사로 앱 "공고 > 확정된 강의"에서 올려 주세요.`,at:new Date().toISOString(),to:[a.instId],reads:{}});
+  if(A==='nudgeDocs'){const j=job(D.j);const ms=appsOf(j.id).filter(a=>a.status==='확정'&&j.needs.some(n=>n!=='프로필'&&!docOf(a,n)));
+    for(const a of ms)j.notices.push({id:uid(),text:`[서류 요청] ${j.school} ${j.title} 강의에 ${j.needs.filter(n=>n!=='프로필'&&!docOf(a,n)).join(', ')}이(가) 아직 없어요. 강사로 앱 "공고 > 확정된 강의"에서 올려 주세요.`,at:new Date().toISOString(),to:[a.instId],reads:{}});
     save();render();return toast(`${ms.length}명에게 요청 공지를 보냈어요`)}
   if(A==='cnew')return sheetNewJob();
   if(A==='jparse'){const raw=$('#jRaw').value,r=parseNotice(raw);const feeV=feeOf(raw),fee=[0,feeV?String(feeV):'',''];
@@ -692,6 +702,7 @@ document.addEventListener('change',ev=>{const el=ev.target,D=el.dataset||{};
   if(D.act==='jf'){ui.jmore=0;ui.jf[D.k]=el.type==='checkbox'?el.checked:el.value.trim();render();return}
   if(D.act==='km'||D.act==='toll'){const o=D.kind==='ev'?S.evs.find(x=>x.id===D.id):S.apps.find(x=>x.id===D.id);o[D.act]=+el.value||0;save();render()}
   if(D.act==='pf'){const p=inst(meId());p[D.k]=D.k==='kmpl'||D.k==='fuel'?+el.value||0:el.value;save();render()}
+  if(D.act==='vault'&&el.files[0]){const p=inst(meId());p.vault=p.vault||{};p.vault[D.n]=el.files[0].name;save();render();toast(`${D.n} 저장했어요 (체험판은 파일 이름만 저장해요)`);return}
   if(D.act==='photo'&&el.files[0]){shrink(el.files[0],480).then(u=>{if(!u)return toast('사진을 읽지 못했어요');inst(meId()).photo=u;save();render();toast('프로필 사진을 올렸어요')});return}
   if(D.act==='doc'&&el.files[0]){const a=S.apps.find(x=>x.id===D.a);a.docs[D.n]=el.files[0].name;save();render();toast(`${D.n} 냈어요 (체험판은 파일 이름만 저장해요)`)}
   if(D.act==='jedit'){const j=job(ui.jobId);const old=j[D.k];let v=el.value.trim();
