@@ -11,11 +11,11 @@
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="강사로">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="../fonts/font.css">
 <style>
 :root{--bg:#F3F5F4;--sf:#FFFFFF;--fg:#16222B;--mu:#4F5D66;--ln:#D5DDDC;--ac:#1F6F78;--acs:#E1EEEE;--nv:#2D3E73;--nvs:#E3E7F4;
 --g1:#E3E7E9;--g2:#3B4650;--b1:#DCEBFA;--b2:#1A4F8A;--p1:#ECE2F7;--p2:#5B3A8C;--k1:#DDF1E4;--k2:#1E6B3A;--r1:#FDECE3;--r2:#9A3608;--sun:#B3261E;
-font-family:'IBM Plex Sans KR','Apple SD Gothic Neo','Malgun Gothic',sans-serif}
+font-family:'S-Core Dream','Apple SD Gothic Neo','Malgun Gothic',sans-serif}
 @media (prefers-color-scheme:dark){:root{--bg:#0F1719;--sf:#172225;--fg:#E7EEEE;--mu:#A3B2B5;--ln:#2C3A3E;--ac:#5FB7BF;--acs:#183338;--nv:#9DAEE6;--nvs:#1E2640;
 --g1:#2A3337;--g2:#C9D2D6;--b1:#1B2F47;--b2:#9CC6F2;--p1:#2E2540;--p2:#CDB5EE;--k1:#173426;--k2:#94D9AE;--r1:#3A2116;--r2:#F2A57E;--sun:#F28B82;color-scheme:dark}}
 *{box-sizing:border-box}
@@ -312,8 +312,8 @@ function pdfPage(p,cf){const V=verified(p.id),cr=String(p.career||'').split('\n'
   ${V.length?`<h2>강사로 인증 강의 ${V.length}회</h2><p class="mu">업체 확정, 강의, 강사료 입금까지 강사로에서 확인된 기록이에요.</p><ul>${V.map(v=>`<li>✓ ${esc(vLine(v))}</li>`).join('')}</ul>`:''}
   <h2>강의 경력 (본인 작성)</h2><ul>${cr.map(x=>`<li>${esc(x)}</li>`).join('')||'<li>적은 내용 없음</li>'}</ul>
   <p class="ft">강사로에서 받은 프로필 · ${todayIso().replace(/-/g,'.')}</p></section>`}
-function printPdf(title,pages){const html=`<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>${esc(title)}</title><style>
-  body{font-family:'Pretendard','Noto Sans KR',system-ui,sans-serif;color:#1d2329;margin:0}section{padding:28px 32px;page-break-after:always}section:last-child{page-break-after:auto}
+function printPdf(title,pages){const html=`<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>${esc(title)}</title><link rel="stylesheet" href="${new URL('../fonts/font.css',location.href).href}"><style>
+  body{font-family:'S-Core Dream','Pretendard','Noto Sans KR',system-ui,sans-serif;color:#1d2329;margin:0}section{padding:28px 32px;page-break-after:always}section:last-child{page-break-after:auto}
   .hd{display:flex;justify-content:space-between;font-size:12px;color:#5b6670;border-bottom:2px solid #1f6f78;padding-bottom:6px;margin-bottom:18px}.top{display:flex;gap:18px;align-items:center}
   img{width:110px;height:110px;border-radius:50%;object-fit:cover}h1{font-size:26px;margin:0 0 6px}h2{font-size:16px;margin:22px 0 4px;color:#1f6f78}p{margin:4px 0;font-size:14px;line-height:1.6}
   .intro{margin-top:14px}.mu{color:#5b6670;font-size:12px}ul{margin:6px 0;padding-left:18px;font-size:14px;line-height:1.7}.ft{margin-top:28px;font-size:11px;color:#8a949c}
