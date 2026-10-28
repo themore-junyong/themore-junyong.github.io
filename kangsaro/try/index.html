@@ -464,9 +464,9 @@ function sheetPaste(pre){const p=pre||{};
    <label class="f">왕복 거리(km)<input id="pKm" type="number" inputmode="numeric" value="${p.km||''}"></label><label class="f">통행료(원)<input id="pToll" type="number" inputmode="numeric" value="${p.toll||''}"></label>
   </div>
   <div id="pWarn"></div>
-  <button class="btn pri" data-act="addMail">달력에 넣고 Gmail 열기</button>
+  <button class="btn pri" data-act="addMail">달력에 넣고 지원 메일 쓰기</button>
   <div class="grid2"><button class="btn" data-act="addApplied">'지원'으로만 넣기</button><button class="btn" data-act="addOnly">'확정'으로 넣기</button></div>
-  <p class="mu sm">Gmail이 받는 사람·제목·본문이 채워진 채로 열려요. 프로필 파일을 붙이고 보내기는 직접 누르세요.</p>`);
+  <p class="mu sm">달력에 '지원'으로 넣고, 받는 사람·제목·본문이 채워진 메일 쓰기 버튼이 나와요. 프로필 파일을 붙이고 보내기는 직접 누르세요.</p>`);
   ui.dows=p.dows||{};pWarn()}
 function readPaste(){const g=id=>$('#'+id).value.trim();
   const dates=g('pDates').split(/[,\s]+/).filter(x=>/^\d{4}-\d{2}-\d{2}$/.test(x)).sort();
@@ -479,6 +479,22 @@ function mailOf(p){const me=inst(meId());const place=p.title;
   const su=`[강사 지원] ${p.dates.map(md).join('·')} ${p.title} - ${me.name}`;
   const body=`안녕하세요, ${p.org?p.org+' ':''}담당자님.\n강사 ${me.name}입니다.\n\n${p.dates.map(d=>`${mdK(d)}(${dowOf(d)})`).join('·')} ${place} 강의에 지원합니다.\n${p.dates.map(d=>`- 일시: ${md(d)}(${dowOf(d)})${p.time?' '+p.time:''}`).join('\n')}\n\n${me.intro}\n주제: ${me.topics}\n\n프로필 첨부합니다.\n연락처: ${me.phone}\n\n감사합니다.\n${me.name} 드림`;
   return {su,body,url:`https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(p.to)}&su=${encodeURIComponent(su)}&body=${encodeURIComponent(body)}`}}
+
+// 폰에서는 Gmail 웹 창이 막히거나 받은편지함만 열려서, 사람이 직접 누르는 링크로 앱을 엶
+function sheetMail(m,to){const q=`to=${encodeURIComponent(to||'')}&subject=${encodeURIComponent(m.su)}&body=${encodeURIComponent(m.body)}`;
+  const mailto=`mailto:${encodeURIComponent(to||'')}?subject=${encodeURIComponent(m.su)}&body=${encodeURIComponent(m.body)}`,gApp=`googlegmail:///co?${q}`;ui.mail={...m,to:to||''};
+  openSheet(`<div class="row"><h2 class="sp">지원 메일 보내기</h2><button class="btn sm" data-act="closeSheet">닫기</button></div>
+  ${to?`<span class="mu sm">받는 사람: ${esc(to)}</span>`:'<div class="alert">공고에 메일 주소가 없어요. 받는 사람은 메일 앱에서 직접 넣어 주세요.</div>'}
+  <b class="sm">문구를 복사해서 붙여 넣기</b>
+  <div class="row">${to?`<button class="btn pri" data-act="mailCopy" data-k="to">받는 메일 복사</button>`:''}<button class="btn pri" data-act="mailCopy" data-k="su">제목 복사</button><button class="btn pri" data-act="mailCopy" data-k="body">본문 복사</button></div>
+  <b class="sm" style="margin-top:6px">또는 메일 앱 바로 열기 (내용이 채워져요)</b>
+  ${isIOS?`<a class="btn" href="${esc(gApp)}">Gmail 앱으로 쓰기</a><a class="btn" href="${esc(mailto)}">아이폰 기본 메일로 쓰기</a>`
+   :isAndroid?`<a class="btn" href="${esc(mailto)}">Gmail 앱으로 쓰기</a><span class="mu sm">앱 목록이 뜨면 Gmail을 고르세요.</span>`
+   :`<a class="btn" href="${esc(m.url)}" target="_blank" rel="noopener">Gmail로 쓰기</a><a class="btn" href="${esc(mailto)}">다른 메일 프로그램으로 쓰기</a>`}
+  <details><summary>메일 내용 미리 보기</summary><pre class="pf">${esc(m.su)}
+
+${esc(m.body)}</pre></details>
+  <p class="mu sm">프로필 파일을 붙이고 보내기는 직접 눌러 주세요.</p>`)}
 
 /* ===== 강사: 결산 ===== */
 function vMoney(){const E=entries(meId()).filter(e=>e.st!=='applied');const Y=ui.month.slice(0,4);
@@ -640,6 +656,7 @@ document.addEventListener('click',async ev=>{
   if(A==='year'){const y=+ui.month.slice(0,4)+ +D.n;ui.month=`${y}-${ui.month.slice(5)}`;return render()}
   if(A==='install'){if(INST.ev){INST.ev.prompt();INST.ev.userChoice.then(c=>{if(c.outcome==='accepted'){$('#instBtn').hidden=true;toast('홈 화면에 강사로를 설치했어요')}INST.ev=null});return}return sheetInstall()}
   if(A==='unpaid')return sheetUnpaid();
+  if(A==='mailCopy'&&ui.mail)return copy(ui.mail[D.k],{su:'제목',body:'본문',to:'받는 메일'}[D.k]);
   if(A==='gcal'||A==='ics'){const c=calEv(D.id,D.d);if(!c)return;if(A==='gcal'){window.open(gcalUrl(c),'_blank');return toast("구글 캘린더에서 '저장'을 누르세요")}
     const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([icsText(c)],{type:'text/calendar'}));a.download=`강의_${c.d}.ics`;document.body.appendChild(a);a.click();a.remove();return toast('파일을 열면 캘린더에 추가돼요')}
   if(A==='csel'){ui.csel=ui.csel===D.d?null:D.d;return render()}
@@ -663,10 +680,8 @@ document.addEventListener('click',async ev=>{
   if(A==='parse'){const raw=$('#pRaw').value;const r=parseNotice(raw);const feeV=feeOf(raw),fee=[0,feeV?String(feeV):'',''];
     sheetPaste({raw,km:kmBetween(inst(meId()).region,r.지역)||'',title:[r.지역,r.학교명,r.강의명].filter(Boolean).join(' '),org:r.기관명,dates:r.dates,time:r.시간,to:r.to,dows:r.dows,fee:fee[1]?(+fee[1].replace(/,/g,''))*(fee[2]?10000:1):''});return toast('공고를 읽었어요. 빈칸만 확인하세요')}
   if(A==='addMail'||A==='addOnly'||A==='addApplied'){const p=readPaste();if(!p.dates.length){pWarn();return toast('날짜를 넣어 주세요')}if(!p.title)return toast('강의 이름을 넣어 주세요');
-    if(A==='addMail'&&!p.to)return toast('받는 메일을 넣어 주세요');
     S.evs.push({id:uid(),instId:meId(),dates:p.dates,title:p.title,org:p.org,time:p.time,fee:p.fee,km:p.km,toll:p.toll,st:A==='addOnly'?'confirmed':'applied',to:p.to});save();
-    if(A==='addMail'){const m=mailOf(p);const w=window.open(m.url,'_blank');if(!w)copy(m.body,'메일 본문')}
-    closeSheet();ui.tab='cal';ui.sel=p.dates[0];ui.month=ym(p.dates[0]);render();return toast(A==='addMail'?'달력에 "지원"으로 넣고 Gmail을 열었어요':A==='addApplied'?'달력에 "지원"으로 넣었어요':'달력에 "확정"으로 넣었어요')}
+    closeSheet();ui.tab='cal';ui.sel=p.dates[0];ui.month=ym(p.dates[0]);render();if(A==='addMail')sheetMail(mailOf(p),p.to);return toast(A==='addMail'?'달력에 "지원"으로 넣었어요. 문구를 복사해 쓰세요':A==='addApplied'?'달력에 "지원"으로 넣었어요':'달력에 "확정"으로 넣었어요')}
   if(A==='pdf'){const a=S.apps.find(x=>x.id===D.a),p=inst(a.instId);return printPdf(`${p.name} 강사 프로필`,[pdfPage(p,a.status==='확정')])}
   if(A==='pdfAll'){const j=job(D.j),L=appsOf(j.id).filter(a=>a.status==='지원'||a.status==='확정');return printPdf(`${j.school} ${j.title} 지원자 프로필`,L.map(a=>pdfPage(inst(a.instId),a.status==='확정')))}
   if(A==='jmore'){ui.jmore=(ui.jmore||20)+20;return render()}
