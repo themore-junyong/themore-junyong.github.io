@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<meta name="build" content="261028-1149">
+<meta name="build" content="261028-1211">
 <title>강사로</title>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#1F6F78">
@@ -714,9 +714,10 @@ document.addEventListener('change',ev=>{const el=ev.target,D=el.dataset||{};
 });
 // 앱 설치: 안드로이드 크롬은 버튼 한 번, 아이폰은 그림 안내, 카톡 안에서는 바깥 브라우저로 넘기기
 const INST={ev:null,ua:navigator.userAgent,standalone:matchMedia('(display-mode: standalone)').matches||navigator.standalone===true};
-const isIOS=/iPhone|iPad|iPod/.test(INST.ua)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1),isKakao=/KAKAOTALK/i.test(INST.ua),isAndroid=/Android/.test(INST.ua);
+const isIOS=/iPhone|iPad|iPod/.test(INST.ua)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1),isIOSOther=/CriOS|FxiOS|EdgiOS|NAVER|Whale|DaumApps/.test(INST.ua),isKakao=/KAKAOTALK/i.test(INST.ua),isAndroid=/Android/.test(INST.ua);
 function sheetInstall(){openSheet(`<div class="row"><h2 class="sp">홈 화면에 강사로 두기</h2><button class="btn sm" data-act="closeSheet">닫기</button></div>
-  ${isIOS?`<ol style="margin:0;padding-left:20px;line-height:2"><li>사파리 화면 아래(아이패드는 위)의 <b>공유 버튼</b> <span aria-hidden="true">⬆︎</span>을 눌러요</li><li>목록을 올려서 <b>'홈 화면에 추가'</b>를 눌러요</li><li>오른쪽 위 <b>'추가'</b>를 누르면 끝이에요</li></ol><p class="mu sm">사파리에서만 돼요. 다른 앱 안에서 열었다면 사파리로 열어 주세요.</p>`
+  ${isIOS&&isIOSOther?`<p>지금은 <b>${/CriOS/.test(INST.ua)?'크롬':'다른 브라우저'}</b>${/CriOS/.test(INST.ua)?'으':''}로 열려 있어요. 아이폰·아이패드는 <b>사파리</b>에서 설치해요.</p><ol style="margin:0;padding-left:20px;line-height:2"><li>주소창 오른쪽(아이패드는 위)의 <b>공유 버튼</b> <span aria-hidden="true">⬆︎</span>을 눌러요</li><li>목록에서 <b>'Safari로 열기'</b>를 눌러요</li><li>사파리가 열리면 아래 <b>공유 버튼</b> <span aria-hidden="true">⬆︎</span> → <b>'홈 화면에 추가'</b> → <b>'추가'</b></li></ol><p class="mu sm">목록에 '홈 화면에 추가'가 바로 보이면 그걸 눌러도 돼요.</p>`
+  :isIOS?`<ol style="margin:0;padding-left:20px;line-height:2"><li>사파리 화면 아래(아이패드는 위)의 <b>공유 버튼</b> <span aria-hidden="true">⬆︎</span>을 눌러요</li><li>목록을 올려서 <b>'홈 화면에 추가'</b>를 눌러요</li><li>오른쪽 위 <b>'추가'</b>를 누르면 끝이에요</li></ol><p class="mu sm">사파리에서만 돼요. 다른 앱 안에서 열었다면 사파리로 열어 주세요.</p>`
   :`<ol style="margin:0;padding-left:20px;line-height:2"><li>크롬 오른쪽 위 <b>점 세 개(⋮)</b>를 눌러요</li><li><b>'앱 설치'</b> 또는 <b>'홈 화면에 추가'</b>를 눌러요</li><li><b>'설치'</b>를 누르면 끝이에요</li></ol><p class="mu sm">삼성 인터넷은 아래 메뉴(≡) → '현재 페이지 추가' → '홈 화면'이에요.</p>`}`)}
 if(!INST.standalone){
   if(isKakao){const u=location.href;$('#kakaoBar').hidden=false;$('#kakaoOut').href='kakaotalk://web/openExternal?url='+encodeURIComponent(u)}
@@ -730,6 +731,6 @@ document.addEventListener('paste',ev=>{if(ev.target.id==='pRaw')setTimeout(()=>{
 document.addEventListener('input',ev=>{if(['pDates','pRaw'].includes(ev.target.id))pWarn()});
 render();
 </script>
-<script type="module" src="real.js?v=261028-1149"></script>
+<script type="module" src="real.js?v=261028-1211"></script>
 </body>
 </html>
