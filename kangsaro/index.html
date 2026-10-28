@@ -59,6 +59,14 @@ section{display:flex;flex-direction:column;gap:18px}
 .pain li{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px;font-size:15px}
 .pain li b{display:block;font-size:15px}
 .pain li span{color:var(--muted);font-size:14px}
+.pair{display:flex;flex-direction:column;gap:10px;margin:0;padding:0;list-style:none}
+.pair li{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--teal);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:6px}
+.pair.n li{border-left-color:var(--navy)}
+.pair li b{font-size:15px}
+.pair li b::before{content:"이런 불편  ";font-size:12px;color:var(--warn);font-weight:700}
+.pair li span:not(.chip){font-size:14px;color:var(--fg)}
+.pair li > span:not(.chip)::before{content:"✓ 강사로  ";font-size:12px;color:var(--teal);font-weight:700}
+.pair.n li > span:not(.chip)::before{color:var(--navy)}
 .chain{background:var(--warn-soft);color:var(--warn);border-radius:12px;padding:12px 14px;font-size:15px;font-weight:600}
 /* 기능 */
 .feat{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
@@ -93,7 +101,7 @@ summary:focus-visible{outline:2px solid var(--teal);outline-offset:2px;border-ra
     <h1>공고 찾고, 프로필 고치고, 강사료 기다리는 일. 이제 한곳에서 끝내세요.</h1>
     <p class="lead">현장에서 강의하는 강사가 직접 겪은 불편에서 시작했습니다. 강사는 일정과 돈이 한눈에 보이고, 업체는 놓치는 일이 사라집니다.</p>
     <div class="card" aria-label="강의 카드 예시">
-      <div class="chips"><span class="chip c-gray">지원</span><span class="chip c-blue">확정</span><span class="chip c-purple">강의 끝·미지급</span><span class="chip c-green">지급 완료</span></div>
+      <div class="chips"><span class="chip c-gray">지원</span><span class="chip c-blue">확정</span><span class="chip c-purple">미입금</span><span class="chip c-green">입금 완료</span></div>
       <h3>10월 28일 (수) 천안 ○○공고 취업 특강 <span class="chip c-blue">확정</span></h3>
       <div class="calc">
         <span>강사료</span><span class="r">300,000원</span>
@@ -113,25 +121,20 @@ summary:focus-visible{outline:2px solid var(--teal);outline-offset:2px;border-ra
   <!-- 강사 -->
   <section>
     <span class="eyebrow t">강사님이라면</span>
-    <h2>이런 불편, 겪어 보셨죠?</h2>
-    <ul class="pain">
-      <li><b>업체마다 다른 프로필 양식</b><span>같은 내용을 한글, 워드, PPT로 몇 번씩 다시 만듭니다.</span></li>
-      <li><b>공고 볼 때마다 지원 메일 새로 쓰기</b><span>단톡방에 공고가 올라오면 이미 늦을 때가 많습니다.</span></li>
-      <li><b>여러 업체 일정이 뒤섞임</b><span>같은 날 두 곳에 지원했다가 겹치는 걸 늦게 알아챕니다.</span></li>
-      <li><b>지원하고 마냥 기다리기</b><span>마감됐는지, 떨어졌는지 알려 주지 않아 그날 다른 강의를 잡지도 못하고 기다립니다.</span></li>
-      <li><b>강사료가 들어왔는지 기억이 안 남</b><span>강의 끝나고 한두 달 뒤 지급되면 어디가 아직인지 헷갈립니다.</span></li>
-      <li><b>5월 종합소득세</b><span>1년 치 3.3% 내역을 통장에서 하나하나 찾습니다.</span></li>
+    <h2>강사님, 이런 불편 있으셨죠?</h2>
+    <p class="lead">강사로 하나로 한 번에 해결됩니다.</p>
+    <ul class="pair">
+      <li><b>단톡방 공고를 하나하나 읽고 달력에 옮겨 적기</b><span>공고를 붙여 넣으면 날짜·요일·시간·장소·강사료·업체를 앱이 읽어 내 달력에 바로 넣어요. 실제 강사 톡방 공고로 시험해 보니 강사료는 96%를 자동으로 읽었어요.</span></li>
+      <li><b>공고 볼 때마다 지원 메일 새로 쓰기</b><span>앱 공고는 버튼 한 번에 프로필이 같이 가요. 톡방 공고는 받는 사람·제목·본문이 채워진 Gmail이 열려요.</span></li>
+      <li><b>지원하고 마감됐는지 몰라 마냥 기다리기</b><span>업체가 확정하면 "확정", 마감하면 "마감" 알림이 바로 와요. 떨어진 날은 달력에서 비워져 다른 강의를 잡을 수 있어요.</span></li>
+      <li><b>같은 날 두 곳에 지원했다가 겹치는 걸 늦게 알기</b><span>공고마다 "이날 이미 일정이 있어요"가 뜨고, 안 겹치는 공고만 골라 볼 수 있어요.</span></li>
+      <li><b>이 강의, 기름값 빼면 남는 게 있나?</b><span>내 지역을 정해 두면 공고마다 거리·가는 시간·기름값·3.3%를 뺀 예상 순수익이 나와요.</span></li>
+      <li><b>몇 시에 출발해야 하지?</b><span>일정과 공고 상세에 "늦어도 07:30 출발"처럼 출발 시간이 나와요.</span></li>
+      <li><b>강사료가 들어왔는지 기억이 안 남</b><span>강의가 끝나는 시각에 바로 '미입금'으로 바뀌고, "미입금 N건" 버튼 하나로 오래된 순서대로 봐요. 업체가 보내면 "입금 확인" 알림이 와요.</span></li>
+      <li><b>업체마다 다른 프로필 양식</b><span>프로필은 한 번만 쓰면 돼요. 강사로에서 입금까지 끝난 강의는 "✓ 강사로 인증"으로 경력에 자동으로 쌓여요.</span></li>
+      <li><b>5월 종합소득세 준비</b><span>월별 강사료·3.3%·교통비·순수익이 정리되고, 결산표를 복사해 쓸 수 있어요.</span></li>
+      <li><b>확정된 강의를 사정이 생겨 취소해야 할 때</b><span>사유를 적고 취소하면 업체에 바로 전달돼요. 확정 전 지원은 버튼 하나로 취소돼요.</span></li>
     </ul>
-    <p>이 불편을 없애려고 만들었습니다.</p>
-    <div class="feat t2">
-      <div><h3>프로필은 한 번만</h3><p>한 번 쓰면 업체·학교 양식에 맞춰 나옵니다.</p></div>
-      <div><h3>공고 붙여넣기 → 지원서 완성</h3><p>날짜, 장소, 대상을 AI가 읽고 지원 메일을 써 둡니다. 보내기는 내가 누릅니다.</p></div>
-      <div><h3>버튼 한 번으로 지원</h3><p>앱에 올라온 공고는 프로필이 바로 붙어서 갑니다. 단톡방 공고는 받는 사람·제목·본문이 채워진 Gmail이 열리고, 프로필 파일만 붙여 보내면 됩니다.</p></div>
-      <div><h3>내 강의 달력</h3><p>지원 → 확정 → 강의 끝 → 지급 완료를 색으로 봅니다. 업체가 확정하면 달력에 바로 뜹니다.</p></div>
-      <div><h3>지원 결과 바로 알림</h3><p>업체가 확정하면 "확정", 마감하면 "마감" 알림이 바로 옵니다. 떨어진 날은 달력에서 비워져 다른 강의를 잡을 수 있습니다.</p></div>
-      <div><h3>겹침·미지급 알림</h3><p>같은 날 일정이 겹치거나 강사료가 늦으면 알려 줍니다.</p></div>
-      <div><h3>순수익과 결산</h3><p>강사료에서 3.3%와 기름값을 뺀 금액, 월별·연말 합계를 정리합니다.</p></div>
-    </div>
   </section>
 
   <div class="bridge" aria-hidden="true"><span class="t">강사</span><i></i><span class="n">업체</span></div>
@@ -139,26 +142,21 @@ summary:focus-visible{outline:2px solid var(--teal);outline-offset:2px;border-ra
   <!-- 회사 -->
   <section>
     <span class="eyebrow n">강의 업체라면</span>
-    <h2>작은 실수 하나가 운영을 흔들고, 강사에게 돌아갑니다.</h2>
-    <ul class="pain">
-      <li><b>강사마다 다른 형식의 프로필</b><span>학교가 원하는 양식으로 다시 받거나 직접 고칩니다.</span></li>
-      <li><b>교안·통장사본·서류 받기</b><span>카톡, 메일, 드라이브로 흩어져 누가 냈는지 매번 확인합니다.</span></li>
-      <li><b>일정 변경 전달</b><span>학교가 시간을 바꾸면 강사에게 전달하다 하나씩 빠집니다.</span></li>
-      <li><b>공지를 안 읽는 강사</b><span>도착 장소, 기자재, 인원을 보냈는데 당일에 다시 묻습니다.</span></li>
-      <li><b>당일 지각·갑작스러운 취소</b><span>강의 시작이 다가오는데 강사가 출발했는지 몰라 전화만 돌립니다.</span></li>
-      <li><b>강사비 정산</b><span>수십 명에게 이체하고 3.3%를 계산해 월별로 정리합니다.</span></li>
+    <h2>업체 대표님, 이런 실수할까 봐 걱정되셨죠?</h2>
+    <p class="lead">강사로 하나로 한 번에 해결됩니다.</p>
+    <ul class="pair n">
+      <li><b>공고를 올려도 강사들이 제대로 봤을까</b><span>날짜를 달력에서 고르면 요일이 자동으로 붙고, 빈칸이 있으면 등록되지 않아요. 올린 공고는 강사 공고 목록에 바로 떠요.</span></li>
+      <li><b>지원자가 카톡·메일·문자로 흩어짐</b><span>내 강의마다 지원자가 사진·인증 이력과 함께 모여요. 프로필은 한 명씩 또는 한 번에 PDF로 받아요.</span></li>
+      <li><b>학교마다 원하는 프로필 양식이 달라 다시 만들기 <span class="chip c-purple">검토 중</span></b><span>학교 양식을 한 번 올리면 확정 강사 전원의 프로필을 그 양식에 맞춰 한 번에 채워 주는 기능을 준비하고 있어요.</span></li>
+      <li><b>강의가 많아 일정이 뒤섞임</b><span>운영판 달력에 강의 있는 날과 건수가 보이고, 준비가 덜 된 날은 다른 색으로 알려 줘요.</span></li>
+      <li><b>교안·통장사본 누가 냈는지 매번 확인</b><span>강의별로 받을 서류를 정해 두면 빠진 사람만 표시되고, 요청 공지도 버튼 하나로 보내요.</span></li>
+      <li><b>공지를 보냈는데 당일에 다시 묻는 강사</b><span>공지마다 누가 읽었는지 보이고, 안 읽은 강사 옆에 전화·문자 버튼이 있어요.</span></li>
+      <li><b>강의 날짜를 잊는 강사</b><span>강의 7일·3일·1일 전에 확정 강사에게 리마인드 알림이 자동으로 가요.</span></li>
+      <li><b>당일 지각·갑작스러운 취소</b><span>강사가 전날 "확인했어요", 당일 "출발·도착"을 누르면 한 화면에 보여요. 시작 1시간 전까지 출발 안 한 강사는 빨간색이에요.</span></li>
+      <li><b>학교가 시간을 바꾸면 강사에게 하나씩 전달</b><span>날짜·시간을 고치면 확정 강사 달력도 같이 바뀌고 변경 공지가 자동으로 가요.</span></li>
+      <li><b>수십 명 강사비 이체와 3.3% 계산</b><span>은행 대량이체 파일을 만들어 주고, 강사마다 '지급 완료'를 누르면 강사에게 입금 확인 알림이 가요. 강사가 확인했는지도 보여요.</span></li>
+      <li><b>매달 원천세 신고, 연말 지급명세서</b><span>이번 달 납부할 소득세·지방소득세와 기한을 알려 주고, 지급명세서 준비 파일을 받아요. 주민등록번호는 저장하지 않아요.</span></li>
     </ul>
-    <p class="chain">서류 하나 빠짐 → 학교에 늦게 제출 → 강사에게 급히 재요청 → 강사도 업체도 지칩니다.</p>
-    <p>이 흐름을 끊으려고 만들었습니다.</p>
-    <div class="feat n2">
-      <div><h3>강의 운영판</h3><p>모든 강의 일정과 배정 강사를 한 화면에서 봅니다.</p></div>
-      <div><h3>프로필 자동 맞춤</h3><p>강사 프로필이 학교 양식에 맞춰 나옵니다.</p></div>
-      <div><h3>교안·서류 한곳에</h3><p>강의별로 받을 것을 정해 두면, 빠진 사람만 알려 줍니다.</p></div>
-      <div><h3>공지와 읽음 확인</h3><p>강의별로 한 번에 보내고, 누가 읽었는지 봅니다.</p></div>
-      <div><h3>전날 확인·당일 출발 확인</h3><p>강사가 전날 "확인했어요", 당일 "출발·도착"을 누르면 한 화면에 보입니다. 시작 1시간 전까지 출발하지 않은 강사는 빨간색으로 알려 줍니다.</p></div>
-      <div><h3>일정 변경 바로 전달</h3><p>시간을 바꾸면 그 강사 달력도 같이 바뀝니다.</p></div>
-      <div><h3>강사비 한 번에 이체</h3><p>은행 대량이체 엑셀을 만들어 주고, 지급 완료를 누르면 강사에게 입금 확인 알림이 갑니다. 3.3% 월별·연말 결산까지.</p></div>
-    </div>
   </section>
 
   <!-- 반박 -->
@@ -166,7 +164,7 @@ summary:focus-visible{outline:2px solid var(--teal);outline-offset:2px;border-ra
     <span class="eyebrow t">이런 걱정이 드실 수 있어요</span>
     <h2>먼저 답해 드릴게요</h2>
     <div class="qa">
-      <details><summary>앱을 또 깔고 가입해야 하나요?</summary><p>카톡에서 링크를 누르면 바로 열립니다. 홈 화면에 추가하면 앱처럼 쓰고, 프로필은 처음 한 번만 씁니다.</p></details>
+      <details><summary>앱을 또 깔고 가입해야 하나요?</summary><p>카톡에서 링크를 누르면 바로 열립니다. 체험판 위쪽 "앱 설치" 버튼을 누르면 홈 화면에 앱처럼 깔리고(아이폰은 그림으로 안내), 프로필은 처음 한 번만 씁니다.</p></details>
       <details><summary>나이가 있어서 어려울 것 같아요</summary><p>공고를 복사해 붙여 넣는 것만 하시면 됩니다. 나머지는 앱이 채우고, 글자도 크게 볼 수 있습니다.</p></details>
       <details><summary>내 개인정보는 안전한가요?</summary><p>주민등록번호는 받지 않습니다. 계좌와 연락처는 나를 배정한 업체만 볼 수 있고, 다른 업체는 볼 수 없습니다.</p></details>
       <details><summary>우리 업체가 안 쓰면 쓸모없지 않나요?</summary><p>강의 달력과 순수익·결산은 혼자 써도 됩니다. 앱 밖에서 잡은 강의도 직접 넣을 수 있습니다.</p></details>
