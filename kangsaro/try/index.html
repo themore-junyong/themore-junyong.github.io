@@ -266,6 +266,21 @@ function render(){
   $('#main').innerHTML=(al.length?`<div class="card" style="border-color:var(--b2);background:var(--b1)" role="status"><b style="color:var(--b2)">알림 ${al.length}개</b>${al.map(a=>`<div class="row"><span class="sp">${esc(a.text)}</span>${a.kind==='pay'?`<button class="btn sm pri" data-act="recv" data-id="${a.id}" data-v="ok">입금 확인했어요</button><button class="btn sm" data-act="recv" data-id="${a.id}" data-v="no">아직 안 들어왔어요</button>`:`<button class="btn sm" data-act="alertOk" data-id="${a.id}">확인</button>`}</div>`).join('')}</div>`:'')+(VIEWS[ui.tab]||(()=>''))();
 }
 function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(toast.h);toast.h=setTimeout(()=>t.classList.remove('on'),2400)}
+// 지원자 프로필 PDF: 인쇄 창을 열어 'PDF로 저장'으로 받게 함 (연락처는 확정한 강사만)
+function pdfPage(p,cf){const V=verified(p.id),cr=String(p.career||'').split('\n').filter(x=>x.trim());
+  return `<section><div class="hd"><span>강사 프로필</span><span>강사로</span></div><div class="top">${p.photo?`<img src="${p.photo}" alt="">`:''}<div><h1>${esc(p.name)}</h1><p>${esc(p.region)} · ${esc(p.topics)}</p>
+  <p>${cf?`연락처 ${esc(p.phone)} · 메일 ${esc(p.email)}`:'연락처는 확정한 뒤에 보여요'}</p></div></div><p class="intro">${esc(p.intro)}</p>
+  ${V.length?`<h2>강사로 인증 강의 ${V.length}회</h2><p class="mu">업체 확정, 강의, 강사료 입금까지 강사로에서 확인된 기록이에요.</p><ul>${V.map(v=>`<li>✓ ${esc(vLine(v))}</li>`).join('')}</ul>`:''}
+  <h2>강의 경력 (본인 작성)</h2><ul>${cr.map(x=>`<li>${esc(x)}</li>`).join('')||'<li>적은 내용 없음</li>'}</ul>
+  <p class="ft">강사로에서 받은 프로필 · ${todayIso().replace(/-/g,'.')}</p></section>`}
+function printPdf(title,pages){const html=`<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>${esc(title)}</title><style>
+  body{font-family:'Pretendard','Noto Sans KR',system-ui,sans-serif;color:#1d2329;margin:0}section{padding:28px 32px;page-break-after:always}section:last-child{page-break-after:auto}
+  .hd{display:flex;justify-content:space-between;font-size:12px;color:#5b6670;border-bottom:2px solid #1f6f78;padding-bottom:6px;margin-bottom:18px}.top{display:flex;gap:18px;align-items:center}
+  img{width:110px;height:110px;border-radius:50%;object-fit:cover}h1{font-size:26px;margin:0 0 6px}h2{font-size:16px;margin:22px 0 4px;color:#1f6f78}p{margin:4px 0;font-size:14px;line-height:1.6}
+  .intro{margin-top:14px}.mu{color:#5b6670;font-size:12px}ul{margin:6px 0;padding-left:18px;font-size:14px;line-height:1.7}.ft{margin-top:28px;font-size:11px;color:#8a949c}
+  @page{size:A4;margin:12mm}</style></head><body>${pages.join('')}</body></html>`;
+  const w=window.open('','_blank');if(w){w.document.write(html);w.document.close();w.onload=()=>w.print();setTimeout(()=>{try{w.print()}catch(e){}},600);return toast("인쇄 창에서 'PDF로 저장'을 고르세요")}
+  const f=document.createElement('iframe');f.style.cssText='position:fixed;width:0;height:0;border:0';document.body.appendChild(f);f.contentDocument.write(html);f.contentDocument.close();setTimeout(()=>{f.contentWindow.print();setTimeout(()=>f.remove(),2000)},400);toast("인쇄 창에서 'PDF로 저장'을 고르세요")}
 async function copy(text,what){try{await navigator.clipboard.writeText(text)}catch(e){const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();try{document.execCommand('copy')}catch(_){}ta.remove()}toast((what||'')+' 복사했어요')}
 function openSheet(html){$('#sheet').innerHTML=`<div class="sheet" data-act="closeSheetBg"><div class="in" role="dialog" aria-modal="true">${html}</div></div>`}
 function closeSheet(){$('#sheet').innerHTML=''}
@@ -449,6 +464,7 @@ function vCJobs(){if(ui.jobId&&job(ui.jobId))return vCJob(job(ui.jobId));const t
 function vCJob(j){const A=appsOf(j.id),s=jobStats(j);
   const prof=a=>{const p=inst(a.instId);const cf=a.status==='확정';return `<div class="card"><div class="row">${pic(p)}<h3 class="sp">${esc(p.name)} <span class="mu sm">${esc(p.region)} · ${esc(p.topics)}</span>${verified(p.id).length?` <span class="chip paid">✓ 인증 강의 ${verified(p.id).length}회</span>`:''}</h3>${cf?chip('confirmed'):a.status==='미선정'?'<span class="chip off">미선정</span>':a.status==='취소'?`<span class="chip ${a.cxConfirmed?'warn':'off'}">${a.cxConfirmed?'확정 후 취소':'지원 취소'}</span>`:chip('applied')}</div>
     <span class="mu sm">${esc(p.intro)}</span>
+    <button class="btn sm" style="align-self:flex-start" data-act="pdf" data-a="${a.id}">프로필 PDF 받기</button>
     <details><summary>프로필 보기</summary><pre class="pf">${esc(profileText(cf?p:{...p,phone:'확정하면 보여요',email:'확정하면 보여요'}))}</pre>${cf?`<span class="mu sm">계좌: ${esc(p.bank)} ${esc(p.acct)} ${esc(p.holder)}</span><button class="btn sm" data-act="copyPfOf" data-i="${p.id}">학교 제출용으로 복사</button>`:''}</details>
     ${cf?`<div class="mu sm">받을 것: ${j.needs.map(n=>n==='프로필'?'프로필 ✓':a.docs[n]?`${esc(n)} ✓ <span class="sm">(${esc(a.docs[n])})</span>`:`<b style="color:var(--r2)">${esc(n)} 빠짐</b>`).join(' · ')}</div>`:''}
     ${a.status==='지원'?`<button class="btn pri" data-act="confirm" data-a="${a.id}">이 강사로 확정</button>`:cf&&!a.paidAt?`<button class="btn sm" data-act="unconfirm" data-a="${a.id}">확정 취소</button>`:''}</div>`};
@@ -461,6 +477,7 @@ function vCJob(j){const A=appsOf(j.id),s=jobStats(j);
   <label class="f">공고 내용<textarea data-act="jedit" data-k="desc" rows="4">${esc(j.desc||'')}</textarea></label>
   ${j.status==='모집'?`<button class="btn nv" data-act="close" data-j="${j.id}">모집 마감</button><span class="mu sm">마감하면 확정하지 않은 지원자는 미선정이 되고, 그 강사 달력에서 사라져요.</span>`:''}</div>
   ${A.filter(a=>a.cxConfirmed&&a.status==='취소').map(a=>`<div class="alert">확정했던 ${esc(inst(a.instId).name)} 강사가 취소했어요. 사유: ${esc(a.cxWhy||'없음')} (${new Date(a.cxAt).toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}) · 다른 지원자를 확정하거나 다시 모집해 주세요.</div>`).join('')}
+  ${A.some(a=>a.status==='지원'||a.status==='확정')?`<button class="btn" data-act="pdfAll" data-j="${j.id}">지원자 프로필 PDF 한 번에 받기 (${A.filter(a=>a.status==='지원'||a.status==='확정').length}명)</button>`:''}
   <h3>지원자 ${A.filter(a=>a.status!=='미선정'&&a.status!=='취소').length}명${A.some(a=>a.status==='미선정')?` · 미선정 ${A.filter(a=>a.status==='미선정').length}명`:''}${A.some(a=>a.status==='취소')?` · 취소 ${A.filter(a=>a.status==='취소').length}명`:''}</h3>
   ${A.filter(a=>a.status!=='미선정'&&a.status!=='취소').map(prof).join('')||'<p class="mu">아직 지원자가 없어요.</p>'}${A.filter(a=>a.status==='취소').map(a=>`<div class="row mu sm">${esc(inst(a.instId).name)} · ${a.cxConfirmed?'확정 후 취소':'지원 취소'}</div>`).join('')}
   ${missPeople.length?`<button class="btn" data-act="nudgeDocs" data-j="${j.id}">서류 빠진 ${missPeople.length}명에게 요청 공지 보내기</button>`:''}
@@ -550,6 +567,8 @@ document.addEventListener('click',async ev=>{
     S.evs.push({id:uid(),instId:meId(),dates:p.dates,title:p.title,org:p.org,time:p.time,fee:p.fee,km:p.km,toll:p.toll,st:A==='addMail'?'applied':'confirmed',to:p.to});save();
     if(A==='addMail'){const m=mailOf(p);const w=window.open(m.url,'_blank');if(!w)copy(m.body,'메일 본문')}
     closeSheet();ui.tab='cal';ui.sel=p.dates[0];ui.month=ym(p.dates[0]);render();return toast(A==='addMail'?'달력에 "지원"으로 넣고 Gmail을 열었어요':'달력에 "확정"으로 넣었어요')}
+  if(A==='pdf'){const a=S.apps.find(x=>x.id===D.a),p=inst(a.instId);return printPdf(`${p.name} 강사 프로필`,[pdfPage(p,a.status==='확정')])}
+  if(A==='pdfAll'){const j=job(D.j),L=appsOf(j.id).filter(a=>a.status==='지원'||a.status==='확정');return printPdf(`${j.school} ${j.title} 지원자 프로필`,L.map(a=>pdfPage(inst(a.instId),a.status==='확정')))}
   if(A==='jmore'){ui.jmore=(ui.jmore||20)+20;return render()}
   if(A==='photoDel'){delete inst(meId()).photo;save();render();return toast('사진을 지웠어요')}
   if(A==='cancelApp'){const a=S.apps.find(x=>x.id===D.a),j=job(a.jobId);
