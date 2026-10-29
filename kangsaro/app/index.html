@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<meta name="build" content="261029-1141">
+<meta name="build" content="261029-1148">
 <title>강사로</title>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#2563EB">
@@ -725,9 +725,33 @@ function vCJob(j){const A=appsOf(j.id),s=jobStats(j);
   <div class="card"><label class="f">종류<select id="ntKind"><option>일반</option><option>시간표</option><option>집결 장소</option><option>주의사항</option><option>준비물</option></select></label><textarea class="f" id="ntText" rows="3" placeholder="도착 장소, 주차, 기자재, 인원, 준비물, 주의사항 등"></textarea><label class="f">사진·이미지 (시간표, 약도 등, 선택)<input type="file" id="ntImg" accept="image/*"></label><button class="btn pri" data-act="notice" data-j="${j.id}" ${s.cf?'':'disabled'}>확정 강사 ${s.cf}명에게 공지 보내기</button></div>
   ${j.notices.slice().reverse().map(n=>{const to=n.to||[],rd=to.filter(i=>n.reads[i]);return `<div class="card">${n.kind?`<b class="sm">[${esc(n.kind)}]</b>`:''}<pre class="pf">${esc(n.text)}</pre>${n.img?`<img src="${n.img}" alt="공지 이미지" style="width:100%;border-radius:8px">`:''}<span class="mu sm">${n.by?`작성 ${esc(n.by)} · `:''}읽음 ${rd.length}/${to.length}${to.length>rd.length?` · 안 읽음: ${to.filter(i=>!n.reads[i]).map(i=>esc(inst(i).name)).join(', ')}`:''}</span>
    ${to.filter(i=>!n.reads[i]).map(i=>{const p=inst(i);return `<div class="row"><b class="sm sp">${esc(p.name)} (안 읽음)</b>${contactBtns(p,`[${co(j.coId).name}] ${p.name} 강사님, ${j.school} ${j.title} 공지가 올라왔어요. 강사로 앱에서 확인 부탁드립니다.\n\n${n.text.slice(0,120)}`)}</div>`}).join('')}</div>`}).join('')}`}
+/* ===== 업체: 엑셀에서 여러 줄 복사 → 한 번에 등록 ===== */
+// 제목 줄이 있으면 열 이름으로, 없으면 날짜·지역·학교·강의·시간·교시·대상·강사료·내용 순서로 읽음
+const BK=[['d',/날짜|일자|일시|강의일|교육일|출강일/],['time',/시간/],['fee',/강사료|강사비|강의료|금액|단가|페이|사례비/],['per',/교시|차시/],['for',/대상|학년|인원/],['school',/학교|기관|장소|교육처/],['region',/지역|시군|시·군/],['title',/강의|과목|주제|프로그램|교육명|과정/],['desc',/내용|비고|메모|참고/]];
+const BK_ORDER=['d','region','school','title','time','per','for','fee','desc'];
+function bulkParse(raw){const L=String(raw||'').replace(/\r/g,'').split('\n').filter(x=>x.trim());if(!L.length)return [];
+  const sp=x=>x.includes('\t')?x.split('\t'):x.split(/\s*,\s*(?=(?:[^"]*"[^"]*")*[^"]*$)/).map(c=>c.replace(/^"|"$/g,''));
+  const head=sp(L[0]),hk=head.map(h=>{const b=BK.find(([,re])=>re.test(h));return b?b[0]:''});
+  const has=hk.filter(Boolean).length>=2&&!head.some(h=>/\d{1,2}\s*[./월-]\s*\d{1,2}/.test(h)),cols=has?hk:BK_ORDER,rows=has?L.slice(1):L;
+  return rows.map(ln=>{const c=sp(ln),o={};cols.forEach((k,i)=>{if(k&&c[i]!=null&&!o[k])o[k]=String(c[i]).trim()});
+    const P=parseNotice((o.d||'')+'\n'+(o.time||''));const fv=String(o.fee||'').replace(/[^\d.만]/g,'');let fee=parseFloat(fv.replace('만',''))||0;if(/만/.test(fv)||fee&&fee<=50)fee*=1e4;
+    const region=o.region||Object.keys(GEO).find(k=>`${o.school||''} ${o.title||''}`.includes(k))||'';
+    const j={title:o.title||'',school:o.school||'',region,dates:P.dates,time:P.시간||o.time||'',교시:o.per||'',대상:o.for||'',fee:Math.round(fee),desc:o.desc||''};
+    j.miss=[!j.dates.length&&'날짜',!j.title&&'강의',!j.school&&'학교',!j.region&&'지역',!j.time&&'시간',!j.fee&&'강사료'].filter(Boolean);return j})}
+function sheetBulkJobs(raw){const R=raw?bulkParse(raw):[],ok=R.filter(j=>j.dates.length&&(j.title||j.school));
+  openSheet(`<div class="row"><h2 class="sp">여러 건 한 번에 올리기</h2><button class="btn sm" data-act="closeSheet">닫기</button></div>
+  <p class="mu sm">엑셀에서 <b>제목 줄까지 같이</b> 드래그해 복사(Ctrl+C)한 뒤 아래에 붙여 넣으세요. 열 순서는 상관없어요. 날짜·학교(기관)·지역·강의명·시간·교시·대상·강사료·내용 이름을 알아봐요. 한 칸에 날짜가 여러 개(11/20, 11/21)면 하루 이상 강의로 들어가요.</p>
+  <textarea id="bRaw" rows="7" placeholder="날짜&#9;학교&#9;지역&#9;강의명&#9;시간&#9;교시&#9;대상&#9;강사료">${esc(raw||'')}</textarea>
+  <div class="row"><button class="btn" data-act="bPrev">미리 보기</button><button class="btn sm" data-act="bTpl">엑셀 양식 받기</button></div>
+  ${raw?`<h3>미리 보기 · ${R.length}줄 중 ${ok.length}건 등록 가능</h3>
+  <div style="overflow-x:auto"><table class="sm"><thead><tr><th>날짜</th><th>강의</th><th>학교·지역</th><th>시간</th><th>강사료</th><th></th></tr></thead><tbody>${R.map(j=>`<tr><td>${j.dates.map(md).join('·')||'<b style="color:var(--r2)">없음</b>'}</td><td>${esc(j.title)}</td><td>${esc(j.school)} ${esc(j.region)}</td><td>${esc(j.time)}</td><td>${j.fee?won(j.fee):''}</td><td>${j.dates.length&&(j.title||j.school)?(j.miss.length?`<span class="chip warn">${j.miss.join('·')} 빔</span>`:'<span class="chip paid">OK</span>'):'<span class="chip off">건너뜀</span>'}</td></tr>`).join('')}</tbody></table></div>
+  ${ok.length?`<label class="sm"><input type="checkbox" id="bOpen" checked> 강사 모집 공고로 올리기 (끄면 업체 달력에 기록만 해요. 이미 강사가 정해진 일정을 옮길 때)</label>
+  <span class="mu sm">빈 칸은 나중에 공고를 열어 채울 수 있어요. 강사에게 받을 서류는 프로필·교안·통장사본으로 들어가요.</span>
+  <button class="btn pri" data-act="bSave">${ok.length}건 등록</button>`:'<p class="mu">날짜와 강의(또는 학교)가 있는 줄이 없어요. 제목 줄까지 복사했는지 확인해 주세요.</p>'}`:''}`)}
 function sheetNewJob(p){p=p||{};const N=['프로필','교안','강사카드','교재카드','자격증 사본','통장사본','신분증 사본','주민등록번호','개인정보 동의서','범죄경력 조회 동의서','아동학대 조회 동의서','강사 확인서','출강 확인서','결과보고서','수업 사진'];
   openSheet(`<div class="row"><h2 class="sp">강의 등록</h2><button class="btn sm" data-act="closeSheet">닫기</button></div>
   <div class="card" style="background:var(--acs)"><h3>강사가 헷갈리지 않는 공고</h3><span class="sm">① 날짜는 달력에서 고르세요. 요일이 자동으로 붙어요.<br>② 시간은 09:00~15:50처럼, 교시도 함께 적어 주세요.<br>③ 대상은 학년과 인원까지 (예: 3학년 100명).<br>④ 장소는 학교 이름과 지역을 모두.<br>⑤ 1일 강사료와 받을 서류를 정해 주세요. 빠지면 등록되지 않아요.</span></div>
+  <button class="btn" data-act="bulkJobs">📋 엑셀에서 여러 건 한 번에 올리기</button>
   <label class="f">학교 요청이나 기존 공고를 붙여 넣으면 채워져요<textarea id="jRaw" rows="4">${esc(p.raw||'')}</textarea></label><button class="btn" data-act="jparse">읽기</button>
   <div class="grid2"><label class="f">강의<input id="jTitle" value="${esc(p.title||'')}"></label><label class="f">학교·기관<input id="jSchool" value="${esc(p.school||'')}"></label>
   <label class="f">지역<input id="jRegion" value="${esc(p.region||'')}"></label><label class="f">날짜 고르기<input id="jPick" type="date" data-act="jpick"></label></div>
@@ -870,6 +894,12 @@ document.addEventListener('click',async ev=>{
     for(const a of ms)j.notices.push({id:uid(),...(WHO?{by:WHO}:{}),text:`[서류 요청] ${j.school} ${j.title} 강의에 ${j.needs.filter(n=>n!=='프로필'&&!docOf(a,n)).join(', ')}이(가) 아직 없어요. 강사로 앱 홈 달력에서 이 강의 날짜를 눌러 올려 주세요.`,at:new Date().toISOString(),to:[a.instId],reads:{}});
     save();render();return toast(`${ms.length}명에게 요청 공지를 보냈어요`)}
   if(A==='cnew')return sheetNewJob();
+  if(A==='bulkJobs')return sheetBulkJobs();
+  if(A==='bPrev')return sheetBulkJobs($('#bRaw').value);
+  if(A==='bTpl'){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff날짜,학교(기관),지역,강의명,시간,교시,대상,강사료,내용\n2026-11-20,○○고,수원,면접 특강,09:00~12:00,3교시,3학년 100명,300000,주차 가능\n'],{type:'text/csv'}));a.download='강사로_공고_양식.csv';document.body.appendChild(a);a.click();a.remove();return toast('양식을 받았어요. 엑셀로 열어 채운 뒤 복사해 붙여 넣으세요')}
+  if(A==='bSave'){const R=bulkParse($('#bRaw').value).filter(j=>j.dates.length&&(j.title||j.school)),open=$('#bOpen').checked;
+    for(const x of R){const {miss,...j}=x;S.jobs.push({...j,id:uid(),coId:meId(),status:open?'모집':'마감',needs:['프로필','교안','통장사본'],notices:[],created:todayIso()})}
+    save();closeSheet();ui.tab='cjobs';ui.jobId=null;render();return toast(`${R.length}건 등록했어요${open?'. 강사 공고 목록에 바로 올라가요':''}`)}
   if(A==='jparse'){const raw=$('#jRaw').value,r=parseNotice(raw);const feeV=feeOf(raw),fee=[0,feeV?String(feeV):'',''];
     sheetNewJob({raw,desc:raw,title:r.강의명,school:r.학교명,region:r.지역,dates:r.dates,time:r.시간,per:r.교시,for:r.대상,fee:fee[1]?(+fee[1].replace(/,/g,''))*(fee[2]?10000:1):''});jWarn();return toast('읽었어요. 빈칸만 확인하세요')}
   if(A==='jdel'){const ds=$('#jDates').value.split(/[,\s]+/).filter(x=>x&&x!==D.d);$('#jDates').value=ds.join(', ');$('#jDateList').innerHTML=jDateChips(ds);return jWarn()}
@@ -920,6 +950,6 @@ document.addEventListener('paste',ev=>{if(ev.target.id==='pRaw')setTimeout(()=>{
 document.addEventListener('input',ev=>{if(['pDates','pRaw'].includes(ev.target.id))pWarn();if(['pDates','pFee','pKm','pToll'].includes(ev.target.id))pNet()});
 render();
 </script>
-<script type="module" src="real.js?v=261029-1141"></script>
+<script type="module" src="real.js?v=261029-1148"></script>
 </body>
 </html>
