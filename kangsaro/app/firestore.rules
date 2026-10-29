@@ -10,6 +10,13 @@ service cloud.firestore {
     function isCo(d) { return d.role == 'c' || d.get('side', {}).get('role', '') == 'c'; }
     function approvedCo() { return signed() && isCo(user(me())) && user(me()).approved == true; }
     function linked(co, inst) { return exists(/databases/$(db)/documents/links/$(co + '_' + inst)); }
+    // 업체 직원: staff/{업체}_{직원} 문서가 있으면 그 업체 일을 같이 함. 정산(지급 완료)은 pay == true인 직원만
+    function isStaff(c) { return exists(/databases/$(db)/documents/staff/$(c + '_' + me())); }
+    function mine(c) { return signed() && c is string && (c == me() || isStaff(c)); }
+    function payOk(c) { return signed() && (c == me() || get(/databases/$(db)/documents/staff/$(c + '_' + me())).data.pay == true); }
+    function coOk(c) { return mine(c) && isCo(user(c)) && user(c).approved == true; }
+    // 직원이 자기 업체가 확정한 강사의 연락처·서류를 볼 때
+    function staffLinked(inst) { let s = user(me()).get('staffOf', ''); return s != '' && isStaff(s) && linked(s, inst); }
     function changed() { return request.resource.data.diff(resource.data).affectedKeys(); }
     // 사업자등록번호: 숫자 10자리 + 국세청 검증 숫자
     function dg(n, i) { return int(n[i:i+1]); }
@@ -24,8 +31,9 @@ service cloud.firestore {
     match /users/{u} {
       allow read: if signed();
       // refBy(소개한 사람)는 가입할 때 한 번만, 있는 사용자·자기 아님
-      allow create: if me() == u && request.resource.data.role in ['i', 'c']
+      allow create: if me() == u && request.resource.data.role in ['i', 'c', 's']
         && (request.resource.data.role == 'i' || request.resource.data.approved == false
+            || (request.resource.data.role == 's' && isStaff(request.resource.data.staffOf) && !('approved' in request.resource.data) && !('biz' in request.resource.data))
             || (request.resource.data.approved == true && bizMine(request.resource.data.biz) && !('blocked' in request.resource.data)))
         && (!('refBy' in request.resource.data) || (request.resource.data.refBy is string && request.resource.data.refBy != me()
             && exists(/databases/$(db)/documents/users/$(request.resource.data.refBy))));
@@ -38,11 +46,11 @@ service cloud.firestore {
 
       // 연락처·계좌·서류: 본인, 나를 확정한 업체, 관리자(업체 승인용)만
       match /private/{d} {
-        allow read: if me() == u || (signed() && linked(me(), u)) || admin();
+        allow read: if me() == u || (signed() && (linked(me(), u) || staffLinked(u))) || admin();
         allow write: if me() == u;
       }
       match /files/{f} {
-        allow read: if me() == u || (signed() && linked(me(), u));
+        allow read: if me() == u || (signed() && (linked(me(), u) || staffLinked(u)));
         allow write: if me() == u;
       }
       // 업체 서류 양식 (빈 양식이라 가입한 사람은 다 받을 수 있음)
@@ -52,13 +60,31 @@ service cloud.firestore {
       }
     }
 
-    // 사업자등록번호 하나에 업체 하나
     // 업데이트 중 표시 (관리자만 켜고 끔, 누구나 읽음)
     match /site/{d} {
       allow read: if true;
       allow write: if admin();
     }
 
+    // 직원 초대 링크 (대표가 만들고 지움). 링크를 아는 사람만 코드로 읽음
+    match /invites/{c} {
+      allow get: if signed();
+      allow list: if signed() && resource.data.coId == me();
+      allow create: if signed() && request.resource.data.coId == me() && isCo(user(me())) && c.size() >= 16;
+      allow update: if false;
+      allow delete: if signed() && resource.data.coId == me();
+    }
+    // 업체 직원: 초대 코드로 스스로 합류(정산 권한 없이), 대표가 정산 권한을 켜거나 내보냄, 직원은 스스로 나감
+    match /staff/{id} {
+      allow read: if signed() && (resource.data.uid == me() || resource.data.coId == me() || isStaff(resource.data.coId));
+      allow create: if signed() && request.resource.data.uid == me() && id == request.resource.data.coId + '_' + me()
+        && request.resource.data.coId != me() && request.resource.data.pay == false
+        && get(/databases/$(db)/documents/invites/$(request.resource.data.code)).data.coId == request.resource.data.coId;
+      allow update: if signed() && resource.data.coId == me() && changed().hasOnly(['pay']);
+      allow delete: if signed() && (resource.data.coId == me() || resource.data.uid == me());
+    }
+
+    // 사업자등록번호 하나에 업체 하나
     match /biz/{n} {
       allow read: if signed();
       allow create: if signed() && request.resource.data.uid == me() && n.matches('^[0-9]{10}$') && bizOk(n);
@@ -68,37 +94,37 @@ service cloud.firestore {
 
     // 업체가 강사를 확정하면 생기는 표시 (서류 열람 허락)
     match /links/{id} {
-      allow read: if signed() && (resource.data.coId == me() || resource.data.instId == me());
-      allow create: if signed() && id == me() + '_' + request.resource.data.instId
-        && request.resource.data.coId == me()
-        && get(/databases/$(db)/documents/apps/$(request.resource.data.appId)).data.coId == me()
+      allow read: if signed() && (mine(resource.data.coId) || resource.data.instId == me());
+      allow create: if signed() && id == request.resource.data.coId + '_' + request.resource.data.instId
+        && mine(request.resource.data.coId)
+        && get(/databases/$(db)/documents/apps/$(request.resource.data.appId)).data.coId == request.resource.data.coId
         && get(/databases/$(db)/documents/apps/$(request.resource.data.appId)).data.instId == request.resource.data.instId
         && get(/databases/$(db)/documents/apps/$(request.resource.data.appId)).data.status == '확정';
       allow update: if false;
-      allow delete: if signed() && resource.data.coId == me();
+      allow delete: if mine(resource.data.coId);
     }
 
     match /jobs/{j} {
       allow read: if signed();
-      allow create: if approvedCo() && request.resource.data.coId == me();
-      allow update: if signed() && resource.data.coId == me() && request.resource.data.coId == me();
-      allow delete: if signed() && resource.data.coId == me();
+      allow create: if coOk(request.resource.data.coId);
+      allow update: if mine(resource.data.coId) && request.resource.data.coId == resource.data.coId;
+      allow delete: if mine(resource.data.coId);
     }
 
     // 공지: 업체가 쓰고, 받는 강사는 자기 '읽음'만 고침
     match /notices/{n} {
-      allow read: if signed() && (resource.data.coId == me() || me() in resource.data.to);
-      allow create: if signed() && request.resource.data.coId == me()
-        && get(/databases/$(db)/documents/jobs/$(request.resource.data.jobId)).data.coId == me();
-      allow update: if signed() && ((resource.data.coId == me() && request.resource.data.coId == me())
+      allow read: if signed() && (mine(resource.data.coId) || me() in resource.data.to);
+      allow create: if mine(request.resource.data.coId)
+        && get(/databases/$(db)/documents/jobs/$(request.resource.data.jobId)).data.coId == request.resource.data.coId;
+      allow update: if signed() && ((mine(resource.data.coId) && request.resource.data.coId == resource.data.coId)
         || (me() in resource.data.to && changed().hasOnly(['reads'])
             && request.resource.data.reads.diff(resource.data.reads).affectedKeys().hasOnly([me()])));
-      allow delete: if signed() && resource.data.coId == me();
+      allow delete: if mine(resource.data.coId);
     }
 
     // 지원: 강사가 만들고, 강사와 그 공고의 업체만 봄
     match /apps/{a} {
-      function party() { return resource.data.instId == me() || resource.data.coId == me(); }
+      function party() { return resource.data.instId == me() || mine(resource.data.coId); }
       allow read: if signed() && party();
       allow create: if signed() && request.resource.data.instId == me() && request.resource.data.status == '지원'
         && request.resource.data.coId == get(/databases/$(db)/documents/jobs/$(request.resource.data.jobId)).data.coId
@@ -110,14 +136,15 @@ service cloud.firestore {
         && (
           (resource.data.instId == me() && !changed().hasAny(['paidAt', 'rem'])
             && (!changed().hasAny(['status']) || request.resource.data.status in ['지원', '취소']))
-          || (resource.data.coId == me() && !changed().hasAny(['km', 'toll', 'selfPaid', 'day', 'cxWhy', 'cxConfirmed'])
+          || (mine(resource.data.coId) && !changed().hasAny(['km', 'toll', 'selfPaid', 'day', 'cxWhy', 'cxConfirmed'])
+            && (!changed().hasAny(['paidAt']) || payOk(resource.data.coId))
             && (!changed().hasAny(['rrn']) || !('rrn' in request.resource.data))
             && (!changed().hasAny(['status']) || request.resource.data.status in ['지원', '확정', '미선정']))
         );
       allow delete: if false;
       match /files/{f} {
         allow read: if signed() && (get(/databases/$(db)/documents/apps/$(a)).data.instId == me()
-          || (get(/databases/$(db)/documents/apps/$(a)).data.coId == me() && get(/databases/$(db)/documents/apps/$(a)).data.status == '확정'));
+          || (mine(get(/databases/$(db)/documents/apps/$(a)).data.coId) && get(/databases/$(db)/documents/apps/$(a)).data.status == '확정'));
         allow write: if signed() && get(/databases/$(db)/documents/apps/$(a)).data.instId == me();
       }
     }
@@ -130,10 +157,10 @@ service cloud.firestore {
 
     // 알림: 보낸 사람(by)과 받는 강사(instId)만
     match /alerts/{x} {
-      allow read: if signed() && (resource.data.instId == me() || resource.data.by == me());
-      allow create: if signed() && request.resource.data.by == me();
-      allow update: if signed() && (resource.data.by == me() || (resource.data.instId == me() && changed().hasOnly(['read'])));
-      allow delete: if signed() && resource.data.by == me();
+      allow read: if signed() && (resource.data.instId == me() || mine(resource.data.by));
+      allow create: if mine(request.resource.data.by);
+      allow update: if signed() && (mine(resource.data.by) || (resource.data.instId == me() && changed().hasOnly(['read'])));
+      allow delete: if mine(resource.data.by);
     }
   }
 }

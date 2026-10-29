@@ -9,6 +9,8 @@ const EMU = Q.has('emu');
 // 소개 링크(?ref=소개한 사람)는 로그인 전에 기억해 둠
 const lsGet = k => { try { return localStorage.getItem(k) || ''; } catch (e) { return ''; } };
 if (Q.get('ref')) try { localStorage.setItem('kangsaro.ref', Q.get('ref')); } catch (e) { }
+// 업체 직원 초대 링크(?staff=코드)도 로그인 전에 기억
+if (Q.get('staff')) try { localStorage.setItem('kangsaro.staff', Q.get('staff')); } catch (e) { }
 
 if (!firebaseConfig && !EMU) {
   REAL.gate = () => `<div class="card"><h2>강사로 준비 중이에요</h2><p class="mu">곧 열려요. 그동안 체험판으로 미리 써 보세요.</p><a class="btn pri" href="../try/">체험판 열기</a></div>`;
@@ -40,7 +42,7 @@ async function claimBiz(n) {
 const PRIV = { i: ['phone', 'email', 'bank', 'acct', 'holder', 'kmpl', 'fuel', 'vault'], c: ['phone', 'email'] };
 // 한 계정으로 강사·업체 둘 다: 가입한 쪽(role)은 문서 위에, 나중에 더한 쪽은 side 칸에. 업체 승인(biz·approved·blocked)은 늘 위에
 const SIDE = { i: ['name', 'region', 'topics', 'intro', 'certs', 'career', 'photo', 'joined'], c: ['name', 'contact', 'joined', 'logo', 'forms'] };
-const has = r => !!me && (me.role === r || (me.side && me.side.role === r));
+const has = r => !!me && (me.role === r || (me.side && me.side.role === r) || (r === 'c' && !!me.staffOf));
 function asRole(x, r) {
   if (!x) return null;
   if (x.role === r) return x;
@@ -54,6 +56,10 @@ const stable = v => JSON.stringify(v, (k, x) => x && typeof x === 'object' && !A
 const clean = o => JSON.parse(JSON.stringify(o)); // undefined 빼기
 
 let me = null, role = '', uidMe = '', profileLoaded = false;
+// 업체 화면에서 일하는 업체 (대표면 나, 직원이면 내가 속한 업체). staffMe = 직원일 때 내 staff 문서
+let CO = '', staffMe = null, PEND = null;
+const NAV0 = { c: NAV.c.slice() };
+const isStaffView = () => role === 'c' && CO !== uidMe;
 const last = new Map();         // 경로 → 마지막으로 서버와 맞춘 내용
 const links = new Set();        // 업체: 확정한 강사 (서류 열람 허락)
 const unsub = [];
@@ -63,23 +69,25 @@ function payloads() {
   const out = new Map(), u = uidMe;
   if (!u || !S.me) return out;
   const mine = role === 'i' ? S.insts.find(x => x.id === u) : S.cos.find(x => x.id === u);
-  if (mine && me) {
+  // 직원은 업체 정보(이름·양식)를 못 고침 → users 문서는 대표만 씀
+  if (mine && me && !isStaffView()) {
     const base = omit(me, ['id', ...PRIV.i]);
     out.set(`users/${u}`, role === me.role ? { ...omit(base, PUB[role]), ...pick(mine, PUB[role]), role } : { ...base, side: { ...pick(mine, SIDE[role]), role } });
     out.set(`users/${u}/private/main`, { ...pick(me, PRIV.i), ...pick(mine, PRIV[role]) });
   }
+  const c = role === 'c' ? CO : '';
   for (const j of S.jobs) {
-    if (j.coId !== u) continue;
+    if (!c || j.coId !== c) continue;
     out.set(`jobs/${j.id}`, omit(j, ['notices']));
-    for (const n of j.notices || []) out.set(`notices/${n.id}`, { ...n, jobId: j.id, coId: u });
+    for (const n of j.notices || []) out.set(`notices/${n.id}`, { ...n, jobId: j.id, coId: c });
   }
   for (const a of S.apps) {
     const j = job(a.jobId);
-    if (a.instId !== u && (!j || j.coId !== u)) continue;
+    if (a.instId !== u && (!c || !j || j.coId !== c)) continue;
     out.set(`apps/${a.id}`, { ...a, coId: a.coId || (j && j.coId) || '' });
   }
   for (const e of S.evs) if (e.instId === u) out.set(`evs/${e.id}`, e);
-  for (const al of S.alerts) { if (!al.by) al.by = u; if (al.by === u || al.instId === u) out.set(`alerts/${al.id}`, { by: al.by || '', ...al }); }
+  for (const al of S.alerts) { if (!al.by) al.by = c || u; if (al.by === u || (c && al.by === c) || al.instId === u) out.set(`alerts/${al.id}`, { by: al.by || '', ...al }); }
   for (const [k, v] of out) out.set(k, clean(v));
   return out;
 }
@@ -116,9 +124,9 @@ const mayDelete = k => /^(evs|notices|jobs|alerts)\//.test(k);
 // 업체가 확정한 강사만 그 강사의 연락처·계좌·서류를 볼 수 있게 표시
 async function syncLinks() {
   const want = new Map();
-  for (const a of S.apps) { const j = job(a.jobId); if (j && j.coId === uidMe && a.status === '확정') want.set(a.instId, a.id); }
-  for (const [iid, appId] of want) if (!links.has(iid)) { await setDoc(doc(db, 'links', `${uidMe}_${iid}`), { coId: uidMe, instId: iid, appId }); links.add(iid); loadInst(iid, true); }
-  for (const iid of [...links]) if (!want.has(iid)) { await deleteDoc(doc(db, 'links', `${uidMe}_${iid}`)); links.delete(iid); }
+  for (const a of S.apps) { const j = job(a.jobId); if (j && j.coId === CO && a.status === '확정') want.set(a.instId, a.id); }
+  for (const [iid, appId] of want) if (!links.has(iid)) { await setDoc(doc(db, 'links', `${CO}_${iid}`), { coId: CO, instId: iid, appId }); links.add(iid); loadInst(iid, true); }
+  for (const iid of [...links]) if (!want.has(iid)) { await deleteDoc(doc(db, 'links', `${CO}_${iid}`)); links.delete(iid); }
 }
 
 /* ===== 불러오기 ===== */
@@ -168,11 +176,34 @@ async function start(user, want) {
   unsub.splice(0).forEach(f => f()); links.clear(); last.clear();
   Object.assign(S, { insts: [], cos: [], jobs: [], apps: [], evs: [], alerts: [] });
   me = await loadUser(uidMe, true);
-  profileLoaded = true;
+  profileLoaded = true; PEND = null; CO = ''; staffMe = null; WHO = '';
+  // 직원 초대 링크로 들어왔으면 먼저 합류할지 물음
+  const code = lsGet('kangsaro.staff');
+  if (code) {
+    const iv = await getDoc(doc(db, 'invites', code)).catch(() => null);
+    if (!iv || !iv.exists()) { try { localStorage.removeItem('kangsaro.staff'); } catch (e) { } toast('초대 링크가 만료됐어요. 업체에 새 링크를 받아 주세요'); }
+    else if (iv.data().coId === uidMe) { try { localStorage.removeItem('kangsaro.staff'); } catch (e) { } }
+    else {
+      const co = await getDoc(doc(db, 'staff', `${iv.data().coId}_${uidMe}`)).catch(() => null);
+      if (co && co.exists() && me && me.staffOf === iv.data().coId) { try { localStorage.removeItem('kangsaro.staff'); } catch (e) { } want = 'c'; }
+      else { const cd = await loadUser(iv.data().coId, false).catch(() => null); PEND = { code, coId: iv.data().coId, name: (asRole(cd, 'c') || {}).name || '업체' }; S.me = ''; render(); return; }
+    }
+  }
   if (!me) { render(); return; }
+  // 업체에서 내보내졌으면 연결을 지움
+  if (me.staffOf) {
+    const sd = await getDoc(doc(db, 'staff', `${me.staffOf}_${uidMe}`)).catch(() => null);
+    if (sd && sd.exists()) staffMe = sd.data();
+    else { await updateDoc(doc(db, 'users', uidMe), { staffOf: deleteField() }).catch(() => { }); delete me.staffOf; toast('업체 직원 연결이 끝났어요'); }
+  }
+  if (me.role === 's' && !me.staffOf) { S.me = ''; me.gone = true; render(); return; }
   want = want || lsGet('kangsaro.view.' + uidMe);
-  role = has(want) ? want : me.role;
-  const mine = asRole(me, role);
+  role = has(want) ? want : me.role === 's' ? 'c' : me.role;
+  const own = role === 'c' && asRole(me, 'c');
+  CO = role !== 'c' ? '' : own ? uidMe : me.staffOf;
+  NAV.c = isStaffView() && !(staffMe && staffMe.pay) ? NAV0.c.filter(n => n[0] !== 'pay') : NAV0.c.slice();
+  const mine = own ? asRole(me, 'c') : role === 'c' ? (asRole(await loadUser(CO, false).catch(() => null), 'c') || { id: CO, name: '업체' }) : asRole(me, role);
+  WHO = isStaffView() ? (staffMe && staffMe.name) || '직원' : role === 'c' ? (mine.contact || '대표') : '';
   if (role === 'i') {
     S.insts = [mine]; S.me = 'i:' + uidMe;
     const ev = await getDocs(query(collection(db, 'evs'), where('instId', '==', uidMe)));
@@ -193,22 +224,26 @@ async function start(user, want) {
     live(query(collection(db, 'alerts'), where('instId', '==', uidMe)), ch => { const x = { id: ch.doc.id, ...ch.doc.data() }; if (ch.type === 'removed') S.alerts = S.alerts.filter(y => y.id !== x.id); else upsert(S.alerts, x); });
     live(query(collection(db, 'notices'), where('to', 'array-contains', uidMe)), notice);
   } else {
-    S.cos = [mine]; S.me = 'c:' + uidMe;
-    const jb = await getDocs(query(collection(db, 'jobs'), where('coId', '==', uidMe)));
+    S.cos = [mine]; S.me = 'c:' + CO;
+    const jb = await getDocs(query(collection(db, 'jobs'), where('coId', '==', CO)));
     S.jobs = jb.docs.map(d => ({ id: d.id, ...d.data(), notices: [] }));
-    const nt = await getDocs(query(collection(db, 'notices'), where('coId', '==', uidMe)));
+    const nt = await getDocs(query(collection(db, 'notices'), where('coId', '==', CO)));
     for (const d of nt.docs) notice({ type: 'added', doc: d });
-    const ap = await getDocs(query(collection(db, 'apps'), where('coId', '==', uidMe)));
+    const ap = await getDocs(query(collection(db, 'apps'), where('coId', '==', CO)));
     S.apps = ap.docs.map(d => ({ id: d.id, ...d.data() }));
-    const lk = await getDocs(query(collection(db, 'links'), where('coId', '==', uidMe)));
+    const lk = await getDocs(query(collection(db, 'links'), where('coId', '==', CO)));
     for (const d of lk.docs) links.add(d.data().instId);
     await Promise.all([...new Set(S.apps.map(a => a.instId))].map(id => loadInst(id, links.has(id))));
     // 주민번호는 30일이 지나면 업체가 안 봤어도 지움
     const old = Date.now() - 30 * 864e5;
     for (const a of S.apps) if (a.rrn && a.rrnAt && Date.parse(a.rrnAt) < old) { delete a.rrn; delete a.rrnAt; a.docs[RRN] = '기한 지나 지움'; }
     prime();
-    live(query(collection(db, 'apps'), where('coId', '==', uidMe)), app);
-    live(query(collection(db, 'notices'), where('coId', '==', uidMe)), notice);
+    live(query(collection(db, 'apps'), where('coId', '==', CO)), app);
+    live(query(collection(db, 'notices'), where('coId', '==', CO)), notice);
+    // 업체 공고도 실시간 (직원끼리 같이 고칠 때)
+    live(query(collection(db, 'jobs'), where('coId', '==', CO)), ch => { if (ch.type === 'removed') S.jobs = S.jobs.filter(x => x.id !== ch.doc.id); else putJob({ id: ch.doc.id, ...ch.doc.data() }); });
+    // 대표가 내보내거나 정산 권한을 바꾸면 바로 반영
+    if (isStaffView()) unsub.push(onSnapshot(doc(db, 'staff', `${CO}_${uidMe}`), d => { if (!d.exists() || !!d.data().pay !== !!(staffMe && staffMe.pay)) start(auth.currentUser, 'c'); }, () => start(auth.currentUser, 'c')));
     SYNC();
   }
   ui.tab = NAV[role][0][0];
@@ -226,6 +261,12 @@ REAL.gate = () => {
     <span class="mu sm">가입하면 <a href="../privacy.html">개인정보 처리방침</a>에 동의하는 것으로 봐요.</span></div>
     <a class="btn" href="../try/">먼저 체험판 써 보기</a> <a class="btn" style="text-decoration:none;color:inherit" href="../guide/">사용설명서</a>`;
   if (!profileLoaded) return '<p class="mu">불러오는 중…</p>';
+  if (PEND) return `<div class="card"><h2>${esc(PEND.name)} 직원으로 합류할까요?</h2>
+    <span class="mu sm">${esc(auth.currentUser.email || '')}로 로그인했어요. 합류하면 이 업체의 공고·강사·공지·서류를 같이 보고 고칠 수 있어요. 업체 정보와 직원 관리는 대표만 해요.</span>
+    <label class="f">내 이름 (공지에 '작성: 이름'으로 보여요)<input id="sName" value="${esc((me && me.name) || auth.currentUser.displayName || '')}" autocomplete="name"></label>
+    <button class="btn pri" data-real="staffJoin">합류하기</button>
+    <button class="btn sm" data-real="staffLater">합류 안 함</button></div>`;
+  if (me && me.gone) return `<div class="card"><h2>업체 직원 연결이 끝났어요</h2><p class="mu">업체에서 내보냈거나 스스로 나갔어요. 다시 일하려면 업체에 새 초대 링크를 받아 주세요.</p><button class="btn sm" data-real="out">로그아웃</button></div>`;
   return `<div class="card"><h2>어느 쪽으로 가입할까요?</h2>
     <span class="mu sm">${esc(auth.currentUser.email || '')}로 로그인했어요.</span>
     ${lsGet('kangsaro.ref') ? '<div class="alert">소개로 오셨어요. 가입하면 소개한 분과 함께 무료 기간이 늘어요 (업체 1개월, 강사 1주일).</div>' : ''}
@@ -240,11 +281,11 @@ REAL.gate = () => {
 };
 REAL.acct = () => {
   const el = $('#acct'); if (!el) return;
-  const cur = (role === 'i' ? S.insts : S.cos).find(x => x.id === uidMe) || me || {}, other = role === 'i' ? 'c' : 'i';
-  const pending = role === 'c' && !cur.approved, isAdmin = ADMINS.includes(auth.currentUser?.email);
-  const sw = has(other) ? `<button class="btn sm" data-real="swap" title="같은 계정으로 화면만 바꿔요">⇄ ${other === 'c' ? '업체 화면' : '강사 화면'}</button>` : `<button class="btn sm" data-real="addSide">${other === 'c' ? '업체로도 쓰기' : '강사로도 쓰기'}</button>`;
+  const cur = (role === 'i' ? S.insts.find(x => x.id === uidMe) : S.cos.find(x => x.id === CO)) || me || {}, other = role === 'i' ? 'c' : 'i';
+  const pending = role === 'c' && !cur.approved && !isStaffView(), isAdmin = ADMINS.includes(auth.currentUser?.email);
+  const sw = me.role === 's' ? '' : has(other) ? `<button class="btn sm" data-real="swap" title="같은 계정으로 화면만 바꿔요">⇄ ${other === 'c' ? '업체 화면' : '강사 화면'}</button>` : `<button class="btn sm" data-real="addSide">${other === 'c' ? '업체로도 쓰기' : '강사로도 쓰기'}</button>`;
   el.style.flexWrap = 'wrap';
-  el.innerHTML = `<span class="sp" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:5em">${esc(cur.name || '')} ${role === 'c' ? '(업체)' : '(강사)'}</span>${sw}${isAdmin ? '<button class="btn sm" data-real="admin">업체 관리</button>' : ''}<a class="btn sm" style="text-decoration:none;color:inherit;display:inline-flex;align-items:center" href="../guide/${role === 'c' ? 'company' : 'instructor'}.html">사용법</a><button class="btn sm" data-real="ref">소개하기</button><button class="btn sm" data-real="out">로그아웃</button>`;
+  el.innerHTML = `<span class="sp" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:5em">${esc(cur.name || '')} ${role === 'c' ? (isStaffView() ? `(직원 ${esc(WHO)})` : '(업체)') : '(강사)'}</span>${sw}${role === 'c' ? '<button class="btn sm" data-real="staff">직원</button>' : ''}${isAdmin ? '<button class="btn sm" data-real="admin">업체 관리</button>' : ''}<a class="btn sm" style="text-decoration:none;color:inherit;display:inline-flex;align-items:center" href="../guide/${role === 'c' ? 'company' : 'instructor'}.html">사용법</a><button class="btn sm" data-real="ref">소개하기</button><button class="btn sm" data-real="out">로그아웃</button>`;
   const bar = $('#pendBar'); if (bar && !pending) bar.remove();
   if (pending && !bar) el.insertAdjacentHTML('afterend', cur.blocked
     ? '<div id="pendBar" class="alert">운영자가 이 업체의 공고 등록을 멈췄어요. 문의: tobadyclup@naver.com</div>'
@@ -284,6 +325,31 @@ document.addEventListener('click', async e => {
     if (r === 'i') { ui.tab = 'me'; render(); }
   }
   if (k === 'admin') return adminSheet();
+  if (k === 'staffJoin') {
+    const name = $('#sName').value.trim(); if (!name) return toast('이름을 넣어 주세요');
+    const P = PEND, t = new Date().toISOString();
+    try {
+      await setDoc(doc(db, 'staff', `${P.coId}_${uidMe}`), { coId: P.coId, uid: uidMe, name, email: auth.currentUser.email || '', pay: false, at: t, code: P.code });
+      if (!me) await setDoc(doc(db, 'users', uidMe), { role: 's', name, staffOf: P.coId, joined: t.slice(0, 10) });
+      else await updateDoc(doc(db, 'users', uidMe), { staffOf: P.coId });
+    } catch (err) { return toast('합류하지 못했어요: ' + err.code); }
+    try { localStorage.removeItem('kangsaro.staff'); } catch (err) { }
+    toast(`${P.name} 직원으로 합류했어요`); return start(auth.currentUser, 'c');
+  }
+  if (k === 'staffLater') { try { localStorage.removeItem('kangsaro.staff'); } catch (err) { } return start(auth.currentUser); }
+  if (k === 'staff') return staffSheet();
+  if (k === 'invNew') {
+    const old = await getDocs(query(collection(db, 'invites'), where('coId', '==', uidMe)));
+    for (const d of old.docs) await deleteDoc(d.ref);
+    const code = [...crypto.getRandomValues(new Uint8Array(12))].map(x => x.toString(16).padStart(2, '0')).join('');
+    await setDoc(doc(db, 'invites', code), { coId: uidMe, at: new Date().toISOString() });
+    toast(old.size ? '새 링크를 만들었어요. 예전 링크는 이제 안 돼요' : '초대 링크를 만들었어요'); return staffSheet();
+  }
+  if (k === 'invCopy') { const t = b.dataset.t; try { await navigator.clipboard.writeText(t); toast('복사했어요. 직원에게 카톡으로 보내세요'); } catch (err) { prompt('길게 눌러 복사해 주세요', t); } return; }
+  if (k === 'invOff') { const old = await getDocs(query(collection(db, 'invites'), where('coId', '==', uidMe))); for (const d of old.docs) await deleteDoc(d.ref); toast('초대 링크를 껐어요'); return staffSheet(); }
+  if (k === 'staffPay') { const r = doc(db, 'staff', b.dataset.id), d = await getDoc(r); await updateDoc(r, { pay: !d.data().pay }); toast(d.data().pay ? '정산 권한을 껐어요' : '정산 권한을 켰어요'); return staffSheet(); }
+  if (k === 'staffOut') { if (!confirm(`${b.dataset.n} 님을 직원에서 내보낼까요? 바로 업체 화면을 못 보게 돼요.`)) return; await deleteDoc(doc(db, 'staff', b.dataset.id)); toast('내보냈어요'); return staffSheet(); }
+  if (k === 'staffLeave') { if (!confirm('이 업체에서 나갈까요? 다시 일하려면 새 초대 링크가 필요해요.')) return; await deleteDoc(doc(db, 'staff', `${CO}_${uidMe}`)); closeSheet(); return; }
   if (k === 'maint') { const on = !SITE.maint; if (on && !confirm('모든 사용자 화면에 "업데이트 중입니다"를 띄울까요? 관리자 화면은 그대로예요.')) return; await setDoc(doc(db, 'site', 'main'), { maint: on, at: new Date().toISOString() }, { merge: true }); toast(on ? '업데이트 중 표시를 켰어요' : '업데이트 중 표시를 껐어요. 사용자 화면이 다시 열려요'); return adminSheet(); }
   if (k === 'reload') return location.reload();
   if (k === 'ref') return refSheet();
@@ -370,6 +436,21 @@ async function refSheet() {
     ${rows.map(r => `<div class="row"><span class="sp">${esc(r.name || '')} <span class="mu sm">${r.role === 'c' ? '업체' : '강사'} · 가입 ${esc(r.joined || '')}</span></span><span class="sm">${r.done ? `✓ ${dayTxt(refDays(r.role))}` : (r.role === 'c' ? '공고 전' : '프로필 작성 전')}</span></div>`).join('') || '<p class="mu">아직 없어요. 링크를 톡방이나 지인에게 보내 보세요.</p>'}`);
 }
 
+// 직원: 대표는 초대 링크·정산 권한·내보내기, 직원은 함께 일하는 사람 보기·나가기
+async function staffSheet() {
+  const owner = !isStaffView();
+  const st = (await getDocs(query(collection(db, 'staff'), where('coId', '==', CO)))).docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => a.at.localeCompare(b.at));
+  const inv = owner ? (await getDocs(query(collection(db, 'invites'), where('coId', '==', uidMe)))).docs[0] : null;
+  const link = inv ? location.origin + location.pathname + '?staff=' + inv.id : '';
+  const row = x => `<div class="card"><div class="row"><b class="sp">${esc(x.name)}${x.uid === uidMe ? ' (나)' : ''}</b>${x.pay ? '<span class="chip paid">정산 가능</span>' : '<span class="chip off">정산 안 보임</span>'}</div><span class="mu sm">${esc(x.email || '')} · ${esc(x.at.slice(0, 10))} 합류</span>
+    ${owner ? `<div class="row"><button class="btn sm" data-real="staffPay" data-id="${x.id}">${x.pay ? '정산 권한 끄기' : '정산 권한 켜기'}</button><button class="btn sm" data-real="staffOut" data-id="${x.id}" data-n="${esc(x.name)}" style="color:var(--r2)">내보내기</button></div>` : ''}</div>`;
+  openSheet(`<div class="row"><h2 class="sp">직원 ${st.length ? st.length + '명' : ''}</h2><button class="btn sm" data-act="closeSheet">닫기</button></div>
+    ${owner ? `<p class="mu sm">직원은 자기 구글·메일로 로그인해서 같은 업체의 공고·강사·공지·서류 체크표를 같이 봐요. 공지에는 작성한 사람 이름이 남아요. 업체 정보·양식·직원 관리는 대표만 해요. 지급(정산)은 '정산 권한'을 켠 직원만 봐요.</p>
+    <div class="card"><b>직원 초대 링크</b>${inv ? `<input readonly value="${esc(link)}" onclick="this.select()"><div class="row"><button class="btn sm pri" data-real="invCopy" data-t="${esc(link)}">링크 복사</button><button class="btn sm" data-real="invNew">새 링크로 바꾸기</button><button class="btn sm" data-real="invOff">링크 끄기</button></div><span class="mu sm">링크를 받은 사람은 누구나 직원으로 합류할 수 있어요. 다 초대했으면 '링크 끄기'를 눌러 두세요.</span>` : `<span class="mu sm">링크를 만들어 카톡으로 보내면 직원이 눌러서 합류해요.</span><button class="btn pri" data-real="invNew">초대 링크 만들기</button>`}</div>`
+    : `<p class="mu sm">함께 일하는 사람이에요. 업체 정보·직원 관리는 대표만 해요.</p>`}
+    ${st.map(row).join('') || '<p class="mu">아직 직원이 없어요.</p>'}
+    ${owner ? '' : '<button class="btn sm" data-real="staffLeave" style="color:var(--r2)">이 업체에서 나가기</button>'}`);
+}
 async function adminSheet() {
   const [d, d2] = await Promise.all([getDocs(query(collection(db, 'users'), where('role', '==', 'c'))), getDocs(query(collection(db, 'users'), where('side.role', '==', 'c')))]);
   const rows = (await Promise.all([...d.docs, ...d2.docs].map(async x => { let p = {}; try { const s = await getDoc(doc(db, 'users', x.id, 'private', 'main')); p = s.data() || {}; } catch (e) { } return { ...asRole({ id: x.id, ...x.data(), ...p }, 'c'), ...p }; })))
@@ -414,10 +495,12 @@ REAL.doc = async (appId, n, f) => {
 REAL.formUp = async (n, f) => {
   const data = await fileData(f);
   if (!data) return toast('650KB 이하 파일만 올릴 수 있어요');
+  if (isStaffView()) return toast('서류 양식은 대표만 올릴 수 있어요');
   try { await setDoc(doc(db, 'users', uidMe, 'forms', n), { name: f.name, data, at: new Date().toISOString() }); } catch (e) { return toast('올리지 못했어요: ' + e.code); }
   const c = S.cos.find(x => x.id === uidMe); c.forms = { ...(c.forms || {}), [n]: f.name }; save(); render(); toast(`${n} 양식을 올렸어요`);
 };
 REAL.formDel = async n => {
+  if (isStaffView()) return toast('서류 양식은 대표만 지울 수 있어요');
   try { await deleteDoc(doc(db, 'users', uidMe, 'forms', n)); } catch (e) { return toast('지우지 못했어요: ' + e.code); }
   const c = S.cos.find(x => x.id === uidMe); const f = { ...(c.forms || {}) }; delete f[n]; c.forms = f; save(); render(); toast('양식을 지웠어요');
 };
