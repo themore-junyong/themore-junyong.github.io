@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<meta name="build" content="261029-2331">
+<meta name="build" content="261029-2334">
 <title>강사로</title>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#2563EB">
@@ -641,7 +641,10 @@ async function importFile(f){try{
   if(/\.zip$/i.test(f.name)){const t=await unzipIcs(await f.arrayBuffer());if(!t.length)return toast('압축 파일 안에서 캘린더(.ics)를 찾지 못했어요');return importEvs(t.flatMap(parseIcs),'zip')}
   const t=await f.text();return /BEGIN:VCALENDAR/.test(t)?importEvs(parseIcs(t),'ics'):importEvs(t)}catch(e){toast('파일을 읽지 못했어요')}}
 // 일정 가져오기: {evs:[{key,dates,title,org,time,fee,km,toll,st}]} — key가 같은 일정은 건너뜀
-function importEvs(txt,src){let d;if(Array.isArray(txt))d=txt;else try{d=JSON.parse(String(txt).trim())}catch(e){return /BEGIN:VCALENDAR/.test(txt)?importEvs(parseIcs(txt),'ics'):toast('일정 파일을 읽지 못했어요')}
+// 엑셀·AI 표 → 일정 (날짜·기관·강의명·시간·강사료·상태)
+const stOf=v=>/안\s*됨|불합격|미선정|취소/.test(v)?'no':/미입금/.test(v)?'confirmed':/입금|지급/.test(v)?'paid':/지원|대기/.test(v)?'applied':'confirmed';
+function tableEvs(t){return bulkParse(t).filter(j=>j.dates.length&&(j.title||j.school)).map(j=>({dates:j.dates,title:j.title||j.school,org:j.school||j.region,time:j.time,fee:j.fee,st:stOf(j.st||''),key:'t:'+j.dates[0]+':'+(j.title||j.school)}))}
+function importEvs(txt,src){let d;if(Array.isArray(txt))d=txt;else try{d=JSON.parse(String(txt).trim())}catch(e){if(/BEGIN:VCALENDAR/.test(txt))return importEvs(parseIcs(txt),'ics');const T=tableEvs(txt);return T.length?importEvs(T,'표'):toast('일정을 읽지 못했어요. 표라면 제목 줄(날짜·기관·강의명…)까지 같이 붙여 넣어 주세요')}
   if(src&&!d.length)return toast('강의로 보이는 일정을 찾지 못했어요. 일정 제목에 \'강의\'를 넣어 두면 찾아요');
   const L=Array.isArray(d)?d:d&&d.evs;if(!Array.isArray(L))return toast('일정 파일을 읽지 못했어요');
   const me=meId(),have=new Set(S.evs.filter(x=>x.instId===me&&x.key).map(x=>x.key));let n=0,skip=0;
@@ -661,10 +664,12 @@ function vMe(){const p=inst(meId());
   ${(()=>{const V=verified(p.id);return `<div class="card"><h3>강의 이력</h3><span class="mu sm">강사로에서 업체가 확정하고, 강의를 마치고, 강사료 입금까지 끝난 강의만 자동으로 쌓이고 <span class="chip paid">✓ 강사로 인증</span>이 붙어요. 그 전 경력은 위 '강의 경력'에 직접 쓰면 '본인 작성'으로 보여요.</span>
     ${V.map(v=>`<div class="row sm"><span class="chip paid">✓ 인증</span><span class="sp">${esc(vLine(v))}</span></div>`).join('')||'<span class="mu sm">아직 입금까지 끝난 강사로 강의가 없어요.</span>'}
     ${String(p.career||'').split('\n').filter(x=>x.trim()).map(x=>`<div class="row sm"><span class="chip off">본인 작성</span><span class="sp">${esc(x)}</span></div>`).join('')}</div>`})()}
-  <div class="card"><h3>다른 달력에서 일정 가져오기</h3><span class="mu sm">구글 캘린더에서 내보낸 파일(.zip, .ics)이나 강사로 일정 파일(.json)을 고르면, 강의로 보이는 일정만 내 달력에 한 번에 들어가요. 같은 일정은 두 번 들어가지 않아요.</span>
+  <div class="card"><h3>지금 일정 한 번에 넣기</h3><span class="mu sm">처음 오셨으면 가진 일정을 한 번에 넣어 두세요. ① 구글 캘린더 파일(.zip, .ics) ② 엑셀 표(제목 줄까지 복사해 붙여 넣기, 또는 양식 파일 고르기) ③ AI가 만든 표, 모두 돼요. 같은 일정은 두 번 들어가지 않아요.</span>
+    <div class="row"><button class="btn sm" data-act="evTpl">엑셀 양식 받기</button></div>
+    ${aiHelp('i')}
     <details class="sm mu"><summary>구글 캘린더 파일 받는 법</summary>PC에서 구글 캘린더 → 오른쪽 위 톱니바퀴 → 설정 → 왼쪽 '가져오기/내보내기' → <b>내보내기</b>를 누르면 .zip 파일이 받아져요. 그 파일을 그대로 고르세요. (폰 구글 캘린더 앱에는 내보내기가 없어요)</details>
-    <div class="row"><label class="btn sm">파일 고르기<input type="file" accept=".zip,.ics,.json,.txt,application/zip,text/calendar,application/json,text/plain" data-act="evImport" hidden></label></div>
-    <textarea id="evImportTxt" rows="2" placeholder="또는 파일 내용을 여기에 붙여 넣기"></textarea><button class="btn sm" data-act="evImportTxt">붙여 넣은 일정 가져오기</button></div>
+    <div class="row"><label class="btn sm">파일 고르기<input type="file" accept=".zip,.ics,.json,.txt,.csv,application/zip,text/calendar,application/json,text/plain,text/csv" data-act="evImport" hidden></label></div>
+    <textarea id="evImportTxt" rows="3" placeholder="또는 엑셀 표·AI가 만든 표·파일 내용을 여기에 붙여 넣기"></textarea><button class="btn sm" data-act="evImportTxt">붙여 넣은 일정 가져오기</button></div>
   <div class="card"><h3>회사에 보이는 프로필 카드</h3><pre class="pf">${esc(profileText(p))}</pre><div class="row"><button class="btn pri" data-act="myPdf">내 프로필 PDF 받기</button><button class="btn" data-act="copyPf">프로필 복사</button></div><span class="mu sm">PDF는 인쇄 창에서 'PDF로 저장'을 고르면 받아져요. 메일 지원할 때 첨부하세요.</span></div>
   <p class="mu sm">가입일 ${esc(p.joined)} · ${p.beta?'초기 가입 회원':''}</p>`}
 
@@ -747,23 +752,48 @@ const reportsOf=j=>Object.keys(j.reports||{}).length;
 const downByReports=j=>reportsOf(j)>=3&&j.cleared!==true&&newCo(co(j.coId));
 const HOLD_MSG='돈 요구·외부 연락 같은 말이 있거나 강사료가 너무 높아서 운영자 확인 뒤 강사에게 보여요';
 /* ===== 업체: 엑셀에서 여러 줄 복사 → 한 번에 등록 ===== */
+// AI(챗GPT·제미나이 등)에게 지금 일정을 양식대로 표로 바꿔 달라고 할 문구
+const AI_ASK={co:`아래 내 강의 일정을 표로 정리해 줘.
+열은 정확히 이 순서로: 날짜 | 학교(기관) | 지역 | 강의명 | 시간 | 교시 | 대상 | 강사료 | 내용
+- 날짜는 2026-11-02 형식. 여러 날 이어지는 한 운영(과정)은 한 줄에 날짜를 쉼표로 (예: 2026-11-02, 2026-11-03)
+- 시간은 09:00~16:00 형식, 강사료는 1일 금액 숫자만 (모르면 비움)
+- 지역은 시·군 이름 (예: 울산, 수원)
+- 확정 강사, 반, 세부 주제는 '내용' 칸에 한 줄로
+- 표만 보여 줘. 설명은 빼 줘.
+
+[내 일정]
+(여기에 엑셀·시간표 사진·카톡 내용을 붙여 넣거나 첨부)`,
+i:`아래 내 강의 일정을 표로 정리해 줘.
+열은 정확히 이 순서로: 날짜 | 기관 | 강의명 | 시간 | 강사료 | 상태
+- 날짜는 2026-11-02 형식. 이틀 이상이면 날짜를 쉼표로 (예: 2026-11-02, 2026-11-03)
+- 시간은 09:00~12:00 형식, 강사료는 1일 금액 숫자만 (모르면 비움)
+- 상태는 지원 / 확정 / 입금 / 안 됨 중 하나 (끝났는데 아직 돈을 못 받았으면 확정)
+- 표만 보여 줘. 설명은 빼 줘.
+
+[내 일정]
+(여기에 달력 사진·메모·카톡 내용을 붙여 넣거나 첨부)`};
+const aiHelp=k=>`<details class="sm"><summary><b>🤖 AI로 표 만들기</b> (엑셀이 없거나 시간표 사진·카톡만 있을 때)</summary><ol style="margin:6px 0 0;padding-left:18px">
+  <li>아래 <b>부탁 문구 복사</b>를 눌러요.</li><li>챗GPT·제미나이·클로드 같은 AI 앱에 붙여 넣고, 맨 아래에 지금 가진 일정(엑셀 내용, 시간표 사진, 카톡)을 붙여 넣거나 사진을 첨부해 보내요.</li>
+  <li>AI가 만든 표를 통째로 복사해서 ${k==='co'?'위 칸':'아래 칸'}에 붙여 넣어요. 표 모양 그대로(| 줄) 붙여도 읽어요.</li><li>${k==='co'?'미리 보기로 확인하고 등록해요.':"'붙여 넣은 일정 가져오기'를 눌러요."} AI가 틀린 칸은 나중에 일정을 눌러 고치면 돼요.</li></ol>
+  <button class="btn sm" data-act="aiAsk" data-k="${k}">부탁 문구 복사</button></details>`;
 // 제목 줄이 있으면 열 이름으로, 없으면 날짜·지역·학교·강의·시간·교시·대상·강사료·내용 순서로 읽음
-const BK=[['d',/날짜|일자|일시|강의일|교육일|출강일/],['time',/시간/],['fee',/강사료|강사비|강의료|금액|단가|페이|사례비/],['per',/교시|차시/],['for',/대상|학년|인원/],['school',/학교|기관|장소|교육처/],['region',/지역|시군|시·군/],['title',/강의|과목|주제|프로그램|교육명|과정/],['desc',/내용|비고|메모|참고/]];
+const BK=[['d',/날짜|일자|일시|강의일|교육일|출강일/],['time',/시간/],['fee',/강사료|강사비|강의료|금액|단가|페이|사례비/],['per',/교시|차시/],['for',/대상|학년|인원/],['school',/학교|기관|장소|교육처/],['region',/지역|시군|시·군/],['title',/강의|과목|주제|프로그램|교육명|과정/],['desc',/내용|비고|메모|참고/],['st',/상태|진행/]];
 const BK_ORDER=['d','region','school','title','time','per','for','fee','desc'];
-function bulkParse(raw){const L=String(raw||'').replace(/\r/g,'').split('\n').filter(x=>x.trim());if(!L.length)return [];
-  const sp=x=>x.includes('\t')?x.split('\t'):x.split(/\s*,\s*(?=(?:[^"]*"[^"]*")*[^"]*$)/).map(c=>c.replace(/^"|"$/g,''));
+function bulkParse(raw){const L=String(raw||'').replace(/\r/g,'').replace(/^```\w*$/gm,'').split('\n').filter(x=>x.trim()&&!/^\s*\|?\s*:?-{2,}/.test(x));if(!L.length)return [];
+  const sp=x=>x.includes('\t')?x.split('\t'):/^\s*\|/.test(x)?x.trim().replace(/^\||\|$/g,'').split('|').map(c=>c.trim()):x.split(/\s*,\s*(?=(?:[^"]*"[^"]*")*[^"]*$)/).map(c=>c.replace(/^"|"$/g,''));
   const head=sp(L[0]),hk=head.map(h=>{const b=BK.find(([,re])=>re.test(h));return b?b[0]:''});
   const has=hk.filter(Boolean).length>=2&&!head.some(h=>/\d{1,2}\s*[./월-]\s*\d{1,2}/.test(h)),cols=has?hk:BK_ORDER,rows=has?L.slice(1):L;
   return rows.map(ln=>{const c=sp(ln),o={};cols.forEach((k,i)=>{if(k&&c[i]!=null&&!o[k])o[k]=String(c[i]).trim()});
     const P=parseNotice((o.d||'')+'\n'+(o.time||''));const fv=String(o.fee||'').replace(/[^\d.만]/g,'');let fee=parseFloat(fv.replace('만',''))||0;if(/만/.test(fv)||fee&&fee<=50)fee*=1e4;
     const region=o.region||Object.keys(GEO).find(k=>`${o.school||''} ${o.title||''}`.includes(k))||'';
-    const j={title:o.title||'',school:o.school||'',region,dates:P.dates,time:P.시간||o.time||'',교시:o.per||'',대상:o.for||'',fee:Math.round(fee),desc:o.desc||''};
+    const j={title:o.title||'',school:o.school||'',region,dates:P.dates,time:P.시간||o.time||'',교시:o.per||'',대상:o.for||'',fee:Math.round(fee),desc:o.desc||'',st:o.st||''};
     j.miss=[!j.dates.length&&'날짜',!j.title&&'강의',!j.school&&'학교',!j.region&&'지역',!j.time&&'시간',!j.fee&&'강사료'].filter(Boolean);return j})}
 function sheetBulkJobs(raw){const R=raw?bulkParse(raw):[],ok=R.filter(j=>j.dates.length&&(j.title||j.school));
   openSheet(`<div class="row"><h2 class="sp">여러 건 한 번에 올리기</h2><button class="btn sm" data-act="closeSheet">닫기</button></div>
   <p class="mu sm">엑셀에서 <b>제목 줄까지 같이</b> 드래그해 복사(Ctrl+C)한 뒤 아래에 붙여 넣으세요. 열 순서는 상관없어요. 날짜·학교(기관)·지역·강의명·시간·교시·대상·강사료·내용 이름을 알아봐요. 한 칸에 날짜가 여러 개(11/20, 11/21)면 하루 이상 강의로 들어가요.</p>
   <textarea id="bRaw" rows="7" placeholder="날짜&#9;학교&#9;지역&#9;강의명&#9;시간&#9;교시&#9;대상&#9;강사료">${esc(raw||'')}</textarea>
   <div class="row"><button class="btn" data-act="bPrev">미리 보기</button><button class="btn sm" data-act="bTpl">엑셀 양식 받기</button></div>
+  ${aiHelp('co')}
   ${raw?`<h3>미리 보기 · ${R.length}줄 중 ${ok.length}건 등록 가능</h3>
   <div style="overflow-x:auto"><table class="sm"><thead><tr><th>날짜</th><th>강의</th><th>학교·지역</th><th>시간</th><th>강사료</th><th></th></tr></thead><tbody>${R.map(j=>`<tr><td>${j.dates.map(md).join('·')||'<b style="color:var(--r2)">없음</b>'}</td><td>${esc(j.title)}</td><td>${esc(j.school)} ${esc(j.region)}</td><td>${esc(j.time)}</td><td>${j.fee?won(j.fee):''}</td><td>${j.dates.length&&(j.title||j.school)?(j.miss.length?`<span class="chip warn">${j.miss.join('·')} 빔</span>`:'<span class="chip paid">OK</span>'):'<span class="chip off">건너뜀</span>'}</td></tr>`).join('')}</tbody></table></div>
   ${ok.length?`<label class="sm"><input type="checkbox" id="bOpen" checked> 강사 모집 공고로 올리기 (끄면 업체 달력에 기록만 해요. 이미 강사가 정해진 일정을 옮길 때)</label>
@@ -921,6 +951,8 @@ document.addEventListener('click',async ev=>{
   if(A==='cnew')return sheetNewJob();
   if(A==='bulkJobs')return sheetBulkJobs();
   if(A==='bPrev')return sheetBulkJobs($('#bRaw').value);
+  if(A==='aiAsk')return copy(AI_ASK[D.k],'AI 부탁 문구');
+  if(A==='evTpl'){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff날짜,기관,강의명,시간,강사료,상태\n2026-11-20,○○고,면접 특강,09:00~12:00,300000,확정\n"2026-11-24, 2026-11-25",○○센터,취업 캠프,09:00~16:00,350000,지원\n'],{type:'text/csv'}));a.download='강사로_내일정_양식.csv';document.body.appendChild(a);a.click();a.remove();return toast('양식을 받았어요. 엑셀로 채운 뒤 복사해 붙여 넣거나 저장한 파일을 고르세요')}
   if(A==='bTpl'){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff날짜,학교(기관),지역,강의명,시간,교시,대상,강사료,내용\n2026-11-20,○○고,수원,면접 특강,09:00~12:00,3교시,3학년 100명,300000,주차 가능\n'],{type:'text/csv'}));a.download='강사로_공고_양식.csv';document.body.appendChild(a);a.click();a.remove();return toast('양식을 받았어요. 엑셀로 열어 채운 뒤 복사해 붙여 넣으세요')}
   if(A==='bSave'){const R=bulkParse($('#bRaw').value).filter(j=>j.dates.length&&(j.title||j.school)),open=$('#bOpen').checked;
     for(const x of R){const {miss,...j}=x;const n={...j,id:uid(),coId:meId(),status:open?'모집':'마감',needs:['프로필','교안','통장사본'],notices:[],created:todayIso()};holdFix(n);S.jobs.push(n)}
@@ -975,6 +1007,6 @@ document.addEventListener('paste',ev=>{if(ev.target.id==='pRaw')setTimeout(()=>{
 document.addEventListener('input',ev=>{if(['pDates','pRaw'].includes(ev.target.id))pWarn();if(['pDates','pFee','pKm','pToll'].includes(ev.target.id))pNet()});
 render();
 </script>
-<script type="module" src="real.js?v=261029-2331"></script>
+<script type="module" src="real.js?v=261029-2334"></script>
 </body>
 </html>
