@@ -20,7 +20,8 @@ def rep(old, new, n=1):
 
 build = datetime.datetime.now().strftime('%y%m%d-%H%M')
 s = re.sub(r'<meta name="build" content="[^"]*">', f'<meta name="build" content="{build}">', s)
-rep('<title>강사로 (시범 운영)</title>', '<title>강사로</title>')
+rep('<title>강사로 (체험판)</title>', '<title>강사로</title>')
+rep('<span class="beta">체험판</span>', '<span class="beta">지금 가입하면 3개월 무료</span>')
 rep('<link rel="apple-touch-icon" href="icons/', '<link rel="apple-touch-icon" href="../try/icons/')
 rep('<button class="btn sm" data-act="reset" title="체험 데이터 처음으로">처음으로</button>', '')
 s, n = re.subn(r'<div class="who">.*?</div>', '<div class="who" id="acct"></div>', s, count=1, flags=re.S)
