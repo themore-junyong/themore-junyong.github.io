@@ -26,7 +26,7 @@ if (EMU) { A.connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarning
 const { doc, collection, getDoc, getDocs, setDoc, updateDoc, deleteDoc, deleteField, query, where, limit, onSnapshot } = F;
 
 /* ===== 문서 나누기 ===== */
-const PUB = { i: ['name', 'region', 'topics', 'intro', 'certs', 'career', 'photo', 'joined', 'beta', 'refBy'], c: ['name', 'contact', 'joined', 'approved', 'refBy', 'biz', 'blocked', 'logo'] };
+const PUB = { i: ['name', 'region', 'topics', 'intro', 'certs', 'career', 'photo', 'joined', 'beta', 'refBy'], c: ['name', 'contact', 'joined', 'approved', 'refBy', 'biz', 'blocked', 'logo', 'forms'] };
 // 사업자등록번호: 숫자 10자리 + 국세청 검증 숫자 (보안 규칙도 같은 계산)
 const bizNum = v => String(v || '').replace(/\D/g, '');
 const bizOk = n => { if (!/^\d{10}$/.test(n)) return false; const d = [...n].map(Number), w = [1, 3, 7, 1, 3, 7, 1, 3, 5]; let t = w.reduce((a, x, i) => a + d[i] * x, 0) + Math.floor(d[8] * 5 / 10); return (10 - t % 10) % 10 === d[9]; };
@@ -39,7 +39,7 @@ async function claimBiz(n) {
 }
 const PRIV = { i: ['phone', 'email', 'bank', 'acct', 'holder', 'kmpl', 'fuel', 'vault'], c: ['phone', 'email'] };
 // 한 계정으로 강사·업체 둘 다: 가입한 쪽(role)은 문서 위에, 나중에 더한 쪽은 side 칸에. 업체 승인(biz·approved·blocked)은 늘 위에
-const SIDE = { i: ['name', 'region', 'topics', 'intro', 'certs', 'career', 'photo', 'joined'], c: ['name', 'contact', 'joined', 'logo'] };
+const SIDE = { i: ['name', 'region', 'topics', 'intro', 'certs', 'career', 'photo', 'joined'], c: ['name', 'contact', 'joined', 'logo', 'forms'] };
 const has = r => !!me && (me.role === r || (me.side && me.side.role === r));
 function asRole(x, r) {
   if (!x) return null;
@@ -391,12 +391,13 @@ async function refAdmin() {
 /* ===== 파일 (서류 사진은 줄여서 Firestore에 저장, 1MB 한도) ===== */
 async function fileData(f) {
   if (/^image\//.test(f.type)) { const u = await shrink(f, 1600); return u && u.length < 900000 ? u : ''; }
-  if (f.type === 'application/pdf' && f.size < 650000) return await new Promise(res => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = () => res(''); r.readAsDataURL(f); });
+  // 한글·워드·엑셀·PDF 등은 650KB까지 그대로
+  if (f.size < 650000) return await new Promise(res => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = () => res(''); r.readAsDataURL(f); });
   return '';
 }
 REAL.vault = async (n, f) => {
   const data = await fileData(f);
-  if (!data) return toast('사진이나 650KB 이하 PDF만 올릴 수 있어요');
+  if (!data) return toast('사진이나 650KB 이하 파일만 올릴 수 있어요');
   await setDoc(doc(db, 'users', uidMe, 'files', n), { name: f.name, type: data.slice(5, data.indexOf(';')), data, at: new Date().toISOString() });
   const p = inst(uidMe); p.vault = { ...(p.vault || {}), [n]: f.name }; save(); render(); toast(`${n} 저장했어요. 확정된 업체에만 보여요`);
 };
@@ -405,6 +406,24 @@ REAL.doc = async (appId, n, f) => {
   if (!data) { const u = prompt('파일이 커서 바로 올릴 수 없어요. 구글 드라이브 공유 링크를 붙여 주세요'); if (!u || !/^https?:\/\//.test(u.trim())) return; name = u.trim(); }
   else await setDoc(doc(db, 'apps', appId, 'files', n), { name, type: data.slice(5, data.indexOf(';')), data, at: new Date().toISOString() });
   a.docs = { ...(a.docs || {}), [n]: name }; save(); render(); toast(`${n} 냈어요`);
+};
+
+REAL.formUp = async (n, f) => {
+  const data = await fileData(f);
+  if (!data) return toast('650KB 이하 파일만 올릴 수 있어요');
+  try { await setDoc(doc(db, 'users', uidMe, 'forms', n), { name: f.name, data, at: new Date().toISOString() }); } catch (e) { return toast('올리지 못했어요: ' + e.code); }
+  const c = S.cos.find(x => x.id === uidMe); c.forms = { ...(c.forms || {}), [n]: f.name }; save(); render(); toast(`${n} 양식을 올렸어요`);
+};
+REAL.formDel = async n => {
+  try { await deleteDoc(doc(db, 'users', uidMe, 'forms', n)); } catch (e) { return toast('지우지 못했어요: ' + e.code); }
+  const c = S.cos.find(x => x.id === uidMe); const f = { ...(c.forms || {}) }; delete f[n]; c.forms = f; save(); render(); toast('양식을 지웠어요');
+};
+// 저장해 둔 파일 내려받기 (양식, 강사가 낸 서류)
+REAL.getFile = async (path, name) => {
+  let d; try { d = await getDoc(doc(db, path)); } catch (e) { return toast(e.code === 'permission-denied' ? '볼 수 있는 권한이 없어요' : '받지 못했어요. 인터넷을 확인해 주세요'); }
+  if (!d.exists()) return toast('파일이 없어요. 다시 올려 달라고 해 주세요');
+  const x = d.data(), blob = await (await fetch(x.data)).blob(), u = URL.createObjectURL(blob), a = document.createElement('a');
+  a.href = u; a.download = x.name || name || '파일'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(u), 4000);
 };
 
 /* ===== 시작 ===== */

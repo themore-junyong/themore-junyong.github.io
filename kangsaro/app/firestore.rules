@@ -45,6 +45,11 @@ service cloud.firestore {
         allow read: if me() == u || (signed() && linked(me(), u));
         allow write: if me() == u;
       }
+      // 업체 서류 양식 (빈 양식이라 가입한 사람은 다 받을 수 있음)
+      match /forms/{f} {
+        allow read: if signed();
+        allow write: if me() == u;
+      }
     }
 
     // 사업자등록번호 하나에 업체 하나

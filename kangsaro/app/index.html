@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<meta name="build" content="261029-1021">
+<meta name="build" content="261029-1025">
 <title>강사로</title>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#2563EB">
@@ -449,7 +449,7 @@ function vJobs(){const iid=meId(),t=todayIso();
     ${j.desc?`<details><summary>공고 내용 보기</summary><pre class="pf">${esc(j.desc)}</pre></details>`:''}
     <span class="mu">${esc(co(j.coId).name)} · ${j.dates.map(d=>`${md(d)}(${dowOf(d)})`).join('·')} ${esc(j.time)}</span>
     <div class="mu sm">낼 것: ${j.needs.map(n=>n==='프로필'?'프로필 ✓(자동)':docOf(a,n)?`${esc(n)} ✓${docOf(a,n).endsWith('(자동)')?'(자동)':''}`:`<b style="color:var(--r2)">${esc(n)} 빠짐</b>`).join(' · ')}</div>
-    ${miss.map(n=>`<label class="f">${esc(n)} 올리기 <input type="file" data-act="doc" data-a="${a.id}" data-n="${esc(n)}"></label>`).join('')}
+    ${miss.map(n=>{const fm=(co(j.coId).forms||{})[n];return `${fm?`<div class="row"><span class="sm sp">${esc(n)}: 업체 양식이 있어요. 받아서 채운 뒤 올려 주세요.</span><button class="btn sm" data-act="getFile" data-p="users/${j.coId}/forms/${esc(n)}" data-nm="${esc(fm)}">양식 받기</button></div>`:''}<label class="f">${esc(n)} 올리기 <input type="file" data-act="doc" data-a="${a.id}" data-n="${esc(n)}"></label>`}).join('')}
     ${j.needs.includes(RRN)&&!a.docs[RRN]?`<div class="row"><span class="mu sm sp">원천징수(3.3%) 신고에 필요해서 이 업체만 요청했어요. 업체가 확인하면 바로 지워지고 강사로에는 남지 않아요.</span><button class="btn sm" data-act="rrnSend" data-a="${a.id}">주민등록번호 보내기</button></div>`:''}
     </div>`}).join(''):'<p class="mu">곧 있을 확정 강의가 없어요.</p>'}
   <h2>모집 중인 공고</h2><p class="mu sm">강사로에 들어온 회사의 공고예요. 강사료가 모두 공개돼요. 지원하면 프로필이 같이 가요.</p>
@@ -555,6 +555,10 @@ function verified(iid){const t=todayIso();return S.apps.filter(a=>a.instId===iid
 const vLine=v=>`${v.d.replace(/-/g,'.')}${v.n>1?` 외 ${v.n-1}일`:''} ${v.co} · ${v.j.region} ${v.j.school} ${v.j.title}`;
 const VAULT=['통장사본','신분증 사본'],RRN='주민등록번호';
 // 확정된 업체에만: 업체가 따로 올린 서류가 없으면 강사가 '내 서류'에 저장한 파일을 자동으로 넘겨요
+// 낸 서류가 있는 곳: 이 강의에 낸 파일, 드라이브 링크, 또는 강사 서류함(통장사본·신분증)
+function docPath(a,n){const v=a.docs[n];return v?(/^https?:\/\//.test(v)?v:`apps/${a.id}/files/${n}`):`users/${a.instId}/files/${n}`}
+// 업체마다 다른 양식(강사카드·교재카드·동의서…)을 올려 두면 확정 강사가 받아서 채워 냄
+const FORMS=['강사카드','교재카드','개인정보 동의서','범죄경력 조회 동의서','아동학대 조회 동의서','강사 확인서','출강 확인서','결과보고서'];
 function docOf(a,n){if(a.docs[n])return a.docs[n];const v=(inst(a.instId).vault||{})[n];return a.status==='확정'&&VAULT.includes(n)&&v?v+' (자동)':''}
 // 연락처는 010-0000-0000 형식으로 보여 줌
 function telFmt(t){const d=String(t||'').replace(/\D/g,'');if(/^02\d{7,8}$/.test(d))return d.replace(/^(02)(\d{3,4})(\d{4})$/,'$1-$2-$3');if(/^0\d{9,10}$/.test(d))return d.replace(/^(\d{3})(\d{3,4})(\d{4})$/,'$1-$2-$3');return String(t||'')}
@@ -654,14 +658,16 @@ function vCJobs(){if(ui.jobId&&job(ui.jobId))return vCJob(job(ui.jobId));const t
   ${coCal(J)}
   <h3>다가오는 강의</h3>${up.map(card).join('')||'<p class="mu">아래 + 로 강의를 등록하세요.</p>'}
   <details><summary>지난 강의 ${past.length}건</summary>${past.map(card).join('')}</details>
-  ${(()=>{const c=co(meId());return `<div class="card"><h3>프로필 PDF에 넣을 업체 로고</h3><span class="mu sm">올려 두면 지원자 프로필 PDF 맨 위에 우리 로고와 업체명(${esc(c.name)})이 자동으로 들어가요. 학교에 그대로 보내도 돼요.</span><div class="row">${c.logo?`<img src="${c.logo}" alt="업체 로고" style="height:40px;max-width:160px;object-fit:contain">`:''}<label class="btn sm">${c.logo?'로고 바꾸기':'로고 올리기'}<input type="file" accept="image/*" data-act="logo" hidden></label>${c.logo?'<button class="btn sm" data-act="logoDel">지우기</button>':''}</div></div>`})()}`}
+  ${(()=>{const c=co(meId());return `<div class="card"><h3>프로필 PDF에 넣을 업체 로고</h3><span class="mu sm">올려 두면 지원자 프로필 PDF 맨 위에 우리 로고와 업체명(${esc(c.name)})이 자동으로 들어가요. 학교에 그대로 보내도 돼요.</span><div class="row">${c.logo?`<img src="${c.logo}" alt="업체 로고" style="height:40px;max-width:160px;object-fit:contain">`:''}<label class="btn sm">${c.logo?'로고 바꾸기':'로고 올리기'}<input type="file" accept="image/*" data-act="logo" hidden></label>${c.logo?'<button class="btn sm" data-act="logoDel">지우기</button>':''}</div></div>
+  <div class="card"><h3>서류 양식</h3><span class="mu sm">우리 업체 양식(한글·워드·엑셀·PDF, 650KB 이하)을 올려 두면, 그 서류를 받는 강의에 확정된 강사가 '양식 받기'로 내려받아 채워서 올려요.</span>
+  ${FORMS.map(n=>{const f=(c.forms||{})[n];return `<div class="row" style="border-top:1px solid var(--ln);padding-top:6px"><span class="sm sp"><b>${esc(n)}</b> ${f?`<span class="mu">${esc(f)}</span>`:'<span class="mu">양식 없음</span>'}</span><label class="btn sm">${f?'바꾸기':'올리기'}<input type="file" data-act="formUp" data-n="${esc(n)}" hidden></label>${f?`<button class="btn sm" data-act="formDel" data-n="${esc(n)}">지우기</button>`:''}</div>`}).join('')}</div>`})()}`}
 function vCJob(j){const A=appsOf(j.id),s=jobStats(j);
   const prof=a=>{const p=inst(a.instId);const cf=a.status==='확정';return `<div class="card"><div class="row">${pic(p)}<h3 class="sp">${esc(p.name)} <span class="mu sm">${esc(p.region)} · ${esc(p.topics)}</span>${verified(p.id).length?` <span class="chip paid">✓ 인증 강의 ${verified(p.id).length}회</span>`:''}</h3>${cf?chip('confirmed'):a.status==='미선정'?'<span class="chip off">미선정</span>':a.status==='취소'?`<span class="chip ${a.cxConfirmed?'warn':'off'}">${a.cxConfirmed?'확정 후 취소':'지원 취소'}</span>`:chip('applied')}</div>
     <span class="mu sm">${esc(p.intro)}</span>
     <button class="btn sm" style="align-self:flex-start" data-act="pdf" data-a="${a.id}">프로필 PDF 받기</button>
     <details><summary>프로필 보기</summary><pre class="pf">${esc(profileText(cf?p:{...p,phone:'확정하면 보여요',email:'확정하면 보여요'}))}</pre>${cf?`<span class="mu sm">계좌: ${esc(p.bank)} ${esc(p.acct)} ${esc(p.holder)}</span><button class="btn sm" data-act="copyPfOf" data-i="${p.id}">학교 제출용으로 복사</button>`:''}</details>
     ${cf?`<span class="mu sm">리마인드: ${remText(a)}</span><div class="row">${contactBtns(p,`[${co(j.coId).name}] ${p.name} 강사님, ${j.dates.map(d=>`${md(d)}(${dowOf(d)})`).join('·')} ${j.school} ${j.title} 강의 관련 연락드립니다.`)}</div>`:''}
-    ${cf?`<div class="mu sm">받을 것: ${j.needs.map(n=>n==='프로필'?'프로필 ✓':n===RRN&&a.rrn?`${RRN} ✓ <button class="btn sm" data-act="rrnTake" data-a="${a.id}">복사하고 지우기</button>`:docOf(a,n)?`${esc(n)} ✓ <span class="sm">(${esc(docOf(a,n))})</span>`:`<b style="color:var(--r2)">${esc(n)} 빠짐</b>`).join(' · ')}</div>`:''}
+    ${cf?`<div class="mu sm">받을 것: ${j.needs.map(n=>n==='프로필'?'프로필 ✓':n===RRN&&a.rrn?`${RRN} ✓ <button class="btn sm" data-act="rrnTake" data-a="${a.id}">복사하고 지우기</button>`:docOf(a,n)?`${esc(n)} ✓ <button class="btn sm" data-act="getFile" data-p="${esc(docPath(a,n))}" data-nm="${esc(docOf(a,n).replace(/ \(자동\)$/,''))}">받기</button>`:`<b style="color:var(--r2)">${esc(n)} 빠짐</b>`).join(' · ')}</div>`:''}
     ${a.status==='지원'?`<button class="btn pri" data-act="confirm" data-a="${a.id}">이 강사로 확정</button>`:cf&&!a.paidAt?`<button class="btn sm" data-act="unconfirm" data-a="${a.id}">확정 취소</button>`:''}</div>`};
   const missPeople=A.filter(a=>a.status==='확정'&&j.needs.some(n=>n!=='프로필'&&!docOf(a,n)));
   return `<button class="btn sm" data-act="back">‹ 목록</button>
@@ -783,6 +789,8 @@ document.addEventListener('click',async ev=>{
   if(A==='addMail'||A==='addOnly'||A==='addApplied'){const p=readPaste();if(!p.dates.length){pWarn();return toast('날짜를 넣어 주세요')}if(!p.title)return toast('강의 이름을 넣어 주세요');
     S.evs.push({id:uid(),instId:meId(),dates:p.dates,title:p.title,org:p.org,time:p.time,fee:p.fee,km:p.km,toll:p.toll,st:A==='addOnly'?'confirmed':'applied',to:p.to});save();
     closeSheet();ui.tab='cal';ui.sel=p.dates[0];ui.month=ym(p.dates[0]);render();if(A==='addMail')sheetMail(mailOf(p),p.to);return toast(A==='addMail'?'달력에 "지원"으로 넣었어요. 문구를 복사해 쓰세요':A==='addApplied'?'달력에 "지원"으로 넣었어요':'달력에 "확정"으로 넣었어요')}
+  if(A==='getFile'){if(/^https?:\/\//.test(D.p))return window.open(D.p,'_blank','noopener');if(typeof REAL!=='undefined'&&REAL.getFile)return REAL.getFile(D.p,D.nm);return toast('체험판에서는 파일을 받을 수 없어요. 실제 앱에서 돼요')}
+  if(A==='formDel'){if(!confirm(`${D.n} 양식을 지울까요?`))return;if(typeof REAL!=='undefined'&&REAL.formDel)return REAL.formDel(D.n);const c=co(meId());delete c.forms[D.n];save();render();return toast('양식을 지웠어요')}
   if(A==='logoDel'){delete co(meId()).logo;save();render();return toast('로고를 지웠어요')}
   if(A==='myPdf'){const p=inst(meId());return printPdf(`${p.name} 강사 프로필`,[pdfPage(p,true)])}
   if(A==='pdf'){const a=S.apps.find(x=>x.id===D.a),p=inst(a.instId);return printPdf(`${p.name} 강사 프로필`,[pdfPage(p,a.status==='확정',co(job(a.jobId).coId))])}
@@ -839,6 +847,7 @@ document.addEventListener('change',ev=>{const el=ev.target,D=el.dataset||{};
   if(D.act==='pf'){const p=inst(meId());p[D.k]=D.k==='kmpl'||D.k==='fuel'?+el.value||0:D.k==='phone'?telFmt(el.value):el.value;save();render()}
   if(D.act==='evImport'&&el.files[0]){importFile(el.files[0]);el.value='';return}
   if(D.act==='vault'&&el.files[0]){REAL.vault(D.n,el.files[0]);return}
+  if(D.act==='formUp'&&el.files[0]){if(typeof REAL!=='undefined'&&REAL.formUp)return REAL.formUp(D.n,el.files[0]);const c=co(meId());c.forms={...(c.forms||{}),[D.n]:el.files[0].name};save();render();return toast(`${D.n} 양식을 올렸어요 (체험판은 파일 이름만 저장해요)`)}
   if(D.act==='logo'&&el.files[0]){shrinkLogo(el.files[0]).then(u=>{if(!u)return toast('로고를 읽지 못했어요');co(meId()).logo=u;save();render();toast('로고를 올렸어요. 프로필 PDF에 들어가요')});return}
   if(D.act==='photo'&&el.files[0]){shrink(el.files[0],480).then(u=>{if(!u)return toast('사진을 읽지 못했어요');inst(meId()).photo=u;save();render();toast('프로필 사진을 올렸어요')});return}
   if(D.act==='doc'&&el.files[0]){REAL.doc(D.a,D.n,el.files[0]);return}
@@ -868,6 +877,6 @@ document.addEventListener('paste',ev=>{if(ev.target.id==='pRaw')setTimeout(()=>{
 document.addEventListener('input',ev=>{if(['pDates','pRaw'].includes(ev.target.id))pWarn();if(['pDates','pFee','pKm','pToll'].includes(ev.target.id))pNet()});
 render();
 </script>
-<script type="module" src="real.js?v=261029-1021"></script>
+<script type="module" src="real.js?v=261029-1025"></script>
 </body>
 </html>
