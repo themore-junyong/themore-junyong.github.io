@@ -38,6 +38,15 @@ async function claimBiz(n) {
   await setDoc(r, { uid: uidMe, at: new Date().toISOString() }); return true;
 }
 const PRIV = { i: ['phone', 'email', 'bank', 'acct', 'holder', 'kmpl', 'fuel', 'vault'], c: ['phone', 'email'] };
+// 한 계정으로 강사·업체 둘 다: 가입한 쪽(role)은 문서 위에, 나중에 더한 쪽은 side 칸에. 업체 승인(biz·approved·blocked)은 늘 위에
+const SIDE = { i: ['name', 'region', 'topics', 'intro', 'certs', 'career', 'photo', 'joined'], c: ['name', 'contact', 'joined', 'logo'] };
+const has = r => !!me && (me.role === r || (me.side && me.side.role === r));
+function asRole(x, r) {
+  if (!x) return null;
+  if (x.role === r) return x;
+  if (!x.side || x.side.role !== r) return null;
+  return { id: x.id, ...pick(x, [...PRIV.i, 'approved', 'biz', 'blocked', 'refBy']), ...x.side };
+}
 const pick = (o, ks) => { const r = {}; for (const k of ks) if (o[k] !== undefined) r[k] = o[k]; return r; };
 const omit = (o, ks) => { const r = { ...o }; for (const k of ks) delete r[k]; return r; };
 // 키 순서와 상관없이 같은 내용이면 같은 글자
@@ -54,9 +63,10 @@ function payloads() {
   const out = new Map(), u = uidMe;
   if (!u || !S.me) return out;
   const mine = role === 'i' ? S.insts.find(x => x.id === u) : S.cos.find(x => x.id === u);
-  if (mine) {
-    out.set(`users/${u}`, { role, ...pick(mine, PUB[role]) });
-    out.set(`users/${u}/private/main`, pick(mine, PRIV[role]));
+  if (mine && me) {
+    const base = omit(me, ['id', ...PRIV.i]);
+    out.set(`users/${u}`, role === me.role ? { ...omit(base, PUB[role]), ...pick(mine, PUB[role]), role } : { ...base, side: { ...pick(mine, SIDE[role]), role } });
+    out.set(`users/${u}/private/main`, { ...pick(me, PRIV.i), ...pick(mine, PRIV[role]) });
   }
   for (const j of S.jobs) {
     if (j.coId !== u) continue;
@@ -120,8 +130,8 @@ async function loadUser(id, withPriv) {
   if (withPriv) { try { const p = await getDoc(doc(db, 'users', id, 'private', 'main')); if (p.exists()) Object.assign(x, p.data()); } catch (e) { /* 확정 전이면 못 봄 */ } }
   return x;
 }
-async function loadInst(id, priv) { const x = await loadUser(id, priv).catch(() => null); if (x) { upsert(S.insts, x); later(); } }
-async function loadCo(id) { if (S.cos.some(c => c.id === id)) return; const x = await loadUser(id, false).catch(() => null); if (x) { upsert(S.cos, x); later(); } }
+async function loadInst(id, priv) { const x = asRole(await loadUser(id, priv).catch(() => null), 'i'); if (x) { upsert(S.insts, x); later(); } }
+async function loadCo(id) { if (S.cos.some(c => c.id === id)) return; const x = asRole(await loadUser(id, false).catch(() => null), 'c'); if (x) { upsert(S.cos, x); later(); } }
 async function loadJob(id) { if (S.jobs.some(j => j.id === id)) return; const d = await getDoc(doc(db, 'jobs', id)).catch(() => null); if (d && d.exists()) { putJob({ id, ...d.data() }); prime(new Set([`jobs/${id}`])); later(); } }
 function putJob(j) { const old = S.jobs.find(x => x.id === j.id); j.notices = old ? old.notices : []; upsert(S.jobs, j); loadCo(j.coId); }
 
@@ -153,14 +163,18 @@ function app(ch) {
   if (role === 'c' && a.status === '취소' && a.cxConfirmed) { const j = job(a.jobId); if (j && j.status === '마감') { j.status = '모집'; SYNC(); } }
 }
 
-async function start(user) {
+async function start(user, want) {
   uidMe = user.uid;
+  unsub.splice(0).forEach(f => f()); links.clear(); last.clear();
+  Object.assign(S, { insts: [], cos: [], jobs: [], apps: [], evs: [], alerts: [] });
   me = await loadUser(uidMe, true);
   profileLoaded = true;
   if (!me) { render(); return; }
-  role = me.role;
+  want = want || lsGet('kangsaro.view.' + uidMe);
+  role = has(want) ? want : me.role;
+  const mine = asRole(me, role);
   if (role === 'i') {
-    S.insts = [me]; S.me = 'i:' + uidMe;
+    S.insts = [mine]; S.me = 'i:' + uidMe;
     const ev = await getDocs(query(collection(db, 'evs'), where('instId', '==', uidMe)));
     S.evs = ev.docs.map(d => ({ id: d.id, ...d.data() }));
     const ap = await getDocs(query(collection(db, 'apps'), where('instId', '==', uidMe)));
@@ -179,7 +193,7 @@ async function start(user) {
     live(query(collection(db, 'alerts'), where('instId', '==', uidMe)), ch => { const x = { id: ch.doc.id, ...ch.doc.data() }; if (ch.type === 'removed') S.alerts = S.alerts.filter(y => y.id !== x.id); else upsert(S.alerts, x); });
     live(query(collection(db, 'notices'), where('to', 'array-contains', uidMe)), notice);
   } else {
-    S.cos = [me]; S.me = 'c:' + uidMe;
+    S.cos = [mine]; S.me = 'c:' + uidMe;
     const jb = await getDocs(query(collection(db, 'jobs'), where('coId', '==', uidMe)));
     S.jobs = jb.docs.map(d => ({ id: d.id, ...d.data(), notices: [] }));
     const nt = await getDocs(query(collection(db, 'notices'), where('coId', '==', uidMe)));
@@ -226,12 +240,15 @@ REAL.gate = () => {
 };
 REAL.acct = () => {
   const el = $('#acct'); if (!el) return;
-  const pending = role === 'c' && me && !me.approved, isAdmin = ADMINS.includes(auth.currentUser?.email);
-  el.innerHTML = `<span class="sp">${esc(me ? me.name : '')} ${role === 'c' ? '(업체)' : ''}</span>${isAdmin ? '<button class="btn sm" data-real="admin">업체 관리</button>' : ''}<a class="btn sm" style="text-decoration:none;color:inherit;display:inline-flex;align-items:center" href="../guide/${role === 'c' ? 'company' : 'instructor'}.html">사용법</a><button class="btn sm" data-real="ref">소개하기</button><button class="btn sm" data-real="out">로그아웃</button>`;
+  const cur = (role === 'i' ? S.insts : S.cos).find(x => x.id === uidMe) || me || {}, other = role === 'i' ? 'c' : 'i';
+  const pending = role === 'c' && !cur.approved, isAdmin = ADMINS.includes(auth.currentUser?.email);
+  const sw = has(other) ? `<button class="btn sm" data-real="swap" title="같은 계정으로 화면만 바꿔요">⇄ ${other === 'c' ? '업체 화면' : '강사 화면'}</button>` : `<button class="btn sm" data-real="addSide">${other === 'c' ? '업체로도 쓰기' : '강사로도 쓰기'}</button>`;
+  el.style.flexWrap = 'wrap';
+  el.innerHTML = `<span class="sp" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:5em">${esc(cur.name || '')} ${role === 'c' ? '(업체)' : '(강사)'}</span>${sw}${isAdmin ? '<button class="btn sm" data-real="admin">업체 관리</button>' : ''}<a class="btn sm" style="text-decoration:none;color:inherit;display:inline-flex;align-items:center" href="../guide/${role === 'c' ? 'company' : 'instructor'}.html">사용법</a><button class="btn sm" data-real="ref">소개하기</button><button class="btn sm" data-real="out">로그아웃</button>`;
   const bar = $('#pendBar'); if (bar && !pending) bar.remove();
-  if (pending && !bar) el.insertAdjacentHTML('afterend', me.blocked
+  if (pending && !bar) el.insertAdjacentHTML('afterend', cur.blocked
     ? '<div id="pendBar" class="alert">운영자가 이 업체의 공고 등록을 멈췄어요. 문의: tobadyclup@naver.com</div>'
-    : `<div id="pendBar" class="alert">사업자등록번호를 넣으면 바로 공고를 올릴 수 있어요.<div class="row"><input id="pBiz" inputmode="numeric" placeholder="000-00-00000" value="${esc(bizFmt(me.biz || ''))}"><button class="btn pri sm" data-real="bizSet">등록</button></div></div>`);
+    : `<div id="pendBar" class="alert">사업자등록번호를 넣으면 바로 공고를 올릴 수 있어요.<div class="row"><input id="pBiz" inputmode="numeric" placeholder="000-00-00000" value="${esc(bizFmt(cur.biz || ''))}"><button class="btn pri sm" data-real="bizSet">등록</button></div></div>`);
 };
 
 document.addEventListener('change', e => { if (e.target.name === 'rRole') { const c = e.target.value === 'c'; $('#rRegionF').hidden = c; $('#rContactF').hidden = !c; $('#rBizF').hidden = !c; } });
@@ -276,9 +293,53 @@ document.addEventListener('click', async e => {
     const n = bizNum($('#pBiz').value); if (!bizOk(n)) return toast('사업자등록번호 10자리를 확인해 주세요');
     try { if (!await claimBiz(n)) return; await updateDoc(doc(db, 'users', uidMe), { biz: n, approved: true }); }
     catch (err) { return toast('등록하지 못했어요: ' + err.code); }
-    me.biz = n; me.approved = true; prime(new Set([`users/${uidMe}`])); toast('등록했어요. 이제 공고를 올릴 수 있어요'); render();
+    me.biz = n; me.approved = true; const c = S.cos.find(x => x.id === uidMe); if (c) { c.biz = n; c.approved = true; }
+    prime(new Set([`users/${uidMe}`])); toast('등록했어요. 이제 공고를 올릴 수 있어요'); render();
+  }
+  if (k === 'swap') return swapTo(role === 'i' ? 'c' : 'i');
+  if (k === 'addSide') return sideSheet(role === 'i' ? 'c' : 'i');
+  if (k === 'sideJoin') {
+    const r = b.dataset.r, name = $('#sName').value.trim(), t = todayIso();
+    if (!name) return toast(r === 'c' ? '업체명을 넣어 주세요' : '이름을 넣어 주세요');
+    try {
+      if (r === 'c') {
+        const biz = bizNum($('#sBiz').value); if (!bizOk(biz)) return toast('사업자등록번호 10자리를 확인해 주세요');
+        if (!await claimBiz(biz)) return;
+        const side = { role: 'c', name, contact: $('#sContact').value.trim(), joined: t };
+        await updateDoc(doc(db, 'users', uidMe), { side }); me.side = side;
+        await updateDoc(doc(db, 'users', uidMe), { biz, approved: true }); Object.assign(me, { biz, approved: true });
+      } else {
+        const side = { role: 'i', name, region: $('#sRegion').value, topics: '', intro: '', career: '', joined: t };
+        await updateDoc(doc(db, 'users', uidMe), { side }); me.side = side;
+        await setDoc(doc(db, 'users', uidMe, 'private', 'main'), { bank: '', acct: '', holder: name, kmpl: 15, fuel: 1650, vault: {} }, { merge: true });
+      }
+    } catch (err) { return toast('추가하지 못했어요: ' + err.code); }
+    closeSheet(); await swapTo(r);
+    if (r === 'i') { ui.tab = 'me'; render(); }
   }
 });
+// 강사 화면 ↔ 업체 화면 (같은 계정, 달력·결산은 따로)
+async function swapTo(r) {
+  clearTimeout(timer); await flush();
+  try { localStorage.setItem('kangsaro.view.' + uidMe, r); } catch (e) { }
+  ui.jobId = null; $('#pendBar')?.remove();
+  await start(auth.currentUser, r);
+  toast(r === 'c' ? '업체 화면이에요. 위쪽 버튼으로 언제든 강사 화면으로 돌아가요' : '강사 화면이에요. 위쪽 버튼으로 언제든 업체 화면으로 가요');
+}
+function sideSheet(r) {
+  openSheet(r === 'c' ? `<div class="row"><h2 class="sp">업체로도 쓰기</h2><button class="btn sm" data-act="closeSheet">닫기</button></div>
+    <p>이 계정 그대로 <b>업체 화면</b>이 하나 더 생겨요. 위쪽 버튼으로 강사 화면과 오가요. 강사 달력·결산은 그대로 있어요.</p>
+    <label class="f">업체명<input id="sName"></label>
+    <label class="f">담당자 (예: 김○○ 대표)<input id="sContact" value="${esc(me.name || '')}"></label>
+    <label class="f">사업자등록번호 (공고 등록에 꼭 필요해요)<input id="sBiz" inputmode="numeric" placeholder="000-00-00000"></label>
+    <button class="btn pri" data-real="sideJoin" data-r="c">업체 화면 만들기</button>`
+    : `<div class="row"><h2 class="sp">강사로도 쓰기</h2><button class="btn sm" data-act="closeSheet">닫기</button></div>
+    <p>이 계정 그대로 <b>강사 화면</b>이 하나 더 생겨요. 내 강의 달력·순수익·결산을 따로 봐요. 위쪽 버튼으로 업체 화면과 오가요.</p>
+    <span class="mu sm">우리 업체 공고에 강사로 지원하고 업체 화면에서 확정하면, 강사 달력에도 바로 들어가요.</span>
+    <label class="f">강사 이름<input id="sName" value="${esc((me.contact || '').replace(/\s*(대표|팀장|실장|과장|부장|매니저|님)$/, '').replace(/^.$/, ''))}"></label>
+    <label class="f">사는 곳 (순수익·거리 계산용)<select id="sRegion">${Object.keys(GEO).map(k => `<option>${k}</option>`).join('')}</select></label>
+    <button class="btn pri" data-real="sideJoin" data-r="i">강사 화면 만들기</button>`);
+}
 /* ===== 소개하기: 업체가 가입하면 양쪽 1개월, 강사가 가입하면 양쪽 1주일 무료 (최대 6개월) ===== */
 const REF_MAX = 180, refDays = r => r === 'c' ? 30 : 7;
 const dayTxt = d => [Math.floor(d / 30) && Math.floor(d / 30) + '개월', d % 30 && d % 30 + '일'].filter(Boolean).join(' ') || '0일';
@@ -308,8 +369,8 @@ async function refSheet() {
 }
 
 async function adminSheet() {
-  const d = await getDocs(query(collection(db, 'users'), where('role', '==', 'c')));
-  const rows = (await Promise.all(d.docs.map(async x => { let p = {}; try { const s = await getDoc(doc(db, 'users', x.id, 'private', 'main')); p = s.data() || {}; } catch (e) { } return { id: x.id, ...x.data(), ...p }; })))
+  const [d, d2] = await Promise.all([getDocs(query(collection(db, 'users'), where('role', '==', 'c'))), getDocs(query(collection(db, 'users'), where('side.role', '==', 'c')))]);
+  const rows = (await Promise.all([...d.docs, ...d2.docs].map(async x => { let p = {}; try { const s = await getDoc(doc(db, 'users', x.id, 'private', 'main')); p = s.data() || {}; } catch (e) { } return { ...asRole({ id: x.id, ...x.data(), ...p }, 'c'), ...p }; })))
     .sort((a, b) => (b.joined || '').localeCompare(a.joined || ''));
   const card = r => `<div class="card"><b>${esc(r.name)} ${r.blocked ? '<span class="mu sm">(멈춤)</span>' : ''}</b><span class="mu sm">사업자 ${esc(bizFmt(r.biz || '') || '없음')} · ${esc(r.contact || '')} · ${esc(telFmt(r.phone || ''))} · ${esc(r.email || '')} · 가입 ${esc(r.joined || '')}</span>${r.approved ? `<button class="btn sm" data-real="block" data-u="${r.id}">승인 취소</button>` : `<button class="btn pri sm" data-real="approve" data-u="${r.id}">승인</button>`}</div>`;
   openSheet(`<div class="row"><h2 class="sp">업체 관리</h2><button class="btn sm" data-act="closeSheet">닫기</button></div>

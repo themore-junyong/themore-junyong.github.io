@@ -6,7 +6,9 @@ service cloud.firestore {
     function me() { return request.auth.uid; }
     function admin() { return signed() && request.auth.token.email in ['tobadyclub87@gmail.com'] && request.auth.token.email_verified == true; }
     function user(u) { return get(/databases/$(db)/documents/users/$(u)).data; }
-    function approvedCo() { return signed() && user(me()).role == 'c' && user(me()).approved == true; }
+    // 강사로 가입했어도 '업체로도 쓰기'(side.role == 'c')를 하면 업체
+    function isCo(d) { return d.role == 'c' || d.get('side', {}).get('role', '') == 'c'; }
+    function approvedCo() { return signed() && isCo(user(me())) && user(me()).approved == true; }
     function linked(co, inst) { return exists(/databases/$(db)/documents/links/$(co + '_' + inst)); }
     function changed() { return request.resource.data.diff(resource.data).affectedKeys(); }
     // 사업자등록번호: 숫자 10자리 + 국세청 검증 숫자
@@ -29,7 +31,7 @@ service cloud.firestore {
             && exists(/databases/$(db)/documents/users/$(request.resource.data.refBy))));
       allow update: if (me() == u && !changed().hasAny(['role', 'approved', 'refBy', 'biz', 'blocked']))
         // 업체가 사업자등록번호를 넣으면 스스로 승인 (운영자가 멈춘 업체는 안 됨)
-        || (me() == u && resource.data.role == 'c' && changed().hasOnly(['biz', 'approved'])
+        || (me() == u && isCo(resource.data) && changed().hasOnly(['biz', 'approved'])
             && request.resource.data.approved == true && bizMine(request.resource.data.biz) && resource.data.get('blocked', false) != true)
         || (admin() && changed().hasOnly(['approved', 'blocked']));
       allow delete: if false;
