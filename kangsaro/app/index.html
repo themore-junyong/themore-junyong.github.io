@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<meta name="build" content="261029-0835">
+<meta name="build" content="261029-1021">
 <title>강사로</title>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#2563EB">
@@ -680,7 +680,7 @@ function vCJob(j){const A=appsOf(j.id),s=jobStats(j);
   <div class="card"><label class="f">종류<select id="ntKind"><option>일반</option><option>시간표</option><option>집결 장소</option><option>주의사항</option><option>준비물</option></select></label><textarea class="f" id="ntText" rows="3" placeholder="도착 장소, 주차, 기자재, 인원, 준비물, 주의사항 등"></textarea><label class="f">사진·이미지 (시간표, 약도 등, 선택)<input type="file" id="ntImg" accept="image/*"></label><button class="btn pri" data-act="notice" data-j="${j.id}" ${s.cf?'':'disabled'}>확정 강사 ${s.cf}명에게 공지 보내기</button></div>
   ${j.notices.slice().reverse().map(n=>{const to=n.to||[],rd=to.filter(i=>n.reads[i]);return `<div class="card">${n.kind?`<b class="sm">[${esc(n.kind)}]</b>`:''}<pre class="pf">${esc(n.text)}</pre>${n.img?`<img src="${n.img}" alt="공지 이미지" style="width:100%;border-radius:8px">`:''}<span class="mu sm">읽음 ${rd.length}/${to.length}${to.length>rd.length?` · 안 읽음: ${to.filter(i=>!n.reads[i]).map(i=>esc(inst(i).name)).join(', ')}`:''}</span>
    ${to.filter(i=>!n.reads[i]).map(i=>{const p=inst(i);return `<div class="row"><b class="sm sp">${esc(p.name)} (안 읽음)</b>${contactBtns(p,`[${co(j.coId).name}] ${p.name} 강사님, ${j.school} ${j.title} 공지가 올라왔어요. 강사로 앱에서 확인 부탁드립니다.\n\n${n.text.slice(0,120)}`)}</div>`}).join('')}</div>`}).join('')}`}
-function sheetNewJob(p){p=p||{};const N=['프로필','교안','통장사본','신분증 사본','주민등록번호','강사 확인서','범죄경력 조회 동의서','결과보고서','수업 사진'];
+function sheetNewJob(p){p=p||{};const N=['프로필','교안','강사카드','교재카드','자격증 사본','통장사본','신분증 사본','주민등록번호','개인정보 동의서','범죄경력 조회 동의서','아동학대 조회 동의서','강사 확인서','출강 확인서','결과보고서','수업 사진'];
   openSheet(`<div class="row"><h2 class="sp">강의 등록</h2><button class="btn sm" data-act="closeSheet">닫기</button></div>
   <div class="card" style="background:var(--acs)"><h3>강사가 헷갈리지 않는 공고</h3><span class="sm">① 날짜는 달력에서 고르세요. 요일이 자동으로 붙어요.<br>② 시간은 09:00~15:50처럼, 교시도 함께 적어 주세요.<br>③ 대상은 학년과 인원까지 (예: 3학년 100명).<br>④ 장소는 학교 이름과 지역을 모두.<br>⑤ 1일 강사료와 받을 서류를 정해 주세요. 빠지면 등록되지 않아요.</span></div>
   <label class="f">학교 요청이나 기존 공고를 붙여 넣으면 채워져요<textarea id="jRaw" rows="4">${esc(p.raw||'')}</textarea></label><button class="btn" data-act="jparse">읽기</button>
@@ -868,6 +868,6 @@ document.addEventListener('paste',ev=>{if(ev.target.id==='pRaw')setTimeout(()=>{
 document.addEventListener('input',ev=>{if(['pDates','pRaw'].includes(ev.target.id))pWarn();if(['pDates','pFee','pKm','pToll'].includes(ev.target.id))pNet()});
 render();
 </script>
-<script type="module" src="real.js?v=261029-0835"></script>
+<script type="module" src="real.js?v=261029-1021"></script>
 </body>
 </html>
