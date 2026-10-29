@@ -482,16 +482,16 @@ function netGuess(j,p){const km=kmBetween(p.region,j.region);if(km==null)return 
 const hmText=m=>m>=60?`${Math.floor(m/60)}시간${m%60?` ${m%60}분`:''}`:`${m}분`;
 /* ===== 강사: 공고 + 내 확정 강의 ===== */
 function vJobs(){const iid=meId(),t=todayIso();
-  const all=S.jobs.filter(j=>j.status==='모집'&&j.dates[0]>=t&&!j.hold&&!downByReports(j)).sort((a,b)=>a.dates[0]<b.dates[0]?-1:1),F=ui.jf||(ui.jf={r:'',q:'',free:false});
+  const all=S.jobs.filter(j=>j.status==='모집'&&j.dates[0]>=t&&!j.hold&&!downByReports(j)).sort((a,b)=>((b.at||b.created||'')+b.id).localeCompare((a.at||a.created||'')+a.id)),F=ui.jf||(ui.jf={r:'',free:false}); // 최신 공고가 위
   // 공고가 많아도 느려지지 않게 내 일정·내 지원을 한 번만 모아 둠
   const myE=entries(iid),myA=new Map(S.apps.filter(a=>a.instId===iid).map(a=>[a.jobId,a])),clash=ds=>myE.filter(e=>ds.includes(e.d));
-  const open=all.filter(j=>(!F.r||j.region===F.r)&&(!F.q||`${j.title} ${j.school} ${j.대상}`.includes(F.q))&&(!F.free||!clash(j.dates).length)),more=ui.jmore||20;
+  const open=all.filter(j=>(!F.r||j.region===F.r)&&(!F.free||!clash(j.dates).length)),more=ui.jmore||20;
   return `
   <h2>모집 중인 공고</h2><p class="mu sm">강사로에 들어온 회사의 공고예요. 강사료가 모두 공개돼요. 지원하면 프로필이 같이 가요.</p>
   <div class="alert" style="font-size:13px">강사로는 강사에게 돈을 요구하지 않아요. 선입금·교재비·보증금을 요구하거나 개인 카톡·텔레그램으로 부르는 공고는 '이 공고 신고'를 눌러 주세요. 운영자가 확인하고, 새로 가입한 업체의 공고는 3명이 신고하면 바로 내려가요.</div>
   ${(()=>{const me=inst(iid);return `<div class="card" style="background:var(--acs)"><b>내 지역을 고르면 공고마다 예상 순수익이 계산돼요</b><div class="grid2"><label class="f">출발 지역<select data-act="pf" data-k="region">${GEO[me.region]?'':`<option selected>${esc(me.region||'고르기')}</option>`}${Object.keys(GEO).map(r=>`<option ${me.region===r?'selected':''}>${r}</option>`).join('')}</select></label><label class="f">내 차 연비(km/L)<input type="number" inputmode="decimal" data-act="pf" data-k="kmpl" value="${+me.kmpl||15}"></label></div><span class="mu sm">기름값은 리터당 ${won(+me.fuel||1650)} 기준이에요. '내 정보'에서 바꿀 수 있어요.</span></div>`})()}
-  <div class="grid2"><label class="f">지역<select data-act="jf" data-k="r"><option value="">전체</option>${[...new Set(all.map(j=>j.region))].map(r=>`<option ${F.r===r?'selected':''}>${esc(r)}</option>`).join('')}</select></label><label class="f">분야·강의명<input data-act="jf" data-k="q" value="${esc(F.q)}" placeholder="면접, 진로…"></label></div>
-  <label class="sm"><input type="checkbox" data-act="jf" data-k="free" ${F.free?'checked':''}> 내 일정과 안 겹치는 것만</label>
+  <div class="row"><label class="f sp">지역<select data-act="jf" data-k="r"><option value="">전체</option>${[...new Set(all.map(j=>j.region))].sort().map(r=>`<option ${F.r===r?'selected':''}>${esc(r)}</option>`).join('')}</select></label><label class="sm"><input type="checkbox" data-act="jf" data-k="free" ${F.free?'checked':''}> 내 일정과 안 겹치는 것만</label></div>
+  <p class="mu sm">새로 올라온 공고가 맨 위에 있어요.</p>
   ${open.length?open.slice(0,more).map(j=>{const a=myA.get(j.id);const cl=clash(j.dates);
     return `<div class="card"><div class="row"><h3 class="sp">${esc(j.region)} ${esc(j.school)} ${esc(j.title)}</h3>${newCo(co(j.coId))?'<span class="chip warn" title="가입 30일 안 된 업체">신규 업체</span>':''}${a?chip(a.status==='확정'?'confirmed':'applied'):''}</div>
     <span class="mu">${esc(co(j.coId).name)} · ${j.dates.map(d=>`${md(d)}(${dowOf(d)})`).join('·')} ${esc(j.time)} · ${esc(j.교시)} · ${esc(j.대상)}</span>
@@ -955,7 +955,7 @@ document.addEventListener('click',async ev=>{
   if(A==='evTpl'){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff날짜,기관,강의명,시간,강사료,상태\n2026-11-20,○○고,면접 특강,09:00~12:00,300000,확정\n"2026-11-24, 2026-11-25",○○센터,취업 캠프,09:00~16:00,350000,지원\n'],{type:'text/csv'}));a.download='강사로_내일정_양식.csv';document.body.appendChild(a);a.click();a.remove();return toast('양식을 받았어요. 엑셀로 채운 뒤 복사해 붙여 넣거나 저장한 파일을 고르세요')}
   if(A==='bTpl'){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff날짜,학교(기관),지역,강의명,시간,교시,대상,강사료,내용\n2026-11-20,○○고,수원,면접 특강,09:00~12:00,3교시,3학년 100명,300000,주차 가능\n'],{type:'text/csv'}));a.download='강사로_공고_양식.csv';document.body.appendChild(a);a.click();a.remove();return toast('양식을 받았어요. 엑셀로 열어 채운 뒤 복사해 붙여 넣으세요')}
   if(A==='bSave'){const R=bulkParse($('#bRaw').value).filter(j=>j.dates.length&&(j.title||j.school)),open=$('#bOpen').checked;
-    for(const x of R){const {miss,...j}=x;const n={...j,id:uid(),coId:meId(),status:open?'모집':'마감',needs:['프로필','교안','통장사본'],notices:[],created:todayIso()};holdFix(n);S.jobs.push(n)}
+    for(const x of R){const {miss,...j}=x;const n={...j,id:uid(),coId:meId(),status:open?'모집':'마감',needs:['프로필','교안','통장사본'],notices:[],created:todayIso(),at:new Date().toISOString()};holdFix(n);S.jobs.push(n)}
     save();closeSheet();ui.tab='cjobs';ui.jobId=null;render();return toast(`${R.length}건 등록했어요${open?'. 강사 공고 목록에 바로 올라가요':''}`)}
   if(A==='jparse'){const raw=$('#jRaw').value,r=parseNotice(raw);const feeV=feeOf(raw),fee=[0,feeV?String(feeV):'',''];
     sheetNewJob({raw,desc:raw,title:r.강의명,school:r.학교명,region:r.지역,dates:r.dates,time:r.시간,per:r.교시,for:r.대상,fee:fee[1]?(+fee[1].replace(/,/g,''))*(fee[2]?10000:1):''});jWarn();return toast('읽었어요. 빈칸만 확인하세요')}
@@ -963,7 +963,7 @@ document.addEventListener('click',async ev=>{
   if(A==='jsave'){const g=id=>$('#'+id).value.trim();const dates=g('jDates').split(/[,\s]+/).filter(x=>/^\d{4}-\d{2}-\d{2}$/.test(x)).sort();
     const miss=[!g('jTitle')&&'강의',!dates.length&&'날짜',!/^\d{2}:\d{2}\s*~\s*\d{2}:\d{2}$/.test(g('jTime'))&&'시간(09:00~15:50 형식)',!g('jPer')&&'교시',!g('jFor')&&'대상',!(g('jSchool')&&g('jRegion'))&&'학교·지역',!+g('jFee')&&'강사료'].filter(Boolean);
     if(miss.length)return toast('빠졌어요: '+miss.join(', '));
-    const j={id:uid(),coId:meId(),title:g('jTitle'),school:g('jSchool'),region:g('jRegion'),dates,time:g('jTime'),교시:g('jPer'),대상:g('jFor'),desc:g('jDesc'),fee:+g('jFee'),status:'모집',needs:['프로필',...$$('.jNeed:checked').map(x=>x.value).filter(x=>x!=='프로필')],notices:[],created:todayIso()};
+    const j={id:uid(),coId:meId(),title:g('jTitle'),school:g('jSchool'),region:g('jRegion'),dates,time:g('jTime'),교시:g('jPer'),대상:g('jFor'),desc:g('jDesc'),fee:+g('jFee'),status:'모집',needs:['프로필',...$$('.jNeed:checked').map(x=>x.value).filter(x=>x!=='프로필')],notices:[],created:todayIso(),at:new Date().toISOString()};
     const held=holdFix(j);S.jobs.push(j);save();closeSheet();ui.tab='cjobs';ui.jobId=j.id;render();const W=dateWarn(dates);return toast(held?'등록했어요. '+HOLD_MSG:W.length?W[0]:'등록했어요. 강사 공고 목록에 바로 올라가요')}
   if(A==='bulk'){const blob=new Blob([bulkCsv()],{type:'text/csv'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`대량이체_${todayIso()}.csv`;document.body.appendChild(a);a.click();a.remove();return toast('파일을 받았어요')}
   if(A==='bulkCopy')return copy(bulkCsv().replace('﻿',''),'대량이체 내용');
@@ -1015,5 +1015,6 @@ else if(firstVisit)openSheet(`<h2>어느 쪽으로 써 볼까요?</h2><p class="
   <button class="btn nv" data-act="role" data-r="co">강의 업체로 써 보기</button><span class="mu sm">강의 운영판, 강사 확정, 공지·서류, 강사비 지급</span>`);
 document.addEventListener('click',e=>{const b=e.target.closest('[data-act=role]');if(b)pickRole(b.dataset.r)});
 </script>
+<script src="../bot.js" defer></script>
 </body>
 </html>

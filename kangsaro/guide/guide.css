@@ -25,3 +25,14 @@ ol,ul{padding-left:22px;margin:8px 0}li{margin:4px 0}
 details{border-top:1px solid var(--ln);padding:10px 0}details:first-of-type{border-top:0}summary{cursor:pointer;font-weight:600}
 .k{display:inline-block;padding:0 8px;border-radius:8px;border:1px solid var(--ln);background:var(--bg);font-size:14px;font-weight:600}
 .chip{display:inline-block;padding:0 8px;border-radius:99px;font-size:13px;font-weight:600}
+/* 단계별 접었다 펴기 */
+section.fold{padding:0}
+details.step{border:0;padding:0}
+details.step>summary{list-style:none;padding:16px 18px}
+details.step>summary::-webkit-details-marker{display:none}
+details.step>summary h2{margin:0}
+details.step .arr{margin-left:auto;color:var(--mu);font-size:16px;transition:transform .2s}
+details.step[open] .arr{transform:rotate(180deg)}
+details.step[open]>summary{border-bottom:1px solid var(--ln)}
+details.step>:not(summary){margin-left:18px;margin-right:18px}
+details.step>:last-child{margin-bottom:18px}
