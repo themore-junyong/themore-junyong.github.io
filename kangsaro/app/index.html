@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<meta name="build" content="261029-0205">
+<meta name="build" content="261029-0213">
 <title>강사로</title>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#2563EB">
@@ -600,7 +600,7 @@ function vMe(){const p=inst(meId());
     <details class="sm mu"><summary>구글 캘린더 파일 받는 법</summary>PC에서 구글 캘린더 → 오른쪽 위 톱니바퀴 → 설정 → 왼쪽 '가져오기/내보내기' → <b>내보내기</b>를 누르면 .zip 파일이 받아져요. 그 파일을 그대로 고르세요. (폰 구글 캘린더 앱에는 내보내기가 없어요)</details>
     <div class="row"><label class="btn sm">파일 고르기<input type="file" accept=".zip,.ics,.json,.txt,application/zip,text/calendar,application/json,text/plain" data-act="evImport" hidden></label></div>
     <textarea id="evImportTxt" rows="2" placeholder="또는 파일 내용을 여기에 붙여 넣기"></textarea><button class="btn sm" data-act="evImportTxt">붙여 넣은 일정 가져오기</button></div>
-  <div class="card"><h3>회사에 보이는 프로필 카드</h3><pre class="pf">${esc(profileText(p))}</pre><button class="btn" data-act="copyPf">프로필 복사</button></div>
+  <div class="card"><h3>회사에 보이는 프로필 카드</h3><pre class="pf">${esc(profileText(p))}</pre><div class="row"><button class="btn pri" data-act="myPdf">내 프로필 PDF 받기</button><button class="btn" data-act="copyPf">프로필 복사</button></div><span class="mu sm">PDF는 인쇄 창에서 'PDF로 저장'을 고르면 받아져요. 메일 지원할 때 첨부하세요.</span></div>
   <p class="mu sm">가입일 ${esc(p.joined)} · ${p.beta?'시범 운영 회원 (정식 운영 때 감사 혜택 대상)':''}</p>`}
 
 /* ===== 회사: 강의 목록·상세 ===== */
@@ -753,6 +753,7 @@ document.addEventListener('click',async ev=>{
   if(A==='addMail'||A==='addOnly'||A==='addApplied'){const p=readPaste();if(!p.dates.length){pWarn();return toast('날짜를 넣어 주세요')}if(!p.title)return toast('강의 이름을 넣어 주세요');
     S.evs.push({id:uid(),instId:meId(),dates:p.dates,title:p.title,org:p.org,time:p.time,fee:p.fee,km:p.km,toll:p.toll,st:A==='addOnly'?'confirmed':'applied',to:p.to});save();
     closeSheet();ui.tab='cal';ui.sel=p.dates[0];ui.month=ym(p.dates[0]);render();if(A==='addMail')sheetMail(mailOf(p),p.to);return toast(A==='addMail'?'달력에 "지원"으로 넣었어요. 문구를 복사해 쓰세요':A==='addApplied'?'달력에 "지원"으로 넣었어요':'달력에 "확정"으로 넣었어요')}
+  if(A==='myPdf'){const p=inst(meId());return printPdf(`${p.name} 강사 프로필`,[pdfPage(p,true)])}
   if(A==='pdf'){const a=S.apps.find(x=>x.id===D.a),p=inst(a.instId);return printPdf(`${p.name} 강사 프로필`,[pdfPage(p,a.status==='확정')])}
   if(A==='pdfAll'){const j=job(D.j),L=appsOf(j.id).filter(a=>a.status==='지원'||a.status==='확정');return printPdf(`${j.school} ${j.title} 지원자 프로필`,L.map(a=>pdfPage(inst(a.instId),a.status==='확정')))}
   if(A==='jmore'){ui.jmore=(ui.jmore||20)+20;return render()}
@@ -835,6 +836,6 @@ document.addEventListener('paste',ev=>{if(ev.target.id==='pRaw')setTimeout(()=>{
 document.addEventListener('input',ev=>{if(['pDates','pRaw'].includes(ev.target.id))pWarn()});
 render();
 </script>
-<script type="module" src="real.js?v=261029-0205"></script>
+<script type="module" src="real.js?v=261029-0213"></script>
 </body>
 </html>
