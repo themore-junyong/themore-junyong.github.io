@@ -17,8 +17,8 @@
 <style>
 /* 레이아웃: 강사 쪽(청록)과 회사 쪽(남색) 두 줄기가 '다리' 하나로 만나는 세로 흐름. 불편 → 해결 → 기능 → 반박 순서 */
 :root{
-  --bg:#F7F5F3; --surface:#FFFFFF; --fg:#15222A; --muted:#4D5B63; --line:#D6DEDC;
-  --teal:#EA580C; --teal-soft:#FFEDD5; --hero:#EA580C; --hero2:#C2410C; --navy:#2D3E73; --navy-soft:#E3E7F4;
+  --bg:#F3F5F9; --surface:#FFFFFF; --fg:#15222A; --muted:#4D5B63; --line:#D6DEDC;
+  --teal:#2563EB; --teal-soft:#E3ECFF; --hero:#2563EB; --hero2:#1E40AF; --navy:#2D3E73; --navy-soft:#E3E7F4;
   --gray-chip:#E3E7E9; --gray-fg:#3B4650; --blue-chip:#DCEBFA; --blue-fg:#1A4F8A;
   --purple-chip:#ECE2F7; --purple-fg:#5B3A8C; --green-chip:#DDF1E4; --green-fg:#1E6B3A;
   --warn:#9A3608; --warn-soft:#FDECE3;
@@ -27,13 +27,13 @@
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
   --bg:#0F1719; --surface:#172225; --fg:#E7EEEE; --muted:#A3B2B5; --line:#2C3A3E;
-  --teal:#FF8A4C; --teal-soft:#3A2214; --hero:#C2410C; --hero2:#9A3412; --navy:#9DAEE6; --navy-soft:#1E2640;
+  --teal:#6B9BFF; --teal-soft:#1A2747; --hero:#1D4ED8; --hero2:#1E3A8A; --navy:#9DAEE6; --navy-soft:#1E2640;
   --gray-chip:#2A3337; --gray-fg:#C9D2D6; --blue-chip:#1B2F47; --blue-fg:#9CC6F2;
   --purple-chip:#2E2540; --purple-fg:#CDB5EE; --green-chip:#173426; --green-fg:#94D9AE;
   --warn:#F2A57E; --warn-soft:#3A2116; color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#0F1719; --surface:#172225; --fg:#E7EEEE; --muted:#A3B2B5; --line:#2C3A3E;
-  --teal:#FF8A4C; --teal-soft:#3A2214; --hero:#C2410C; --hero2:#9A3412; --navy:#9DAEE6; --navy-soft:#1E2640;
+  --teal:#6B9BFF; --teal-soft:#1A2747; --hero:#1D4ED8; --hero2:#1E3A8A; --navy:#9DAEE6; --navy-soft:#1E2640;
   --gray-chip:#2A3337; --gray-fg:#C9D2D6; --blue-chip:#1B2F47; --blue-fg:#9CC6F2;
   --purple-chip:#2E2540; --purple-fg:#CDB5EE; --green-chip:#173426; --green-fg:#94D9AE;
   --warn:#F2A57E; --warn-soft:#3A2116; color-scheme:dark}
@@ -50,7 +50,7 @@ section{display:flex;flex-direction:column;gap:18px}
 .lead{font-size:17px;color:var(--muted)}
 .btns{display:flex;flex-wrap:wrap;gap:10px}
 .btn{display:inline-flex;align-items:center;justify-content:center;min-height:52px;padding:0 22px;border-radius:14px;font-weight:700;font-size:16px;text-decoration:none;font-family:inherit;cursor:pointer}
-.btn.primary{background:var(--teal);color:#fff;border:0;box-shadow:0 6px 16px rgba(234,88,12,.25)}
+.btn.primary{background:var(--teal);color:#fff;border:0;box-shadow:0 6px 16px rgba(37,99,235,.25)}
 .btn.ghost{background:transparent;color:var(--fg);border:1.5px solid var(--line)}
 .btn:focus-visible{outline:3px solid var(--navy);outline-offset:2px}
 .note{font-size:13px;color:var(--muted)}
@@ -102,10 +102,10 @@ summary:focus-visible{outline:2px solid var(--teal);outline-offset:2px;border-ra
 .hero .in{max-width:960px;margin:0 auto;display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);gap:28px;align-items:end}
 @media (max-width:760px){.hero .in{grid-template-columns:1fr;gap:20px}}
 .hero .txt{display:flex;flex-direction:column;gap:16px;padding-bottom:36px}
-.hero .eyebrow{color:#FFE3D2}
+.hero .eyebrow{color:#DCE7FF}
 .hero h1{color:#fff;font-size:clamp(30px,7.5vw,46px);line-height:1.28}
 .hero h1 em{font-style:normal;background:#fff;color:var(--hero2);padding:0 8px;border-radius:8px;box-decoration-break:clone;-webkit-box-decoration-break:clone}
-.hero .lead{color:#FFF1E8;font-size:18px}
+.hero .lead{color:#EEF3FF;font-size:18px}
 .hero .btn.primary{background:#fff;color:var(--hero2);box-shadow:0 8px 20px rgba(0,0,0,.18)}
 .hero .btn.ghost{color:#fff;border-color:rgba(255,255,255,.6)}
 .hero .meta{display:flex;flex-wrap:wrap;gap:8px}
