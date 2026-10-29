@@ -432,7 +432,8 @@ async function termEnd() {
   const e = new Date(js[0] + 'T00:00:00'); e.setMonth(e.getMonth() + 3); e.setDate(e.getDate() + Math.min(REF_MAX, got));
   return `${e.getFullYear()}.${pad(e.getMonth() + 1)}.${pad(e.getDate())}`;
 }
-async function showTerm() { const el = $('#term'); if (!el) return; const t = S.me ? await termEnd().catch(() => '') : ''; el.textContent = t ? `이용 기간 ~${t}` : ''; el.hidden = !t; }
+// 운영자 계정은 기간 없이 계속 씀
+async function showTerm() { const el = $('#term'); if (!el) return; const t = !S.me ? '' : isAdm() ? '운영자 · 기간 없음' : await termEnd().then(d => d && `이용 기간 ~${d}`).catch(() => ''); el.textContent = t; el.hidden = !t; }
 async function refSheet() {
   const d = await getDocs(query(collection(db, 'users'), where('refBy', '==', uidMe))).catch(() => null);
   const rows = await Promise.all((d ? d.docs : []).map(async x => { const u = { id: x.id, ...x.data() }; u.done = await refDone(u); return u; }));
