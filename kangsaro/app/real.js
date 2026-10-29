@@ -249,7 +249,7 @@ document.addEventListener('click', async e => {
   }
   if (k === 'out') { await A.signOut(auth); location.reload(); }
   if (k === 'join') {
-    const r = document.querySelector('[name=rRole]:checked').value, name = $('#rName').value.trim(), phone = $('#rPhone').value.trim();
+    const r = document.querySelector('[name=rRole]:checked').value, name = $('#rName').value.trim(), phone = telFmt($('#rPhone').value.trim());
     if (!name) return toast('이름을 넣어 주세요'); if (!phone) return toast('연락처를 넣어 주세요');
     const t = todayIso(), email = auth.currentUser.email || '';
     const biz = bizNum($('#rBiz').value);
@@ -311,7 +311,7 @@ async function adminSheet() {
   const d = await getDocs(query(collection(db, 'users'), where('role', '==', 'c')));
   const rows = (await Promise.all(d.docs.map(async x => { let p = {}; try { const s = await getDoc(doc(db, 'users', x.id, 'private', 'main')); p = s.data() || {}; } catch (e) { } return { id: x.id, ...x.data(), ...p }; })))
     .sort((a, b) => (b.joined || '').localeCompare(a.joined || ''));
-  const card = r => `<div class="card"><b>${esc(r.name)} ${r.blocked ? '<span class="mu sm">(멈춤)</span>' : ''}</b><span class="mu sm">사업자 ${esc(bizFmt(r.biz || '') || '없음')} · ${esc(r.contact || '')} · ${esc(r.phone || '')} · ${esc(r.email || '')} · 가입 ${esc(r.joined || '')}</span>${r.approved ? `<button class="btn sm" data-real="block" data-u="${r.id}">승인 취소</button>` : `<button class="btn pri sm" data-real="approve" data-u="${r.id}">승인</button>`}</div>`;
+  const card = r => `<div class="card"><b>${esc(r.name)} ${r.blocked ? '<span class="mu sm">(멈춤)</span>' : ''}</b><span class="mu sm">사업자 ${esc(bizFmt(r.biz || '') || '없음')} · ${esc(r.contact || '')} · ${esc(telFmt(r.phone || ''))} · ${esc(r.email || '')} · 가입 ${esc(r.joined || '')}</span>${r.approved ? `<button class="btn sm" data-real="block" data-u="${r.id}">승인 취소</button>` : `<button class="btn pri sm" data-real="approve" data-u="${r.id}">승인</button>`}</div>`;
   openSheet(`<div class="row"><h2 class="sp">업체 관리</h2><button class="btn sm" data-act="closeSheet">닫기</button></div>
     <p class="mu sm">업체는 사업자등록번호를 넣으면 바로 공고를 올려요. 이상한 업체는 '승인 취소'로 멈출 수 있어요. 홈택스 '사업자 상태 조회'로 휴·폐업 여부를 볼 수 있어요.</p>
     ${await refAdmin()}

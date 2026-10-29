@@ -324,7 +324,7 @@ function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clea
 // 지원자 프로필 PDF: 인쇄 창을 열어 'PDF로 저장'으로 받게 함 (연락처는 확정한 강사만)
 function pdfPage(p,cf){const V=verified(p.id),cr=String(p.career||'').split('\n').filter(x=>x.trim());
   return `<section><div class="hd"><span>강사 프로필</span><span>강사로</span></div><div class="top">${p.photo?`<img src="${p.photo}" alt="">`:''}<div><h1>${esc(p.name)}</h1><p>${esc(p.region)} · ${esc(p.topics)}</p>
-  <p>${cf?`연락처 ${esc(p.phone)} · 메일 ${esc(p.email)}`:'연락처는 확정한 뒤에 보여요'}</p></div></div><p class="intro">${esc(p.intro)}</p>
+  <p>${cf?`연락처 ${esc(telFmt(p.phone))} · 메일 ${esc(p.email)}`:'연락처는 확정한 뒤에 보여요'}</p></div></div><p class="intro">${esc(p.intro)}</p>
   ${V.length?`<h2>강사로 인증 강의 ${V.length}회</h2><p class="mu">업체 확정, 강의, 강사료 입금까지 강사로에서 확인된 기록이에요.</p><ul>${V.map(v=>`<li>✓ ${esc(vLine(v))}</li>`).join('')}</ul>`:''}
   <h2>강의 경력 (본인 작성)</h2><ul>${cr.map(x=>`<li>${esc(x)}</li>`).join('')||'<li>적은 내용 없음</li>'}</ul>
   <p class="ft">강사로에서 받은 프로필 · ${todayIso().replace(/-/g,'.')}</p></section>`}
@@ -396,7 +396,7 @@ function dayBoard(cid){const t=todayIso(),tm=addDays(t,1),now=nowIso(),rows=[];
       rows.push({d,j,p,s,bad,late:x.late,st})}}
   if(!rows.length)return '';rows.sort((a,b)=>(a.d+a.st)<(b.d+b.st)?-1:1);
   return `<div class="card"><h3>오늘·내일 강의 현황</h3>${rows.map(r=>`<div style="border-top:1px solid var(--ln);padding-top:6px;display:flex;flex-direction:column;gap:2px"><div class="row">${pic(r.p,1)}<b>${esc(r.p.name)}</b><span class="mu sm sp">${r.d===todayIso()?'오늘':'내일'} ${r.st} ${esc(r.j.school)} ${esc(r.j.title)}</span></div>
-   <span class="chip ${r.bad?'warn':'paid'}" style="align-self:flex-start">${esc(r.s)}</span>${r.late?`<div class="alert">강사 알림: ${esc(r.late)}</div>`:''}${r.bad||r.late?`<span class="mu sm">연락처 ${esc(r.p.phone)}</span>`:''}</div>`).join('')}
+   <span class="chip ${r.bad?'warn':'paid'}" style="align-self:flex-start">${esc(r.s)}</span>${r.late?`<div class="alert">강사 알림: ${esc(r.late)}</div>`:''}${r.bad||r.late?`<span class="mu sm">연락처 ${esc(telFmt(r.p.phone))}</span>`:''}</div>`).join('')}
    <span class="mu sm">시작 1시간 전까지 출발을 안 누르거나, 시작보다 늦게 도착할 예정이면 빨간색이에요.</span></div>`}
 function entryCard(e){const tx=tax(e.fee);
   const ctrl=e.kind==='ev'?`<div class="row">${[['applied','지원'],['confirmed','확정'],['done','미입금'],['paid','입금 완료'],['no','안 됨']].map(([k,l])=>`<button class="btn sm" data-act="evst" data-id="${e.ref.id}" data-st="${k}" ${e.ref.st===k||(k==='done'&&e.st==='done')?'style="border-color:var(--ac);color:var(--ac)"':''}>${l}</button>`).join('')}<button class="btn sm" data-act="evdel" data-id="${e.ref.id}">지우기</button></div>`
@@ -493,7 +493,7 @@ function pWarn(){if(!$('#pWarn'))return;const p=readPaste();const W=dateWarn(p.d
   $('#pWarn').innerHTML=W.map(w=>`<div class="alert">${esc(w)}</div>`).join('')}
 function mailOf(p){const me=inst(meId());const place=p.title;
   const su=`[강사 지원] ${p.dates.map(md).join('·')} ${p.title} - ${me.name}`;
-  const body=`안녕하세요, ${p.org?p.org+' ':''}담당자님.\n강사 ${me.name}입니다.\n\n${p.dates.map(d=>`${mdK(d)}(${dowOf(d)})`).join('·')} ${place} 강의에 지원합니다.\n${p.dates.map(d=>`- 일시: ${md(d)}(${dowOf(d)})${p.time?' '+p.time:''}`).join('\n')}\n\n${me.intro}\n주제: ${me.topics}\n\n프로필 첨부합니다.\n연락처: ${me.phone}\n\n감사합니다.\n${me.name} 드림`;
+  const body=`안녕하세요, ${p.org?p.org+' ':''}담당자님.\n강사 ${me.name}입니다.\n\n${p.dates.map(d=>`${mdK(d)}(${dowOf(d)})`).join('·')} ${place} 강의에 지원합니다.\n${p.dates.map(d=>`- 일시: ${md(d)}(${dowOf(d)})${p.time?' '+p.time:''}`).join('\n')}\n\n${me.intro}\n주제: ${me.topics}\n\n프로필 첨부합니다.\n연락처: ${telFmt(me.phone)}\n\n감사합니다.\n${me.name} 드림`;
   return {su,body,url:`https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(p.to)}&su=${encodeURIComponent(su)}&body=${encodeURIComponent(body)}`}}
 
 // 폰에서는 Gmail 웹 창이 막히거나 받은편지함만 열려서, 사람이 직접 누르는 링크로 앱을 엶
@@ -534,7 +534,9 @@ const vLine=v=>`${v.d.replace(/-/g,'.')}${v.n>1?` 외 ${v.n-1}일`:''} ${v.co} �
 const VAULT=['통장사본','신분증 사본'],RRN='주민등록번호';
 // 확정된 업체에만: 업체가 따로 올린 서류가 없으면 강사가 '내 서류'에 저장한 파일을 자동으로 넘겨요
 function docOf(a,n){if(a.docs[n])return a.docs[n];const v=(inst(a.instId).vault||{})[n];return a.status==='확정'&&VAULT.includes(n)&&v?v+' (자동)':''}
-function profileText(p){const V=verified(p.id);return `■ 강사 프로필\n이름: ${p.name}\n연락처: ${p.phone}\n메일: ${p.email}\n지역: ${p.region}\n강의 분야: ${p.topics}\n\n${p.intro}\n\n${V.length?`[강사로 인증 강의 ${V.length}회] 업체 확정·강의·입금까지 끝난 강의\n${V.map(v=>'✓ '+vLine(v)).join('\n')}\n\n`:''}[강의 경력 (본인 작성)]\n${p.career}`}
+// 연락처는 010-0000-0000 형식으로 보여 줌
+function telFmt(t){const d=String(t||'').replace(/\D/g,'');if(/^02\d{7,8}$/.test(d))return d.replace(/^(02)(\d{3,4})(\d{4})$/,'$1-$2-$3');if(/^0\d{9,10}$/.test(d))return d.replace(/^(\d{3})(\d{3,4})(\d{4})$/,'$1-$2-$3');return String(t||'')}
+function profileText(p){const V=verified(p.id);return `■ 강사 프로필\n이름: ${p.name}\n연락처: ${telFmt(p.phone)}\n메일: ${p.email}\n지역: ${p.region}\n강의 분야: ${p.topics}\n\n${p.intro}\n\n${V.length?`[강사로 인증 강의 ${V.length}회] 업체 확정·강의·입금까지 끝난 강의\n${V.map(v=>'✓ '+vLine(v)).join('\n')}\n\n`:''}[강의 경력 (본인 작성)]\n${p.career}`}
 // 구글 캘린더 내보내기(.ics, .zip) → 강의로 보이는 일정만 골라 importEvs 형식으로 바꿔요
 const LECT=/강의|강사|특강|교시|수업|강연|연수|교육|캠프|코칭|멘토링|워크숍|컨설팅/;
 function wonIn(s){const m=String(s).match(/(\d{1,3}(?:,\d{3})+|\d+(?:\.\d+)?)\s*(만\s*원?|원)/g);if(!m)return[];
@@ -805,7 +807,7 @@ document.addEventListener('change',ev=>{const el=ev.target,D=el.dataset||{};
   if(D.act==='jpick'&&el.value){const ds=[...new Set([...$('#jDates').value.split(/[,\s]+/).filter(Boolean),el.value])].sort();$('#jDates').value=ds.join(', ');$('#jDateList').innerHTML=jDateChips(ds);el.value='';jWarn();return}
   if(D.act==='jf'){ui.jmore=0;ui.jf[D.k]=el.type==='checkbox'?el.checked:el.value.trim();render();return}
   if(D.act==='km'||D.act==='toll'){const o=D.kind==='ev'?S.evs.find(x=>x.id===D.id):S.apps.find(x=>x.id===D.id);o[D.act]=+el.value||0;save();render()}
-  if(D.act==='pf'){const p=inst(meId());p[D.k]=D.k==='kmpl'||D.k==='fuel'?+el.value||0:el.value;save();render()}
+  if(D.act==='pf'){const p=inst(meId());p[D.k]=D.k==='kmpl'||D.k==='fuel'?+el.value||0:D.k==='phone'?telFmt(el.value):el.value;save();render()}
   if(D.act==='evImport'&&el.files[0]){importFile(el.files[0]);el.value='';return}
   if(D.act==='vault'&&el.files[0]){const p=inst(meId());p.vault=p.vault||{};p.vault[D.n]=el.files[0].name;save();render();toast(`${D.n} 저장했어요 (체험판은 파일 이름만 저장해요)`);return}
   if(D.act==='photo'&&el.files[0]){shrink(el.files[0],480).then(u=>{if(!u)return toast('사진을 읽지 못했어요');inst(meId()).photo=u;save();render();toast('프로필 사진을 올렸어요')});return}
