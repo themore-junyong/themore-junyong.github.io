@@ -248,6 +248,7 @@ async function start(user, want) {
   }
   ui.tab = NAV[role][0][0];
   render();
+  showTerm();
 }
 
 /* ===== 로그인 화면 ===== */
@@ -420,6 +421,18 @@ async function refDone(u) {
   const j = await getDocs(query(collection(db, 'jobs'), where('coId', '==', u.id), limit(1))).catch(() => null);
   return !!(j && !j.empty);
 }
+// 이용 기간: 가입일 + 3개월 + 소개로 쌓인 기간 (직원은 업체 기준)
+async function termEnd() {
+  const id = role === 'c' ? CO : uidMe, u = id === uidMe ? me : await loadUser(id, false).catch(() => null);
+  const js = u ? [u.joined, u.side && u.side.joined].filter(Boolean).sort() : [];
+  if (!js.length) return '';
+  const d = await getDocs(query(collection(db, 'users'), where('refBy', '==', id))).catch(() => null);
+  let got = u.refBy && await refDone({ ...u, id }) ? refDays(u.role) : 0;
+  for (const x of d ? d.docs : []) if (await refDone({ id: x.id, ...x.data() })) got += refDays(x.data().role);
+  const e = new Date(js[0] + 'T00:00:00'); e.setMonth(e.getMonth() + 3); e.setDate(e.getDate() + Math.min(REF_MAX, got));
+  return `${e.getFullYear()}.${pad(e.getMonth() + 1)}.${pad(e.getDate())}`;
+}
+async function showTerm() { const el = $('#term'); if (!el) return; const t = S.me ? await termEnd().catch(() => '') : ''; el.textContent = t ? `이용 기간 ~${t}` : ''; el.hidden = !t; }
 async function refSheet() {
   const d = await getDocs(query(collection(db, 'users'), where('refBy', '==', uidMe))).catch(() => null);
   const rows = await Promise.all((d ? d.docs : []).map(async x => { const u = { id: x.id, ...x.data() }; u.done = await refDone(u); return u; }));
@@ -431,7 +444,7 @@ async function refSheet() {
     <span class="mu sm">강사는 프로필(분야·소개)을 채우면, 업체는 공고를 1건 올리면 인정돼요. 최대 ${dayTxt(REF_MAX)}까지 쌓여요.</span>
     <label class="f">내 소개 링크<input readonly value="${esc(refLink())}" onclick="this.select()"></label>
     <div class="row"><button class="btn pri" data-real="refCopy">소개 문구 복사</button>${can ? '<button class="btn" data-real="refShare">공유하기</button>' : ''}</div>
-    <div class="card"><b>쌓인 무료 기간: ${dayTxt(got)}</b><span class="mu sm">3개월 무료가 끝난 뒤 이 기간만큼 더 무료로 써요.${mine ? ` (소개로 가입한 ${dayTxt(mine)} 포함)` : ''}</span></div>
+    <div class="card"><b>쌓인 무료 기간: ${dayTxt(got)}</b><span class="mu sm">가입 후 3개월에 이 기간이 더해져요. 위에 보이는 '이용 기간'에 이미 들어 있어요.${mine ? ` (소개로 가입한 ${dayTxt(mine)} 포함)` : ''}</span></div>
     <h3>내가 소개한 분 (${rows.length})</h3>
     ${rows.map(r => `<div class="row"><span class="sp">${esc(r.name || '')} <span class="mu sm">${r.role === 'c' ? '업체' : '강사'} · 가입 ${esc(r.joined || '')}</span></span><span class="sm">${r.done ? `✓ ${dayTxt(refDays(r.role))}` : (r.role === 'c' ? '공고 전' : '프로필 작성 전')}</span></div>`).join('') || '<p class="mu">아직 없어요. 링크를 톡방이나 지인에게 보내 보세요.</p>'}`);
 }
