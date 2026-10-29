@@ -53,6 +53,12 @@ service cloud.firestore {
     }
 
     // 사업자등록번호 하나에 업체 하나
+    // 업데이트 중 표시 (관리자만 켜고 끔, 누구나 읽음)
+    match /site/{d} {
+      allow read: if true;
+      allow write: if admin();
+    }
+
     match /biz/{n} {
       allow read: if signed();
       allow create: if signed() && request.resource.data.uid == me() && n.matches('^[0-9]{10}$') && bizOk(n);

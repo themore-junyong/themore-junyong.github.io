@@ -284,6 +284,8 @@ document.addEventListener('click', async e => {
     if (r === 'i') { ui.tab = 'me'; render(); }
   }
   if (k === 'admin') return adminSheet();
+  if (k === 'maint') { const on = !SITE.maint; if (on && !confirm('모든 사용자 화면에 "업데이트 중입니다"를 띄울까요? 관리자 화면은 그대로예요.')) return; await setDoc(doc(db, 'site', 'main'), { maint: on, at: new Date().toISOString() }, { merge: true }); toast(on ? '업데이트 중 표시를 켰어요' : '업데이트 중 표시를 껐어요. 사용자 화면이 다시 열려요'); return adminSheet(); }
+  if (k === 'reload') return location.reload();
   if (k === 'ref') return refSheet();
   if (k === 'refCopy') { const t = refText(); try { await navigator.clipboard.writeText(t); toast('복사했어요. 카톡에 붙여 넣으세요'); } catch (err) { prompt('길게 눌러 복사해 주세요', t); } return; }
   if (k === 'refShare') { try { await navigator.share({ title: '강사로', text: refText() }); } catch (err) { } return; }
@@ -374,6 +376,7 @@ async function adminSheet() {
     .sort((a, b) => (b.joined || '').localeCompare(a.joined || ''));
   const card = r => `<div class="card"><b>${esc(r.name)} ${r.blocked ? '<span class="mu sm">(멈춤)</span>' : ''}</b><span class="mu sm">사업자 ${esc(bizFmt(r.biz || '') || '없음')} · ${esc(r.contact || '')} · ${esc(telFmt(r.phone || ''))} · ${esc(r.email || '')} · 가입 ${esc(r.joined || '')}</span>${r.approved ? `<button class="btn sm" data-real="block" data-u="${r.id}">승인 취소</button>` : `<button class="btn pri sm" data-real="approve" data-u="${r.id}">승인</button>`}</div>`;
   openSheet(`<div class="row"><h2 class="sp">업체 관리</h2><button class="btn sm" data-act="closeSheet">닫기</button></div>
+    <div class="card" style="${SITE.maint ? 'border-color:var(--r2)' : ''}"><div class="row"><b class="sp">업데이트 중 표시 ${SITE.maint ? '<span class="chip warn">켜짐</span>' : '<span class="chip off">꺼짐</span>'}</b><button class="btn sm ${SITE.maint ? 'pri' : ''}" data-real="maint">${SITE.maint ? '끄기' : '켜기'}</button></div><span class="mu sm">데이터 구조를 바꾸는 큰 업데이트 때만 켜요. 켜면 사용자 화면에 "업데이트 중입니다. 잠시만 기다려 주세요"가 뜨고, 끄면 저절로 다시 열려요.</span></div>
     <p class="mu sm">업체는 사업자등록번호를 넣으면 바로 공고를 올려요. 이상한 업체는 '승인 취소'로 멈출 수 있어요. 홈택스 '사업자 상태 조회'로 휴·폐업 여부를 볼 수 있어요.</p>
     ${await refAdmin()}
     ${rows.map(card).join('') || '<p class="mu">가입한 업체가 없어요.</p>'}`);
@@ -426,10 +429,35 @@ REAL.getFile = async (path, name) => {
   a.href = u; a.download = x.name || name || '파일'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(u), 4000);
 };
 
+/* ===== 업데이트 중 표시 · 새 버전 알림 ===== */
+// site/main.maint 를 관리자가 켜면 사용자 화면 전체를 덮음 (관리자는 위에 띠만). 끄면 새로 불러옴
+let SITE = {};
+const isAdm = () => ADMINS.includes(auth.currentUser?.email);
+function maintPaint() {
+  let o = document.getElementById('maint');
+  const show = SITE.maint && !isAdm();
+  if (show && !o) { o = document.createElement('div'); o.id = 'maint'; o.setAttribute('role', 'alert'); o.style.cssText = 'position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:24px;text-align:center'; o.innerHTML = '<div style="font-size:44px">🔧</div><h2>업데이트 중입니다</h2><p class="mu">더 좋아지는 중이에요. 잠시만 기다려 주세요.<br>끝나면 이 화면이 저절로 바뀌어요.</p>'; document.body.appendChild(o); }
+  if (!show && o) { o.remove(); location.reload(); }
+  const bar = document.getElementById('maintBar');
+  if (SITE.maint && isAdm() && !bar) document.body.insertAdjacentHTML('afterbegin', '<div id="maintBar" style="background:var(--r2);color:#fff;text-align:center;padding:6px;font-size:14px;font-weight:700">지금 사용자에게 "업데이트 중" 화면이 보이고 있어요 (관리자만 사용 가능)</div>');
+  if (!(SITE.maint && isAdm()) && bar) bar.remove();
+}
+onSnapshot(doc(db, 'site', 'main'), d => { SITE = d.data() || {}; maintPaint(); }, () => { });
+// 새 버전이 올라오면 띠로 알려 줌 (화면을 열어 둔 채 업데이트됐을 때)
+const BUILD = document.querySelector('meta[name="build"]')?.content || '';
+async function verCheck() {
+  if (document.hidden || document.getElementById('verBar')) return;
+  try { const t = await (await fetch(location.pathname + '?v=' + Date.now(), { cache: 'no-store' })).text(), m = t.match(/<meta name="build" content="([^"]*)">/);
+    if (m && BUILD && m[1] !== BUILD) document.body.insertAdjacentHTML('beforeend', '<div id="verBar" style="position:fixed;left:12px;right:12px;bottom:84px;z-index:50;background:var(--ac);color:#fff;border-radius:12px;padding:10px 12px;display:flex;gap:8px;align-items:center;box-shadow:0 4px 16px rgba(0,0,0,.2)"><span style="flex:1;font-size:14px">새 버전이 나왔어요. 새로고침하면 바로 적용돼요.</span><button class="btn sm" data-real="reload" style="background:#fff;color:var(--ac)">새로고침</button></div>');
+  } catch (e) { }
+}
+setInterval(verCheck, 3 * 60 * 1000);
+document.addEventListener('visibilitychange', verCheck);
+
 /* ===== 시작 ===== */
 if (A.isSignInWithEmailLink(auth, location.href)) {
   let m = localStorage.getItem('kangsaro.mail') || prompt('로그인할 메일 주소를 한 번 더 넣어 주세요');
   try { await A.signInWithEmailLink(auth, m, location.href); history.replaceState(null, '', location.pathname + (EMU ? '?emu' : '')); } catch (e) { toast('링크가 만료됐어요. 다시 받아 주세요'); }
 }
-A.onAuthStateChanged(auth, u => { if (u) start(u).catch(e => { console.error(e); toast('불러오지 못했어요: ' + (e.code || e.message)); }); else { profileLoaded = false; render(); } });
+A.onAuthStateChanged(auth, u => { maintPaint(); if (u) start(u).catch(e => { console.error(e); toast('불러오지 못했어요: ' + (e.code || e.message)); }); else { profileLoaded = false; render(); } });
 window.KS = { auth, db, F, A, S: () => S, flush }; // 시험용
