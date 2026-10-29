@@ -5,7 +5,7 @@ import { firebaseConfig } from './firebase-config.js';
 const V = '10.12.2', G = `https://www.gstatic.com/firebasejs/${V}`;
 const ADMINS = ['tobadyclub87@gmail.com'];
 // 푸시 알림 웹 키 (Firebase 콘솔 → 프로젝트 설정 → 클라우드 메시징 → 웹 푸시 인증서의 '키 쌍'. 공개해도 되는 값)
-const VAPID = '';
+const VAPID = 'BCm9YzuAQGJvQH0t1BT7E2MIBG-uSAUMoyuXwRsS837vnxB4K_IOwoP6PRj2fjZoaMP65AF7wlv7uN6vY32Gw8Y';
 const Q = new URLSearchParams(location.search);
 const EMU = Q.has('emu');
 // 소개 링크(?ref=소개한 사람)는 로그인 전에 기억해 둠
