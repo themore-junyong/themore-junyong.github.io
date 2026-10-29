@@ -336,7 +336,7 @@ function alertHtml(a){const m=String(a.text||'').match(/^\[(.+?)\]\s*/),tag=m?m[
     ${/리마인드/.test(tag)&&nts?`<span class="sm" style="color:var(--r2);font-weight:700">📢 안 읽은 공지 ${nts}개</span>`:''}${tag==='D-1 리마인드'?'<span class="sm">✅ 내일 강의예요. 일정 카드에서 "확인했어요"를 눌러 주세요</span>':''}${tag==='마감'?'<span class="sm mu">이번에는 선정되지 않았어요</span>':''}`
     :rest.split(' · ').map((x,i)=>i?`<span class="sm">${esc(x)}</span>`:`<b>${esc(x)}</b>`).join('');
   const btn=a.kind==='pay'?`<div class="row"><button class="btn sm pri" data-act="recv" data-id="${a.id}" data-v="ok">입금 확인했어요</button><button class="btn sm" data-act="recv" data-id="${a.id}" data-v="no">아직 안 들어왔어요</button></div>`:'';
-  return `<div style="border-top:1px solid var(--ln);padding-top:8px;display:flex;gap:8px;align-items:flex-start"><span class="chip ${cls}" style="margin-top:2px">${esc(tag.replace(' 리마인드',''))}</span><div class="sp" style="display:flex;flex-direction:column;gap:2px;min-width:0">${body}${btn}</div>${a.kind==='pay'?'':`<button class="btn sm" data-act="alertOk" data-id="${a.id}">확인</button>`}</div>`}
+  return `<div style="border-top:1px solid var(--ln);padding-top:8px;display:flex;gap:8px;align-items:flex-start"><span class="chip ${cls}" style="margin-top:2px">${esc(tag.replace(' 리마인드',''))}</span><div class="sp" style="display:flex;flex-direction:column;gap:2px;min-width:0">${body}${btn}</div>${a.kind==='pay'?'':j&&tag!=='마감'?`<button class="btn sm pri" data-act="alertGo" data-id="${a.id}">보기 ›</button>`:`<button class="btn sm" data-act="alertOk" data-id="${a.id}">확인</button>`}</div>`}
 function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(toast.h);toast.h=setTimeout(()=>t.classList.remove('on'),2400)}
 // 지원자 프로필 PDF: 인쇄 창을 열어 'PDF로 저장'으로 받게 함 (연락처는 확정한 강사만)
 const lines=t=>String(t||'').split('\n').map(x=>x.trim()).filter(Boolean);
@@ -461,7 +461,7 @@ function vJobs(){const iid=meId(),t=todayIso();
   const open=all.filter(j=>(!F.r||j.region===F.r)&&(!F.q||`${j.title} ${j.school} ${j.대상}`.includes(F.q))&&(!F.free||!clash(j.dates).length)),more=ui.jmore||20;
   setTimeout(()=>{let c=0;for(const {j} of mine)c+=markRead(j,iid);if(c){const nb=$('[data-tab="jobs"]');if(nb)nb.innerHTML='공고'}},1500);
   return `<div class="row"><h2 class="sp">확정된 강의 ${mine.length?mine.length+'건':''}</h2>${mine.length>1?'<span class="mu sm">옆으로 넘겨 보세요 ›</span>':''}</div>${mine.length?'<div class="swipe">'+mine.map(({a,j})=>{const left=Math.round((dt(j.dates[0])-dt(t))/864e5);const nts=j.notices.filter(n=>(n.to||[]).includes(iid));const un=nts.filter(n=>!n.reads[iid]).length;const miss=j.needs.filter(n=>n!=='프로필'&&n!==RRN&&!docOf(a,n));
-    return `<div class="card"><div class="row">${chip('confirmed')}<span class="chip ${left<=1?'warn':'off'}">${left<=0?'오늘':'D-'+left}</span>${un?`<span class="chip warn">새 공지 ${un}</span>`:''}${miss.length?`<span class="chip warn">서류 ${miss.length}</span>`:''}</div><h3>${esc(j.region)} ${esc(j.school)} ${esc(j.title)}</h3>
+    return `<div class="card" id="cj-${j.id}"><div class="row">${chip('confirmed')}<span class="chip ${left<=1?'warn':'off'}">${left<=0?'오늘':'D-'+left}</span>${un?`<span class="chip warn">새 공지 ${un}</span>`:''}${miss.length?`<span class="chip warn">서류 ${miss.length}</span>`:''}</div><h3>${esc(j.region)} ${esc(j.school)} ${esc(j.title)}</h3>
     ${nts.length?noticeBox(j,iid):'<span class="mu sm">아직 공지가 없어요.</span>'}
     ${j.desc?`<details><summary>공고 내용 보기</summary><pre class="pf">${esc(j.desc)}</pre></details>`:''}
     <span class="mu">${esc(co(j.coId).name)} · ${j.dates.map(d=>`${md(d)}(${dowOf(d)})`).join('·')} ${esc(j.time)}</span>
@@ -808,6 +808,9 @@ document.addEventListener('click',async ev=>{
   if(A==='payAll'){const U=unpaidOf(meId());for(const x of U)markPaid(x.a);save();render();return toast(`${U.length}명 지급 완료, 입금 확인 알림을 보냈어요`)}
   if(A==='recv'){const al=S.alerts.find(x=>x.id===D.id),a=S.apps.find(x=>x.id===al.appId);al.read=true;if(a)a.recv=D.v;save();render();return toast(D.v==='ok'?'입금 확인을 업체에 알렸어요':'아직 안 들어왔다고 업체에 알렸어요')}
   if(A==='alertAll'){for(const a of S.alerts)if(a.instId===meId()&&!a.read&&a.kind!=='pay')a.read=true;save();return render()}
+  // 알림 '보기': 읽음 처리하고 그 강의 카드(공지·서류)로 바로 이동
+  if(A==='alertGo'){const a=S.alerts.find(x=>x.id===D.id),j=a&&alertJob(a);if(a)a.read=true;save();ui.tab='jobs';ui.jobId=null;render();
+    const c=j&&document.getElementById('cj-'+j.id);if(c){const sw=c.parentElement,h=(document.querySelector('header')||{}).offsetHeight||0;sw.scrollLeft=c.offsetLeft-sw.offsetLeft-16;window.scrollTo({top:sw.getBoundingClientRect().top+scrollY-h-50,behavior:'smooth'});c.style.outline='3px solid var(--ac)';setTimeout(()=>c.style.outline='',2200);const nb=c.querySelector('details');if(nb)nb.open=true}return}
   if(A==='alertOk'){const a=S.alerts.find(x=>x.id===D.id);if(a)a.read=true;save();return render()}
   if(A==='plus')return sheetPaste();
   if(A==='parse'){const raw=$('#pRaw').value;const r=parseNotice(raw);const feeV=feeOf(raw),fee=[0,feeV?String(feeV):'',''];
