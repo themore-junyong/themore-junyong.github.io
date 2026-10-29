@@ -154,3 +154,56 @@ exports.jobCount = onDocumentCreated({ ...trig, document: 'jobs/{id}' }, async e
   const j = e.data && e.data.data(); if (!j || !j.coId) return;
   await db.doc(`terms/${j.coId}`).set({ cnt: { [ymKst(new Date(e.time))]: FieldValue.increment(1) } }, { merge: true });
 });
+
+/* ===== AI 상담 봇 =====
+   사용설명서·상세페이지 글만 보고 제미나이(Vertex AI, 이 프로젝트 결제)로 답함. 질문 내용은 저장하지 않음.
+   남용 막기: 한 곳(IP)에서 하루 20번, 전체 하루 1,500번 */
+const { onRequest } = require('firebase-functions/v2/https');
+const SITE = 'https://themore-junyong.github.io/kangsaro/';
+const DOCS = ['guide/instructor.html', 'guide/company.html', ''];
+const BOT_MODELS = (process.env.BOT_MODEL || 'gemini-3-flash,gemini-3-flash-preview,gemini-2.5-flash,gemini-2.5-flash-lite').split(',');
+const BOT_IP_MAX = 20, BOT_ALL_MAX = 1500;
+let botDocs = null, botAt = 0, botModel = '';
+const plain = h => h.replace(/<(script|style)[\s\S]*?<\/\1>/gi, '').replace(/<(br|\/p|\/li|\/h\d|\/summary|\/details|\/section)[^>]*>/gi, '\n').replace(/<[^>]+>/g, '')
+  .replace(/&nbsp;/g, ' ').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&').replace(/[ \t]+/g, ' ').replace(/\n\s*\n+/g, '\n').trim();
+async function guideText() {
+  if (botDocs && Date.now() - botAt < 3600e3) return botDocs; // 1시간마다 새로 읽음 (설명서를 고치면 저절로 반영)
+  const t = await Promise.all(DOCS.map(p => fetch(SITE + p).then(r => r.ok ? r.text() : '').catch(() => '')));
+  botDocs = DOCS.map((p, i) => `### ${p || '상세페이지'}\n${plain(t[i]).slice(0, 30000)}`).join('\n\n'); botAt = Date.now();
+  return botDocs;
+}
+const BOT_RULE = `너는 '강사로'(강사·강의 업체용 일정·공고·정산 앱)의 상담 도우미야.
+- 아래 [설명서]에 있는 내용으로만 답해. 없는 내용은 지어내지 말고 "설명서에 없는 내용이라 tobadyclup@naver.com 으로 문의해 주세요"라고 해.
+- 한국어 존댓말(~해요체)로, 3~6문장 안에서 짧게. 누를 버튼 이름은 '작은따옴표'로.
+- 주민등록번호·계좌번호·비밀번호 같은 개인정보는 묻지도 받지도 마. 사용자가 적으면 지우라고 안내해.
+- 강의·앱 사용과 관계없는 질문(숙제, 코드, 다른 주제)은 정중히 거절해.`;
+exports.askBot = onRequest({ region: 'asia-northeast3', invoker: 'public', cors: ['https://themore-junyong.github.io', /localhost/], maxInstances: 3, timeoutSeconds: 60, memory: '512MiB' }, async (req, res) => {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'POST만 돼요' });
+  const q = String((req.body && req.body.q) || '').trim().slice(0, 500);
+  const hist = (Array.isArray(req.body && req.body.h) ? req.body.h : []).slice(-6).map(x => ({ role: x.r === 'a' ? 'model' : 'user', parts: [{ text: String(x.t || '').slice(0, 800) }] }));
+  if (!q) return res.status(400).json({ error: '질문을 적어 주세요' });
+  const day = ymd(new Date(Date.now() + 9 * 3600e3)), ip = require('crypto').createHash('sha256').update(day + String(req.headers['x-forwarded-for'] || req.ip || '').split(',')[0].trim()).digest('hex').slice(0, 16); // IP는 그날 값으로 해시만
+  const lim = db.doc(`botlog/${day}`);
+  const over = await db.runTransaction(async t => {
+    const d = (await t.get(lim)).data() || {}, n = (d.ip || {})[ip] || 0;
+    if (n >= BOT_IP_MAX) return '오늘은 질문을 많이 하셨어요. 내일 다시 물어보시거나 tobadyclup@naver.com 으로 문의해 주세요';
+    if ((d.all || 0) >= BOT_ALL_MAX) return '오늘은 상담이 많아 잠시 쉬어요. tobadyclup@naver.com 으로 문의해 주세요';
+    t.set(lim, { all: FieldValue.increment(1), ip: { [ip]: FieldValue.increment(1) } }, { merge: true });
+    return '';
+  });
+  if (over) return res.json({ a: over });
+  const { GoogleGenAI } = require('@google/genai');
+  const ai = new GoogleGenAI({ vertexai: true, project: process.env.GCLOUD_PROJECT || process.env.GOOGLE_CLOUD_PROJECT, location: 'global' });
+  const sys = BOT_RULE + '\n\n[설명서]\n' + await guideText();
+  for (const m of botModel ? [botModel] : BOT_MODELS) {
+    try {
+      const r = await ai.models.generateContent({ model: m, contents: [...hist, { role: 'user', parts: [{ text: q }] }], config: { systemInstruction: sys, temperature: 0.2, maxOutputTokens: 600 } });
+      botModel = m;
+      return res.json({ a: (r.text || '').trim() || '답을 만들지 못했어요. 다시 물어봐 주세요' });
+    } catch (e) {
+      console.error('bot', m, e.status || '', String(e.message || e).slice(0, 200));
+      if (!/404|not found|NOT_FOUND|not supported/i.test(String(e.message || e))) break; // 모델이 없을 때만 다음 모델
+    }
+  }
+  res.json({ a: '지금은 답하기 어려워요. 잠시 뒤 다시 물어보시거나 tobadyclup@naver.com 으로 문의해 주세요' });
+});
