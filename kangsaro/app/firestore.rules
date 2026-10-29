@@ -61,6 +61,10 @@ service cloud.firestore {
         allow read: if me() == u || (signed() && (linked(me(), u) || staffLinked(u)));
         allow write: if me() == u;
       }
+      // 푸시 알림 기기 토큰 (본인만, 서버가 읽어서 보냄)
+      match /push/{t} {
+        allow read, write: if me() == u;
+      }
       // 업체 서류 양식 (빈 양식이라 가입한 사람은 다 받을 수 있음)
       match /forms/{f} {
         allow read: if signed();

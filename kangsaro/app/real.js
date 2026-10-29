@@ -4,6 +4,8 @@ import { firebaseConfig } from './firebase-config.js';
 
 const V = '10.12.2', G = `https://www.gstatic.com/firebasejs/${V}`;
 const ADMINS = ['tobadyclub87@gmail.com'];
+// 푸시 알림 웹 키 (Firebase 콘솔 → 프로젝트 설정 → 클라우드 메시징 → 웹 푸시 인증서의 '키 쌍'. 공개해도 되는 값)
+const VAPID = '';
 const Q = new URLSearchParams(location.search);
 const EMU = Q.has('emu');
 // 소개 링크(?ref=소개한 사람)는 로그인 전에 기억해 둠
@@ -262,6 +264,7 @@ async function start(user, want) {
   ui.tab = NAV[role][0][0];
   render();
   showTerm();
+  pushSave(false);
   if (isAdm()) adminQueue().then(l => { if (l.length) toast(`확인 대기·신고 공고 ${l.length}건이 있어요. '업체 관리'에서 봐 주세요`); });
 }
 
@@ -300,7 +303,7 @@ REAL.acct = () => {
   const pending = role === 'c' && !cur.approved && !isStaffView(), isAdmin = ADMINS.includes(auth.currentUser?.email);
   const sw = me.role === 's' ? '' : has(other) ? `<button class="btn sm" data-real="swap" title="같은 계정으로 화면만 바꿔요">⇄ ${other === 'c' ? '업체 화면' : '강사 화면'}</button>` : `<button class="btn sm" data-real="addSide">${other === 'c' ? '업체로도 쓰기' : '강사로도 쓰기'}</button>`;
   el.style.flexWrap = 'wrap';
-  el.innerHTML = `<span class="sp" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:5em">${esc(cur.name || '')} ${role === 'c' ? (isStaffView() ? `(직원 ${esc(WHO)})` : '(업체)') : '(강사)'}</span>${sw}${role === 'c' ? '<button class="btn sm" data-real="staff">직원</button>' : ''}${isAdmin ? `<button class="btn sm" data-real="admin">업체 관리${ADMQ ? ` <span class="chip warn">확인 ${ADMQ}</span>` : ''}</button>` : ''}<a class="btn sm" style="text-decoration:none;color:inherit;display:inline-flex;align-items:center" href="../guide/${role === 'c' ? 'company' : 'instructor'}.html">사용법</a><button class="btn sm" data-real="ref">소개하기</button><button class="btn sm" data-real="out">로그아웃</button>`;
+  el.innerHTML = `<span class="sp" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:5em">${esc(cur.name || '')} ${role === 'c' ? (isStaffView() ? `(직원 ${esc(WHO)})` : '(업체)') : '(강사)'}</span>${sw}${role === 'c' ? '<button class="btn sm" data-real="staff">직원</button>' : ''}${isAdmin ? `<button class="btn sm" data-real="admin">업체 관리${ADMQ ? ` <span class="chip warn">확인 ${ADMQ}</span>` : ''}</button>` : ''}<a class="btn sm" style="text-decoration:none;color:inherit;display:inline-flex;align-items:center" href="../guide/${role === 'c' ? 'company' : 'instructor'}.html">사용법</a>${pushAble() && !pushOn() ? '<button class="btn sm" data-real="push">🔔 알림 켜기</button>' : ''}<button class="btn sm" data-real="ref">소개하기</button><button class="btn sm" data-real="out">로그아웃</button>`;
   const bar = $('#pendBar'); if (bar && !pending) bar.remove();
   if (pending && !bar) el.insertAdjacentHTML('afterend', cur.blocked
     ? '<div id="pendBar" class="alert">운영자가 이 업체의 공고 등록을 멈췄어요. 문의: tobadyclup@naver.com</div>'
@@ -368,6 +371,7 @@ document.addEventListener('click', async e => {
   if (k === 'staffOut') { if (!confirm(`${b.dataset.n} 님을 직원에서 내보낼까요? 바로 업체 화면을 못 보게 돼요.`)) return; await deleteDoc(doc(db, 'staff', b.dataset.id)); toast('내보냈어요'); return staffSheet(); }
   if (k === 'staffLeave') { if (!confirm('이 업체에서 나갈까요? 다시 일하려면 새 초대 링크가 필요해요.')) return; await deleteDoc(doc(db, 'staff', `${CO}_${uidMe}`)); closeSheet(); return; }
   if (k === 'maint') { const on = !SITE.maint; if (on && !confirm('모든 사용자 화면에 "업데이트 중입니다"를 띄울까요? 관리자 화면은 그대로예요.')) return; await setDoc(doc(db, 'site', 'main'), { maint: on, at: new Date().toISOString() }, { merge: true }); toast(on ? '업데이트 중 표시를 켰어요' : '업데이트 중 표시를 껐어요. 사용자 화면이 다시 열려요'); return adminSheet(); }
+  if (k === 'push') return pushSave(true);
   if (k === 'ntsT') { const on = !SITE.nts; if (on && !confirm('국세청 확인을 켤까요? 서버를 먼저 올려야 해요. 안 올렸으면 새 업체가 승인되지 않아요.')) return; await setDoc(doc(db, 'site', 'main'), { nts: on }, { merge: true }); toast(on ? '국세청 확인을 켰어요' : '국세청 확인을 껐어요'); return adminSheet(); }
   if (k === 'jPass') { await updateDoc(doc(db, 'jobs', b.dataset.j), { cleared: true, hold: false }); toast('통과했어요. 강사에게 보여요'); return adminSheet(); }
   if (k === 'jDown') { if (!confirm('이 공고를 내릴까요? 마감 처리돼서 강사에게 안 보여요.')) return; await updateDoc(doc(db, 'jobs', b.dataset.j), { status: '마감' }); toast('내렸어요'); return adminSheet(); }
@@ -468,7 +472,7 @@ async function showTerm() {
 }
 // 기간이 끝나면 화면 이동·보기만 되고, 지원·등록·수정·내려받기·복사 등은 막음
 const OPEN_ACT = new Set(['report', 'alMore', 'alertGo', 'alertOk', 'back', 'closeSheet', 'closeSheetBg', 'cmon', 'csel', 'jmore', 'jf', 'mgo', 'mmon', 'mon', 'mview', 'openJob', 'sel', 'unpaid', 'year', 'install']);
-const OPEN_REAL = new Set(['out', 'ref', 'refCopy', 'refShare', 'reload', 'swap', 'lockInfo', 'staffLeave']);
+const OPEN_REAL = new Set(['push', 'out', 'ref', 'refCopy', 'refShare', 'reload', 'swap', 'lockInfo', 'staffLeave']);
 function lockSheet() {
   openSheet(`<div class="row"><h2 class="sp">이용 기간이 끝났어요</h2><button class="btn sm" data-act="closeSheet">닫기</button></div>
     <p>${TERM.replace(/-/g, '.')}까지였던 이용 기간이 끝나서 지금은 <b>지금까지 한 것을 보기만</b> 할 수 있어요. 지원, 등록, 수정, 내려받기는 잠겨 있어요.</p>
@@ -581,6 +585,23 @@ REAL.doc = async (appId, n, f) => {
   a.docs = { ...(a.docs || {}), [n]: name }; save(); render(); toast(`${n} 냈어요`);
 };
 
+/* ===== 푸시 알림: 이 기기 토큰을 users/{나}/push 에 저장 → 서버가 새 알림·공지·지원 때 보냄 ===== */
+const isStandalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+const pushAble = () => !!VAPID && 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window && location.protocol === 'https:';
+const pushOn = () => pushAble() && Notification.permission === 'granted' && lsGet('kangsaro.push.' + uidMe) !== '';
+async function pushSave(ask) {
+  if (!pushAble()) return ask && toast(/iPhone|iPad/.test(navigator.userAgent) && !isStandalone() ? '아이폰은 Safari에서 공유 → 홈 화면에 추가한 뒤, 그 앱에서 알림을 켤 수 있어요' : '이 브라우저에서는 알림을 받을 수 없어요. 크롬이나 홈 화면에 추가한 앱에서 켜 주세요');
+  if (ask && Notification.permission !== 'granted' && await Notification.requestPermission() !== 'granted') return toast('알림이 꺼져 있어요. 브라우저 설정에서 이 사이트 알림을 허용해 주세요');
+  if (Notification.permission !== 'granted') return;
+  try {
+    const M = await import(`${G}/firebase-messaging.js`), reg = await navigator.serviceWorker.ready;
+    const token = await M.getToken(M.getMessaging(fbApp), { vapidKey: VAPID, serviceWorkerRegistration: reg });
+    if (!token) return;
+    const id = (await crypto.subtle.digest('SHA-256', new TextEncoder().encode(token)).then(b => [...new Uint8Array(b)].slice(0, 12).map(x => x.toString(16).padStart(2, '0')).join('')));
+    if (lsGet('kangsaro.push.' + uidMe) !== id) { await setDoc(doc(db, 'users', uidMe, 'push', id), { token, at: new Date().toISOString(), ua: navigator.userAgent.slice(0, 120) }); try { localStorage.setItem('kangsaro.push.' + uidMe, id); } catch (e) { } }
+    if (ask) { toast('알림을 켰어요. 확정·공지·지원 소식이 이 기기로 와요'); REAL.acct(); }
+  } catch (e) { console.error(e); if (ask) toast('알림을 켜지 못했어요: ' + (e.code || e.message)); }
+}
 // 강사 신고: 공고 문서의 reports.{내 uid} 한 칸만 씀
 REAL.report = async id => {
   try { await updateDoc(doc(db, 'jobs', id), { ['reports.' + uidMe]: new Date().toISOString() }); toast('신고했어요. 고마워요'); }

@@ -47,3 +47,55 @@ exports.verifyBiz = onCall({ region: 'asia-northeast3', secrets: [NTS_KEY], maxI
   });
   return { ok: true };
 });
+
+/* ===== 푸시 알림 =====
+   앱이 users/{uid}/push/{id} 에 기기 토큰을 저장 → 아래 트리거가 새 알림·공지·지원·취소 때 그 사람 기기로 보냄.
+   Firestore 트리거는 데이터베이스와 같은 지역이어야 함 (DB_REGION) */
+const { onDocumentCreated, onDocumentUpdated } = require('firebase-functions/v2/firestore');
+const { getMessaging } = require('firebase-admin/messaging');
+const DB_REGION = process.env.DB_REGION || 'asia-northeast3';
+const APP_URL = 'https://themore-junyong.github.io/kangsaro/app/';
+const clip = (s, n) => { s = String(s || '').replace(/\s+/g, ' ').trim(); return s.length > n ? s.slice(0, n - 1) + '…' : s; };
+const nameOf = async (id, side) => { const d = (await db.doc(`users/${id}`).get()).data() || {}; return (d.role === side ? d.name : d.side && d.side.role === side ? d.side.name : d.name) || ''; };
+
+async function pushTo(uids, title, body, tag) {
+  uids = [...new Set(uids.filter(Boolean))];
+  const rows = (await Promise.all(uids.map(u => db.collection(`users/${u}/push`).get()))).flatMap(s => s.docs);
+  if (!rows.length) return 0;
+  const tokens = rows.map(d => d.data().token);
+  if (process.env.PUSH_DRY) { console.log('PUSH', JSON.stringify({ uids, n: tokens.length, title, body })); return tokens.length; } // 에뮬레이터 시험용
+  // data 메시지로 보내고 화면 표시는 sw.js가 함 (알림이 두 번 뜨지 않게)
+  const res = await getMessaging().sendEachForMulticast({ tokens, data: { title, body: clip(body, 180), url: APP_URL, tag: tag || 'kangsaro' }, webpush: { headers: { Urgency: 'high', TTL: '86400' } } });
+  // 앱을 지웠거나 알림을 끈 기기의 토큰은 정리
+  await Promise.all(res.responses.map((r, i) => !r.success && /registration-token-not-registered|invalid-argument|invalid-registration-token/.test((r.error && r.error.code) || '') ? rows[i].ref.delete() : null));
+  return res.successCount;
+}
+// 업체 대표 + 직원
+async function coPeople(coId) { const s = await db.collection('staff').where('coId', '==', coId).get(); return [coId, ...s.docs.map(d => d.data().uid)]; }
+
+const trig = { region: DB_REGION, maxInstances: 5 };
+// 강사에게 가는 알림 (확정·마감·입금·리마인드)
+exports.pushAlert = onDocumentCreated({ ...trig, document: 'alerts/{id}' }, async e => {
+  const a = e.data && e.data.data(); if (!a || !a.instId) return;
+  const m = String(a.text || '').match(/^\[([^\]]+)\]\s*(.*)$/s);
+  await pushTo([a.instId], m ? `강사로 · ${m[1]}` : '강사로', m ? m[2] : a.text, 'al-' + e.params.id);
+});
+// 업체 공지 → 받는 강사들
+exports.pushNotice = onDocumentCreated({ ...trig, document: 'notices/{id}' }, async e => {
+  const n = e.data && e.data.data(); if (!n || !(n.to || []).length) return;
+  const co = await nameOf(n.coId, 'c');
+  await pushTo(n.to, `강사로 · ${co || '업체'} 공지`, n.text, 'nt-' + e.params.id);
+});
+// 새 지원 → 업체 대표·직원
+exports.pushApply = onDocumentCreated({ ...trig, document: 'apps/{id}' }, async e => {
+  const a = e.data && e.data.data(); if (!a || !a.coId) return;
+  const [who, j] = await Promise.all([nameOf(a.instId, 'i'), db.doc(`jobs/${a.jobId}`).get().then(d => d.data() || {})]);
+  await pushTo(await coPeople(a.coId), '강사로 · 새 지원', `${who || '강사'} 님이 ${[j.school, j.title].filter(Boolean).join(' ')}에 지원했어요`, 'ap-' + e.params.id);
+});
+// 확정했던 강사가 취소 → 업체 대표·직원
+exports.pushCancel = onDocumentUpdated({ ...trig, document: 'apps/{id}' }, async e => {
+  const b = e.data.before.data() || {}, a = e.data.after.data() || {};
+  if (b.status === a.status || a.status !== '취소' || b.status !== '확정' || !a.coId) return;
+  const [who, j] = await Promise.all([nameOf(a.instId, 'i'), db.doc(`jobs/${a.jobId}`).get().then(d => d.data() || {})]);
+  await pushTo(await coPeople(a.coId), '강사로 · 확정 취소', `${who || '강사'} 님이 ${[j.school, j.title].filter(Boolean).join(' ')} 확정을 취소했어요${a.cxWhy ? ` (사유: ${a.cxWhy})` : ''}`, 'cx-' + e.params.id);
+});
