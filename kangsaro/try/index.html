@@ -327,7 +327,8 @@ function render(){runReminders();const sw0=$('#slide'),keep=sw0?sw0.scrollLeft:0
   const al=r==='i'&&ui.tab==='cal'?S.alerts.filter(a=>a.instId===meId()&&!a.read):[];
   $('#main').innerHTML=(al.length?`<div class="card" style="border-color:var(--b2);background:var(--b1)" role="status"><div class="row"><b class="sp" style="color:var(--b2)">알림 ${al.length}개</b></div>${(al.sort((x,y)=>alertDay(x).localeCompare(alertDay(y))),(ui.alMore?al:al.slice(0,3)).map(alertHtml).join(''))}${al.length>3?`<button class="btn sm" data-act="alMore" style="width:100%">${ui.alMore?'접기':`알림 ${al.length-3}개 더 보기`}</button>`:''}</div>`:'')+(VIEWS[ui.tab]||(()=>''))();;
   // 슬라이드: 날짜·달이 바뀌면 그 날짜 카드로, 아니면 보던 자리 그대로
-  if(ui.tab==='cal'){const key=ui.sel+ui.month;if(ui._sk!==key||!sw0){ui._sk=key;slideTo(ui.sel)}else if($('#slide'))$('#slide').scrollLeft=keep}
+  if(ui.tab==='cal'){const key=ui.sel+ui.month;if(ui._sk!==key||!sw0){ui._sk=key;slideTo(ui.sel)}else if($('#slide')){ui._prog=Date.now();$('#slide').scrollLeft=keep}
+    const sw=$('#slide');if(sw)sw.onscroll=()=>{if(Date.now()-(ui._prog||0)<400)return;clearTimeout(ui._st);ui._st=setTimeout(slideMonth,180)}}
 }
 // 알림을 줄글 대신 강의별로: [꼬리표] 강의 이름 / 날짜·시간 / 업체 / 할 일
 const alertJob=a=>{const ap=a.appId&&S.apps.find(x=>x.id===a.appId);return ap&&job(ap.jobId)};
@@ -382,15 +383,18 @@ function vCal(){const iid=meId(),E=entries(iid),t=todayIso();const [Y,M]=ui.mont
   <div class="sum"><div><span class="mu sm">받은 돈</span><b>${won(paid)}</b></div><div><span class="mu sm">받을 돈</span><b>${won(unpaid)}</b></div><div><span class="mu sm">이달 순수익</span><b>${won(net)}</b></div></div>
   ${vSlide(E)}`}
 // 달력 아래: 이달 일정을 날짜순 슬라이드로. 날짜를 누르면 그 강의 카드로 넘어감
-function vSlide(E){const iid=meId(),t=todayIso(),[Y,M]=ui.month.split('-').map(Number),ME=E.filter(e=>ym(e.d)===ui.month),has=ME.some(e=>e.d===ui.sel);
+function vSlide(E){const iid=meId(),ME=E,has=ME.some(e=>e.d===ui.sel);
   setTimeout(()=>{let c=0;for(const e of E)if(e.d===ui.sel&&e.kind==='app')c+=markRead(e.job,iid);if(c){const un=unreadCount(),nb=$('[data-tab="cal"]');if(nb)nb.innerHTML='홈'+(un?`<span class="dot">${un}</span>`:'')}},1500);
-  return `<div class="row" id="slideTop"><h2 class="sp">${M}월 일정 ${ME.length?ME.length+'건':''}</h2>${ME.length>1?'<span class="mu sm">옆으로 넘겨 보세요 ›</span>':''}</div>
+  return `<div class="row" id="slideTop"><h2 class="sp">내 일정</h2>${ME.length>1?'<span class="mu sm">옆으로 넘기면 달력도 따라가요 ›</span>':''}</div>
   ${ym(ui.sel)===ui.month&&!has?`<p class="mu sm">${mdK(ui.sel)}(${dowOf(ui.sel)})${HOL[ui.sel]?' · '+HOL[ui.sel]:''}은 일정이 없어요. 아래 + 로 공고를 붙여 넣거나 직접 넣을 수 있어요.</p>`:''}
-  ${ME.length?'<div class="swipe" id="slide">'+ME.map(e=>entryCard(e,ME.filter(x=>x.d===e.d).length>1)).join('')+'</div>':'<p class="mu">이달은 일정이 없어요.</p>'}`}
+  ${ME.length?'<div class="swipe" id="slide">'+ME.map(e=>entryCard(e,ME.filter(x=>x.d===e.d).length>1)).join('')+'</div>':'<p class="mu">아직 일정이 없어요.</p>'}`}
 // 슬라이드를 고른 날짜(없으면 그 뒤 가장 가까운 날)의 카드로 넘김
-function slideTo(d,page){const sw=$('#slide');if(!sw)return;const cs=[...sw.children],c=cs.find(x=>x.dataset.d===d)||cs.find(x=>x.dataset.d>=d)||cs[cs.length-1];if(!c)return;
+function slideTo(d,page){const sw=$('#slide');if(!sw)return;ui._prog=Date.now();const cs=[...sw.children],c=cs.find(x=>x.dataset.d===d)||cs.find(x=>x.dataset.d>=d)||cs[cs.length-1];if(!c)return;
   sw.scrollLeft=c.offsetLeft-sw.offsetLeft-16;if(!page)return;const h=(document.querySelector('header')||{}).offsetHeight||0;
   window.scrollTo({top:$('#slideTop').getBoundingClientRect().top+scrollY-h-10,behavior:'smooth'});if(c.dataset.d===d){c.style.outline='3px solid var(--ac)';setTimeout(()=>c.style.outline='',1800)}}
+// 손으로 넘겨서 다른 달 일정에 닿으면 달력도 그 달로 (고른 날짜도 그 카드 날짜로)
+function slideMonth(){const sw=$('#slide');if(!sw)return;const c=[...sw.children].find(x=>x.offsetLeft-sw.offsetLeft-16>=sw.scrollLeft-20);if(!c||ym(c.dataset.d)===ui.month)return;
+  ui.sel=c.dataset.d;ui.month=ym(c.dataset.d);ui._sk=ui.sel+ui.month;render()}
 // 미입금 목록: 날짜별이 아니라 강의(일정) 하나당 한 줄
 function unpaidList(iid){const M=new Map();for(const e of entries(iid))if(e.st==='done'){const k=e.ref.id;if(!M.has(k))M.set(k,{e,dates:[],fee:0});const x=M.get(k);x.dates.push(e.d);x.fee+=e.fee}
   return [...M.values()].map(x=>({...x,net:tax(x.fee).net,days:Math.round((dt(todayIso())-dt(last(x.dates)))/864e5)})).sort((a,b)=>b.days-a.days)}
@@ -787,7 +791,7 @@ document.addEventListener('click',async ev=>{
   if(A==='closeSheet')return closeSheet();
   if(A==='reset'){if(el.dataset.sure){try{localStorage.removeItem(KEY)}catch(e){}S=seed();ui.jobId=null;delete el.dataset.sure;el.textContent='처음으로';render();toast('체험 데이터를 처음으로 되돌렸어요');}else{el.dataset.sure=1;el.textContent='한 번 더 누르면 초기화';setTimeout(()=>{delete el.dataset.sure;el.textContent='처음으로'},3000)}return}
   if(A==='sel'){ui.sel=D.d;render();return slideTo(D.d,true)}
-  if(A==='mon'){const n=+D.n;if(!n){ui.month=todayIso().slice(0,7);ui.sel=todayIso()}else{const [y,m]=ui.month.split('-').map(Number);const d=new Date(y,m-1+n,1);ui.month=`${d.getFullYear()}-${pad(d.getMonth()+1)}`}return render()}
+  if(A==='mon'){const n=+D.n;if(!n){ui.month=todayIso().slice(0,7);ui.sel=todayIso()}else{const [y,m]=ui.month.split('-').map(Number);const d=new Date(y,m-1+n,1);ui.month=`${d.getFullYear()}-${pad(d.getMonth()+1)}`;ui.sel=ui.month===todayIso().slice(0,7)?todayIso():ui.month+'-01'}return render()}
   if(A==='mview'){ui.mview=D.v;return render()}
   if(A==='mgo'){ui.month=`${ui.month.slice(0,4)}-${pad(+D.m)}`;ui.mview='m';return render()}
   if(A==='mmon'){const n=+D.n;if(!n)ui.month=todayIso().slice(0,7);else{const [y,m]=ui.month.split('-').map(Number),x=new Date(y,m-1+n,1);ui.month=`${x.getFullYear()}-${pad(x.getMonth()+1)}`}return render()}
