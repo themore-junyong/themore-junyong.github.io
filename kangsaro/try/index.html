@@ -723,7 +723,8 @@ function vCJob(j){const A=appsOf(j.id),s=jobStats(j);
   <span class="mu sm">날짜·시간을 고치면 확정된 강사 달력에도 바로 바뀌고, 강사에게 변경 공지가 가요.</span>
   <span class="mu">${esc(j.교시)} · ${esc(j.대상)} · 1일 강사료 ${won(j.fee)} (강사에게 공개)</span>
   <label class="f">공고 내용<textarea data-act="jedit" data-k="desc" rows="4">${esc(j.desc||'')}</textarea></label>
-  ${j.status==='모집'?`<button class="btn nv" data-act="close" data-j="${j.id}">모집 마감</button><span class="mu sm">마감하면 확정하지 않은 지원자는 미선정이 되고, 그 강사 달력에서 사라져요.</span>`:''}</div>
+  ${j.status==='모집'?`<button class="btn nv" data-act="close" data-j="${j.id}">모집 마감</button><span class="mu sm">마감하면 확정하지 않은 지원자는 미선정이 되고, 그 강사 달력에서 사라져요.</span>`:''}
+  <button class="btn sm" data-act="jobDel" data-j="${j.id}" style="color:var(--r2)">이 강의 삭제</button><span class="mu sm">잘못 올린 강의를 지워요. 지원한 강사가 있으면 지울 수 없고 '모집 마감'만 돼요.</span></div>
   ${A.filter(a=>a.cxConfirmed&&a.status==='취소').map(a=>`<div class="alert">확정했던 ${esc(inst(a.instId).name)} 강사가 취소했어요. 사유: ${esc(a.cxWhy||'없음')} (${new Date(a.cxAt).toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}) · 다른 지원자를 확정하거나 다시 모집해 주세요.</div>`).join('')}
   ${docTable(j,A)}
   ${A.some(a=>a.status==='지원'||a.status==='확정')?`<button class="btn" data-act="pdfAll" data-j="${j.id}">지원자 프로필 PDF 한 번에 받기 (${A.filter(a=>a.status==='지원'||a.status==='확정').length}명)</button>`:''}
@@ -914,6 +915,7 @@ document.addEventListener('click',async ev=>{
   if(A==='slNav')return slideStep(+D.n);
   if(A==='report'){const j=job(D.j),me=meId();if((j.reports||{})[me])return toast('이미 신고했어요. 운영자가 확인해요');if(!confirm('이 공고를 사기·허위 공고로 신고할까요? 운영자가 확인해요.'))return;
     j.reports={...(j.reports||{}),[me]:new Date().toISOString()};if(typeof REAL!=='undefined'&&REAL.report)REAL.report(j.id);else save();render();return toast('신고했어요. 고마워요')}
+  if(A==='jobDel'){const j=job(D.j);if(!j)return;if(appsOf(j.id).length)return toast('지원한 강사가 있어서 지울 수 없어요. 모집 마감을 써 주세요');if(!confirm(`'${j.title||j.school}' 강의를 지울까요? 되돌릴 수 없어요.`))return;S.jobs=S.jobs.filter(x=>x.id!==j.id);ui.jobId=null;save();render();return toast('지웠어요')}
   if(A==='cnew')return sheetNewJob();
   if(A==='bulkJobs')return sheetBulkJobs();
   if(A==='bPrev')return sheetBulkJobs($('#bRaw').value);
