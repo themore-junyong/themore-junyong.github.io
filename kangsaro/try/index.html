@@ -475,6 +475,7 @@ function sheetPaste(pre){const p=pre||{};
   openSheet(`<div class="row"><h2 class="sp">일정 넣기</h2><button class="btn sm" data-act="closeSheet">닫기</button></div>
   <label class="f">단톡방·메일 공고를 그대로 붙여 넣으세요<textarea id="pRaw" rows="6" placeholder="예) 11/18(화) 천안 ○○고 3학년 면접 특강 09:00~15:50 강사료 30만원 지원: job@example.com">${esc(p.raw||'')}</textarea></label>
   <button class="btn" data-act="parse">공고 읽기</button>
+  <div id="pNet"></div>
   <div class="grid2">
    <label class="f">강의<input id="pTitle" value="${esc(p.title||'')}"></label><label class="f">업체<input id="pOrg" value="${esc(p.org||'')}"></label>
    <label class="f">날짜 (쉼표로)<input id="pDates" value="${esc((p.dates||[]).join(', '))}" placeholder="2026-11-18"></label><label class="f">시간<input id="pTime" value="${esc(p.time||'')}"></label>
@@ -485,7 +486,17 @@ function sheetPaste(pre){const p=pre||{};
   <button class="btn pri" data-act="addMail">달력에 넣고 지원 메일 쓰기</button>
   <div class="grid2"><button class="btn" data-act="addApplied">'지원'으로만 넣기</button><button class="btn" data-act="addOnly">'확정'으로 넣기</button></div>
   <p class="mu sm">달력에 '지원'으로 넣고, 받는 사람·제목·본문이 채워진 메일 쓰기 버튼이 나와요. 프로필 파일을 붙이고 보내기는 직접 누르세요.</p>`);
-  ui.dows=p.dows||{};pWarn()}
+  ui.dows=p.dows||{};pWarn();pNet()}
+// 지원할지 고르기 전에: 강사료 − 3.3% − 왕복 기름값·통행료 = 순수익 (빈칸을 고치면 바로 다시 계산)
+function pNet(){const el=$('#pNet');if(!el)return;const p=readPaste(),me=inst(meId()),n=p.dates.length||1;
+  if(!p.fee){el.innerHTML='<span class="mu sm">강사료를 넣으면 기름값·통행료를 뺀 순수익이 여기 보여요.</span>';return}
+  const tx=tax(p.fee),fuel=Math.round(p.km/(+me.kmpl||15)*(+me.fuel||1650)),net=(tx.net-fuel-p.toll)*n,min=p.km?Math.max(15,Math.round(p.km/2/65*60/5)*5):0;
+  el.innerHTML=`<div class="card" style="background:var(--acs);gap:4px"><b class="money" style="color:var(--ac);font-size:20px">순수익 약 ${won(Math.round(net/100)*100)}</b>
+   <span class="sm">강사료 ${won(p.fee)}${n>1?` × ${n}일`:''} − 3.3% ${won(tx.all)} − 기름값 ${won(fuel)} − 통행료 ${won(p.toll)}${n>1?' (하루 기준)':''}</span>
+   <span class="mu sm">${p.km?`왕복 약 ${p.km}km · 편도 약 ${hmText(min)} · `:'왕복 거리를 넣으면 기름값이 계산돼요 · '}연비 ${+me.kmpl||15}km/L, 리터당 ${won(+me.fuel||1650)}${me.region?` · ${esc(me.region)} 출발`:''}</span>
+   <span class="mu sm">거리·통행료는 시·군 중심으로 어림했어요. 아래 칸에서 고치면 바로 다시 계산돼요.</span></div>`}
+// 고속도로 통행료 어림: 기본 900원 + km당 약 45원, 왕복 (40km 미만은 0)
+const tollGuess=km=>km>=40?Math.round((900*2+km*45)/100)*100:0;
 function readPaste(){const g=id=>$('#'+id).value.trim();
   const dates=g('pDates').split(/[,\s]+/).filter(x=>/^\d{4}-\d{2}-\d{2}$/.test(x)).sort();
   return {raw:g('pRaw'),title:g('pTitle'),org:g('pOrg'),dates,time:g('pTime'),fee:+g('pFee')||0,to:g('pTo'),km:+g('pKm')||0,toll:+g('pToll')||0,dows:ui.dows||{}}}
@@ -767,7 +778,8 @@ document.addEventListener('click',async ev=>{
   if(A==='alertOk'){const a=S.alerts.find(x=>x.id===D.id);if(a)a.read=true;save();return render()}
   if(A==='plus')return sheetPaste();
   if(A==='parse'){const raw=$('#pRaw').value;const r=parseNotice(raw);const feeV=feeOf(raw),fee=[0,feeV?String(feeV):'',''];
-    sheetPaste({raw,km:kmBetween(inst(meId()).region,r.지역)||'',title:[r.지역,r.학교명,r.강의명].filter(Boolean).join(' '),org:r.기관명,dates:r.dates,time:r.시간,to:r.to,dows:r.dows,fee:fee[1]?(+fee[1].replace(/,/g,''))*(fee[2]?10000:1):''});return toast('공고를 읽었어요. 빈칸만 확인하세요')}
+    const km=kmBetween(inst(meId()).region,r.지역)||'';
+    sheetPaste({raw,km,toll:km?tollGuess(km):'',title:[r.지역,r.학교명,r.강의명].filter(Boolean).join(' '),org:r.기관명,dates:r.dates,time:r.시간,to:r.to,dows:r.dows,fee:fee[1]?(+fee[1].replace(/,/g,''))*(fee[2]?10000:1):''});return toast('공고를 읽었어요. 빈칸만 확인하세요')}
   if(A==='addMail'||A==='addOnly'||A==='addApplied'){const p=readPaste();if(!p.dates.length){pWarn();return toast('날짜를 넣어 주세요')}if(!p.title)return toast('강의 이름을 넣어 주세요');
     S.evs.push({id:uid(),instId:meId(),dates:p.dates,title:p.title,org:p.org,time:p.time,fee:p.fee,km:p.km,toll:p.toll,st:A==='addOnly'?'confirmed':'applied',to:p.to});save();
     closeSheet();ui.tab='cal';ui.sel=p.dates[0];ui.month=ym(p.dates[0]);render();if(A==='addMail')sheetMail(mailOf(p),p.to);return toast(A==='addMail'?'달력에 "지원"으로 넣었어요. 문구를 복사해 쓰세요':A==='addApplied'?'달력에 "지원"으로 넣었어요':'달력에 "확정"으로 넣었어요')}
@@ -853,7 +865,7 @@ if(!INST.standalone){
 if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw.js').catch(()=>{});
 // 붙여넣기만 하면 바로 읽기 ('공고 읽기' 버튼을 안 눌러도 됨)
 document.addEventListener('paste',ev=>{if(ev.target.id==='pRaw')setTimeout(()=>{const b=document.querySelector('[data-act="parse"]');if(b&&$('#pRaw').value.trim().length>20)b.click()},0)});
-document.addEventListener('input',ev=>{if(['pDates','pRaw'].includes(ev.target.id))pWarn()});
+document.addEventListener('input',ev=>{if(['pDates','pRaw'].includes(ev.target.id))pWarn();if(['pDates','pFee','pKm','pToll'].includes(ev.target.id))pNet()});
 // 처음 들어오면 강사/업체 고르기 (?as=inst 또는 ?as=co 로 바로 들어오기도 함)
 function pickRole(r){S.me=r==='co'?'c:c1':'i:i1';ui.tab=NAV[meRole()][0][0];save();closeSheet();render();toast(r==='co'?'업체 화면으로 보고 있어요. 맨 위에서 언제든 바꿀 수 있어요':'강사 화면으로 보고 있어요. 맨 위에서 언제든 바꿀 수 있어요')}
 const asQ=new URLSearchParams(location.search).get('as');
