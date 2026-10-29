@@ -515,15 +515,24 @@ ${esc(m.body)}</pre></details>
   <p class="mu sm">프로필 파일을 붙이고 보내기는 직접 눌러 주세요.</p>`)}
 
 /* ===== 강사: 결산 ===== */
-function vMoney(){const E=entries(meId()).filter(e=>e.st!=='applied');const Y=ui.month.slice(0,4);
+// 결산: 월별 보기 (한 달의 강의를 하나씩)
+function vMoneyMonth(E){const [Y,M]=ui.month.split('-').map(Number),es=E.filter(e=>ym(e.d)===ui.month);let T={fee:0,tx:0,trv:0,net:0,got:0,un:0};
+  for(const e of es){const x=tax(e.fee);T.fee+=e.fee;T.tx+=x.all;T.trv+=e.trv;T.net+=x.net-e.trv;if(e.st==='paid')T.got+=x.net;else T.un+=x.net}
+  return `${moneyTabs()}<div class="row"><h2 class="sp">${Y}년 ${M}월 결산</h2><button class="btn sm" data-act="mmon" data-n="-1">‹</button><button class="btn sm" data-act="mmon" data-n="0">이번 달</button><button class="btn sm" data-act="mmon" data-n="1">›</button></div>
+  <div class="sum"><div><span class="mu sm">강의</span><b>${es.length}건</b></div><div><span class="mu sm">강사료 합계</span><b>${won(T.fee)}</b></div><div><span class="mu sm">순수익</span><b>${won(T.net)}</b></div></div>
+  <div class="sum"><div><span class="mu sm">떼인 3.3%</span><b>${won(T.tx)}</b></div><div><span class="mu sm">받은 돈</span><b>${won(T.got)}</b></div><div><span class="mu sm">받을 돈</span><b>${won(T.un)}</b></div></div>
+  <div class="card">${es.map(e=>`<div class="row sm" style="border-bottom:1px solid var(--ln);padding:8px 0;align-items:flex-start"><b style="min-width:62px">${md(e.d)}(${dowOf(e.d)})</b><span class="sp" style="display:flex;flex-direction:column;gap:2px;min-width:0"><span>${esc(e.title)}</span><span class="mu">${e.org?esc(e.org)+' · ':''}강사료 ${won(e.fee)} → 순수익 <b>${won(netOf(e))}</b></span></span>${chip(e.st)}</div>`).join('')||'<span class="mu">이 달에는 강의가 없어요</span>'}</div>
+  <p class="mu sm">지원만 한 강의는 빼고, 확정·미입금·입금 완료 강의만 모았어요. 순수익은 3.3%와 왕복 교통비를 뺀 금액이에요.</p>`}
+const moneyTabs=()=>`<div class="row"><button class="btn sm ${ui.mview==='y'?'':'pri'}" data-act="mview" data-v="m">월별</button><button class="btn sm ${ui.mview==='y'?'pri':''}" data-act="mview" data-v="y">연간</button></div>`;
+function vMoney(){const E=entries(meId()).filter(e=>e.st!=='applied');if(ui.mview!=='y')return vMoneyMonth(E);const Y=ui.month.slice(0,4);
   const rows=[];let T={n:0,fee:0,tx:0,net:0,trv:0,pn:0,un:0};
   for(let m=1;m<=12;m++){const k=`${Y}-${pad(m)}`,es=E.filter(e=>ym(e.d)===k);if(!es.length)continue;
     const r={m,n:es.length,fee:0,tx:0,net:0,trv:0,un:0};for(const e of es){const x=tax(e.fee);r.fee+=e.fee;r.tx+=x.all;r.trv+=e.trv;r.net+=x.net-e.trv;if(e.st==='done')r.un+=x.net}
     rows.push(r);for(const k2 of ['n','fee','tx','net','trv','un'])T[k2]+=r[k2]}
-  return `<div class="row"><h2 class="sp">${Y}년 결산</h2><button class="btn sm" data-act="year" data-n="-1">‹</button><button class="btn sm" data-act="year" data-n="1">›</button></div>
+  return `${moneyTabs()}<div class="row"><h2 class="sp">${Y}년 결산</h2><button class="btn sm" data-act="year" data-n="-1">‹</button><button class="btn sm" data-act="year" data-n="1">›</button></div>
   <div class="sum"><div><span class="mu sm">강사료 합계</span><b>${won(T.fee)}</b></div><div><span class="mu sm">떼인 3.3%</span><b>${won(T.tx)}</b></div><div><span class="mu sm">순수익</span><b>${won(T.net)}</b></div></div>
   <div class="card tw"><table><thead><tr><th>월</th><th>강의</th><th>강사료</th><th>3.3%</th><th>교통비</th><th>순수익</th><th>못 받음</th></tr></thead><tbody>
-  ${rows.map(r=>`<tr><td>${r.m}월</td><td>${r.n}</td><td>${won(r.fee)}</td><td>${won(r.tx)}</td><td>${won(r.trv)}</td><td>${won(r.net)}</td><td>${r.un?won(r.un):'-'}</td></tr>`).join('')||'<tr><td colspan="7">아직 기록이 없어요</td></tr>'}
+  ${rows.map(r=>`<tr><td><button class="btn sm" data-act="mgo" data-m="${r.m}">${r.m}월</button></td><td>${r.n}</td><td>${won(r.fee)}</td><td>${won(r.tx)}</td><td>${won(r.trv)}</td><td>${won(r.net)}</td><td>${r.un?won(r.un):'-'}</td></tr>`).join('')||'<tr><td colspan="7">아직 기록이 없어요</td></tr>'}
   ${rows.length?`<tr><th>합계</th><th>${T.n}</th><th>${won(T.fee)}</th><th>${won(T.tx)}</th><th>${won(T.trv)}</th><th>${won(T.net)}</th><th>${T.un?won(T.un):'-'}</th></tr>`:''}</tbody></table></div>
   <button class="btn" data-act="copyYear">결산표 복사 (종합소득세 준비용)</button>
   <p class="mu sm">강의한 날짜 기준으로 모았어요. 3.3%는 소득세 3%와 지방소득세 0.3%예요. 참고용이며 실제 신고는 홈택스 지급명세서 기준으로 하세요.</p>`}
@@ -729,6 +738,9 @@ document.addEventListener('click',async ev=>{
   if(A==='reset'){if(el.dataset.sure){try{localStorage.removeItem(KEY)}catch(e){}S=seed();ui.jobId=null;delete el.dataset.sure;el.textContent='처음으로';render();toast('체험 데이터를 처음으로 되돌렸어요');}else{el.dataset.sure=1;el.textContent='한 번 더 누르면 초기화';setTimeout(()=>{delete el.dataset.sure;el.textContent='처음으로'},3000)}return}
   if(A==='sel'){ui.sel=D.d;return render()}
   if(A==='mon'){const n=+D.n;if(!n){ui.month=todayIso().slice(0,7);ui.sel=todayIso()}else{const [y,m]=ui.month.split('-').map(Number);const d=new Date(y,m-1+n,1);ui.month=`${d.getFullYear()}-${pad(d.getMonth()+1)}`}return render()}
+  if(A==='mview'){ui.mview=D.v;return render()}
+  if(A==='mgo'){ui.month=`${ui.month.slice(0,4)}-${pad(+D.m)}`;ui.mview='m';return render()}
+  if(A==='mmon'){const n=+D.n;if(!n)ui.month=todayIso().slice(0,7);else{const [y,m]=ui.month.split('-').map(Number),x=new Date(y,m-1+n,1);ui.month=`${x.getFullYear()}-${pad(x.getMonth()+1)}`}return render()}
   if(A==='year'){const y=+ui.month.slice(0,4)+ +D.n;ui.month=`${y}-${ui.month.slice(5)}`;return render()}
   if(A==='install'){if(INST.ev){INST.ev.prompt();INST.ev.userChoice.then(c=>{if(c.outcome==='accepted'){$('#instBtn').hidden=true;toast('홈 화면에 강사로를 설치했어요')}INST.ev=null});return}return sheetInstall()}
   if(A==='unpaid')return sheetUnpaid();
