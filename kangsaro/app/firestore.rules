@@ -29,6 +29,8 @@ service cloud.firestore {
       let t = dg(n,0) + dg(n,1)*3 + dg(n,2)*7 + dg(n,3) + dg(n,4)*3 + dg(n,5)*7 + dg(n,6) + dg(n,7)*3 + dg(n,8)*5 + [0, 0, 1, 1, 2, 2, 3, 3, 4, 4][dg(n,8)];
       return (10 - t % 10) % 10 == dg(n,9);
     }
+    // 국세청 확인을 켜면(site/main.nts) 업체 승인은 서버(verifyBiz)만 함 → 앱에서 스스로 승인하는 길을 닫음
+    function ntsOff() { let s = /databases/$(db)/documents/site/main; return !exists(s) || get(s).data.get('nts', false) != true; }
     function bizMine(n) { return n is string && n.matches('^[0-9]{10}$') && bizOk(n)
       && get(/databases/$(db)/documents/biz/$(n)).data.uid == me(); }
 
@@ -39,13 +41,14 @@ service cloud.firestore {
       allow create: if me() == u && request.resource.data.role in ['i', 'c', 's']
         && (request.resource.data.role == 'i' || request.resource.data.approved == false
             || (request.resource.data.role == 's' && isStaff(request.resource.data.staffOf) && !('approved' in request.resource.data) && !('biz' in request.resource.data))
-            || (request.resource.data.approved == true && bizMine(request.resource.data.biz) && !('blocked' in request.resource.data)))
+            || (request.resource.data.approved == true && ntsOff() && bizMine(request.resource.data.biz) && !('blocked' in request.resource.data)))
+        && !('bizCheck' in request.resource.data)
         && (!('refBy' in request.resource.data) || (request.resource.data.refBy is string && request.resource.data.refBy != me()
             && exists(/databases/$(db)/documents/users/$(request.resource.data.refBy))));
-      allow update: if (me() == u && !changed().hasAny(['role', 'approved', 'refBy', 'biz', 'blocked']))
+      allow update: if (me() == u && !changed().hasAny(['role', 'approved', 'refBy', 'biz', 'blocked', 'bizCheck']))
         // 업체가 사업자등록번호를 넣으면 스스로 승인 (운영자가 멈춘 업체는 안 됨)
         || (me() == u && isCo(resource.data) && changed().hasOnly(['biz', 'approved'])
-            && request.resource.data.approved == true && bizMine(request.resource.data.biz) && resource.data.get('blocked', false) != true)
+            && request.resource.data.approved == true && ntsOff() && bizMine(request.resource.data.biz) && resource.data.get('blocked', false) != true)
         || (admin() && changed().hasOnly(['approved', 'blocked']));
       allow delete: if false;
 
@@ -92,7 +95,7 @@ service cloud.firestore {
     // 사업자등록번호 하나에 업체 하나
     match /biz/{n} {
       allow read: if signed();
-      allow create: if signed() && request.resource.data.uid == me() && n.matches('^[0-9]{10}$') && bizOk(n);
+      allow create: if signed() && ntsOff() && request.resource.data.uid == me() && n.matches('^[0-9]{10}$') && bizOk(n);
       allow update: if false;
       allow delete: if admin();
     }
