@@ -13,3 +13,9 @@
 
 ## 푸시 알림
 `pushAlert`(강사 알림: 확정·마감·입금·리마인드), `pushNotice`(업체 공지 → 받는 강사), `pushApply`(새 지원 → 업체 대표·직원), `pushCancel`(확정 취소 → 업체). 기기 토큰은 앱이 `users/{uid}/push/{id}`에 저장해요. Firestore 트리거는 DB와 같은 지역이어야 해서 `DB_REGION`(기본 asia-northeast3)을 써요. 앱의 웹 푸시 키는 `kangsaro/app/real.js`의 `VAPID`.
+
+## 이용 기간·요금제
+`termSync`(앱을 열 때 내 기간 다시 계산), `termDaily`(매일 03:00 KST 모든 계정), `jobCount`(공고가 생기면 그 달 수 +1, KST).
+`terms/{uid}`에 `free`(가입+3개월+소개 보너스) · `paid`(운영자가 늘린 날) · `end`(둘 중 늦은 날) · `until`(end 다음 날 0시 KST) · `planC`/`planI` · `cnt.{YYYYMM}`.
+사용자는 못 고치고 서버·운영자만 써요. 보안 규칙이 `until`이 지나면 공고·공지·지원·달력·알림 쓰기를 막고, 업체 베이직은 한 달 9건, 스탠다드 29건까지(10건·30건 미만)만 공고를 받아요. 요금제가 없으면(무료 기간) 한도 없이 다 써요.
+운영자는 앱 '업체 관리 → 이용 기간·요금제'에서 +1개월·+1년·요금제를 정해요.

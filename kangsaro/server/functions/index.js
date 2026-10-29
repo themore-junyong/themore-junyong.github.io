@@ -99,3 +99,58 @@ exports.pushCancel = onDocumentUpdated({ ...trig, document: 'apps/{id}' }, async
   const [who, j] = await Promise.all([nameOf(a.instId, 'i'), db.doc(`jobs/${a.jobId}`).get().then(d => d.data() || {})]);
   await pushTo(await coPeople(a.coId), '강사로 · 확정 취소', `${who || '강사'} 님이 ${[j.school, j.title].filter(Boolean).join(' ')} 확정을 취소했어요${a.cxWhy ? ` (사유: ${a.cxWhy})` : ''}`, 'cx-' + e.params.id);
 });
+
+/* ===== 이용 기간·요금제 =====
+   terms/{uid}: free(무료 끝 날짜) · paid(운영자가 늘린 끝 날짜) · end(둘 중 늦은 날, 마지막 날) · until(end 다음 날 0시 KST, 보안 규칙이 봄)
+   · planC(업체 요금제 베이직/스탠다드/프로) · planI(강사 요금제 베이직/프로) · cnt.{YYYYMM}(그 달 올린 공고 수, KST)
+   사용자는 못 고침. 이 서버와 운영자만 씀. 요금제가 없으면(무료 기간) 모든 기능을 씀 */
+const { onSchedule } = require('firebase-functions/v2/scheduler');
+const { FieldValue } = require('firebase-admin/firestore');
+const ADMIN = 'tobadyclub87@gmail.com';
+const REF_MAX = 180, refDays = r => r === 'c' ? 30 : 7; // 앱(real.js)과 같은 값
+const ymd = d => d.toISOString().slice(0, 10);
+const addDays = (s, n) => { const d = new Date(s + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return ymd(d); };
+const addMonths = (s, n) => { const d = new Date(s + 'T00:00:00Z'); d.setUTCMonth(d.getUTCMonth() + n); return ymd(d); };
+const untilOf = end => new Date(addDays(end, 1) + 'T00:00:00+09:00');
+const ymKst = (d = new Date()) => new Date(d.getTime() + 9 * 3600e3).toISOString().slice(0, 7).replace('-', '');
+// 소개 인정: 강사는 프로필(분야·소개), 업체는 승인 후 공고 1건
+async function refDone(id, u) {
+  if (u.role === 'i') return !!(String(u.topics || '').trim() && String(u.intro || '').trim());
+  if (!u.approved) return false;
+  return !(await db.collection('jobs').where('coId', '==', id).limit(1).get()).empty;
+}
+// 무료 기간 끝: 가입일 + 3개월 + 소개로 쌓인 날 (앱의 termEnd와 같은 계산)
+async function freeEnd(id) {
+  const s = await db.doc(`users/${id}`).get(); if (!s.exists) return '';
+  const u = s.data(), js = [u.joined, u.side && u.side.joined].filter(Boolean).sort();
+  if (!js.length) return '';
+  let got = u.refBy && await refDone(id, u) ? refDays(u.role) : 0;
+  for (const x of (await db.collection('users').where('refBy', '==', id).get()).docs) if (await refDone(x.id, x.data())) got += refDays(x.data().role);
+  return addDays(addMonths(js[0], 3), Math.min(REF_MAX, got));
+}
+async function syncTerm(id) {
+  const free = await freeEnd(id); if (!free) return null;
+  const ref = db.doc(`terms/${id}`), t = (await ref.get()).data() || {};
+  const end = [free, t.paid || ''].sort().pop(), day = ymd(new Date(Date.now() + 9 * 3600e3));
+  if (t.free !== free || t.end !== end || t.day !== day) await ref.set({ free, end, until: untilOf(end), day }, { merge: true });
+  return { ...t, free, end };
+}
+// 앱을 열 때 내 기간을 다시 계산 (소개 보너스가 바로 반영되게). 직원은 자기 업체, 운영자는 아무나
+exports.termSync = onCall({ region: 'asia-northeast3', maxInstances: 5, timeoutSeconds: 30 }, async req => {
+  const uid = req.auth && req.auth.uid; if (!uid) fail('unauthenticated', '로그인이 필요해요');
+  const id = String((req.data && req.data.uid) || uid);
+  const adm = req.auth.token.email === ADMIN && req.auth.token.email_verified === true;
+  if (id !== uid && !adm && !(await db.doc(`staff/${id}_${uid}`).get()).exists) fail('permission-denied', '볼 수 없는 계정이에요');
+  const t = await syncTerm(id);
+  return { end: t ? t.end : '' };
+});
+// 매일 새벽 3시: 모든 계정 기간 다시 계산
+exports.termDaily = onSchedule({ schedule: 'every day 03:00', timeZone: 'Asia/Seoul', region: 'asia-northeast3', timeoutSeconds: 540 }, async () => {
+  const ids = (await db.collection('users').select().get()).docs.map(d => d.id);
+  for (const id of ids) await syncTerm(id).catch(e => console.error('term', id, e.message));
+});
+// 업체 공고 수 세기 (요금제 한도용)
+exports.jobCount = onDocumentCreated({ ...trig, document: 'jobs/{id}' }, async e => {
+  const j = e.data && e.data.data(); if (!j || !j.coId) return;
+  await db.doc(`terms/${j.coId}`).set({ cnt: { [ymKst(new Date(e.time))]: FieldValue.increment(1) } }, { merge: true });
+});

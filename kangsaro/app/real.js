@@ -43,12 +43,16 @@ async function claimBiz(n) {
 }
 // 국세청 확인(서버)을 켰으면 서버가 확인하고 승인. 안 켰으면 예전처럼 검증 숫자만 보고 바로 승인
 const ntsOn = () => !!(SITE && SITE.nts);
+// 서버 함수 부르기 (서울 지역)
+let FNS = null;
+async function callFn(name, data) {
+  if (!FNS) { const Fn = await import(`${G}/firebase-functions.js`), fns = Fn.getFunctions(fbApp, 'asia-northeast3'); if (EMU) Fn.connectFunctionsEmulator(fns, '127.0.0.1', 5001); FNS = { Fn, fns }; }
+  return FNS.Fn.httpsCallable(FNS.fns, name)(data);
+}
 async function verifyBiz(n) {
   try {
-    const Fn = await import(`${G}/firebase-functions.js`), fns = Fn.getFunctions(fbApp, 'asia-northeast3');
-    if (EMU) Fn.connectFunctionsEmulator(fns, '127.0.0.1', 5001);
     toast('국세청에 확인하는 중이에요…');
-    await Fn.httpsCallable(fns, 'verifyBiz')({ biz: n }); return true;
+    await callFn('verifyBiz', { biz: n }); return true;
   } catch (e) { toast(e.message && !/^internal$/i.test(e.message) ? e.message : '확인하지 못했어요. 조금 뒤 다시 해 주세요'); return false; }
 }
 const PRIV = { i: ['phone', 'email', 'bank', 'acct', 'holder', 'kmpl', 'fuel', 'vault'], c: ['phone', 'email'] };
@@ -127,11 +131,16 @@ async function flush() {
   try {
     const P = payloads(), R = readMarks(), order = k => k.startsWith('users/') ? 0 : k.startsWith('jobs/') ? 1 : k.startsWith('apps/') ? 2 : 3;
     const writes = [...P].filter(([k, v]) => last.get(k) !== stable(v)).sort((a, b) => order(a[0]) - order(b[0]));
-    for (const [k, v] of writes) { await setDoc(doc(db, k), v, k.startsWith('jobs/') ? { merge: true } : {}); last.set(k, stable(v)); }
+    for (const [k, v] of writes) { const nw = k.startsWith('jobs/') && !last.has(k); await setDoc(doc(db, k), v, k.startsWith('jobs/') ? { merge: true } : {}); last.set(k, stable(v)); if (nw && TD) TD.cnt = { ...(TD.cnt || {}), [ymNow()]: ((TD.cnt || {})[ymNow()] || 0) + 1 }; }
     for (const [k, v] of R) if (last.get(k) !== v) { const p = k.split('#')[0]; await updateDoc(doc(db, p), { ['reads.' + uidMe]: v }); last.set(k, v); }
     for (const k of [...last.keys()]) if (!k.includes('#') && !P.has(k) && mayDelete(k)) { await deleteDoc(doc(db, k)); last.delete(k); }
     if (role === 'c') await syncLinks();
-  } catch (e) { console.error(e); toast(e.code === 'permission-denied' ? '저장할 권한이 없어요. 새로고침해 주세요' : '저장하지 못했어요. 인터넷을 확인해 주세요'); }
+  } catch (e) {
+    console.error(e);
+    // 이번 달 공고 한도를 넘었으면 저장 안 된 새 공고는 빼고 안내
+    if (e.code === 'permission-denied' && role === 'c' && TD && LIMIT[TD.planC]) { await loadTerm().catch(() => { }); if (quotaLeft() <= 0) { S.jobs = S.jobs.filter(j => j.coId !== CO || last.has(`jobs/${j.id}`)); save(); render(); busy = false; return planSheet('quota'); } }
+    toast(e.code === 'permission-denied' ? '저장할 권한이 없어요. 새로고침해 주세요' : '저장하지 못했어요. 인터넷을 확인해 주세요');
+  }
   busy = false;
   if (again) { again = false; flush(); }
 }
@@ -345,6 +354,15 @@ document.addEventListener('click', async e => {
     if (r === 'i') { ui.tab = 'me'; render(); }
   }
   if (k === 'admin') return adminSheet();
+  if (k === 'terms') return termsAdmin();
+  if (k === 'tAdd' || k === 'tPlan') {
+    const id = b.dataset.u, r = doc(db, 'terms', id), t = (await getDoc(r)).data() || {};
+    if (k === 'tPlan') { const on = t[b.dataset.k] !== b.dataset.p; await setDoc(r, { [b.dataset.k]: on ? b.dataset.p : deleteField(), by: 'admin', at: new Date().toISOString() }, { merge: true }); toast(on ? `${b.dataset.p} 요금제로 정했어요` : '요금제를 뺐어요 (모든 기능)'); return termsAdmin(); }
+    const m = +b.dataset.m, base = m > 0 ? [t.end || '', todayIso()].sort().pop() : (t.end || todayIso()), paid = addMonthsS(base, m), end = [t.free || '', paid].sort().pop();
+    if (!confirm(`${b.dataset.n || ''} 이용 기간을 ${(t.end || '').replace(/-/g, '.') || '(없음)'} → ${end.replace(/-/g, '.')}로 바꿀까요?`)) return;
+    await setDoc(r, { paid, end, until: new Date(addDaysS(end, 1) + 'T00:00:00+09:00'), by: 'admin', at: new Date().toISOString() }, { merge: true });
+    toast(`~${end.replace(/-/g, '.')}까지로 바꿨어요`); return termsAdmin();
+  }
   if (k === 'staffJoin') {
     const name = $('#sName').value.trim(); if (!name) return toast('이름을 넣어 주세요');
     const P = PEND, t = new Date().toISOString();
@@ -446,8 +464,8 @@ async function refDone(u) {
   const j = await getDocs(query(collection(db, 'jobs'), where('coId', '==', u.id), limit(1))).catch(() => null);
   return !!(j && !j.empty);
 }
-// 이용 기간: 가입일 + 3개월 + 소개로 쌓인 기간 (직원은 업체 기준)
-async function termEnd() {
+// 이용 기간: 가입일 + 3개월 + 소개로 쌓인 기간 (직원은 업체 기준). 서버 계산(terms)이 없을 때만 씀
+async function termLocal() {
   const id = role === 'c' ? CO : uidMe, u = id === uidMe ? me : await loadUser(id, false).catch(() => null);
   const js = u ? [u.joined, u.side && u.side.joined].filter(Boolean).sort() : [];
   if (!js.length) return '';
@@ -457,16 +475,31 @@ async function termEnd() {
   const e = new Date(js[0] + 'T00:00:00'); e.setMonth(e.getMonth() + 3); e.setDate(e.getDate() + Math.min(REF_MAX, got));
   return `${e.getFullYear()}-${pad(e.getMonth() + 1)}-${pad(e.getDate())}`;
 }
+// 서버가 계산한 이용 기간·요금제 (terms/{uid}: end 마지막 날, planC·planI 요금제, cnt 달별 공고 수). 사용자는 못 고치고 보안 규칙이 이걸로 막음
+let TD = null;
+const ymNow = () => todayIso().slice(0, 7).replace('-', '');
+async function loadTerm() {
+  const id = role === 'c' ? CO : uidMe, r = doc(db, 'terms', id);
+  let s = await getDoc(r).catch(() => null);
+  // 하루 한 번은 서버가 다시 계산 (소개 보너스·운영자 연장 반영)
+  if (!s || !s.exists() || s.data().day !== todayIso()) { try { await callFn('termSync', { uid: id }); s = await getDoc(r).catch(() => s); } catch (e) { } }
+  TD = s && s.exists() ? s.data() : null;
+  return TD && TD.end ? TD.end : await termLocal();
+}
 // 운영자 계정은 기간 없이 계속 씀. 기간이 지나면 보기만 (LOCK)
 let LOCK = false, TERM = '';
-// 업체 요금제 (한 달에 올리는 강의 수 기준)
+// 업체 요금제 (한 달에 올리는 강의 수 기준). 요금제가 없으면(무료 기간) 한도 없이 모든 기능
 const PLANS = [['베이직', '10건 미만', '1만 원'], ['스탠다드', '30건 미만', '3만 원'], ['프로', '30건 이상', '5만 원']];
 const PLANS_I = [['베이직', '달력·지원', '4,900원'], ['프로', '+ 결산', '9,900원']];
+const LIMIT = { 베이직: 9, 스탠다드: 29 }; // 한 달에 올릴 수 있는 공고 수 (보안 규칙 quotaOk와 같은 값)
+const planOf = () => !TD ? '' : role === 'c' ? TD.planC || '' : TD.planI || '';
+const quotaLeft = () => role !== 'c' || !TD || !LIMIT[TD.planC] ? Infinity : LIMIT[TD.planC] - ((TD.cnt || {})[ymNow()] || 0);
 async function showTerm() {
   const el = $('#term'); if (!el) return;
-  TERM = !S.me || isAdm() ? '' : await termEnd().catch(() => '');
+  TERM = !S.me || isAdm() ? '' : await loadTerm().catch(() => '');
   LOCK = !!TERM && todayIso() > TERM;
-  const t = !S.me ? '' : isAdm() ? '운영자 · 기간 없음' : !TERM ? '' : LOCK ? '이용 기간 끝남 · 보기만 가능' : `이용 기간 ~${TERM.replace(/-/g, '.')}`;
+  const pl = planOf();
+  const t = !S.me ? '' : isAdm() ? '운영자 · 기간 없음' : !TERM ? '' : LOCK ? '이용 기간 끝남 · 보기만 가능' : `이용 기간 ~${TERM.replace(/-/g, '.')}${pl ? ` · ${pl}` : ''}`;
   el.textContent = t; el.hidden = !t; el.style.cssText = LOCK ? 'background:var(--r2);color:#fff;cursor:pointer' : '';
   if (LOCK) el.dataset.real = 'lockInfo'; else delete el.dataset.real;
 }
@@ -490,6 +523,28 @@ function lockGuard(e) {
   lockSheet();
 }
 document.addEventListener('click', lockGuard, true);
+// 요금제별 기능: 강사 베이직은 결산 탭 잠금, 업체는 이번 달 공고 한도
+function planSheet(k) {
+  const pl = planOf(), used = ((TD && TD.cnt) || {})[ymNow()] || 0, left = Math.max(0, quotaLeft());
+  openSheet(`<div class="row"><h2 class="sp">${k === 'money' ? '결산은 프로 요금제에서 써요' : '이번 달 공고 한도'}</h2><button class="btn sm" data-act="closeSheet">닫기</button></div>
+    <p>${k === 'money' ? '지금 요금제는 <b>베이직</b>(달력·지원)이에요. 월별·연간 결산과 결산표 복사는 <b>프로</b>에서 써요.'
+      : `지금 요금제는 <b>${esc(pl)}</b>(한 달 ${LIMIT[pl]}건까지)예요. 이번 달 ${used}건을 올려서 ${left ? `<b>${left}건</b> 더 올릴 수 있어요` : '더 올릴 수 없어요'}. 다음 달 1일에 다시 열려요.`}</p>
+    <div class="card"><b>${role === 'c' ? '업체 요금 (한 달에 올리는 강의 수 기준)' : '강사 요금'}</b>${(role === 'c' ? PLANS : PLANS_I).map(x => `<div class="row"><b class="sp">${x[0]}${x[0] === pl ? ' <span class="chip">지금</span>' : ''}</b><span class="sm">${x[1]}</span><b>월 ${x[2]}</b></div>`).join('')}</div>
+    <p class="mu sm">요금제를 바꾸려면 <a href="mailto:tobadyclup@naver.com">tobadyclup@naver.com</a>으로 문의해 주세요.</p>`);
+}
+function planGuard(e) {
+  if (LOCK || !TD || isAdm()) return;
+  const t = e.target.closest('[data-act],[data-tab]'); if (!t) return;
+  let k = '';
+  if (role === 'i' && TD.planI === '베이직' && t.dataset.tab === 'money') k = 'money';
+  if (role === 'c' && quotaLeft() !== Infinity) {
+    if ((t.dataset.act === 'cnew' || t.dataset.act === 'bulkJobs') && quotaLeft() <= 0) k = 'quota';
+    if (t.dataset.act === 'bSave' && typeof bulkParse === 'function' && $('#bRaw') && bulkParse($('#bRaw').value).filter(j => j.dates.length && (j.title || j.school)).length > quotaLeft()) k = 'quota';
+  }
+  if (!k) return;
+  e.preventDefault(); e.stopImmediatePropagation(); planSheet(k);
+}
+document.addEventListener('click', planGuard, true);
 document.addEventListener('change', lockGuard, true);
 async function refSheet() {
   const d = await getDocs(query(collection(db, 'users'), where('refBy', '==', uidMe))).catch(() => null);
@@ -531,9 +586,35 @@ async function adminSheet() {
     <div class="card" style="${SITE.maint ? 'border-color:var(--r2)' : ''}"><div class="row"><b class="sp">업데이트 중 표시 ${SITE.maint ? '<span class="chip warn">켜짐</span>' : '<span class="chip off">꺼짐</span>'}</b><button class="btn sm ${SITE.maint ? 'pri' : ''}" data-real="maint">${SITE.maint ? '끄기' : '켜기'}</button></div><span class="mu sm">데이터 구조를 바꾸는 큰 업데이트 때만 켜요. 켜면 사용자 화면에 "업데이트 중입니다. 잠시만 기다려 주세요"가 뜨고, 끄면 저절로 다시 열려요.</span></div>
     <div class="card"><div class="row"><b class="sp">국세청 사업자 확인 ${SITE.nts ? '<span class="chip paid">켜짐</span>' : '<span class="chip off">꺼짐</span>'}</b><button class="btn sm" data-real="ntsT">${SITE.nts ? '끄기' : '켜기'}</button></div><span class="mu sm">서버(verifyBiz)를 올린 뒤에 켜요. 켜면 새 업체는 국세청에서 '계속사업자'로 확인돼야 승인돼요. 끄면 예전처럼 번호 검증 숫자만 봐요.</span></div>
     <p class="mu sm">업체는 사업자등록번호를 넣으면 바로 공고를 올려요. 이상한 업체는 '승인 취소'로 멈출 수 있어요. 홈택스 '사업자 상태 조회'로 휴·폐업 여부를 볼 수 있어요.</p>
+    <div class="card"><div class="row"><b class="sp">이용 기간·요금제</b><button class="btn sm" data-real="terms">열기</button></div><span class="mu sm">계좌이체 등으로 받았을 때 기간을 늘리고 요금제를 정해요. 요금제가 없으면 무료 기간처럼 모든 기능을 써요.</span></div>
     ${await jobAdmin()}
     ${await refAdmin()}
     ${rows.map(card).join('') || '<p class="mu">가입한 업체가 없어요.</p>'}`);
+}
+
+// 운영자: 이용 기간 늘리기·요금제 정하기 (서버 기간 잠금을 운영자가 직접 바꾸는 유일한 길)
+const addDaysS = (s, n) => { const d = new Date(s + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
+const addMonthsS = (s, n) => { const d = new Date(s + 'T00:00:00Z'); d.setUTCMonth(d.getUTCMonth() + n); return d.toISOString().slice(0, 10); };
+async function termsAdmin() {
+  const q = ($('#tq') && $('#tq').value) || '';
+  const [u, t] = await Promise.all([getDocs(collection(db, 'users')), getDocs(collection(db, 'terms'))]);
+  const T = new Map(t.docs.map(d => [d.id, d.data()])), ym = ymNow(), today = todayIso();
+  const rows = u.docs.map(d => ({ id: d.id, ...d.data(), t: T.get(d.id) || {} })).filter(x => x.role !== 's')
+    .sort((a, b) => (a.t.end || '9').localeCompare(b.t.end || '9'));
+  const pb = (x, k, list) => list.map(p => `<button class="btn sm ${x.t[k] === p ? 'pri' : ''}" data-real="tPlan" data-u="${x.id}" data-k="${k}" data-p="${p}">${p}</button>`).join('');
+  const row = x => {
+    const c = x.role === 'c' || (x.side && x.side.role === 'c'), i = x.role === 'i' || (x.side && x.side.role === 'i'), end = x.t.end || '', n = esc(x.name || '');
+    return `<div class="card" data-tq="${esc([x.name, x.side && x.side.name].filter(Boolean).join(' '))}"><b>${n} <span class="mu sm">${c && i ? '업체·강사' : c ? '업체' : '강사'} · 가입 ${esc(x.joined || '')}</span></b>
+      <span class="sm">${!end ? '기간 계산 전 (앱을 열면 계산돼요)' : today > end ? `<b style="color:var(--r2)">끝남 ${end.replace(/-/g, '.')}</b>` : `~${end.replace(/-/g, '.')}`}${x.t.paid ? ` · 운영자 연장 ~${x.t.paid.replace(/-/g, '.')}` : ''}${c ? ` · 이번 달 공고 ${(x.t.cnt || {})[ym] || 0}건` : ''}</span>
+      <div class="row"><button class="btn sm" data-real="tAdd" data-u="${x.id}" data-n="${n}" data-m="-1">−1개월</button><button class="btn sm" data-real="tAdd" data-u="${x.id}" data-n="${n}" data-m="1">+1개월</button><button class="btn sm pri" data-real="tAdd" data-u="${x.id}" data-n="${n}" data-m="12">+1년</button></div>
+      ${c ? `<div class="row"><span class="sm sp">업체 요금제</span>${pb(x, 'planC', ['베이직', '스탠다드', '프로'])}</div>` : ''}
+      ${i ? `<div class="row"><span class="sm sp">강사 요금제</span>${pb(x, 'planI', ['베이직', '프로'])}</div>` : ''}</div>`;
+  };
+  openSheet(`<div class="row"><h2 class="sp">이용 기간·요금제</h2><button class="btn sm" data-real="admin">업체 관리로</button></div>
+    <p class="mu sm">기간이 끝난 계정은 보기만 돼요(서버가 막아요). 받은 만큼 +1개월·+1년을 누르세요. 끝난 계정은 오늘부터, 남은 계정은 끝나는 날부터 늘어나요. 요금제를 누르면 정해지고, 같은 걸 다시 누르면 빠져요(빠지면 모든 기능). 업체 베이직은 한 달 공고 ${LIMIT['베이직']}건, 스탠다드 ${LIMIT['스탠다드']}건까지. 강사 베이직은 결산이 잠겨요.</p>
+    <input id="tq" placeholder="이름으로 찾기" value="${esc(q)}" oninput="document.querySelectorAll('[data-tq]').forEach(c=>c.hidden=!c.dataset.tq.includes(this.value))">
+    ${rows.map(row).join('') || '<p class="mu">계정이 없어요.</p>'}`);
+  if (q) $('#tq').dispatchEvent(new Event('input'));
 }
 
 // 확인 대기(사기 의심 단어) + 신고 3건 이상(통과 안 된) 공고

@@ -30,6 +30,12 @@ service cloud.firestore {
       return (10 - t % 10) % 10 == dg(n,9);
     }
     // 국세청 확인을 켜면(site/main.nts) 업체 승인은 서버(verifyBiz)만 함 → 앱에서 스스로 승인하는 길을 닫음
+    // 이용 기간·요금제: terms/{uid} 는 서버·운영자만 씀. 기간 끝나면 등록·지원·수정이 막힘(보기만)
+    function termOf(u) { return /databases/$(db)/documents/terms/$(u); }
+    function active(u) { return admin() || !exists(termOf(u)) || get(termOf(u)).data.get('until', null) == null || get(termOf(u)).data.until > request.time; }
+    function ym() { let t = request.time + duration.value(9, 'h'); return string(t.year() * 100 + t.month()); }
+    function quotaOk(c) { let p = exists(termOf(c)) ? get(termOf(c)).data : {}; let pl = p.get('planC', '');
+      return admin() || pl == '' || pl == '프로' || p.get('cnt', {}).get(ym(), 0) < (pl == '스탠다드' ? 29 : 9); }
     function ntsOff() { let s = /databases/$(db)/documents/site/main; return !exists(s) || get(s).data.get('nts', false) != true; }
     function bizMine(n) { return n is string && n.matches('^[0-9]{10}$') && bizOk(n)
       && get(/databases/$(db)/documents/biz/$(n)).data.uid == me(); }
@@ -118,9 +124,9 @@ service cloud.firestore {
 
     match /jobs/{j} {
       allow read: if signed();
-      allow create: if coOk(request.resource.data.coId) && request.resource.data.get('cleared', false) == false && !('reports' in request.resource.data) && holdOk(request.resource.data);
+      allow create: if coOk(request.resource.data.coId) && active(request.resource.data.coId) && quotaOk(request.resource.data.coId) && request.resource.data.get('cleared', false) == false && !('reports' in request.resource.data) && holdOk(request.resource.data);
       // 업체: 신고·통과 표시는 못 고침, 내용을 바꾸면 통과가 풀림 / 강사: 자기 신고 한 칸만 / 운영자: 통과·내리기
-      allow update: if (mine(resource.data.coId) && request.resource.data.coId == resource.data.coId
+      allow update: if (mine(resource.data.coId) && request.resource.data.coId == resource.data.coId && active(resource.data.coId)
           && !changed().hasAny(['reports']) && (!changed().hasAny(['cleared']) || request.resource.data.cleared == false)
           && (!changed().hasAny(['title', 'school', 'desc', 'fee']) || request.resource.data.get('cleared', false) == false)
           && holdOk(request.resource.data))
@@ -133,7 +139,7 @@ service cloud.firestore {
     // 공지: 업체가 쓰고, 받는 강사는 자기 '읽음'만 고침
     match /notices/{n} {
       allow read: if signed() && (mine(resource.data.coId) || me() in resource.data.to);
-      allow create: if mine(request.resource.data.coId)
+      allow create: if mine(request.resource.data.coId) && active(request.resource.data.coId)
         && get(/databases/$(db)/documents/jobs/$(request.resource.data.jobId)).data.coId == request.resource.data.coId;
       allow update: if signed() && ((mine(resource.data.coId) && request.resource.data.coId == resource.data.coId)
         || (me() in resource.data.to && changed().hasOnly(['reads'])
@@ -145,7 +151,7 @@ service cloud.firestore {
     match /apps/{a} {
       function party() { return resource.data.instId == me() || mine(resource.data.coId); }
       allow read: if signed() && party();
-      allow create: if signed() && request.resource.data.instId == me() && request.resource.data.status == '지원'
+      allow create: if signed() && request.resource.data.instId == me() && active(me()) && request.resource.data.status == '지원'
         && request.resource.data.coId == get(/databases/$(db)/documents/jobs/$(request.resource.data.jobId)).data.coId
         && get(/databases/$(db)/documents/jobs/$(request.resource.data.jobId)).data.get('hold', false) != true
         && !('paidAt' in request.resource.data && request.resource.data.paidAt != null);
@@ -154,9 +160,9 @@ service cloud.firestore {
         && request.resource.data.instId == resource.data.instId && request.resource.data.coId == resource.data.coId
         && request.resource.data.jobId == resource.data.jobId
         && (
-          (resource.data.instId == me() && !changed().hasAny(['paidAt', 'rem'])
+          (resource.data.instId == me() && active(me()) && !changed().hasAny(['paidAt', 'rem'])
             && (!changed().hasAny(['status']) || request.resource.data.status in ['지원', '취소']))
-          || (mine(resource.data.coId) && !changed().hasAny(['km', 'toll', 'selfPaid', 'day', 'cxWhy', 'cxConfirmed'])
+          || (mine(resource.data.coId) && active(resource.data.coId) && !changed().hasAny(['km', 'toll', 'selfPaid', 'day', 'cxWhy', 'cxConfirmed'])
             && (!changed().hasAny(['paidAt']) || payOk(resource.data.coId))
             && (!changed().hasAny(['rrn']) || !('rrn' in request.resource.data))
             && (!changed().hasAny(['status']) || request.resource.data.status in ['지원', '확정', '미선정']))
@@ -169,16 +175,22 @@ service cloud.firestore {
       }
     }
 
+    // 이용 기간·요금제: 본인·직원·운영자만 봄, 운영자만 고침(기간 늘리기·요금제)
+    match /terms/{u} {
+      allow read: if signed() && (me() == u || isStaff(u) || admin());
+      allow write: if admin();
+    }
+
     // 강사 개인 달력 (톡방 공고 등)
     match /evs/{e} {
       allow read, delete: if signed() && resource.data.instId == me();
-      allow create, update: if signed() && request.resource.data.instId == me();
+      allow create, update: if signed() && request.resource.data.instId == me() && active(me());
     }
 
     // 알림: 보낸 사람(by)과 받는 강사(instId)만
     match /alerts/{x} {
       allow read: if signed() && (resource.data.instId == me() || mine(resource.data.by));
-      allow create: if mine(request.resource.data.by);
+      allow create: if mine(request.resource.data.by) && active(request.resource.data.by);
       allow update: if signed() && (mine(resource.data.by) || (resource.data.instId == me() && changed().hasOnly(['read'])));
       allow delete: if mine(resource.data.by);
     }
