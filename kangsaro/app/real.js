@@ -26,7 +26,7 @@ if (EMU) { A.connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarning
 const { doc, collection, getDoc, getDocs, setDoc, updateDoc, deleteDoc, deleteField, query, where, limit, onSnapshot } = F;
 
 /* ===== 문서 나누기 ===== */
-const PUB = { i: ['name', 'region', 'topics', 'intro', 'career', 'photo', 'joined', 'beta', 'refBy'], c: ['name', 'contact', 'joined', 'approved', 'refBy', 'biz', 'blocked'] };
+const PUB = { i: ['name', 'region', 'topics', 'intro', 'certs', 'career', 'photo', 'joined', 'beta', 'refBy'], c: ['name', 'contact', 'joined', 'approved', 'refBy', 'biz', 'blocked', 'logo'] };
 // 사업자등록번호: 숫자 10자리 + 국세청 검증 숫자 (보안 규칙도 같은 계산)
 const bizNum = v => String(v || '').replace(/\D/g, '');
 const bizOk = n => { if (!/^\d{10}$/.test(n)) return false; const d = [...n].map(Number), w = [1, 3, 7, 1, 3, 7, 1, 3, 5]; let t = w.reduce((a, x, i) => a + d[i] * x, 0) + Math.floor(d[8] * 5 / 10); return (10 - t % 10) % 10 === d[9]; };
