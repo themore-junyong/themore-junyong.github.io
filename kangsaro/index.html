@@ -17,8 +17,8 @@
 <style>
 /* 레이아웃: 강사 쪽(청록)과 회사 쪽(남색) 두 줄기가 '다리' 하나로 만나는 세로 흐름. 불편 → 해결 → 기능 → 반박 순서 */
 :root{
-  --bg:#F4F6F5; --surface:#FFFFFF; --fg:#15222A; --muted:#4D5B63; --line:#D6DEDC;
-  --teal:#1F6F78; --teal-soft:#E0EEEE; --navy:#2D3E73; --navy-soft:#E3E7F4;
+  --bg:#F7F5F3; --surface:#FFFFFF; --fg:#15222A; --muted:#4D5B63; --line:#D6DEDC;
+  --teal:#EA580C; --teal-soft:#FFEDD5; --hero:#EA580C; --hero2:#C2410C; --navy:#2D3E73; --navy-soft:#E3E7F4;
   --gray-chip:#E3E7E9; --gray-fg:#3B4650; --blue-chip:#DCEBFA; --blue-fg:#1A4F8A;
   --purple-chip:#ECE2F7; --purple-fg:#5B3A8C; --green-chip:#DDF1E4; --green-fg:#1E6B3A;
   --warn:#9A3608; --warn-soft:#FDECE3;
@@ -27,17 +27,17 @@
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
   --bg:#0F1719; --surface:#172225; --fg:#E7EEEE; --muted:#A3B2B5; --line:#2C3A3E;
-  --teal:#5FB7BF; --teal-soft:#183338; --navy:#9DAEE6; --navy-soft:#1E2640;
+  --teal:#FF8A4C; --teal-soft:#3A2214; --hero:#C2410C; --hero2:#9A3412; --navy:#9DAEE6; --navy-soft:#1E2640;
   --gray-chip:#2A3337; --gray-fg:#C9D2D6; --blue-chip:#1B2F47; --blue-fg:#9CC6F2;
   --purple-chip:#2E2540; --purple-fg:#CDB5EE; --green-chip:#173426; --green-fg:#94D9AE;
   --warn:#F2A57E; --warn-soft:#3A2116; color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#0F1719; --surface:#172225; --fg:#E7EEEE; --muted:#A3B2B5; --line:#2C3A3E;
-  --teal:#5FB7BF; --teal-soft:#183338; --navy:#9DAEE6; --navy-soft:#1E2640;
+  --teal:#FF8A4C; --teal-soft:#3A2214; --hero:#C2410C; --hero2:#9A3412; --navy:#9DAEE6; --navy-soft:#1E2640;
   --gray-chip:#2A3337; --gray-fg:#C9D2D6; --blue-chip:#1B2F47; --blue-fg:#9CC6F2;
   --purple-chip:#2E2540; --purple-fg:#CDB5EE; --green-chip:#173426; --green-fg:#94D9AE;
   --warn:#F2A57E; --warn-soft:#3A2116; color-scheme:dark}
-body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:16px;line-height:1.7}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--body);font-size:16px;line-height:1.7}
 .wrap{max-width:720px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:32px 56px;display:flex;flex-direction:column;gap:56px}
 h1,h2,h3{text-wrap:balance;margin:0;word-break:keep-all}
 h1{font-family:var(--display);font-size:clamp(28px,7vw,40px);line-height:1.35}
@@ -50,7 +50,7 @@ section{display:flex;flex-direction:column;gap:18px}
 .lead{font-size:17px;color:var(--muted)}
 .btns{display:flex;flex-wrap:wrap;gap:10px}
 .btn{display:inline-flex;align-items:center;justify-content:center;min-height:52px;padding:0 22px;border-radius:14px;font-weight:700;font-size:16px;text-decoration:none;font-family:inherit;cursor:pointer}
-.btn.primary{background:var(--teal);color:var(--bg);border:0}
+.btn.primary{background:var(--teal);color:#fff;border:0;box-shadow:0 6px 16px rgba(234,88,12,.25)}
 .btn.ghost{background:transparent;color:var(--fg);border:1.5px solid var(--line)}
 .btn:focus-visible{outline:3px solid var(--navy);outline-offset:2px}
 .note{font-size:13px;color:var(--muted)}
@@ -97,17 +97,53 @@ summary:focus-visible{outline:2px solid var(--teal);outline-offset:2px;border-ra
 .price div{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:4px}
 .price strong{font-size:20px;font-variant-numeric:tabular-nums}
 .end{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:22px 18px;display:flex;flex-direction:column;gap:14px}
+/* 히어로: 대표색으로 꽉 채운 띠 + 실제 앱 화면 */
+.hero{background:linear-gradient(160deg,var(--hero),var(--hero2));color:#fff;padding:36px max(16px,env(safe-area-inset-left,0px)) 0;overflow:hidden}
+.hero .in{max-width:960px;margin:0 auto;display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);gap:28px;align-items:end}
+@media (max-width:760px){.hero .in{grid-template-columns:1fr;gap:20px}}
+.hero .txt{display:flex;flex-direction:column;gap:16px;padding-bottom:36px}
+.hero .eyebrow{color:#FFE3D2}
+.hero h1{color:#fff;font-size:clamp(30px,7.5vw,46px);line-height:1.28}
+.hero h1 em{font-style:normal;background:#fff;color:var(--hero2);padding:0 8px;border-radius:8px;box-decoration-break:clone;-webkit-box-decoration-break:clone}
+.hero .lead{color:#FFF1E8;font-size:18px}
+.hero .btn.primary{background:#fff;color:var(--hero2);box-shadow:0 8px 20px rgba(0,0,0,.18)}
+.hero .btn.ghost{color:#fff;border-color:rgba(255,255,255,.6)}
+.hero .meta{display:flex;flex-wrap:wrap;gap:8px}
+.hero .meta span{font-size:13px;font-weight:700;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.35);padding:4px 12px;border-radius:99px}
+.phone{justify-self:center;width:min(300px,78vw);border-radius:34px 34px 0 0;border:8px solid #1A1A1A;border-bottom:0;background:#1A1A1A;box-shadow:0 20px 50px rgba(0,0,0,.35);overflow:hidden;aspect-ratio:390/600}
+.phone img{width:100%;display:block}
+.shot{border-radius:20px;border:1px solid var(--line);box-shadow:0 10px 28px rgba(0,0,0,.10);overflow:hidden;max-width:360px;width:100%;align-self:center;background:var(--surface)}
+.shot img{width:100%;display:block}
+.sticky{position:fixed;left:0;right:0;bottom:0;z-index:9;padding:10px max(16px,env(safe-area-inset-left,0px)) calc(10px + env(safe-area-inset-bottom,0px));background:color-mix(in srgb,var(--bg) 92%,transparent);backdrop-filter:blur(8px);border-top:1px solid var(--line);display:none}
+.sticky a{width:100%}
+@media (max-width:760px){.sticky{display:flex}body{padding-bottom:84px}}
+h2 .hl{color:var(--teal)}
 </style>
 
 </head>
 <body>
+<header class="hero">
+  <div class="in">
+    <div class="txt">
+      <span class="eyebrow">강사와 강의 업체를 잇는 앱 · 강사로</span>
+      <h1>강의 일정·강사료,<br>아직도 <em>카톡으로</em><br>확인하세요?</h1>
+      <p class="lead">공고 붙여 넣으면 달력에 쏙, 순수익과 미입금이 한눈에. 업체는 강사 확정·공지·서류·강사비까지 한 화면에서 끝나요.</p>
+      <div class="btns">
+        <a class="btn primary" href="app/">무료로 시작하기</a>
+        <a class="btn ghost" href="try/?as=inst">가입 없이 체험</a>
+      </div>
+      <div class="meta"><span>가입 1분</span><span>카드 등록 없음</span><span>지금 무료</span></div>
+    </div>
+    <div class="phone"><img src="shots/hero_cal.webp" alt="강사로 앱 달력 화면: 확정·미입금·입금 완료가 색으로 보임" width="390" height="780"></div>
+  </div>
+</header>
 <div class="wrap">
 
-  <!-- 히어로 -->
+  <!-- 강사 -->
   <section>
-    <span class="eyebrow t">강사와 강의 업체를 잇는 앱 · 강사로</span>
-    <h1>공고 찾고, 프로필 고치고, 강사료 기다리는 일. 이제 한곳에서 끝내세요.</h1>
-    <p class="lead">현장에서 강의하는 강사가 직접 겪은 불편에서 시작했습니다. 강사는 일정과 돈이 한눈에 보이고, 업체는 놓치는 일이 사라집니다.</p>
+    <span class="eyebrow t">강사님이라면</span>
+    <h2>강사님, <span class="hl">이런 불편</span> 있으셨죠?</h2>
+    <p class="lead">강사로 하나로 한 번에 해결됩니다.</p>
     <div class="card" aria-label="강의 카드 예시">
       <div class="chips"><span class="chip c-gray">지원</span><span class="chip c-blue">확정</span><span class="chip c-purple">미입금</span><span class="chip c-green">입금 완료</span></div>
       <h3>10월 28일 (수) 천안 ○○공고 취업 특강 <span class="chip c-blue">확정</span></h3>
@@ -119,18 +155,7 @@ summary:focus-visible{outline:2px solid var(--teal);outline-offset:2px;border-ra
       </div>
       <p class="note">예시 화면이에요. 실제 강의가 아닙니다.</p>
     </div>
-    <div class="btns">
-      <a class="btn primary" href="try/?as=inst">강사로 체험하기</a>
-      <a class="btn primary" href="try/?as=co" style="background:var(--navy)">업체로 체험하기</a>
-      <a class="btn ghost" href="app/">가입하고 바로 쓰기</a>
-    </div>
-  </section>
-
-  <!-- 강사 -->
-  <section>
-    <span class="eyebrow t">강사님이라면</span>
-    <h2>강사님, 이런 불편 있으셨죠?</h2>
-    <p class="lead">강사로 하나로 한 번에 해결됩니다.</p>
+    <div class="shot"><img src="shots/inst_jobs.webp" alt="공고마다 예상 순수익과 원클릭 지원 버튼" loading="lazy" width="390" height="780"></div>
     <ul class="pair">
       <li><b>단톡방 공고를 하나하나 읽고 달력에 옮겨 적기</b><span>공고를 붙여 넣으면 날짜·요일·시간·장소·강사료·업체를 앱이 읽어 내 달력에 바로 넣어요. 실제 강사 톡방 공고로 시험해 보니 강사료는 96%를 자동으로 읽었어요.</span></li>
       <li><b>공고 볼 때마다 지원 메일 새로 쓰기</b><span>앱 공고는 버튼 한 번에 프로필이 같이 가요. 톡방 공고는 받는 사람·제목·본문이 채워진 Gmail이 열려요.</span></li>
@@ -150,8 +175,9 @@ summary:focus-visible{outline:2px solid var(--teal);outline-offset:2px;border-ra
   <!-- 회사 -->
   <section>
     <span class="eyebrow n">강의 업체라면</span>
-    <h2>업체 대표님, 이런 실수할까 봐 걱정되셨죠?</h2>
+    <h2>업체 대표님, <span class="n">이런 실수</span> 할까 봐 걱정되셨죠?</h2>
     <p class="lead">강사로 하나로 한 번에 해결됩니다.</p>
+    <div class="shot"><img src="shots/co_board.webp" alt="업체 강의 운영판: 오늘·내일 강의 현황" loading="lazy" width="390" height="780"></div>
     <ul class="pair n">
       <li><b>공고를 올려도 강사들이 제대로 봤을까</b><span>날짜를 달력에서 고르면 요일이 자동으로 붙고, 빈칸이 있으면 등록되지 않아요. 올린 공고는 강사 공고 목록에 바로 떠요.</span></li>
       <li><b>지원자가 카톡·메일·문자로 흩어짐</b><span>내 강의마다 지원자가 사진·인증 이력과 함께 모여요. 프로필은 한 명씩 또는 한 번에 PDF로 받아요.</span></li>
@@ -199,6 +225,7 @@ summary:focus-visible{outline:2px solid var(--teal);outline-offset:2px;border-ra
   </section>
 
 </div>
+<div class="sticky"><a class="btn primary" href="app/">무료로 시작하기 · 가입 1분</a></div>
 
 </body>
 </html>

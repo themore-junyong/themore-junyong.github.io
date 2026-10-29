@@ -4,25 +4,28 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<meta name="build" content="261029-0140">
+<meta name="build" content="261029-0146">
 <title>강사로</title>
 <link rel="manifest" href="manifest.webmanifest">
-<meta name="theme-color" content="#1F6F78">
+<meta name="theme-color" content="#EA580C">
 <link rel="apple-touch-icon" href="../try/icons/apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="강사로">
 <link rel="stylesheet" href="../fonts/font.css">
 <style>
-:root{--bg:#F3F5F4;--sf:#FFFFFF;--fg:#16222B;--mu:#4F5D66;--ln:#D5DDDC;--ac:#1F6F78;--acs:#E1EEEE;--nv:#2D3E73;--nvs:#E3E7F4;
+:root{--bg:#F6F4F2;--sf:#FFFFFF;--fg:#16222B;--mu:#4F5D66;--ln:#DDD8D3;--ac:#EA580C;--acs:#FFEDD5;--hd:#EA580C;--nv:#2D3E73;--nvs:#E3E7F4;
 --g1:#E3E7E9;--g2:#3B4650;--b1:#DCEBFA;--b2:#1A4F8A;--p1:#ECE2F7;--p2:#5B3A8C;--k1:#DDF1E4;--k2:#1E6B3A;--r1:#FDECE3;--r2:#9A3608;--sun:#B3261E;
 font-family:'S-Core Dream','Apple SD Gothic Neo','Malgun Gothic',sans-serif}
-@media (prefers-color-scheme:dark){:root{--bg:#0B1113;--sf:#1D2A2E;--fg:#E7EEEE;--mu:#A3B2B5;--ln:#33464B;--ac:#5FB7BF;--acs:#183338;--nv:#9DAEE6;--nvs:#1E2640;
+@media (prefers-color-scheme:dark){:root{--bg:#0B1113;--sf:#1D2A2E;--fg:#E7EEEE;--mu:#A3B2B5;--ln:#33464B;--ac:#FF8A4C;--acs:#3A2214;--hd:#C2410C;--nv:#9DAEE6;--nvs:#1E2640;
 --g1:#2A3337;--g2:#C9D2D6;--b1:#1B2F47;--b2:#9CC6F2;--p1:#2E2540;--p2:#CDB5EE;--k1:#173426;--k2:#94D9AE;--r1:#3A2116;--r2:#F2A57E;--sun:#F28B82;color-scheme:dark}}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--fg);font-size:15px;line-height:1.55}
 button,input,select,textarea{font:inherit;color:inherit}
 .app{max-width:560px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;padding-bottom:84px}
-header{position:sticky;top:0;z-index:5;background:var(--bg);padding:10px 16px 6px;display:flex;flex-direction:column;gap:6px;border-bottom:1px solid var(--ln)}
+header{position:sticky;top:0;z-index:5;background:var(--hd);color:#fff;padding:10px 16px 8px;display:flex;flex-direction:column;gap:6px;box-shadow:0 2px 10px rgba(0,0,0,.12)}
+/* 머리 부분은 대표색으로 꽉 채움 */
+header .brand b{color:#fff;font-size:22px}header .beta{background:rgba(255,255,255,.22);color:#fff}header .who{color:rgba(255,255,255,.9)}header select{color:var(--fg)}
+header .btn{background:rgba(255,255,255,.16);border-color:rgba(255,255,255,.4);color:#fff}header .btn.pri{background:#fff;border-color:#fff;color:var(--hd)}header .btn:focus-visible{outline-color:#fff}header a.btn{color:#fff!important}header .alert{color:var(--fg)}header .alert .btn{background:var(--sf);border-color:var(--ln);color:var(--fg)}header .alert .btn.pri{background:var(--ac);color:#fff}
 .brand{display:flex;align-items:center;gap:8px;justify-content:space-between}
 .brand b{font-size:20px}.beta{font-size:11px;font-weight:700;background:var(--acs);color:var(--ac);padding:2px 8px;border-radius:99px}
 .pic{width:56px;height:56px;border-radius:50%;object-fit:cover;flex:none;background:var(--acs);color:var(--ac);display:inline-grid;place-items:center;font-weight:700;font-size:20px}.pic.s{width:36px;height:36px;font-size:14px}
@@ -320,7 +323,7 @@ function pdfPage(p,cf){const V=verified(p.id),cr=String(p.career||'').split('\n'
   <p class="ft">강사로에서 받은 프로필 · ${todayIso().replace(/-/g,'.')}</p></section>`}
 function printPdf(title,pages){const html=`<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>${esc(title)}</title><link rel="stylesheet" href="${new URL('../fonts/font.css',location.href).href}"><style>
   body{font-family:'S-Core Dream','Pretendard','Noto Sans KR',system-ui,sans-serif;color:#1d2329;margin:0}section{padding:28px 32px;page-break-after:always}section:last-child{page-break-after:auto}
-  .hd{display:flex;justify-content:space-between;font-size:12px;color:#5b6670;border-bottom:2px solid #1f6f78;padding-bottom:6px;margin-bottom:18px}.top{display:flex;gap:18px;align-items:center}
+  .hd{display:flex;justify-content:space-between;font-size:12px;color:#5b6670;border-bottom:2px solid #EA580C;padding-bottom:6px;margin-bottom:18px}.top{display:flex;gap:18px;align-items:center}
   img{width:110px;height:110px;border-radius:50%;object-fit:cover}h1{font-size:26px;margin:0 0 6px}h2{font-size:16px;margin:22px 0 4px;color:#1f6f78}p{margin:4px 0;font-size:14px;line-height:1.6}
   .intro{margin-top:14px}.mu{color:#5b6670;font-size:12px}ul{margin:6px 0;padding-left:18px;font-size:14px;line-height:1.7}.ft{margin-top:28px;font-size:11px;color:#8a949c}
   @page{size:A4;margin:12mm}</style></head><body>${pages.join('')}</body></html>`;
@@ -825,6 +828,6 @@ document.addEventListener('paste',ev=>{if(ev.target.id==='pRaw')setTimeout(()=>{
 document.addEventListener('input',ev=>{if(['pDates','pRaw'].includes(ev.target.id))pWarn()});
 render();
 </script>
-<script type="module" src="real.js?v=261029-0140"></script>
+<script type="module" src="real.js?v=261029-0146"></script>
 </body>
 </html>
