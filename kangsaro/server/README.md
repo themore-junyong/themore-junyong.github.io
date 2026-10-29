@@ -10,3 +10,6 @@
 5. 앱에서 운영자로 로그인 → '업체 관리' → '국세청 사업자 확인' 켜기 (보안 규칙도 최신으로 게시)
 
 키는 저장소에 넣지 않아요. 로컬 시험용 `functions/.secret.local`, `functions/.env.local`은 git에서 빠져 있어요.
+
+## 푸시 알림
+`pushAlert`(강사 알림: 확정·마감·입금·리마인드), `pushNotice`(업체 공지 → 받는 강사), `pushApply`(새 지원 → 업체 대표·직원), `pushCancel`(확정 취소 → 업체). 기기 토큰은 앱이 `users/{uid}/push/{id}`에 저장해요. Firestore 트리거는 DB와 같은 지역이어야 해서 `DB_REGION`(기본 asia-northeast3)을 써요. 앱의 웹 푸시 키는 `kangsaro/app/real.js`의 `VAPID`.
