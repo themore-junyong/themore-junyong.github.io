@@ -325,7 +325,7 @@ function render(){runReminders();
   const un=r==='i'?unreadCount():0;
   $('#nav').innerHTML=NAV[r].map(([k,l])=>k==='plus'||k==='cnew'?`<button class="plus" data-act="${k}" aria-label="${r==='i'?'일정 넣기':'강의 등록'}">+</button>`:`<button data-tab="${k}" class="${ui.tab===k?'on':''}">${l}${k==='cal'&&un?`<span class="dot">${un}</span>`:''}</button>`).join('');
   const al=r==='i'&&ui.tab==='cal'?S.alerts.filter(a=>a.instId===meId()&&!a.read):[];
-  $('#main').innerHTML=(al.length?`<div class="card" style="border-color:var(--b2);background:var(--b1)" role="status"><div class="row"><b class="sp" style="color:var(--b2)">알림 ${al.length}개</b>${al.length>1?'<button class="btn sm" data-act="alertAll">모두 확인</button>':''}</div>${al.sort((x,y)=>alertDay(x).localeCompare(alertDay(y))).map(alertHtml).join('')}</div>`:'')+(VIEWS[ui.tab]||(()=>''))();
+  $('#main').innerHTML=(al.length?`<div class="card" style="border-color:var(--b2);background:var(--b1)" role="status"><div class="row"><b class="sp" style="color:var(--b2)">알림 ${al.length}개</b></div>${(al.sort((x,y)=>alertDay(x).localeCompare(alertDay(y))),(ui.alMore?al:al.slice(0,3)).map(alertHtml).join(''))}${al.length>3?`<button class="btn sm" data-act="alMore" style="width:100%">${ui.alMore?'접기':`알림 ${al.length-3}개 더 보기`}</button>`:''}</div>`:'')+(VIEWS[ui.tab]||(()=>''))();
 }
 // 알림을 줄글 대신 강의별로: [꼬리표] 강의 이름 / 날짜·시간 / 업체 / 할 일
 const alertJob=a=>{const ap=a.appId&&S.apps.find(x=>x.id===a.appId);return ap&&job(ap.jobId)};
@@ -811,7 +811,7 @@ document.addEventListener('click',async ev=>{
   if(A==='payOne'){markPaid(S.apps.find(x=>x.id===D.a));save();render();return toast('지급 완료로 바꾸고 강사에게 입금 확인 알림을 보냈어요')}
   if(A==='payAll'){const U=unpaidOf(meId());for(const x of U)markPaid(x.a);save();render();return toast(`${U.length}명 지급 완료, 입금 확인 알림을 보냈어요`)}
   if(A==='recv'){const al=S.alerts.find(x=>x.id===D.id),a=S.apps.find(x=>x.id===al.appId);al.read=true;if(a)a.recv=D.v;save();render();return toast(D.v==='ok'?'입금 확인을 업체에 알렸어요':'아직 안 들어왔다고 업체에 알렸어요')}
-  if(A==='alertAll'){for(const a of S.alerts)if(a.instId===meId()&&!a.read&&a.kind!=='pay')a.read=true;save();return render()}
+  if(A==='alMore'){ui.alMore=!ui.alMore;return render()}
   // 알림 '보기': 읽음 처리하고 그 강의 카드(공지·서류)로 바로 이동
   if(A==='alertGo'){const a=S.alerts.find(x=>x.id===D.id),j=a&&alertJob(a);if(a)a.read=true;save();ui.tab='cal';ui.jobId=null;render();
     const c=j&&document.getElementById('cj-'+j.id);if(c){const sw=c.parentElement,h=(document.querySelector('header')||{}).offsetHeight||0;sw.scrollLeft=c.offsetLeft-sw.offsetLeft-16;window.scrollTo({top:sw.getBoundingClientRect().top+scrollY-h-50,behavior:'smooth'});c.style.outline='3px solid var(--ac)';setTimeout(()=>c.style.outline='',2200);const nb=c.querySelector('details');if(nb)nb.open=true}return}
