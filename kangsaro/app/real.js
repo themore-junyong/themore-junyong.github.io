@@ -78,7 +78,9 @@ function payloads() {
   const c = role === 'c' ? CO : '';
   for (const j of S.jobs) {
     if (!c || j.coId !== c) continue;
-    out.set(`jobs/${j.id}`, omit(j, ['notices']));
+    holdFix(j);
+    // 신고(reports)는 강사가 따로 씀 → 업체 저장에서 빼고 합쳐 씀 (flush의 MERGE)
+    out.set(`jobs/${j.id}`, omit(j, ['notices', 'reports']));
     for (const n of j.notices || []) out.set(`notices/${n.id}`, { ...n, jobId: j.id, coId: c });
   }
   for (const a of S.apps) {
@@ -113,7 +115,7 @@ async function flush() {
   try {
     const P = payloads(), R = readMarks(), order = k => k.startsWith('users/') ? 0 : k.startsWith('jobs/') ? 1 : k.startsWith('apps/') ? 2 : 3;
     const writes = [...P].filter(([k, v]) => last.get(k) !== stable(v)).sort((a, b) => order(a[0]) - order(b[0]));
-    for (const [k, v] of writes) { await setDoc(doc(db, k), v); last.set(k, stable(v)); }
+    for (const [k, v] of writes) { await setDoc(doc(db, k), v, k.startsWith('jobs/') ? { merge: true } : {}); last.set(k, stable(v)); }
     for (const [k, v] of R) if (last.get(k) !== v) { const p = k.split('#')[0]; await updateDoc(doc(db, p), { ['reads.' + uidMe]: v }); last.set(k, v); }
     for (const k of [...last.keys()]) if (!k.includes('#') && !P.has(k) && mayDelete(k)) { await deleteDoc(doc(db, k)); last.delete(k); }
     if (role === 'c') await syncLinks();
@@ -250,6 +252,7 @@ async function start(user, want) {
   ui.tab = NAV[role][0][0];
   render();
   showTerm();
+  if (isAdm()) adminQueue().then(l => { if (l.length) toast(`확인 대기·신고 공고 ${l.length}건이 있어요. '업체 관리'에서 봐 주세요`); });
 }
 
 /* ===== 로그인 화면 ===== */
@@ -287,7 +290,7 @@ REAL.acct = () => {
   const pending = role === 'c' && !cur.approved && !isStaffView(), isAdmin = ADMINS.includes(auth.currentUser?.email);
   const sw = me.role === 's' ? '' : has(other) ? `<button class="btn sm" data-real="swap" title="같은 계정으로 화면만 바꿔요">⇄ ${other === 'c' ? '업체 화면' : '강사 화면'}</button>` : `<button class="btn sm" data-real="addSide">${other === 'c' ? '업체로도 쓰기' : '강사로도 쓰기'}</button>`;
   el.style.flexWrap = 'wrap';
-  el.innerHTML = `<span class="sp" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:5em">${esc(cur.name || '')} ${role === 'c' ? (isStaffView() ? `(직원 ${esc(WHO)})` : '(업체)') : '(강사)'}</span>${sw}${role === 'c' ? '<button class="btn sm" data-real="staff">직원</button>' : ''}${isAdmin ? '<button class="btn sm" data-real="admin">업체 관리</button>' : ''}<a class="btn sm" style="text-decoration:none;color:inherit;display:inline-flex;align-items:center" href="../guide/${role === 'c' ? 'company' : 'instructor'}.html">사용법</a><button class="btn sm" data-real="ref">소개하기</button><button class="btn sm" data-real="out">로그아웃</button>`;
+  el.innerHTML = `<span class="sp" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:5em">${esc(cur.name || '')} ${role === 'c' ? (isStaffView() ? `(직원 ${esc(WHO)})` : '(업체)') : '(강사)'}</span>${sw}${role === 'c' ? '<button class="btn sm" data-real="staff">직원</button>' : ''}${isAdmin ? `<button class="btn sm" data-real="admin">업체 관리${ADMQ ? ` <span class="chip warn">확인 ${ADMQ}</span>` : ''}</button>` : ''}<a class="btn sm" style="text-decoration:none;color:inherit;display:inline-flex;align-items:center" href="../guide/${role === 'c' ? 'company' : 'instructor'}.html">사용법</a><button class="btn sm" data-real="ref">소개하기</button><button class="btn sm" data-real="out">로그아웃</button>`;
   const bar = $('#pendBar'); if (bar && !pending) bar.remove();
   if (pending && !bar) el.insertAdjacentHTML('afterend', cur.blocked
     ? '<div id="pendBar" class="alert">운영자가 이 업체의 공고 등록을 멈췄어요. 문의: tobadyclup@naver.com</div>'
@@ -353,6 +356,8 @@ document.addEventListener('click', async e => {
   if (k === 'staffOut') { if (!confirm(`${b.dataset.n} 님을 직원에서 내보낼까요? 바로 업체 화면을 못 보게 돼요.`)) return; await deleteDoc(doc(db, 'staff', b.dataset.id)); toast('내보냈어요'); return staffSheet(); }
   if (k === 'staffLeave') { if (!confirm('이 업체에서 나갈까요? 다시 일하려면 새 초대 링크가 필요해요.')) return; await deleteDoc(doc(db, 'staff', `${CO}_${uidMe}`)); closeSheet(); return; }
   if (k === 'maint') { const on = !SITE.maint; if (on && !confirm('모든 사용자 화면에 "업데이트 중입니다"를 띄울까요? 관리자 화면은 그대로예요.')) return; await setDoc(doc(db, 'site', 'main'), { maint: on, at: new Date().toISOString() }, { merge: true }); toast(on ? '업데이트 중 표시를 켰어요' : '업데이트 중 표시를 껐어요. 사용자 화면이 다시 열려요'); return adminSheet(); }
+  if (k === 'jPass') { await updateDoc(doc(db, 'jobs', b.dataset.j), { cleared: true, hold: false }); toast('통과했어요. 강사에게 보여요'); return adminSheet(); }
+  if (k === 'jDown') { if (!confirm('이 공고를 내릴까요? 마감 처리돼서 강사에게 안 보여요.')) return; await updateDoc(doc(db, 'jobs', b.dataset.j), { status: '마감' }); toast('내렸어요'); return adminSheet(); }
   if (k === 'reload') return location.reload();
   if (k === 'lockInfo') return lockSheet();
   if (k === 'ref') return refSheet();
@@ -448,7 +453,7 @@ async function showTerm() {
   if (LOCK) el.dataset.real = 'lockInfo'; else delete el.dataset.real;
 }
 // 기간이 끝나면 화면 이동·보기만 되고, 지원·등록·수정·내려받기·복사 등은 막음
-const OPEN_ACT = new Set(['alMore', 'alertGo', 'alertOk', 'back', 'closeSheet', 'closeSheetBg', 'cmon', 'csel', 'jmore', 'jf', 'mgo', 'mmon', 'mon', 'mview', 'openJob', 'sel', 'unpaid', 'year', 'install']);
+const OPEN_ACT = new Set(['report', 'alMore', 'alertGo', 'alertOk', 'back', 'closeSheet', 'closeSheetBg', 'cmon', 'csel', 'jmore', 'jf', 'mgo', 'mmon', 'mon', 'mview', 'openJob', 'sel', 'unpaid', 'year', 'install']);
 const OPEN_REAL = new Set(['out', 'ref', 'refCopy', 'refShare', 'reload', 'swap', 'lockInfo', 'staffLeave']);
 function lockSheet() {
   openSheet(`<div class="row"><h2 class="sp">이용 기간이 끝났어요</h2><button class="btn sm" data-act="closeSheet">닫기</button></div>
@@ -507,8 +512,29 @@ async function adminSheet() {
   openSheet(`<div class="row"><h2 class="sp">업체 관리</h2><button class="btn sm" data-act="closeSheet">닫기</button></div>
     <div class="card" style="${SITE.maint ? 'border-color:var(--r2)' : ''}"><div class="row"><b class="sp">업데이트 중 표시 ${SITE.maint ? '<span class="chip warn">켜짐</span>' : '<span class="chip off">꺼짐</span>'}</b><button class="btn sm ${SITE.maint ? 'pri' : ''}" data-real="maint">${SITE.maint ? '끄기' : '켜기'}</button></div><span class="mu sm">데이터 구조를 바꾸는 큰 업데이트 때만 켜요. 켜면 사용자 화면에 "업데이트 중입니다. 잠시만 기다려 주세요"가 뜨고, 끄면 저절로 다시 열려요.</span></div>
     <p class="mu sm">업체는 사업자등록번호를 넣으면 바로 공고를 올려요. 이상한 업체는 '승인 취소'로 멈출 수 있어요. 홈택스 '사업자 상태 조회'로 휴·폐업 여부를 볼 수 있어요.</p>
+    ${await jobAdmin()}
     ${await refAdmin()}
     ${rows.map(card).join('') || '<p class="mu">가입한 업체가 없어요.</p>'}`);
+}
+
+// 확인 대기(사기 의심 단어) + 신고 3건 이상(통과 안 된) 공고
+let ADMQ = 0;
+async function adminQueue() {
+  const [h, r] = await Promise.all([getDocs(query(collection(db, 'jobs'), where('hold', '==', true))).catch(() => null), getDocs(query(collection(db, 'jobs'), where('status', '==', '모집'), limit(500))).catch(() => null)]);
+  const m = new Map();
+  for (const d of [...(h ? h.docs : []), ...(r ? r.docs : [])]) { const j = { id: d.id, ...d.data() }; if (j.status === '모집' && (j.hold || (Object.keys(j.reports || {}).length >= 3 && j.cleared !== true))) m.set(j.id, j); }
+  const list = [...m.values()];
+  if (ADMQ !== list.length) { ADMQ = list.length; REAL.acct(); }
+  return list;
+}
+async function jobAdmin() {
+  const list = await adminQueue();
+  if (!list.length) return '<div class="card"><b>확인 대기·신고 공고</b><span class="mu sm">지금은 없어요.</span></div>';
+  const names = new Map(await Promise.all([...new Set(list.map(j => j.coId))].map(async id => [id, (asRole(await loadUser(id, false).catch(() => null), 'c') || {}).name || id.slice(0, 6)])));
+  return `<div class="card" style="border-color:var(--r2)"><b>확인 대기·신고 공고 ${list.length}건</b><span class="mu sm">통과하면 강사에게 바로 보여요(통과 뒤 신고로는 다시 안 내려가요). 내리면 마감 처리돼요.</span></div>` + list.map(j => `<div class="card"><b>${esc(j.region || '')} ${esc(j.school || '')} ${esc(j.title || '')}</b>
+    <span class="mu sm">${esc(names.get(j.coId) || '')} · 1일 ${(+j.fee || 0).toLocaleString()}원 · ${j.hold ? '<b>확인 대기</b>: ' + esc(scamWhy(j)) : ''}${Object.keys(j.reports || {}).length ? ` · 신고 ${Object.keys(j.reports).length}건` : ''}</span>
+    ${j.desc ? `<span class="sm" style="white-space:pre-wrap">${esc(String(j.desc).slice(0, 400))}</span>` : ''}
+    <div class="row"><button class="btn pri sm" data-real="jPass" data-j="${j.id}">통과</button><button class="btn sm" data-real="jDown" data-j="${j.id}" style="color:var(--r2)">내리기</button></div></div>`).join('');
 }
 
 async function refAdmin() {
@@ -540,6 +566,11 @@ REAL.doc = async (appId, n, f) => {
   a.docs = { ...(a.docs || {}), [n]: name }; save(); render(); toast(`${n} 냈어요`);
 };
 
+// 강사 신고: 공고 문서의 reports.{내 uid} 한 칸만 씀
+REAL.report = async id => {
+  try { await updateDoc(doc(db, 'jobs', id), { ['reports.' + uidMe]: new Date().toISOString() }); toast('신고했어요. 고마워요'); }
+  catch (e) { const j = job(id); if (j && j.reports) delete j.reports[uidMe]; render(); toast(e.code === 'permission-denied' ? '강사 계정만 신고할 수 있어요' : '신고하지 못했어요. 인터넷을 확인해 주세요'); }
+};
 REAL.formUp = async (n, f) => {
   const data = await fileData(f);
   if (!data) return toast('650KB 이하 파일만 올릴 수 있어요');
