@@ -66,6 +66,8 @@ label.f input,label.f select,label.f textarea,textarea.f{padding:9px 10px;border
 table{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums}
 th,td{padding:6px 4px;border-bottom:1px solid var(--ln);text-align:right;white-space:nowrap}th:first-child,td:first-child{text-align:left}
 .tw{overflow-x:auto}
+.swipe{display:flex;align-items:flex-start;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;margin:0 -16px;padding:0 16px 6px;scrollbar-width:none}.swipe::-webkit-scrollbar{display:none}
+.swipe>.card{flex:0 0 86%;scroll-snap-align:start;scroll-margin-left:16px;margin:0}.swipe>.card:only-child{flex-basis:100%}
 nav{position:fixed;bottom:0;left:0;right:0;background:var(--sf);border-top:1px solid var(--ln);display:flex;justify-content:center;padding-bottom:env(safe-area-inset-bottom,0px);z-index:6}
 nav .in{max-width:560px;width:100%;display:flex;justify-content:space-around;align-items:center;height:64px}
 nav button{background:none;border:0;font-size:12px;color:var(--mu);padding:10px 8px;min-height:44px;cursor:pointer;position:relative}
@@ -307,7 +309,7 @@ function runReminders(){const t=todayIso();let ch=0;
     a.rem=a.rem||{};const stage=[1,3,7].find(n=>left<=n);if(a.rem[stage])continue;
     for(const n of [1,3,7])if(n>=stage)a.rem[n]=a.rem[n]||new Date().toISOString();
     const nts=j.notices.filter(n=>(n.to||[]).includes(a.instId)&&!n.reads[a.instId]).length;
-    S.alerts.push({id:uid(),instId:a.instId,text:`[D-${left} 리마인드] ${co(j.coId).name} · ${j.region} ${j.school} ${j.title} ${j.dates.map(d=>`${md(d)}(${dowOf(d)})`).join('·')} ${j.time}${nts?` · 안 읽은 공지 ${nts}개가 있어요`:''}${stage===1?' · 내일 강의예요. 일정 카드에서 "확인했어요"를 눌러 주세요':''}`,at:new Date().toISOString(),read:false});ch++}
+    S.alerts.push({id:uid(),instId:a.instId,appId:a.id,text:`[D-${left} 리마인드] ${co(j.coId).name} · ${j.region} ${j.school} ${j.title} ${j.dates.map(d=>`${md(d)}(${dowOf(d)})`).join('·')} ${j.time}${nts?` · 안 읽은 공지 ${nts}개가 있어요`:''}${stage===1?' · 내일 강의예요. 일정 카드에서 "확인했어요"를 눌러 주세요':''}`,at:new Date().toISOString(),read:false});ch++}
   if(ch)save()}
 const remText=a=>{const j=job(a.jobId);return [7,3,1].map(n=>{const at=a.rem&&a.rem[n],d=addDays(j.dates[0],-n);return at?`D-${n} 보냄 ✓`:d<todayIso()?`D-${n} 지남`:`D-${n} ${md(d)} 예정`}).join(' · ')};
 const smsHref=(ph,body)=>`sms:${String(ph).replace(/[^\d]/g,'')}${isIOS?'&':'?'}body=${encodeURIComponent(body)}`;
@@ -318,8 +320,19 @@ function render(){runReminders();
   const un=r==='i'?unreadCount():0;
   $('#nav').innerHTML=NAV[r].map(([k,l])=>k==='plus'||k==='cnew'?`<button class="plus" data-act="${k}" aria-label="${r==='i'?'일정 넣기':'강의 등록'}">+</button>`:`<button data-tab="${k}" class="${ui.tab===k?'on':''}">${l}${k==='jobs'&&un?`<span class="dot">${un}</span>`:''}</button>`).join('');
   const al=r==='i'?S.alerts.filter(a=>a.instId===meId()&&!a.read):[];
-  $('#main').innerHTML=(al.length?`<div class="card" style="border-color:var(--b2);background:var(--b1)" role="status"><b style="color:var(--b2)">알림 ${al.length}개</b>${al.map(a=>`<div class="row"><span class="sp">${esc(a.text)}</span>${a.kind==='pay'?`<button class="btn sm pri" data-act="recv" data-id="${a.id}" data-v="ok">입금 확인했어요</button><button class="btn sm" data-act="recv" data-id="${a.id}" data-v="no">아직 안 들어왔어요</button>`:`<button class="btn sm" data-act="alertOk" data-id="${a.id}">확인</button>`}</div>`).join('')}</div>`:'')+(VIEWS[ui.tab]||(()=>''))();
+  $('#main').innerHTML=(al.length?`<div class="card" style="border-color:var(--b2);background:var(--b1)" role="status"><div class="row"><b class="sp" style="color:var(--b2)">알림 ${al.length}개</b>${al.length>1?'<button class="btn sm" data-act="alertAll">모두 확인</button>':''}</div>${al.sort((x,y)=>alertDay(x).localeCompare(alertDay(y))).map(alertHtml).join('')}</div>`:'')+(VIEWS[ui.tab]||(()=>''))();
 }
+// 알림을 줄글 대신 강의별로: [꼬리표] 강의 이름 / 날짜·시간 / 업체 / 할 일
+const alertJob=a=>{const ap=a.appId&&S.apps.find(x=>x.id===a.appId);return ap&&job(ap.jobId)};
+const alertDay=a=>{const j=alertJob(a);return j?j.dates[0]:'9'+(a.at||'')};
+function alertHtml(a){const m=String(a.text||'').match(/^\[(.+?)\]\s*/),tag=m?m[1]:'알림',rest=m?a.text.slice(m[0].length):String(a.text||''),j=alertJob(a),id=meId();
+  const cls=/^D-/.test(tag)?'warn':tag==='확정'?'confirmed':tag==='입금 확인'?'paid':'applied';
+  const nts=j?j.notices.filter(n=>(n.to||[]).includes(id)&&!n.reads[id]).length:0;
+  const body=j?`<b>${esc(j.region)} ${esc(j.school)} ${esc(j.title)}</b><span class="sm">📅 ${j.dates.map(d=>`${md(d)}(${dowOf(d)})`).join('·')} ${esc(j.time)}</span><span class="sm mu">🏢 ${esc(co(j.coId).name)}</span>
+    ${/리마인드/.test(tag)&&nts?`<span class="sm" style="color:var(--r2);font-weight:700">📢 안 읽은 공지 ${nts}개</span>`:''}${tag==='D-1 리마인드'?'<span class="sm">✅ 내일 강의예요. 일정 카드에서 "확인했어요"를 눌러 주세요</span>':''}${tag==='마감'?'<span class="sm mu">이번에는 선정되지 않았어요</span>':''}`
+    :rest.split(' · ').map((x,i)=>i?`<span class="sm">${esc(x)}</span>`:`<b>${esc(x)}</b>`).join('');
+  const btn=a.kind==='pay'?`<div class="row"><button class="btn sm pri" data-act="recv" data-id="${a.id}" data-v="ok">입금 확인했어요</button><button class="btn sm" data-act="recv" data-id="${a.id}" data-v="no">아직 안 들어왔어요</button></div>`:'';
+  return `<div style="border-top:1px solid var(--ln);padding-top:8px;display:flex;gap:8px;align-items:flex-start"><span class="chip ${cls}" style="margin-top:2px">${esc(tag.replace(' 리마인드',''))}</span><div class="sp" style="display:flex;flex-direction:column;gap:2px;min-width:0">${body}${btn}</div>${a.kind==='pay'?'':`<button class="btn sm" data-act="alertOk" data-id="${a.id}">확인</button>`}</div>`}
 function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(toast.h);toast.h=setTimeout(()=>t.classList.remove('on'),2400)}
 // 지원자 프로필 PDF: 인쇄 창을 열어 'PDF로 저장'으로 받게 함 (연락처는 확정한 강사만)
 const lines=t=>String(t||'').split('\n').map(x=>x.trim()).filter(Boolean);
@@ -437,21 +450,21 @@ function netGuess(j,p){const km=kmBetween(p.region,j.region);if(km==null)return 
 const hmText=m=>m>=60?`${Math.floor(m/60)}시간${m%60?` ${m%60}분`:''}`:`${m}분`;
 /* ===== 강사: 공고 + 내 확정 강의 ===== */
 function vJobs(){const iid=meId(),t=todayIso();
-  const mine=S.apps.filter(a=>a.instId===iid&&a.status==='확정'&&last(job(a.jobId).dates)>=t).map(a=>({a,j:job(a.jobId)}));
+  const mine=S.apps.filter(a=>a.instId===iid&&a.status==='확정'&&last(job(a.jobId).dates)>=t).map(a=>({a,j:job(a.jobId)})).sort((x,y)=>x.j.dates[0].localeCompare(y.j.dates[0]));
   const all=S.jobs.filter(j=>j.status==='모집'&&j.dates[0]>=t).sort((a,b)=>a.dates[0]<b.dates[0]?-1:1),F=ui.jf||(ui.jf={r:'',q:'',free:false});
   // 공고가 많아도 느려지지 않게 내 일정·내 지원을 한 번만 모아 둠
   const myE=entries(iid),myA=new Map(S.apps.filter(a=>a.instId===iid).map(a=>[a.jobId,a])),clash=ds=>myE.filter(e=>ds.includes(e.d));
   const open=all.filter(j=>(!F.r||j.region===F.r)&&(!F.q||`${j.title} ${j.school} ${j.대상}`.includes(F.q))&&(!F.free||!clash(j.dates).length)),more=ui.jmore||20;
   setTimeout(()=>{let c=0;for(const {j} of mine)c+=markRead(j,iid);if(c){const nb=$('[data-tab="jobs"]');if(nb)nb.innerHTML='공고'}},1500);
-  return `<h2>확정된 강의</h2>${mine.length?mine.map(({a,j})=>{const nts=j.notices.filter(n=>(n.to||[]).includes(iid));const un=nts.filter(n=>!n.reads[iid]).length;const miss=j.needs.filter(n=>n!=='프로필'&&n!==RRN&&!docOf(a,n));
-    return `<div class="card"><div class="row">${chip('confirmed')}<h3 class="sp">${esc(j.region)} ${esc(j.school)} ${esc(j.title)}</h3></div>
+  return `<div class="row"><h2 class="sp">확정된 강의 ${mine.length?mine.length+'건':''}</h2>${mine.length>1?'<span class="mu sm">옆으로 넘겨 보세요 ›</span>':''}</div>${mine.length?'<div class="swipe">'+mine.map(({a,j})=>{const left=Math.round((dt(j.dates[0])-dt(t))/864e5);const nts=j.notices.filter(n=>(n.to||[]).includes(iid));const un=nts.filter(n=>!n.reads[iid]).length;const miss=j.needs.filter(n=>n!=='프로필'&&n!==RRN&&!docOf(a,n));
+    return `<div class="card"><div class="row">${chip('confirmed')}<span class="chip ${left<=1?'warn':'off'}">${left<=0?'오늘':'D-'+left}</span>${un?`<span class="chip warn">새 공지 ${un}</span>`:''}${miss.length?`<span class="chip warn">서류 ${miss.length}</span>`:''}</div><h3>${esc(j.region)} ${esc(j.school)} ${esc(j.title)}</h3>
     ${nts.length?noticeBox(j,iid):'<span class="mu sm">아직 공지가 없어요.</span>'}
     ${j.desc?`<details><summary>공고 내용 보기</summary><pre class="pf">${esc(j.desc)}</pre></details>`:''}
     <span class="mu">${esc(co(j.coId).name)} · ${j.dates.map(d=>`${md(d)}(${dowOf(d)})`).join('·')} ${esc(j.time)}</span>
     <div class="mu sm">낼 것: ${j.needs.map(n=>n==='프로필'?'프로필 ✓(자동)':docOf(a,n)?`${esc(n)} ✓${docOf(a,n).endsWith('(자동)')?'(자동)':''}`:`<b style="color:var(--r2)">${esc(n)} 빠짐</b>`).join(' · ')}</div>
     ${miss.map(n=>{const fm=(co(j.coId).forms||{})[n];return `${fm?`<div class="row"><span class="sm sp">${esc(n)}: 업체 양식이 있어요. 받아서 채운 뒤 올려 주세요.</span><button class="btn sm" data-act="getFile" data-p="users/${j.coId}/forms/${esc(n)}" data-nm="${esc(fm)}">양식 받기</button></div>`:''}<label class="f">${esc(n)} 올리기 <input type="file" data-act="doc" data-a="${a.id}" data-n="${esc(n)}"></label>`}).join('')}
     ${j.needs.includes(RRN)&&!a.docs[RRN]?`<div class="row"><span class="mu sm sp">원천징수(3.3%) 신고에 필요해서 이 업체만 요청했어요. 업체가 확인하면 바로 지워지고 강사로에는 남지 않아요.</span><button class="btn sm" data-act="rrnSend" data-a="${a.id}">주민등록번호 보내기</button></div>`:''}
-    </div>`}).join(''):'<p class="mu">곧 있을 확정 강의가 없어요.</p>'}
+    </div>`}).join('')+'</div>':'<p class="mu">곧 있을 확정 강의가 없어요.</p>'}
   <h2>모집 중인 공고</h2><p class="mu sm">강사로에 들어온 회사의 공고예요. 강사료가 모두 공개돼요. 지원하면 프로필이 같이 가요.</p>
   ${(()=>{const me=inst(iid);return `<div class="card" style="background:var(--acs)"><b>내 지역을 고르면 공고마다 예상 순수익이 계산돼요</b><div class="grid2"><label class="f">출발 지역<select data-act="pf" data-k="region">${GEO[me.region]?'':`<option selected>${esc(me.region||'고르기')}</option>`}${Object.keys(GEO).map(r=>`<option ${me.region===r?'selected':''}>${r}</option>`).join('')}</select></label><label class="f">내 차 연비(km/L)<input type="number" inputmode="decimal" data-act="pf" data-k="kmpl" value="${+me.kmpl||15}"></label></div><span class="mu sm">기름값은 리터당 ${won(+me.fuel||1650)} 기준이에요. '내 정보'에서 바꿀 수 있어요.</span></div>`})()}
   <div class="grid2"><label class="f">지역<select data-act="jf" data-k="r"><option value="">전체</option>${[...new Set(all.map(j=>j.region))].map(r=>`<option ${F.r===r?'selected':''}>${esc(r)}</option>`).join('')}</select></label><label class="f">분야·강의명<input data-act="jf" data-k="q" value="${esc(F.q)}" placeholder="면접, 진로…"></label></div>
@@ -790,6 +803,7 @@ document.addEventListener('click',async ev=>{
   if(A==='payOne'){markPaid(S.apps.find(x=>x.id===D.a));save();render();return toast('지급 완료로 바꾸고 강사에게 입금 확인 알림을 보냈어요')}
   if(A==='payAll'){const U=unpaidOf(meId());for(const x of U)markPaid(x.a);save();render();return toast(`${U.length}명 지급 완료, 입금 확인 알림을 보냈어요`)}
   if(A==='recv'){const al=S.alerts.find(x=>x.id===D.id),a=S.apps.find(x=>x.id===al.appId);al.read=true;if(a)a.recv=D.v;save();render();return toast(D.v==='ok'?'입금 확인을 업체에 알렸어요':'아직 안 들어왔다고 업체에 알렸어요')}
+  if(A==='alertAll'){for(const a of S.alerts)if(a.instId===meId()&&!a.read&&a.kind!=='pay')a.read=true;save();return render()}
   if(A==='alertOk'){const a=S.alerts.find(x=>x.id===D.id);if(a)a.read=true;save();return render()}
   if(A==='plus')return sheetPaste();
   if(A==='parse'){const raw=$('#pRaw').value;const r=parseNotice(raw);const feeV=feeOf(raw),fee=[0,feeV?String(feeV):'',''];
@@ -823,12 +837,12 @@ document.addEventListener('click',async ev=>{
   if(A==='confirm'){const a=S.apps.find(x=>x.id===D.a),j=job(a.jobId);
     const other=S.apps.filter(x=>x.instId===a.instId&&x.status==='확정'&&x.id!==a.id&&job(x.jobId).dates.some(d=>j.dates.includes(d)));
     if(other.length&&!el.dataset.sure){el.dataset.sure=1;el.textContent='그날 다른 확정 강의가 있어요. 그래도 확정';return}
-    a.status='확정';S.alerts.push({id:uid(),instId:a.instId,text:`[확정] ${co(j.coId).name} · ${j.region} ${j.school} ${j.title} (${j.dates.map(d=>`${md(d)}(${dowOf(d)})`).join('·')} ${j.time}) 강의가 확정되었어요.`,at:new Date().toISOString(),read:false});
+    a.status='확정';S.alerts.push({id:uid(),instId:a.instId,appId:a.id,text:`[확정] ${co(j.coId).name} · ${j.region} ${j.school} ${j.title} (${j.dates.map(d=>`${md(d)}(${dowOf(d)})`).join('·')} ${j.time}) 강의가 확정되었어요.`,at:new Date().toISOString(),read:false});
     save();render();return toast(`${inst(a.instId).name} 강사로 확정했어요. 강사에게 확정 알림이 갔어요`)}
   if(A==='unconfirm'){const a=S.apps.find(x=>x.id===D.a);a.status='지원';save();render();return toast('확정을 취소했어요')}
   if(A==='close'){const j=job(D.j);const cf=appsOf(j.id).filter(a=>a.status==='확정').length;
     if(!cf&&!el.dataset.sure){el.dataset.sure=1;el.textContent='확정한 강사가 없어요. 그래도 마감';return}
-    j.status='마감';let n=0;for(const a of appsOf(j.id))if(a.status==='지원'){a.status='미선정';n++;S.alerts.push({id:uid(),instId:a.instId,text:`[마감] ${co(j.coId).name} · ${j.region} ${j.school} ${j.title} (${j.dates.map(d=>`${md(d)}(${dowOf(d)})`).join('·')}) 모집이 마감되었어요. 이번에는 함께하지 못하게 되었어요. 그날은 다른 강의를 잡으셔도 돼요.`,at:new Date().toISOString(),read:false})}save();render();return toast(`마감했어요. 미선정 ${n}명에게 마감 알림이 가고, 그 달력에서 사라졌어요`)}
+    j.status='마감';let n=0;for(const a of appsOf(j.id))if(a.status==='지원'){a.status='미선정';n++;S.alerts.push({id:uid(),instId:a.instId,appId:a.id,text:`[마감] ${co(j.coId).name} · ${j.region} ${j.school} ${j.title} (${j.dates.map(d=>`${md(d)}(${dowOf(d)})`).join('·')}) 모집이 마감되었어요. 이번에는 함께하지 못하게 되었어요. 그날은 다른 강의를 잡으셔도 돼요.`,at:new Date().toISOString(),read:false})}save();render();return toast(`마감했어요. 미선정 ${n}명에게 마감 알림이 가고, 그 달력에서 사라졌어요`)}
   if(A==='notice'){const j=job(D.j),tx=$('#ntText').value.trim();if(!tx&&!$('#ntImg').files[0])return toast('공지 내용을 쓰거나 이미지를 넣으세요');
     const f=$('#ntImg').files[0];const img=f?await shrink(f):'';
     j.notices.push({id:uid(),kind:$('#ntKind').value,text:tx,img,at:new Date().toISOString(),to:appsOf(j.id).filter(a=>a.status==='확정').map(a=>a.instId),reads:{}});save();render();return toast('공지를 보냈어요. 강사 일정 카드 맨 위에 떠요')}
