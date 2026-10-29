@@ -219,7 +219,7 @@ async function start(user, want) {
 const isKakaoUA = /KAKAOTALK/i.test(navigator.userAgent);
 REAL.gate = () => {
   if (!auth.currentUser) return `<div class="card"><h2>강사로 시작하기</h2>
-    <p class="mu"><b>지금 가입하면 3개월 무료</b>예요. 카드 등록 없이 마음껏 써 보세요. 강의 업체는 사업자등록번호를 넣으면 바로 공고를 올릴 수 있어요.</p>
+    <p class="mu"><b>지금 가입하면 3개월 무료</b>예요. 3개월만 써 보세요. 강의 관리에 쓰던 시간이 확실히 줄어듭니다. 카드 등록은 필요 없어요. 강의 업체는 사업자등록번호를 넣으면 바로 공고를 올릴 수 있어요.</p>
     ${isKakaoUA ? '<div class="alert">카카오톡 안에서는 구글 로그인이 막혀요. 아래 이메일로 로그인하거나, 위의 "다른 브라우저로 열기"를 눌러 주세요.</div>' : `<button class="btn pri" data-real="google">구글 계정으로 시작</button>`}
     <label class="f">이메일로 시작 (비밀번호 없이, 메일로 온 링크를 누르면 로그인돼요)<input id="rMail" type="email" autocomplete="email" placeholder="you@example.com"></label>
     <button class="btn ${isKakaoUA ? 'pri' : ''}" data-real="mail">로그인 링크 받기</button>
