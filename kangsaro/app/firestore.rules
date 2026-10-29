@@ -14,6 +14,11 @@ service cloud.firestore {
     function isStaff(c) { return exists(/databases/$(db)/documents/staff/$(c + '_' + me())); }
     function mine(c) { return signed() && c is string && (c == me() || isStaff(c)); }
     function payOk(c) { return signed() && (c == me() || get(/databases/$(db)/documents/staff/$(c + '_' + me())).data.pay == true); }
+    // 사기 의심 공고 (앱의 SCAM_RX와 같은 기준): 이런 말이 있거나 1일 강사료 100만 원 초과 → hold(강사에게 안 보임). 운영자가 cleared로 통과
+    function scam(d) { return (d.get('title', '') + ' ' + d.get('school', '') + ' ' + d.get('desc', '')).matches('(?s).*(텔레그램|telegram|Telegram|open\\.kakao|오픈\\s*카톡|오픈\\s*채팅|선입금|보증금|가입비|등록비|교재비\\s*(입금|선납|구입)|고수익|리딩방|코인|해외\\s*취업).*') || d.get('fee', 0) > 1000000; }
+    function holdOk(d) { return d.get('hold', false) == (scam(d) && d.get('cleared', false) != true); }
+    // 신고는 강사 계정만 (업체·업체로도 쓰는 강사·직원은 못 함)
+    function reporter() { let u = user(me()); return signed() && u.role == 'i' && !isCo(u) && u.get('staffOf', '') == ''; }
     function coOk(c) { return mine(c) && isCo(user(c)) && user(c).approved == true; }
     // 직원이 자기 업체가 확정한 강사의 연락처·서류를 볼 때
     function staffLinked(inst) { let s = user(me()).get('staffOf', ''); return s != '' && isStaff(s) && linked(s, inst); }
@@ -106,8 +111,15 @@ service cloud.firestore {
 
     match /jobs/{j} {
       allow read: if signed();
-      allow create: if coOk(request.resource.data.coId);
-      allow update: if mine(resource.data.coId) && request.resource.data.coId == resource.data.coId;
+      allow create: if coOk(request.resource.data.coId) && request.resource.data.get('cleared', false) == false && !('reports' in request.resource.data) && holdOk(request.resource.data);
+      // 업체: 신고·통과 표시는 못 고침, 내용을 바꾸면 통과가 풀림 / 강사: 자기 신고 한 칸만 / 운영자: 통과·내리기
+      allow update: if (mine(resource.data.coId) && request.resource.data.coId == resource.data.coId
+          && !changed().hasAny(['reports']) && (!changed().hasAny(['cleared']) || request.resource.data.cleared == false)
+          && (!changed().hasAny(['title', 'school', 'desc', 'fee']) || request.resource.data.get('cleared', false) == false)
+          && holdOk(request.resource.data))
+        || (reporter() && changed().hasOnly(['reports'])
+          && request.resource.data.reports.diff(resource.data.get('reports', {})).affectedKeys().hasOnly([me()]))
+        || (admin() && changed().hasOnly(['cleared', 'hold', 'status']) && holdOk(request.resource.data));
       allow delete: if mine(resource.data.coId);
     }
 
@@ -128,6 +140,7 @@ service cloud.firestore {
       allow read: if signed() && party();
       allow create: if signed() && request.resource.data.instId == me() && request.resource.data.status == '지원'
         && request.resource.data.coId == get(/databases/$(db)/documents/jobs/$(request.resource.data.jobId)).data.coId
+        && get(/databases/$(db)/documents/jobs/$(request.resource.data.jobId)).data.get('hold', false) != true
         && !('paidAt' in request.resource.data && request.resource.data.paidAt != null);
       // 강사는 확정·미선정·지급을 스스로 못 바꿈. 업체는 강사 서류·주민번호를 못 넣음
       allow update: if signed() && party()
