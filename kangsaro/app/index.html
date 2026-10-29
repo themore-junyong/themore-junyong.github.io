@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<meta name="build" content="261029-1048">
+<meta name="build" content="261029-1049">
 <title>강사로</title>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#2563EB">
@@ -271,7 +271,8 @@ function seed(){const t=todayIso(),d=n=>addDays(t,n);
       {id:'e2',instId:'i1',dates:[d(5)],title:'경주 ○○고 비즈니스매너',org:'◇◇에듀',time:'09:00~15:50',fee:360000,km:640,toll:38000,st:'confirmed',to:''},
       {id:'e3',instId:'i1',dates:[d(9)],title:'수원 기관 법정교육',org:'☆☆컨설팅',time:'14:00~16:00',fee:160000,km:20,toll:0,st:'applied',to:''}]}}
 let firstVisit=false;
-function load(){try{const s=JSON.parse(localStorage.getItem(KEY));if(s&&s.v===2)return s}catch(e){}firstVisit=true;return seed()}
+// 체험판은 새로고침하면 늘 처음 예시로 (보던 쪽(강사·업체)만 기억)
+function load(){const s=seed();try{const o=JSON.parse(localStorage.getItem(KEY));if(o&&/^[ic]:[ic]\d$/.test(o.me||'')){s.me=o.me;return s}}catch(e){}firstVisit=true;return s}
 function save(){if(SYNC)SYNC()}
 S={v:1,me:'',insts:[],cos:[],jobs:[],apps:[],evs:[],alerts:[]};let SYNC=null;const REAL={};
 
@@ -907,6 +908,6 @@ document.addEventListener('paste',ev=>{if(ev.target.id==='pRaw')setTimeout(()=>{
 document.addEventListener('input',ev=>{if(['pDates','pRaw'].includes(ev.target.id))pWarn();if(['pDates','pFee','pKm','pToll'].includes(ev.target.id))pNet()});
 render();
 </script>
-<script type="module" src="real.js?v=261029-1048"></script>
+<script type="module" src="real.js?v=261029-1049"></script>
 </body>
 </html>
