@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<meta name="build" content="261029-1025">
+<meta name="build" content="261029-1032">
 <title>강사로</title>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#2563EB">
@@ -661,6 +661,15 @@ function vCJobs(){if(ui.jobId&&job(ui.jobId))return vCJob(job(ui.jobId));const t
   ${(()=>{const c=co(meId());return `<div class="card"><h3>프로필 PDF에 넣을 업체 로고</h3><span class="mu sm">올려 두면 지원자 프로필 PDF 맨 위에 우리 로고와 업체명(${esc(c.name)})이 자동으로 들어가요. 학교에 그대로 보내도 돼요.</span><div class="row">${c.logo?`<img src="${c.logo}" alt="업체 로고" style="height:40px;max-width:160px;object-fit:contain">`:''}<label class="btn sm">${c.logo?'로고 바꾸기':'로고 올리기'}<input type="file" accept="image/*" data-act="logo" hidden></label>${c.logo?'<button class="btn sm" data-act="logoDel">지우기</button>':''}</div></div>
   <div class="card"><h3>서류 양식</h3><span class="mu sm">우리 업체 양식(한글·워드·엑셀·PDF, 650KB 이하)을 올려 두면, 그 서류를 받는 강의에 확정된 강사가 '양식 받기'로 내려받아 채워서 올려요.</span>
   ${FORMS.map(n=>{const f=(c.forms||{})[n];return `<div class="row" style="border-top:1px solid var(--ln);padding-top:6px"><span class="sm sp"><b>${esc(n)}</b> ${f?`<span class="mu">${esc(f)}</span>`:'<span class="mu">양식 없음</span>'}</span><label class="btn sm">${f?'바꾸기':'올리기'}<input type="file" data-act="formUp" data-n="${esc(n)}" hidden></label>${f?`<button class="btn sm" data-act="formDel" data-n="${esc(n)}">지우기</button>`:''}</div>`}).join('')}</div>`})()}`}
+// 서류 체크표: 확정 강사(줄) × 받을 서류(칸). ✓를 누르면 내려받기
+function docTable(j,A){const cf=A.filter(a=>a.status==='확정'),N=j.needs.filter(n=>n!=='프로필');if(!cf.length||!N.length)return '';
+  const has=(a,n)=>n===RRN?!!(a.rrn||a.docs[RRN]):!!docOf(a,n),miss=cf.filter(a=>N.some(n=>!has(a,n))),done=cf.length*N.length-cf.reduce((t,a)=>t+N.filter(n=>!has(a,n)).length,0);
+  const cell=(a,n)=>!has(a,n)?'<td style="text-align:center"><b style="color:var(--r2)">✗</b></td>':n===RRN?'<td style="text-align:center;color:#1FA45B">✓</td>':`<td style="text-align:center"><button class="btn sm" style="color:#1FA45B;padding:2px 8px" data-act="getFile" data-p="${esc(docPath(a,n))}" data-nm="${esc(docOf(a,n).replace(/ \(자동\)$/,''))}" title="${esc(n)} 받기">✓</button></td>`;
+  return `<div class="card"><div class="row"><h3 class="sp">서류 체크표</h3><b class="sm" style="color:${miss.length?'var(--r2)':'#1FA45B'}">${done}/${cf.length*N.length} 받음</b></div>
+  <div class="tw"><table><thead><tr><th>강사</th>${N.map(n=>`<th style="text-align:center;white-space:normal;font-size:11px;min-width:44px">${esc(n)}</th>`).join('')}</tr></thead>
+  <tbody>${cf.map(a=>`<tr><td><b>${esc(inst(a.instId).name)}</b></td>${N.map(n=>cell(a,n)).join('')}</tr>`).join('')}</tbody></table></div>
+  <span class="mu sm">✓를 누르면 그 서류를 내려받아요. ✗는 아직 안 낸 서류예요.</span>
+  ${miss.length?`<button class="btn pri" data-act="nudgeDocs" data-j="${j.id}">안 낸 ${miss.length}명(${miss.map(a=>esc(inst(a.instId).name)).join(', ')})에게 요청 공지 보내기</button>`:'<div class="ok">확정 강사 서류를 다 받았어요.</div>'}</div>`}
 function vCJob(j){const A=appsOf(j.id),s=jobStats(j);
   const prof=a=>{const p=inst(a.instId);const cf=a.status==='확정';return `<div class="card"><div class="row">${pic(p)}<h3 class="sp">${esc(p.name)} <span class="mu sm">${esc(p.region)} · ${esc(p.topics)}</span>${verified(p.id).length?` <span class="chip paid">✓ 인증 강의 ${verified(p.id).length}회</span>`:''}</h3>${cf?chip('confirmed'):a.status==='미선정'?'<span class="chip off">미선정</span>':a.status==='취소'?`<span class="chip ${a.cxConfirmed?'warn':'off'}">${a.cxConfirmed?'확정 후 취소':'지원 취소'}</span>`:chip('applied')}</div>
     <span class="mu sm">${esc(p.intro)}</span>
@@ -678,10 +687,10 @@ function vCJob(j){const A=appsOf(j.id),s=jobStats(j);
   <label class="f">공고 내용<textarea data-act="jedit" data-k="desc" rows="4">${esc(j.desc||'')}</textarea></label>
   ${j.status==='모집'?`<button class="btn nv" data-act="close" data-j="${j.id}">모집 마감</button><span class="mu sm">마감하면 확정하지 않은 지원자는 미선정이 되고, 그 강사 달력에서 사라져요.</span>`:''}</div>
   ${A.filter(a=>a.cxConfirmed&&a.status==='취소').map(a=>`<div class="alert">확정했던 ${esc(inst(a.instId).name)} 강사가 취소했어요. 사유: ${esc(a.cxWhy||'없음')} (${new Date(a.cxAt).toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}) · 다른 지원자를 확정하거나 다시 모집해 주세요.</div>`).join('')}
+  ${docTable(j,A)}
   ${A.some(a=>a.status==='지원'||a.status==='확정')?`<button class="btn" data-act="pdfAll" data-j="${j.id}">지원자 프로필 PDF 한 번에 받기 (${A.filter(a=>a.status==='지원'||a.status==='확정').length}명)</button>`:''}
   <h3>지원자 ${A.filter(a=>a.status!=='미선정'&&a.status!=='취소').length}명${A.some(a=>a.status==='미선정')?` · 미선정 ${A.filter(a=>a.status==='미선정').length}명`:''}${A.some(a=>a.status==='취소')?` · 취소 ${A.filter(a=>a.status==='취소').length}명`:''}</h3>
   ${A.filter(a=>a.status!=='미선정'&&a.status!=='취소').map(prof).join('')||'<p class="mu">아직 지원자가 없어요.</p>'}${A.filter(a=>a.status==='취소').map(a=>`<div class="row mu sm">${esc(inst(a.instId).name)} · ${a.cxConfirmed?'확정 후 취소':'지원 취소'}</div>`).join('')}
-  ${missPeople.length?`<button class="btn" data-act="nudgeDocs" data-j="${j.id}">서류 빠진 ${missPeople.length}명에게 요청 공지 보내기</button>`:''}
   <h3>공지</h3>
   <div class="card"><label class="f">종류<select id="ntKind"><option>일반</option><option>시간표</option><option>집결 장소</option><option>주의사항</option><option>준비물</option></select></label><textarea class="f" id="ntText" rows="3" placeholder="도착 장소, 주차, 기자재, 인원, 준비물, 주의사항 등"></textarea><label class="f">사진·이미지 (시간표, 약도 등, 선택)<input type="file" id="ntImg" accept="image/*"></label><button class="btn pri" data-act="notice" data-j="${j.id}" ${s.cf?'':'disabled'}>확정 강사 ${s.cf}명에게 공지 보내기</button></div>
   ${j.notices.slice().reverse().map(n=>{const to=n.to||[],rd=to.filter(i=>n.reads[i]);return `<div class="card">${n.kind?`<b class="sm">[${esc(n.kind)}]</b>`:''}<pre class="pf">${esc(n.text)}</pre>${n.img?`<img src="${n.img}" alt="공지 이미지" style="width:100%;border-radius:8px">`:''}<span class="mu sm">읽음 ${rd.length}/${to.length}${to.length>rd.length?` · 안 읽음: ${to.filter(i=>!n.reads[i]).map(i=>esc(inst(i).name)).join(', ')}`:''}</span>
@@ -877,6 +886,6 @@ document.addEventListener('paste',ev=>{if(ev.target.id==='pRaw')setTimeout(()=>{
 document.addEventListener('input',ev=>{if(['pDates','pRaw'].includes(ev.target.id))pWarn();if(['pDates','pFee','pKm','pToll'].includes(ev.target.id))pNet()});
 render();
 </script>
-<script type="module" src="real.js?v=261029-1025"></script>
+<script type="module" src="real.js?v=261029-1032"></script>
 </body>
 </html>
