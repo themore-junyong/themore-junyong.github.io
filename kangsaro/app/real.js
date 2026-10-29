@@ -219,7 +219,7 @@ async function start(user, want) {
 const isKakaoUA = /KAKAOTALK/i.test(navigator.userAgent);
 REAL.gate = () => {
   if (!auth.currentUser) return `<div class="card"><h2>강사로 시작하기</h2>
-    <p class="mu"><b>지금 가입하면 강사·업체 모두 3개월 무료</b>예요 (정식 운영 뒤에도 3개월 더). 강의 업체는 사업자등록번호를 넣으면 바로 공고를 올릴 수 있어요.</p>
+    <p class="mu"><b>지금 가입하면 3개월 무료</b>예요. 카드 등록 없이 바로 써요. 강의 업체는 사업자등록번호를 넣으면 바로 공고를 올릴 수 있어요.</p>
     ${isKakaoUA ? '<div class="alert">카카오톡 안에서는 구글 로그인이 막혀요. 아래 이메일로 로그인하거나, 위의 "다른 브라우저로 열기"를 눌러 주세요.</div>' : `<button class="btn pri" data-real="google">구글 계정으로 시작</button>`}
     <label class="f">이메일로 시작 (비밀번호 없이, 메일로 온 링크를 누르면 로그인돼요)<input id="rMail" type="email" autocomplete="email" placeholder="you@example.com"></label>
     <button class="btn ${isKakaoUA ? 'pri' : ''}" data-real="mail">로그인 링크 받기</button>
@@ -363,7 +363,7 @@ async function refSheet() {
     <span class="mu sm">강사는 프로필(분야·소개)을 채우면, 업체는 공고를 1건 올리면 인정돼요. 최대 ${dayTxt(REF_MAX)}까지 쌓여요.</span>
     <label class="f">내 소개 링크<input readonly value="${esc(refLink())}" onclick="this.select()"></label>
     <div class="row"><button class="btn pri" data-real="refCopy">소개 문구 복사</button>${can ? '<button class="btn" data-real="refShare">공유하기</button>' : ''}</div>
-    <div class="card"><b>쌓인 무료 기간: ${dayTxt(got)}</b><span class="mu sm">유료로 바뀔 때 이 기간만큼 무료로 써요.${mine ? ` (소개로 가입한 ${dayTxt(mine)} 포함)` : ''}</span></div>
+    <div class="card"><b>쌓인 무료 기간: ${dayTxt(got)}</b><span class="mu sm">3개월 무료가 끝난 뒤 이 기간만큼 더 무료로 써요.${mine ? ` (소개로 가입한 ${dayTxt(mine)} 포함)` : ''}</span></div>
     <h3>내가 소개한 분 (${rows.length})</h3>
     ${rows.map(r => `<div class="row"><span class="sp">${esc(r.name || '')} <span class="mu sm">${r.role === 'c' ? '업체' : '강사'} · 가입 ${esc(r.joined || '')}</span></span><span class="sm">${r.done ? `✓ ${dayTxt(refDays(r.role))}` : (r.role === 'c' ? '공고 전' : '프로필 작성 전')}</span></div>`).join('') || '<p class="mu">아직 없어요. 링크를 톡방이나 지인에게 보내 보세요.</p>'}`);
 }
