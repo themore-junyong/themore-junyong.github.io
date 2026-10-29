@@ -1,5 +1,5 @@
 :root{--bg:#F3F5F4;--sf:#fff;--fg:#16222B;--mu:#4F5D66;--ln:#D5DDDC;--ac:#2563EB;--acs:#E3ECFF;--nv:#2D3E73;--nvs:#E3E7F4;--warn:#9A3608;--warns:#FDECE3}
-@media (prefers-color-scheme:dark){:root{--bg:#0F1719;--sf:#172225;--fg:#E7EEEE;--mu:#A3B2B5;--ln:#2C3A3E;--ac:#6B9BFF;--acs:#1A2747;--nv:#9DAEE6;--nvs:#1E2640;--warn:#F2A57E;--warns:#3A2116;color-scheme:dark}}
+
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--fg);font-family:'S-Core Dream','Apple SD Gothic Neo','Malgun Gothic',sans-serif;font-size:16px;line-height:1.75;word-break:keep-all}
 main{max-width:720px;margin:0 auto;padding:24px 16px 64px}
