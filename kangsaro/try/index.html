@@ -12,12 +12,14 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="강사로">
 <link rel="stylesheet" href="../fonts/font.css">
+<script>try{if(localStorage.getItem('kangsaro.theme')==='dark')document.documentElement.dataset.theme='dark'}catch(e){}</script>
 <style>
 :root{--bg:#F3F5F9;--sf:#FFFFFF;--fg:#16222B;--mu:#4F5D66;--ln:#D7DDE6;--ac:#2563EB;--acs:#E3ECFF;--hd:#2563EB;--nv:#2D3E73;--nvs:#E3E7F4;
 --g1:#E3E7E9;--g2:#3B4650;--b1:#DCEBFA;--b2:#1A4F8A;--p1:#ECE2F7;--p2:#5B3A8C;--k1:#DDF1E4;--k2:#1E6B3A;--r1:#FDECE3;--r2:#9A3608;--sun:#B3261E;
 font-family:'S-Core Dream','Apple SD Gothic Neo','Malgun Gothic',sans-serif}
-@media (prefers-color-scheme:dark){:root{--bg:#0B1113;--sf:#1D2A2E;--fg:#E7EEEE;--mu:#A3B2B5;--ln:#33464B;--ac:#6B9BFF;--acs:#1A2747;--hd:#1D4ED8;--nv:#9DAEE6;--nvs:#1E2640;
---g1:#2A3337;--g2:#C9D2D6;--b1:#1B2F47;--b2:#9CC6F2;--p1:#2E2540;--p2:#CDB5EE;--k1:#173426;--k2:#94D9AE;--r1:#3A2116;--r2:#F2A57E;--sun:#F28B82;color-scheme:dark}}
+/* 기본은 밝은 화면. 위쪽 🌙 버튼으로 어두운 화면을 고르면 이 색을 씀 */
+:root[data-theme="dark"]{--bg:#0B1113;--sf:#1D2A2E;--fg:#E7EEEE;--mu:#A3B2B5;--ln:#33464B;--ac:#6B9BFF;--acs:#1A2747;--hd:#1D4ED8;--nv:#9DAEE6;--nvs:#1E2640;
+--g1:#2A3337;--g2:#C9D2D6;--b1:#1B2F47;--b2:#9CC6F2;--p1:#2E2540;--p2:#CDB5EE;--k1:#173426;--k2:#94D9AE;--r1:#3A2116;--r2:#F2A57E;--sun:#F28B82;color-scheme:dark}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--fg);font-size:15px;line-height:1.55}
 button,input,select,textarea{font:inherit;color:inherit}
@@ -85,7 +87,7 @@ pre.pf{white-space:pre-wrap;font:inherit;font-size:13px;background:var(--bg);bor
 <body>
 <div class="app">
 <header>
-  <div class="brand"><b>강사로</b><span class="beta">무료 시범 운영</span><span class="sp"></span><button class="btn sm pri" id="instBtn" data-act="install" hidden>앱 설치</button><button class="btn sm" data-act="reset" title="체험 데이터 처음으로">처음으로</button></div>
+  <div class="brand"><b>강사로</b><span class="beta">무료 시범 운영</span><span class="sp"></span><button class="btn sm pri" id="instBtn" data-act="install" hidden>앱 설치</button><button class="btn sm" id="thBtn" title="밝은 화면 / 어두운 화면" aria-label="화면 밝기 바꾸기">🌙</button><button class="btn sm" data-act="reset" title="체험 데이터 처음으로">처음으로</button></div>
   <div id="kakaoBar" class="alert" hidden>카카오톡 안에서는 앱 설치가 안 돼요. <a id="kakaoOut" href="#" style="font-weight:700;color:inherit">다른 브라우저로 열기 →</a></div>
   <div class="who"><span>체험 중:</span><select id="who" aria-label="누구로 써 볼지 고르기"></select></div>
 </header>
@@ -93,6 +95,11 @@ pre.pf{white-space:pre-wrap;font:inherit;font-size:13px;background:var(--bg);bor
 </div>
 <nav><div class="in" id="nav"></div></nav>
 <div id="toast" role="status"></div>
+<script>
+// 밝은/어두운 화면 직접 고르기 (폰 설정과 상관없이 기본은 밝게)
+(()=>{const b=document.getElementById('thBtn'),r=document.documentElement,set=d=>{if(d)r.dataset.theme='dark';else delete r.dataset.theme;b.textContent=d?'☀️':'🌙';b.title=d?'밝은 화면으로':'어두운 화면으로'};
+set(r.dataset.theme==='dark');b.onclick=()=>{const d=r.dataset.theme!=='dark';set(d);try{localStorage.setItem('kangsaro.theme',d?'dark':'light')}catch(e){}}})();
+</script>
 <div id="sheet"></div>
 <script>
 /* ===== 도우미·공고 읽기 (lecture-app v1에서 가져옴) ===== */
