@@ -16,7 +16,7 @@
 :root{--bg:#F3F5F4;--sf:#FFFFFF;--fg:#16222B;--mu:#4F5D66;--ln:#D5DDDC;--ac:#1F6F78;--acs:#E1EEEE;--nv:#2D3E73;--nvs:#E3E7F4;
 --g1:#E3E7E9;--g2:#3B4650;--b1:#DCEBFA;--b2:#1A4F8A;--p1:#ECE2F7;--p2:#5B3A8C;--k1:#DDF1E4;--k2:#1E6B3A;--r1:#FDECE3;--r2:#9A3608;--sun:#B3261E;
 font-family:'S-Core Dream','Apple SD Gothic Neo','Malgun Gothic',sans-serif}
-@media (prefers-color-scheme:dark){:root{--bg:#0F1719;--sf:#172225;--fg:#E7EEEE;--mu:#A3B2B5;--ln:#2C3A3E;--ac:#5FB7BF;--acs:#183338;--nv:#9DAEE6;--nvs:#1E2640;
+@media (prefers-color-scheme:dark){:root{--bg:#0B1113;--sf:#1D2A2E;--fg:#E7EEEE;--mu:#A3B2B5;--ln:#33464B;--ac:#5FB7BF;--acs:#183338;--nv:#9DAEE6;--nvs:#1E2640;
 --g1:#2A3337;--g2:#C9D2D6;--b1:#1B2F47;--b2:#9CC6F2;--p1:#2E2540;--p2:#CDB5EE;--k1:#173426;--k2:#94D9AE;--r1:#3A2116;--r2:#F2A57E;--sun:#F28B82;color-scheme:dark}}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--fg);font-size:15px;line-height:1.55}
@@ -51,6 +51,9 @@ label.f input,label.f select,label.f textarea,textarea.f{padding:9px 10px;border
 .day.blank{background:transparent;border-color:transparent;cursor:default}.day.sel{border:2px solid var(--ac);background:var(--acs)}.day.clash{border:2px solid var(--r2)}
 .day .n{font-size:11px;font-weight:500}.day .n.red{color:var(--sun)}.day .n.blue{color:var(--b2)}.day .n.today{background:var(--ac);color:var(--bg);border-radius:99px;width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;font-weight:700}
 .bar{display:block;font-size:10px;font-weight:600;line-height:1.3;padding:1px 3px;border-radius:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* 달력 막대는 진한 색 + 흰 글씨: 배경과 확 구분되게 */
+.bar.applied{background:#7D8A93;color:#fff}.bar.confirmed{background:#2B7DE9;color:#fff}.bar.done{background:#8B5CF6;color:#fff}.bar.paid{background:#1FA45B;color:#fff}.bar.warn{background:#E8590C;color:#fff}
+.lg .applied{background:#7D8A93;color:#fff}.lg .confirmed{background:#2B7DE9;color:#fff}.lg .done{background:#8B5CF6;color:#fff}.lg .paid{background:#1FA45B;color:#fff}
 .sum{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
 .sum div{background:var(--sf);border:1px solid var(--ln);border-radius:12px;padding:8px 10px;display:flex;flex-direction:column}
 .sum b{font-size:15px;font-variant-numeric:tabular-nums}
@@ -71,7 +74,7 @@ nav .plus{width:52px;height:52px;border-radius:26px;background:var(--ac);color:v
 details summary{cursor:pointer;font-weight:600;font-size:13px;color:var(--ac)}
 pre.pf{white-space:pre-wrap;font:inherit;font-size:13px;background:var(--bg);border-radius:10px;padding:10px;margin:0}
 /* 노트북·PC: 화면을 넓게, 달력 칸을 크게, 창은 가운데에 */
-@media (min-width:1024px){.app{max-width:960px}nav .in{max-width:960px}.day{height:96px}
+@media (min-width:1024px){.app{max-width:960px}nav .in{max-width:960px}.day{height:96px}.bar{font-size:12px;padding:2px 6px}
 .sheet{align-items:center}.sheet .in{max-width:720px;border-radius:18px;max-height:88vh}}
 @media (prefers-reduced-motion:reduce){#toast{transition:none}}
 </style>
@@ -340,7 +343,7 @@ function vCal(){const iid=meId(),E=entries(iid),t=todayIso();const [Y,M]=ui.mont
   const paid=ME.filter(e=>e.st==='paid').reduce((a,e)=>a+tax(e.fee).net,0),unpaid=ME.filter(e=>e.st==='done').reduce((a,e)=>a+tax(e.fee).net,0),net=ME.filter(e=>e.st!=='applied').reduce((a,e)=>a+netOf(e),0);
   const DE=E.filter(e=>e.d===ui.sel);const late=E.filter(e=>e.st==='done'&&addDays(e.d,30)<t);
   return `<div class="row"><h2>${Y}년 ${M}월</h2><span class="sp"></span><button class="btn sm" data-act="mon" data-n="-1" aria-label="이전 달">‹</button><button class="btn sm" data-act="mon" data-n="0">오늘</button><button class="btn sm" data-act="mon" data-n="1" aria-label="다음 달">›</button></div>
-  <div class="row">${Object.keys(ST).map(chip).join('')}<span class="chip warn">빨간 테두리 = 겹침</span></div>
+  <div class="row lg">${Object.keys(ST).map(chip).join('')}<span class="chip warn">빨간 테두리 = 겹침</span></div>
   ${(()=>{const U=unpaidList(iid);return U.length?`<button class="btn" data-act="unpaid" style="border-color:var(--r2);color:var(--r2)">미입금 ${U.length}건 · ${won(U.reduce((a,u)=>a+u.net,0))} 보기</button>`:''})()}
   ${late.length?`<div class="alert">강의 끝나고 30일이 지났는데 아직 못 받은 강사료가 ${late.length}건 있어요.</div>`:''}
   <div class="dow">${[...DOW].map(x=>`<span>${x}</span>`).join('')}</div><div class="cal">${cells.join('')}</div>
@@ -522,15 +525,56 @@ const VAULT=['통장사본','신분증 사본'],RRN='주민등록번호';
 // 확정된 업체에만: 업체가 따로 올린 서류가 없으면 강사가 '내 서류'에 저장한 파일을 자동으로 넘겨요
 function docOf(a,n){if(a.docs[n])return a.docs[n];const v=(inst(a.instId).vault||{})[n];return a.status==='확정'&&VAULT.includes(n)&&v?v+' (자동)':''}
 function profileText(p){const V=verified(p.id);return `■ 강사 프로필\n이름: ${p.name}\n연락처: ${p.phone}\n메일: ${p.email}\n지역: ${p.region}\n강의 분야: ${p.topics}\n\n${p.intro}\n\n${V.length?`[강사로 인증 강의 ${V.length}회] 업체 확정·강의·입금까지 끝난 강의\n${V.map(v=>'✓ '+vLine(v)).join('\n')}\n\n`:''}[강의 경력 (본인 작성)]\n${p.career}`}
+// 구글 캘린더 내보내기(.ics, .zip) → 강의로 보이는 일정만 골라 importEvs 형식으로 바꿔요
+const LECT=/강의|강사|특강|교시|수업|강연|연수|교육|캠프|코칭|멘토링|워크숍|컨설팅/;
+function wonIn(s){const m=String(s).match(/(\d{1,3}(?:,\d{3})+|\d+(?:\.\d+)?)\s*(만\s*원?|원)/g);if(!m)return[];
+  return m.map(x=>{const n=parseFloat(x.replace(/,/g,''));return /만/.test(x)?Math.round(n*1e4):n}).filter(n=>n>=1e4&&n<1e8)}
+function icsFee(t){const L=String(t).split('\n'),line=L.find(l=>/페이|강사료|강의료|강사비|사례비/.test(l));
+  if(line){const p=line.split('=').pop(),a=wonIn(p);if(a.length)return /=/.test(line)?a[0]:Math.max(...wonIn(line.split(/[(（]/)[0]).concat(a))}
+  const a=wonIn(L.filter(l=>!/교통|유류|기름|통행|차비|숙박|주차/.test(l)).join('\n'));return a.length?a[0]:0}
+function icsDate(v,p){const m=v.match(/^(\d{4})(\d{2})(\d{2})(?:T(\d{2})(\d{2})\d{0,2}(Z)?)?/);if(!m)return null;
+  let d=new Date(Date.UTC(+m[1],m[2]-1,+m[3],+(m[4]||0),+(m[5]||0)));if(m[6])d=new Date(d.getTime()+9*36e5);
+  const iso=d.toISOString();return{d:iso.slice(0,10),t:m[4]?iso.slice(11,16):'',all:!m[4]}}
+function parseIcs(txt){const L=String(txt).replace(/\r\n[ \t]/g,'').replace(/\n[ \t]/g,'').split(/\r?\n/),out=[];let e=null;
+  const un=s=>s.replace(/\\n/gi,'\n').replace(/\\([,;\\])/g,'$1');
+  for(const l of L){if(l==='BEGIN:VEVENT'){e={};continue}if(l==='END:VEVENT'){if(e)out.push(e);e=null;continue}if(!e)continue;
+    const i=l.indexOf(':');if(i<0)continue;const k=l.slice(0,i).split(';')[0],v=l.slice(i+1);
+    if(k==='SUMMARY')e.sum=un(v);else if(k==='DESCRIPTION')e.desc=un(v);else if(k==='LOCATION')e.loc=un(v);else if(k==='UID')e.uid=v;
+    else if(k==='DTSTART')e.s=icsDate(v);else if(k==='DTEND')e.e=icsDate(v);else if(k==='STATUS')e.st=v;else if(k==='RRULE')e.rr=1}
+  const evs=[];
+  for(const e of out){if(!e.s||e.st==='CANCELLED'||e.rr)continue;const all=(e.sum||'')+'\n'+(e.desc||'');
+    if(!LECT.test(e.sum||'')&&!(LECT.test(all)&&/페이|강사료|강의료|강사비/.test(all)))continue;
+    if(/^\s*\[(입금|개인|봉사|일정)/.test(e.sum||''))continue;
+    const ds=[];let d=new Date(e.s.d+'T00:00:00Z');const end=e.e?new Date(e.e.d+'T00:00:00Z'):d;
+    do{ds.push(d.toISOString().slice(0,10));d=new Date(d.getTime()+864e5)}while(ds.length<14&&(e.s.all?d<end:d<=end));
+    const tm=e.s.t?`${e.s.t}~${e.e&&e.e.t||''}`.replace(/~$/,''):((e.sum||'').match(/\d{1,2}:\d{2}(?:\s*[~-]\s*\d{1,2}:\d{2})?/)||[''])[0];
+    const title=(e.sum||'').replace(/^\s*\[[^\]]*\]\s*/,'').replace(/^\d{1,2}:\d{2}\s*/,'').trim()||'강의';
+    const org=(((e.desc||'').match(/(?:진행팀|기관|업체|주최)\s*[:：]\s*([^\n]+)/)||[])[1]||e.loc||'').replace(/\s*\([^)]*@[^)]*\)/,'').trim();
+    const st=/^\s*\[지원/.test(e.sum||'')?'applied':/☑\s*입금|입금\s*완료|지급\s*완료/.test(e.desc||'')?'paid':'confirmed';
+    evs.push({key:e.uid?'gcal:'+e.uid.replace(/@google\.com$/,''):'',dates:ds,title,org,time:tm,fee:icsFee(all),st})}
+  return evs}
+// 구글은 .zip으로 내보내요: 압축 안의 .ics를 모두 꺼내요
+async function unzipIcs(buf){const b=new Uint8Array(buf),v=new DataView(buf),out=[];let p=b.length-22;
+  while(p>=0&&v.getUint32(p,true)!==0x06054b50)p--;if(p<0)return out;let c=v.getUint32(p+16,true);const n=v.getUint16(p+10,true);
+  for(let i=0;i<n;i++){const meth=v.getUint16(c+10,true),sz=v.getUint32(c+20,true),fl=v.getUint16(c+28,true),xl=v.getUint16(c+30,true),cl=v.getUint16(c+32,true),off=v.getUint32(c+42,true);
+    const name=new TextDecoder().decode(b.subarray(c+46,c+46+fl));c+=46+fl+xl+cl;if(!/\.ics$/i.test(name))continue;
+    const s=off+30+v.getUint16(off+26,true)+v.getUint16(off+28,true),raw=b.subarray(s,s+sz);
+    if(meth===0)out.push(new TextDecoder().decode(raw));
+    else if(meth===8&&typeof DecompressionStream!=='undefined')out.push(await new Response(new Blob([raw]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).text())}
+  return out}
+async function importFile(f){try{
+  if(/\.zip$/i.test(f.name)){const t=await unzipIcs(await f.arrayBuffer());if(!t.length)return toast('압축 파일 안에서 캘린더(.ics)를 찾지 못했어요');return importEvs(t.flatMap(parseIcs),'zip')}
+  const t=await f.text();return /BEGIN:VCALENDAR/.test(t)?importEvs(parseIcs(t),'ics'):importEvs(t)}catch(e){toast('파일을 읽지 못했어요')}}
 // 일정 가져오기: {evs:[{key,dates,title,org,time,fee,km,toll,st}]} — key가 같은 일정은 건너뜀
-function importEvs(txt){let d;try{d=JSON.parse(String(txt).trim())}catch(e){return toast('일정 파일을 읽지 못했어요')}
+function importEvs(txt,src){let d;if(Array.isArray(txt))d=txt;else try{d=JSON.parse(String(txt).trim())}catch(e){return /BEGIN:VCALENDAR/.test(txt)?importEvs(parseIcs(txt),'ics'):toast('일정 파일을 읽지 못했어요')}
+  if(src&&!d.length)return toast('강의로 보이는 일정을 찾지 못했어요. 일정 제목에 \'강의\'를 넣어 두면 찾아요');
   const L=Array.isArray(d)?d:d&&d.evs;if(!Array.isArray(L))return toast('일정 파일을 읽지 못했어요');
   const me=meId(),have=new Set(S.evs.filter(x=>x.instId===me&&x.key).map(x=>x.key));let n=0,skip=0;
   for(const e of L){const ds=(e.dates||[]).filter(x=>/^\d{4}-\d{2}-\d{2}$/.test(x)).sort();if(!ds.length||!e.title){skip++;continue}
     if(e.key&&have.has(e.key)){skip++;continue}
     S.evs.push({id:uid(),instId:me,dates:ds,title:String(e.title).slice(0,80),org:String(e.org||'').slice(0,60),time:String(e.time||'').slice(0,40),fee:+e.fee||0,km:+e.km||0,toll:+e.toll||0,
       st:['applied','confirmed','paid','no'].includes(e.st)?e.st:'confirmed',to:'',key:e.key?String(e.key).slice(0,80):''});if(e.key)have.add(e.key);n++}
-  save();ui.tab='cal';render();toast(`일정 ${n}개를 넣었어요${skip?` (${skip}개는 이미 있거나 날짜가 없어 건너뜀)`:''}`)}
+  save();ui.tab='cal';render();toast(`일정 ${n}개를 넣었어요${skip?` (${skip}개는 이미 있거나 날짜가 없어 건너뜀)`:''}${src&&n?'. 강사료가 0원인 일정은 눌러서 고쳐 주세요':''}`)}
 function vMe(){const p=inst(meId());
   return `<h2>내 프로필</h2><p class="mu sm">한 번만 쓰면 지원할 때마다 같이 가요. 계좌·통장사본·신분증 사본은 나를 확정한 회사만 볼 수 있어요. 주민등록번호는 저장하지 않아요.</p>
   <div class="card"><div class="row">${pic(p)}<div class="sp" style="display:flex;flex-direction:column;gap:4px"><b>프로필 사진</b><span class="mu sm">얼굴이 잘 보이는 정면 사진이 좋아요. 업체가 지원자 목록과 당일 현황에서 봐요.</span></div></div>
@@ -542,8 +586,9 @@ function vMe(){const p=inst(meId());
   ${(()=>{const V=verified(p.id);return `<div class="card"><h3>강의 이력</h3><span class="mu sm">강사로에서 업체가 확정하고, 강의를 마치고, 강사료 입금까지 끝난 강의만 자동으로 쌓이고 <span class="chip paid">✓ 강사로 인증</span>이 붙어요. 그 전 경력은 위 '강의 경력'에 직접 쓰면 '본인 작성'으로 보여요.</span>
     ${V.map(v=>`<div class="row sm"><span class="chip paid">✓ 인증</span><span class="sp">${esc(vLine(v))}</span></div>`).join('')||'<span class="mu sm">아직 입금까지 끝난 강사로 강의가 없어요.</span>'}
     ${String(p.career||'').split('\n').filter(x=>x.trim()).map(x=>`<div class="row sm"><span class="chip off">본인 작성</span><span class="sp">${esc(x)}</span></div>`).join('')}</div>`})()}
-  <div class="card"><h3>다른 달력에서 일정 가져오기</h3><span class="mu sm">강사로 일정 파일(.json)을 고르거나 내용을 붙여 넣으면 내 달력에 한 번에 들어가요. 같은 일정은 두 번 들어가지 않아요.</span>
-    <div class="row"><label class="btn sm">파일 고르기<input type="file" accept=".json,.txt,application/json,text/plain" data-act="evImport" hidden></label></div>
+  <div class="card"><h3>다른 달력에서 일정 가져오기</h3><span class="mu sm">구글 캘린더에서 내보낸 파일(.zip, .ics)이나 강사로 일정 파일(.json)을 고르면, 강의로 보이는 일정만 내 달력에 한 번에 들어가요. 같은 일정은 두 번 들어가지 않아요.</span>
+    <details class="sm mu"><summary>구글 캘린더 파일 받는 법</summary>PC에서 구글 캘린더 → 오른쪽 위 톱니바퀴 → 설정 → 왼쪽 '가져오기/내보내기' → <b>내보내기</b>를 누르면 .zip 파일이 받아져요. 그 파일을 그대로 고르세요. (폰 구글 캘린더 앱에는 내보내기가 없어요)</details>
+    <div class="row"><label class="btn sm">파일 고르기<input type="file" accept=".zip,.ics,.json,.txt,application/zip,text/calendar,application/json,text/plain" data-act="evImport" hidden></label></div>
     <textarea id="evImportTxt" rows="2" placeholder="또는 파일 내용을 여기에 붙여 넣기"></textarea><button class="btn sm" data-act="evImportTxt">붙여 넣은 일정 가져오기</button></div>
   <div class="card"><h3>회사에 보이는 프로필 카드</h3><pre class="pf">${esc(profileText(p))}</pre><button class="btn" data-act="copyPf">프로필 복사</button></div>
   <p class="mu sm">가입일 ${esc(p.joined)} · ${p.beta?'시범 운영 회원 (정식 운영 때 감사 혜택 대상)':''}</p>`}
@@ -750,7 +795,7 @@ document.addEventListener('change',ev=>{const el=ev.target,D=el.dataset||{};
   if(D.act==='jf'){ui.jmore=0;ui.jf[D.k]=el.type==='checkbox'?el.checked:el.value.trim();render();return}
   if(D.act==='km'||D.act==='toll'){const o=D.kind==='ev'?S.evs.find(x=>x.id===D.id):S.apps.find(x=>x.id===D.id);o[D.act]=+el.value||0;save();render()}
   if(D.act==='pf'){const p=inst(meId());p[D.k]=D.k==='kmpl'||D.k==='fuel'?+el.value||0:el.value;save();render()}
-  if(D.act==='evImport'&&el.files[0]){el.files[0].text().then(importEvs);el.value='';return}
+  if(D.act==='evImport'&&el.files[0]){importFile(el.files[0]);el.value='';return}
   if(D.act==='vault'&&el.files[0]){const p=inst(meId());p.vault=p.vault||{};p.vault[D.n]=el.files[0].name;save();render();toast(`${D.n} 저장했어요 (체험판은 파일 이름만 저장해요)`);return}
   if(D.act==='photo'&&el.files[0]){shrink(el.files[0],480).then(u=>{if(!u)return toast('사진을 읽지 못했어요');inst(meId()).photo=u;save();render();toast('프로필 사진을 올렸어요')});return}
   if(D.act==='doc'&&el.files[0]){const a=S.apps.find(x=>x.id===D.a);a.docs[D.n]=el.files[0].name;save();render();toast(`${D.n} 냈어요 (체험판은 파일 이름만 저장해요)`)}
