@@ -107,6 +107,7 @@ function prime(keys) {
 let timer = null, busy = false, again = false;
 SYNC = () => { clearTimeout(timer); timer = setTimeout(flush, 250); };
 async function flush() {
+  if (LOCK) return;
   if (busy) { again = true; return; }
   busy = true; clearTimeout(timer);
   try {
@@ -353,6 +354,7 @@ document.addEventListener('click', async e => {
   if (k === 'staffLeave') { if (!confirm('이 업체에서 나갈까요? 다시 일하려면 새 초대 링크가 필요해요.')) return; await deleteDoc(doc(db, 'staff', `${CO}_${uidMe}`)); closeSheet(); return; }
   if (k === 'maint') { const on = !SITE.maint; if (on && !confirm('모든 사용자 화면에 "업데이트 중입니다"를 띄울까요? 관리자 화면은 그대로예요.')) return; await setDoc(doc(db, 'site', 'main'), { maint: on, at: new Date().toISOString() }, { merge: true }); toast(on ? '업데이트 중 표시를 켰어요' : '업데이트 중 표시를 껐어요. 사용자 화면이 다시 열려요'); return adminSheet(); }
   if (k === 'reload') return location.reload();
+  if (k === 'lockInfo') return lockSheet();
   if (k === 'ref') return refSheet();
   if (k === 'refCopy') { const t = refText(); try { await navigator.clipboard.writeText(t); toast('복사했어요. 카톡에 붙여 넣으세요'); } catch (err) { prompt('길게 눌러 복사해 주세요', t); } return; }
   if (k === 'refShare') { try { await navigator.share({ title: '강사로', text: refText() }); } catch (err) { } return; }
@@ -430,10 +432,42 @@ async function termEnd() {
   let got = u.refBy && await refDone({ ...u, id }) ? refDays(u.role) : 0;
   for (const x of d ? d.docs : []) if (await refDone({ id: x.id, ...x.data() })) got += refDays(x.data().role);
   const e = new Date(js[0] + 'T00:00:00'); e.setMonth(e.getMonth() + 3); e.setDate(e.getDate() + Math.min(REF_MAX, got));
-  return `${e.getFullYear()}.${pad(e.getMonth() + 1)}.${pad(e.getDate())}`;
+  return `${e.getFullYear()}-${pad(e.getMonth() + 1)}-${pad(e.getDate())}`;
 }
-// 운영자 계정은 기간 없이 계속 씀
-async function showTerm() { const el = $('#term'); if (!el) return; const t = !S.me ? '' : isAdm() ? '운영자 · 기간 없음' : await termEnd().then(d => d && `이용 기간 ~${d}`).catch(() => ''); el.textContent = t; el.hidden = !t; }
+// 운영자 계정은 기간 없이 계속 씀. 기간이 지나면 보기만 (LOCK)
+let LOCK = false, TERM = '';
+// 업체 요금제 (한 달에 올리는 강의 수 기준)
+const PLANS = [['베이직', '10건 미만', '1만 원'], ['스탠다드', '30건 미만', '3만 원'], ['프로', '30건 이상', '5만 원']];
+const PLANS_I = [['베이직', '달력·지원', '4,900원'], ['프로', '+ 결산', '9,900원']];
+async function showTerm() {
+  const el = $('#term'); if (!el) return;
+  TERM = !S.me || isAdm() ? '' : await termEnd().catch(() => '');
+  LOCK = !!TERM && todayIso() > TERM;
+  const t = !S.me ? '' : isAdm() ? '운영자 · 기간 없음' : !TERM ? '' : LOCK ? '이용 기간 끝남 · 보기만 가능' : `이용 기간 ~${TERM.replace(/-/g, '.')}`;
+  el.textContent = t; el.hidden = !t; el.style.cssText = LOCK ? 'background:var(--r2);color:#fff;cursor:pointer' : '';
+  if (LOCK) el.dataset.real = 'lockInfo'; else delete el.dataset.real;
+}
+// 기간이 끝나면 화면 이동·보기만 되고, 지원·등록·수정·내려받기·복사 등은 막음
+const OPEN_ACT = new Set(['alMore', 'alertGo', 'alertOk', 'back', 'closeSheet', 'closeSheetBg', 'cmon', 'csel', 'jmore', 'jf', 'mgo', 'mmon', 'mon', 'mview', 'openJob', 'sel', 'unpaid', 'year', 'install']);
+const OPEN_REAL = new Set(['out', 'ref', 'refCopy', 'refShare', 'reload', 'swap', 'lockInfo', 'staffLeave']);
+function lockSheet() {
+  openSheet(`<div class="row"><h2 class="sp">이용 기간이 끝났어요</h2><button class="btn sm" data-act="closeSheet">닫기</button></div>
+    <p>${TERM.replace(/-/g, '.')}까지였던 이용 기간이 끝나서 지금은 <b>지금까지 한 것을 보기만</b> 할 수 있어요. 지원, 등록, 수정, 내려받기는 잠겨 있어요.</p>
+    ${role === 'i' ? `<div class="card"><b>강사 요금</b>${PLANS_I.map(x => `<div class="row"><b class="sp">${x[0]}</b><span class="sm">${x[1]}</span><b>월 ${x[2]}</b></div>`).join('')}</div>` : ''}
+    ${role === 'c' ? `<div class="card"><b>업체 요금 (한 달에 올리는 강의 수 기준)</b>${PLANS.map(x => `<div class="row"><b class="sp">${x[0]}</b><span class="sm">${x[1]}</span><b>월 ${x[2]}</b></div>`).join('')}<span class="mu sm">직원 수와 상관없이 같아요.</span></div>` : ''}
+    <p class="mu sm">계속 쓰려면 <a href="mailto:tobadyclup@naver.com">tobadyclup@naver.com</a>으로 문의해 주세요. 소개하기로 가입한 분이 생기면 기간이 늘어나서 바로 다시 열려요.</p>
+    <button class="btn pri" data-real="ref">소개하고 기간 늘리기</button>`);
+}
+function lockGuard(e) {
+  if (!LOCK) return;
+  const t = e.target.closest('[data-act],[data-real]'); if (!t) return;
+  if (t.dataset.real ? OPEN_REAL.has(t.dataset.real) : OPEN_ACT.has(t.dataset.act)) return;
+  e.preventDefault(); e.stopImmediatePropagation();
+  if (e.type === 'change' && 'value' in t && t.type !== 'file') render();
+  lockSheet();
+}
+document.addEventListener('click', lockGuard, true);
+document.addEventListener('change', lockGuard, true);
 async function refSheet() {
   const d = await getDocs(query(collection(db, 'users'), where('refBy', '==', uidMe))).catch(() => null);
   const rows = await Promise.all((d ? d.docs : []).map(async x => { const u = { id: x.id, ...x.data() }; u.done = await refDone(u); return u; }));
