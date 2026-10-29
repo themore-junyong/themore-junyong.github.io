@@ -30,7 +30,7 @@ header .brand b{color:#fff;font-size:22px}header .beta{background:rgba(255,255,2
 header .btn{background:rgba(255,255,255,.16);border-color:rgba(255,255,255,.4);color:#fff}header .btn.pri{background:#fff;border-color:#fff;color:var(--hd)}header .btn:focus-visible{outline-color:#fff}header a.btn{color:#fff!important}header .alert{color:var(--fg)}header .alert .btn{background:var(--sf);border-color:var(--ln);color:var(--fg)}header .alert .btn.pri{background:var(--ac);color:#fff}
 .brand{display:flex;align-items:center;gap:8px;justify-content:space-between}
 .brand b{font-size:20px}.beta{font-size:11px;font-weight:700;background:var(--acs);color:var(--ac);padding:2px 8px;border-radius:99px}
-.pic{width:56px;height:56px;border-radius:50%;object-fit:cover;flex:none;background:var(--acs);color:var(--ac);display:inline-grid;place-items:center;font-weight:700;font-size:20px}.pic.s{width:36px;height:36px;font-size:14px}
+.pic{width:56px;height:56px;border-radius:50%;object-fit:cover;object-position:50% 15%;flex:none;background:var(--acs);color:var(--ac);display:inline-grid;place-items:center;font-weight:700;font-size:20px}.pic.s{width:36px;height:36px;font-size:14px}
 .who{display:flex;gap:6px;align-items:center;font-size:12px;color:var(--mu)}
 .who select{flex:1;min-width:0;padding:6px 8px;border:1px solid var(--ln);border-radius:8px;background:var(--sf)}
 main{padding:12px 16px;display:flex;flex-direction:column;gap:12px}
@@ -331,7 +331,7 @@ function pdfPage(p,cf){const V=verified(p.id),cr=String(p.career||'').split('\n'
 function printPdf(title,pages){const html=`<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>${esc(title)}</title><link rel="stylesheet" href="${new URL('../fonts/font.css',location.href).href}"><style>
   body{font-family:'S-Core Dream','Pretendard','Noto Sans KR',system-ui,sans-serif;color:#1d2329;margin:0}section{padding:28px 32px;page-break-after:always}section:last-child{page-break-after:auto}
   .hd{display:flex;justify-content:space-between;font-size:12px;color:#5b6670;border-bottom:2px solid #2563EB;padding-bottom:6px;margin-bottom:18px}.top{display:flex;gap:18px;align-items:center}
-  img{width:110px;height:110px;border-radius:50%;object-fit:cover}h1{font-size:26px;margin:0 0 6px}h2{font-size:16px;margin:22px 0 4px;color:#2563EB}p{margin:4px 0;font-size:14px;line-height:1.6}
+  img{width:110px;height:110px;border-radius:50%;object-fit:cover;object-position:50% 15%}h1{font-size:26px;margin:0 0 6px}h2{font-size:16px;margin:22px 0 4px;color:#2563EB}p{margin:4px 0;font-size:14px;line-height:1.6}
   .intro{margin-top:14px}.mu{color:#5b6670;font-size:12px}ul{margin:6px 0;padding-left:18px;font-size:14px;line-height:1.7}.ft{margin-top:28px;font-size:11px;color:#8a949c}
   @page{size:A4;margin:12mm}</style></head><body>${pages.join('')}</body></html>`;
   const w=window.open('','_blank');if(w){w.document.write(html);w.document.close();w.onload=()=>w.print();setTimeout(()=>{try{w.print()}catch(e){}},600);return toast("인쇄 창에서 'PDF로 저장'을 고르세요")}
