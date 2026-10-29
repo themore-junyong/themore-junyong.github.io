@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<meta name="build" content="261028-1325">
+<meta name="build" content="261029-0100">
 <title>강사로</title>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#1F6F78">
@@ -522,6 +522,15 @@ const VAULT=['통장사본','신분증 사본'],RRN='주민등록번호';
 // 확정된 업체에만: 업체가 따로 올린 서류가 없으면 강사가 '내 서류'에 저장한 파일을 자동으로 넘겨요
 function docOf(a,n){if(a.docs[n])return a.docs[n];const v=(inst(a.instId).vault||{})[n];return a.status==='확정'&&VAULT.includes(n)&&v?v+' (자동)':''}
 function profileText(p){const V=verified(p.id);return `■ 강사 프로필\n이름: ${p.name}\n연락처: ${p.phone}\n메일: ${p.email}\n지역: ${p.region}\n강의 분야: ${p.topics}\n\n${p.intro}\n\n${V.length?`[강사로 인증 강의 ${V.length}회] 업체 확정·강의·입금까지 끝난 강의\n${V.map(v=>'✓ '+vLine(v)).join('\n')}\n\n`:''}[강의 경력 (본인 작성)]\n${p.career}`}
+// 일정 가져오기: {evs:[{key,dates,title,org,time,fee,km,toll,st}]} — key가 같은 일정은 건너뜀
+function importEvs(txt){let d;try{d=JSON.parse(String(txt).trim())}catch(e){return toast('일정 파일을 읽지 못했어요')}
+  const L=Array.isArray(d)?d:d&&d.evs;if(!Array.isArray(L))return toast('일정 파일을 읽지 못했어요');
+  const me=meId(),have=new Set(S.evs.filter(x=>x.instId===me&&x.key).map(x=>x.key));let n=0,skip=0;
+  for(const e of L){const ds=(e.dates||[]).filter(x=>/^\d{4}-\d{2}-\d{2}$/.test(x)).sort();if(!ds.length||!e.title){skip++;continue}
+    if(e.key&&have.has(e.key)){skip++;continue}
+    S.evs.push({id:uid(),instId:me,dates:ds,title:String(e.title).slice(0,80),org:String(e.org||'').slice(0,60),time:String(e.time||'').slice(0,40),fee:+e.fee||0,km:+e.km||0,toll:+e.toll||0,
+      st:['applied','confirmed','paid','no'].includes(e.st)?e.st:'confirmed',to:'',key:e.key?String(e.key).slice(0,80):''});if(e.key)have.add(e.key);n++}
+  save();ui.tab='cal';render();toast(`일정 ${n}개를 넣었어요${skip?` (${skip}개는 이미 있거나 날짜가 없어 건너뜀)`:''}`)}
 function vMe(){const p=inst(meId());
   return `<h2>내 프로필</h2><p class="mu sm">한 번만 쓰면 지원할 때마다 같이 가요. 계좌·통장사본·신분증 사본은 나를 확정한 회사만 볼 수 있어요. 주민등록번호는 저장하지 않아요.</p>
   <div class="card"><div class="row">${pic(p)}<div class="sp" style="display:flex;flex-direction:column;gap:4px"><b>프로필 사진</b><span class="mu sm">얼굴이 잘 보이는 정면 사진이 좋아요. 업체가 지원자 목록과 당일 현황에서 봐요.</span></div></div>
@@ -533,6 +542,9 @@ function vMe(){const p=inst(meId());
   ${(()=>{const V=verified(p.id);return `<div class="card"><h3>강의 이력</h3><span class="mu sm">강사로에서 업체가 확정하고, 강의를 마치고, 강사료 입금까지 끝난 강의만 자동으로 쌓이고 <span class="chip paid">✓ 강사로 인증</span>이 붙어요. 그 전 경력은 위 '강의 경력'에 직접 쓰면 '본인 작성'으로 보여요.</span>
     ${V.map(v=>`<div class="row sm"><span class="chip paid">✓ 인증</span><span class="sp">${esc(vLine(v))}</span></div>`).join('')||'<span class="mu sm">아직 입금까지 끝난 강사로 강의가 없어요.</span>'}
     ${String(p.career||'').split('\n').filter(x=>x.trim()).map(x=>`<div class="row sm"><span class="chip off">본인 작성</span><span class="sp">${esc(x)}</span></div>`).join('')}</div>`})()}
+  <div class="card"><h3>다른 달력에서 일정 가져오기</h3><span class="mu sm">강사로 일정 파일(.json)을 고르거나 내용을 붙여 넣으면 내 달력에 한 번에 들어가요. 같은 일정은 두 번 들어가지 않아요.</span>
+    <div class="row"><label class="btn sm">파일 고르기<input type="file" accept=".json,.txt,application/json,text/plain" data-act="evImport" hidden></label></div>
+    <textarea id="evImportTxt" rows="2" placeholder="또는 파일 내용을 여기에 붙여 넣기"></textarea><button class="btn sm" data-act="evImportTxt">붙여 넣은 일정 가져오기</button></div>
   <div class="card"><h3>회사에 보이는 프로필 카드</h3><pre class="pf">${esc(profileText(p))}</pre><button class="btn" data-act="copyPf">프로필 복사</button></div>
   <p class="mu sm">가입일 ${esc(p.joined)} · ${p.beta?'시범 운영 회원 (정식 운영 때 감사 혜택 대상)':''}</p>`}
 
@@ -667,6 +679,7 @@ document.addEventListener('click',async ev=>{
   if(A==='copyMsg')return copy(D.t,'카톡용 문구');
   if(A==='taxCsv'){const blob=new Blob([taxCsv(ui.month.slice(0,4))],{type:'text/csv'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`사업소득_지급명세_${ui.month.slice(0,4)}.csv`;document.body.appendChild(a);a.click();a.remove();return toast('파일을 받았어요')}
   if(A==='gotPaid'){if(D.kind==='ev'){S.evs.find(x=>x.id===D.id).st='paid'}else{const a=S.apps.find(x=>x.id===D.id);a.selfPaid=true;a.recv='ok'}save();render();sheetUnpaid();return toast('입금 완료로 바꿨어요')}
+  if(A==='evImportTxt'){const t=$('#evImportTxt').value;if(!t.trim())return toast('붙여 넣은 내용이 없어요');return importEvs(t)}
   if(A==='evst'){const e=S.evs.find(x=>x.id===D.id);e.st=D.st;save();render();return toast(D.st==='no'?'달력에서 숨겼어요':'바꿨어요')}
   if(A==='evdel'){S.evs=S.evs.filter(x=>x.id!==D.id);save();render();return toast('지웠어요')}
   if(A==='dayack'||A==='daydep'||A==='dayarr'||A==='daylate'){const a=S.apps.find(x=>x.id===D.a),x=dayOf(a,D.d);
@@ -737,6 +750,7 @@ document.addEventListener('change',ev=>{const el=ev.target,D=el.dataset||{};
   if(D.act==='jf'){ui.jmore=0;ui.jf[D.k]=el.type==='checkbox'?el.checked:el.value.trim();render();return}
   if(D.act==='km'||D.act==='toll'){const o=D.kind==='ev'?S.evs.find(x=>x.id===D.id):S.apps.find(x=>x.id===D.id);o[D.act]=+el.value||0;save();render()}
   if(D.act==='pf'){const p=inst(meId());p[D.k]=D.k==='kmpl'||D.k==='fuel'?+el.value||0:el.value;save();render()}
+  if(D.act==='evImport'&&el.files[0]){el.files[0].text().then(importEvs);el.value='';return}
   if(D.act==='vault'&&el.files[0]){REAL.vault(D.n,el.files[0]);return}
   if(D.act==='photo'&&el.files[0]){shrink(el.files[0],480).then(u=>{if(!u)return toast('사진을 읽지 못했어요');inst(meId()).photo=u;save();render();toast('프로필 사진을 올렸어요')});return}
   if(D.act==='doc'&&el.files[0]){REAL.doc(D.a,D.n,el.files[0]);return}
@@ -766,6 +780,6 @@ document.addEventListener('paste',ev=>{if(ev.target.id==='pRaw')setTimeout(()=>{
 document.addEventListener('input',ev=>{if(['pDates','pRaw'].includes(ev.target.id))pWarn()});
 render();
 </script>
-<script type="module" src="real.js?v=261028-1325"></script>
+<script type="module" src="real.js?v=261029-0100"></script>
 </body>
 </html>
