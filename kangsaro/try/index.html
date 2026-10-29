@@ -240,7 +240,7 @@ function tax(amt){let it=Math.floor(amt*0.03/10)*10;if(it<1000)it=0;const lt=Mat
 let S,ui={tab:'cal',month:todayIso().slice(0,7),sel:todayIso(),jobId:null};
 
 function seed(){const t=todayIso(),d=n=>addDays(t,n);
-  return {v:1,me:'i:i1',
+  return {v:2,me:'i:i1',
     insts:[
       {id:'i1',name:'김하늘',phone:'010-0000-0001',email:'sky@example.com',region:'수원',topics:'진로, 면접, AI 자기소개서',intro:'특성화고와 청년 대상으로 AI 자소서, 면접, 취업역량 강의를 꾸준히 하고 있습니다.',career:'2024~ 특성화고 취업 특강 40회\n2023~ 청년 면접 컨설팅',bank:'국민',acct:'000000-00-000001',holder:'김하늘',kmpl:20,fuel:1650,joined:t,beta:true},
       {id:'i2',name:'이도윤',phone:'010-0000-0002',email:'doyun@example.com',region:'안양',topics:'비즈니스매너, 면접',intro:'기업 CS와 비즈니스매너 강의를 10년째 하고 있습니다.',career:'2016~ 기업 CS 교육',bank:'신한',acct:'110-000-000002',holder:'이도윤',kmpl:15,fuel:1650,joined:t,beta:true},
@@ -252,8 +252,12 @@ function seed(){const t=todayIso(),d=n=>addDays(t,n);
       {id:'j3',coId:'c1',title:'취업 특강',school:'○○공고',region:'천안',dates:[d(1)],time:'09:00~15:50',교시:'6교시',대상:'2학년 120명',fee:300000,status:'마감',needs:['프로필','교안','통장사본'],notices:[{id:'n1',text:'도착하시면 본관 1층 교무실로 오세요. 주차는 운동장 옆입니다. 노트북 연결 HDMI 있습니다.',at:new Date().toISOString(),to:['i1'],reads:{}}],created:d(-12)},
       {id:'j4',coId:'c1',title:'진로 캠프',school:'○○중',region:'서울',dates:[d(9),d(10)],time:'09:00~12:00',교시:'3교시',대상:'1학년',fee:180000,status:'모집',needs:['프로필','교안'],notices:[],created:d(-2),desc:'1학년 진로 캠프 이틀 과정입니다.\n- 반별 진행(1반 25명), 팀 활동과 발표 위주\n- 장소: 서울 ○○중학교 본관 3층 진로실\n- 기자재: 노트북, 빔프로젝터, HDMI 있음\n- 주차: 운동장 옆 가능\n- 교안은 강의 3일 전까지 제출 부탁드립니다.'},
       {id:'j6',coId:'c1',title:'면접 캠프',school:'○○고',region:'수원',dates:[t],time:'13:00~15:00',교시:'2교시',대상:'3학년 60명',fee:120000,status:'마감',needs:['프로필','교안'],notices:[],created:d(-10)},
-      {id:'j5',coId:'c2',title:'비즈니스매너',school:'○○여고',region:'인천',dates:[d(14)],time:'10:00~14:00',교시:'4교시',대상:'3학년',fee:220000,status:'모집',needs:['프로필','통장사본'],notices:[],created:d(-1),desc:'3학년 취업 대비 비즈니스매너(인사, 명함, 전화 응대, 자기소개) 실습입니다.\n- 인원: 3학년 2개 반 60명\n- 장소: 인천 ○○여고 강당\n- 마이크·빔프로젝터 있음, 점심 제공'}],
+      {id:'j5',coId:'c2',title:'비즈니스매너',school:'○○여고',region:'인천',dates:[d(14)],time:'10:00~14:00',교시:'4교시',대상:'3학년',fee:220000,status:'모집',needs:['프로필','통장사본'],notices:[],created:d(-1),desc:'3학년 취업 대비 비즈니스매너(인사, 명함, 전화 응대, 자기소개) 실습입니다.\n- 인원: 3학년 2개 반 60명\n- 장소: 인천 ○○여고 강당\n- 마이크·빔프로젝터 있음, 점심 제공'},
+      {id:'j7',coId:'c2',title:'AI 진로 탐색',school:'○○중',region:'안산',dates:[d(3)],time:'13:00~16:00',교시:'3교시',대상:'2학년 4개 반',fee:240000,status:'마감',needs:['프로필','교안','강사카드','통장사본'],notices:[{id:'n7',kind:'주의사항',text:'학생 사진 촬영은 뒷모습만 가능해요. 노트북은 개인 지참 부탁드립니다.',at:new Date().toISOString(),to:['i1'],reads:{}},{id:'n8',kind:'집결 장소',text:'12:30까지 본관 2층 진로상담실로 와 주세요. 주차는 정문 옆 방문자 주차장이에요.',at:new Date().toISOString(),to:['i1'],reads:{}}],created:d(-12)},
+      {id:'j8',coId:'c1',title:'면접 코칭',school:'○○고',region:'분당',dates:[d(7)],time:'09:00~12:00',교시:'3교시',대상:'3학년 희망자 40명',fee:200000,status:'마감',needs:['프로필','교안'],notices:[{id:'n9',kind:'준비물',text:'모의면접 질문지는 학교에서 출력해 둘게요. 타이머만 챙겨 주세요.',at:new Date().toISOString(),to:['i1'],reads:{i1:new Date().toISOString()}}],created:d(-9)}],
     apps:[
+      {id:'a9',jobId:'j7',instId:'i1',status:'확정',docs:{교안:'AI진로.pptx'},paidAt:null,km:60,toll:2400},
+      {id:'a10',jobId:'j8',instId:'i1',status:'확정',docs:{교안:'면접코칭.pptx'},paidAt:null,km:50,toll:2000},
       {id:'a1',jobId:'j1',instId:'i1',status:'확정',docs:{교안:'면접특강.pptx',통장사본:'통장.jpg'},paidAt:d(-5),recv:'ok',km:120,toll:6000},
       {id:'a2',jobId:'j2',instId:'i1',status:'확정',docs:{교안:'AI자소서.pptx'},paidAt:null,km:40,toll:0},
       {id:'a3',jobId:'j3',instId:'i1',status:'확정',docs:{교안:'취업특강.pptx'},paidAt:null,km:150,toll:7000},
@@ -267,7 +271,7 @@ function seed(){const t=todayIso(),d=n=>addDays(t,n);
       {id:'e2',instId:'i1',dates:[d(5)],title:'경주 ○○고 비즈니스매너',org:'◇◇에듀',time:'09:00~15:50',fee:360000,km:640,toll:38000,st:'confirmed',to:''},
       {id:'e3',instId:'i1',dates:[d(9)],title:'수원 기관 법정교육',org:'☆☆컨설팅',time:'14:00~16:00',fee:160000,km:20,toll:0,st:'applied',to:''}]}}
 let firstVisit=false;
-function load(){try{const s=JSON.parse(localStorage.getItem(KEY));if(s&&s.v===1)return s}catch(e){}firstVisit=true;return seed()}
+function load(){try{const s=JSON.parse(localStorage.getItem(KEY));if(s&&s.v===2)return s}catch(e){}firstVisit=true;return seed()}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 S=load();S.alerts=S.alerts||[];
 
