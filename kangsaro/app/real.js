@@ -39,6 +39,16 @@ async function claimBiz(n) {
   if (d.exists()) { if (d.data().uid === uidMe) return true; toast('이미 가입된 사업자등록번호예요. 문의: tobadyclup@naver.com'); return false; }
   await setDoc(r, { uid: uidMe, at: new Date().toISOString() }); return true;
 }
+// 국세청 확인(서버)을 켰으면 서버가 확인하고 승인. 안 켰으면 예전처럼 검증 숫자만 보고 바로 승인
+const ntsOn = () => !!(SITE && SITE.nts);
+async function verifyBiz(n) {
+  try {
+    const Fn = await import(`${G}/firebase-functions.js`), fns = Fn.getFunctions(fbApp, 'asia-northeast3');
+    if (EMU) Fn.connectFunctionsEmulator(fns, '127.0.0.1', 5001);
+    toast('국세청에 확인하는 중이에요…');
+    await Fn.httpsCallable(fns, 'verifyBiz')({ biz: n }); return true;
+  } catch (e) { toast(e.message && !/^internal$/i.test(e.message) ? e.message : '확인하지 못했어요. 조금 뒤 다시 해 주세요'); return false; }
+}
 const PRIV = { i: ['phone', 'email', 'bank', 'acct', 'holder', 'kmpl', 'fuel', 'vault'], c: ['phone', 'email'] };
 // 한 계정으로 강사·업체 둘 다: 가입한 쪽(role)은 문서 위에, 나중에 더한 쪽은 side 칸에. 업체 승인(biz·approved·blocked)은 늘 위에
 const SIDE = { i: ['name', 'region', 'topics', 'intro', 'certs', 'career', 'photo', 'joined'], c: ['name', 'contact', 'joined', 'logo', 'forms'] };
@@ -294,7 +304,7 @@ REAL.acct = () => {
   const bar = $('#pendBar'); if (bar && !pending) bar.remove();
   if (pending && !bar) el.insertAdjacentHTML('afterend', cur.blocked
     ? '<div id="pendBar" class="alert">운영자가 이 업체의 공고 등록을 멈췄어요. 문의: tobadyclup@naver.com</div>'
-    : `<div id="pendBar" class="alert">사업자등록번호를 넣으면 바로 공고를 올릴 수 있어요.<div class="row"><input id="pBiz" inputmode="numeric" placeholder="000-00-00000" value="${esc(bizFmt(cur.biz || ''))}"><button class="btn pri sm" data-real="bizSet">등록</button></div></div>`);
+    : `<div id="pendBar" class="alert">사업자등록번호를 넣으면 ${ntsOn() ? '국세청에서 영업 중인지 확인하고 ' : ''}바로 공고를 올릴 수 있어요.<div class="row"><input id="pBiz" inputmode="numeric" placeholder="000-00-00000" value="${esc(bizFmt(cur.biz || ''))}"><button class="btn pri sm" data-real="bizSet">등록</button></div></div>`);
 };
 
 document.addEventListener('change', e => { if (e.target.name === 'rRole') { const c = e.target.value === 'c'; $('#rRegionF').hidden = c; $('#rContactF').hidden = !c; $('#rBizF').hidden = !c; } });
@@ -317,14 +327,16 @@ document.addEventListener('click', async e => {
     const t = todayIso(), email = auth.currentUser.email || '';
     const biz = bizNum($('#rBiz').value);
     if (r === 'c' && !bizOk(biz)) return toast('사업자등록번호 10자리를 확인해 주세요');
-    if (r === 'c') { try { if (!await claimBiz(biz)) return; } catch (err) { return toast('사업자등록번호를 저장하지 못했어요: ' + err.code); } }
-    const pub = r === 'i' ? { role: 'i', name, region: $('#rRegion').value, topics: '', intro: '', career: '', joined: t, beta: true } : { role: 'c', name, contact: $('#rContact').value.trim(), joined: t, approved: true, biz };
+    const nts = r === 'c' && ntsOn();
+    if (r === 'c' && !nts) { try { if (!await claimBiz(biz)) return; } catch (err) { return toast('사업자등록번호를 저장하지 못했어요: ' + err.code); } }
+    const pub = r === 'i' ? { role: 'i', name, region: $('#rRegion').value, topics: '', intro: '', career: '', joined: t, beta: true } : nts ? { role: 'c', name, contact: $('#rContact').value.trim(), joined: t, approved: false } : { role: 'c', name, contact: $('#rContact').value.trim(), joined: t, approved: true, biz };
     const ref = lsGet('kangsaro.ref');
     if (ref && ref !== uidMe) { const rd = await getDoc(doc(db, 'users', ref)).catch(() => null); if (rd && rd.exists()) pub.refBy = ref; }
     const priv = r === 'i' ? { phone, email, bank: '', acct: '', holder: name, kmpl: 15, fuel: 1650, vault: {} } : { phone, email };
     try { await setDoc(doc(db, 'users', uidMe), pub); await setDoc(doc(db, 'users', uidMe, 'private', 'main'), priv); }
     catch (err) { return toast('가입하지 못했어요: ' + err.code); }
     try { localStorage.removeItem('kangsaro.ref'); } catch (err) { }
+    if (nts && !await verifyBiz(biz)) { await start(auth.currentUser); return; }
     toast(r === 'i' ? '가입했어요. 프로필을 채우면 지원할 때 같이 가요' : '가입했어요. 바로 공고를 올릴 수 있어요');
     await start(auth.currentUser);
     if (r === 'i') { ui.tab = 'me'; render(); }
@@ -356,6 +368,7 @@ document.addEventListener('click', async e => {
   if (k === 'staffOut') { if (!confirm(`${b.dataset.n} 님을 직원에서 내보낼까요? 바로 업체 화면을 못 보게 돼요.`)) return; await deleteDoc(doc(db, 'staff', b.dataset.id)); toast('내보냈어요'); return staffSheet(); }
   if (k === 'staffLeave') { if (!confirm('이 업체에서 나갈까요? 다시 일하려면 새 초대 링크가 필요해요.')) return; await deleteDoc(doc(db, 'staff', `${CO}_${uidMe}`)); closeSheet(); return; }
   if (k === 'maint') { const on = !SITE.maint; if (on && !confirm('모든 사용자 화면에 "업데이트 중입니다"를 띄울까요? 관리자 화면은 그대로예요.')) return; await setDoc(doc(db, 'site', 'main'), { maint: on, at: new Date().toISOString() }, { merge: true }); toast(on ? '업데이트 중 표시를 켰어요' : '업데이트 중 표시를 껐어요. 사용자 화면이 다시 열려요'); return adminSheet(); }
+  if (k === 'ntsT') { const on = !SITE.nts; if (on && !confirm('국세청 확인을 켤까요? 서버를 먼저 올려야 해요. 안 올렸으면 새 업체가 승인되지 않아요.')) return; await setDoc(doc(db, 'site', 'main'), { nts: on }, { merge: true }); toast(on ? '국세청 확인을 켰어요' : '국세청 확인을 껐어요'); return adminSheet(); }
   if (k === 'jPass') { await updateDoc(doc(db, 'jobs', b.dataset.j), { cleared: true, hold: false }); toast('통과했어요. 강사에게 보여요'); return adminSheet(); }
   if (k === 'jDown') { if (!confirm('이 공고를 내릴까요? 마감 처리돼서 강사에게 안 보여요.')) return; await updateDoc(doc(db, 'jobs', b.dataset.j), { status: '마감' }); toast('내렸어요'); return adminSheet(); }
   if (k === 'reload') return location.reload();
@@ -367,7 +380,7 @@ document.addEventListener('click', async e => {
   if (k === 'block') { if (!confirm('이 업체의 공고 등록을 멈출까요? 이미 올린 공고는 그대로 있어요.')) return; await updateDoc(doc(db, 'users', b.dataset.u), { approved: false, blocked: true }); toast('승인을 취소했어요'); return adminSheet(); }
   if (k === 'bizSet') {
     const n = bizNum($('#pBiz').value); if (!bizOk(n)) return toast('사업자등록번호 10자리를 확인해 주세요');
-    try { if (!await claimBiz(n)) return; await updateDoc(doc(db, 'users', uidMe), { biz: n, approved: true }); }
+    try { if (ntsOn()) { if (!await verifyBiz(n)) return; } else { if (!await claimBiz(n)) return; await updateDoc(doc(db, 'users', uidMe), { biz: n, approved: true }); } }
     catch (err) { return toast('등록하지 못했어요: ' + err.code); }
     me.biz = n; me.approved = true; const c = S.cos.find(x => x.id === uidMe); if (c) { c.biz = n; c.approved = true; }
     prime(new Set([`users/${uidMe}`])); toast('등록했어요. 이제 공고를 올릴 수 있어요'); render();
@@ -380,10 +393,11 @@ document.addEventListener('click', async e => {
     try {
       if (r === 'c') {
         const biz = bizNum($('#sBiz').value); if (!bizOk(biz)) return toast('사업자등록번호 10자리를 확인해 주세요');
-        if (!await claimBiz(biz)) return;
+        if (!ntsOn() && !await claimBiz(biz)) return;
         const side = { role: 'c', name, contact: $('#sContact').value.trim(), joined: t };
         await updateDoc(doc(db, 'users', uidMe), { side }); me.side = side;
-        await updateDoc(doc(db, 'users', uidMe), { biz, approved: true }); Object.assign(me, { biz, approved: true });
+        if (ntsOn()) { if (await verifyBiz(biz)) Object.assign(me, { biz, approved: true }); }
+        else { await updateDoc(doc(db, 'users', uidMe), { biz, approved: true }); Object.assign(me, { biz, approved: true }); }
       } else {
         const side = { role: 'i', name, region: $('#sRegion').value, topics: '', intro: '', career: '', joined: t };
         await updateDoc(doc(db, 'users', uidMe), { side }); me.side = side;
@@ -508,9 +522,10 @@ async function adminSheet() {
   const [d, d2] = await Promise.all([getDocs(query(collection(db, 'users'), where('role', '==', 'c'))), getDocs(query(collection(db, 'users'), where('side.role', '==', 'c')))]);
   const rows = (await Promise.all([...d.docs, ...d2.docs].map(async x => { let p = {}; try { const s = await getDoc(doc(db, 'users', x.id, 'private', 'main')); p = s.data() || {}; } catch (e) { } return { ...asRole({ id: x.id, ...x.data(), ...p }, 'c'), ...p }; })))
     .sort((a, b) => (b.joined || '').localeCompare(a.joined || ''));
-  const card = r => `<div class="card"><b>${esc(r.name)} ${r.blocked ? '<span class="mu sm">(멈춤)</span>' : ''}</b><span class="mu sm">사업자 ${esc(bizFmt(r.biz || '') || '없음')} · ${esc(r.contact || '')} · ${esc(telFmt(r.phone || ''))} · ${esc(r.email || '')} · 가입 ${esc(r.joined || '')}</span>${r.approved ? `<button class="btn sm" data-real="block" data-u="${r.id}">승인 취소</button>` : `<button class="btn pri sm" data-real="approve" data-u="${r.id}">승인</button>`}</div>`;
+  const card = r => `<div class="card"><b>${esc(r.name)} ${r.blocked ? '<span class="mu sm">(멈춤)</span>' : ''}</b><span class="mu sm">사업자 ${esc(bizFmt(r.biz || '') || '없음')}${r.bizCheck ? ` <b style="color:var(--ac)">국세청 ✓ ${esc(r.bizCheck.at.slice(0, 10))}</b>` : ' (국세청 확인 전)'} · ${esc(r.contact || '')} · ${esc(telFmt(r.phone || ''))} · ${esc(r.email || '')} · 가입 ${esc(r.joined || '')}</span>${r.approved ? `<button class="btn sm" data-real="block" data-u="${r.id}">승인 취소</button>` : `<button class="btn pri sm" data-real="approve" data-u="${r.id}">승인</button>`}</div>`;
   openSheet(`<div class="row"><h2 class="sp">업체 관리</h2><button class="btn sm" data-act="closeSheet">닫기</button></div>
     <div class="card" style="${SITE.maint ? 'border-color:var(--r2)' : ''}"><div class="row"><b class="sp">업데이트 중 표시 ${SITE.maint ? '<span class="chip warn">켜짐</span>' : '<span class="chip off">꺼짐</span>'}</b><button class="btn sm ${SITE.maint ? 'pri' : ''}" data-real="maint">${SITE.maint ? '끄기' : '켜기'}</button></div><span class="mu sm">데이터 구조를 바꾸는 큰 업데이트 때만 켜요. 켜면 사용자 화면에 "업데이트 중입니다. 잠시만 기다려 주세요"가 뜨고, 끄면 저절로 다시 열려요.</span></div>
+    <div class="card"><div class="row"><b class="sp">국세청 사업자 확인 ${SITE.nts ? '<span class="chip paid">켜짐</span>' : '<span class="chip off">꺼짐</span>'}</b><button class="btn sm" data-real="ntsT">${SITE.nts ? '끄기' : '켜기'}</button></div><span class="mu sm">서버(verifyBiz)를 올린 뒤에 켜요. 켜면 새 업체는 국세청에서 '계속사업자'로 확인돼야 승인돼요. 끄면 예전처럼 번호 검증 숫자만 봐요.</span></div>
     <p class="mu sm">업체는 사업자등록번호를 넣으면 바로 공고를 올려요. 이상한 업체는 '승인 취소'로 멈출 수 있어요. 홈택스 '사업자 상태 조회'로 휴·폐업 여부를 볼 수 있어요.</p>
     ${await jobAdmin()}
     ${await refAdmin()}
