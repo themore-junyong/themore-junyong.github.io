@@ -30,7 +30,7 @@ if (EMU) { A.connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarning
 const { doc, collection, getDoc, getDocs, setDoc, updateDoc, deleteDoc, deleteField, query, where, limit, onSnapshot } = F;
 
 /* ===== 문서 나누기 ===== */
-const PUB = { i: ['name', 'region', 'topics', 'intro', 'certs', 'career', 'photo', 'joined', 'beta', 'refBy'], c: ['name', 'contact', 'joined', 'approved', 'refBy', 'biz', 'blocked', 'logo', 'forms'] };
+const PUB = { i: ['name', 'region', 'topics', 'intro', 'certs', 'career', 'photo', 'joined', 'beta', 'refBy'], c: ['name', 'contact', 'joined', 'approved', 'refBy', 'biz', 'blocked', 'logo', 'forms', 'items'] };
 // 사업자등록번호: 숫자 10자리 + 국세청 검증 숫자 (보안 규칙도 같은 계산)
 const bizNum = v => String(v || '').replace(/\D/g, '');
 const bizOk = n => { if (!/^\d{10}$/.test(n)) return false; const d = [...n].map(Number), w = [1, 3, 7, 1, 3, 7, 1, 3, 5]; let t = w.reduce((a, x, i) => a + d[i] * x, 0) + Math.floor(d[8] * 5 / 10); return (10 - t % 10) % 10 === d[9]; };
@@ -57,7 +57,7 @@ async function verifyBiz(n) {
 }
 const PRIV = { i: ['phone', 'email', 'bank', 'acct', 'holder', 'kmpl', 'fuel', 'vault'], c: ['phone', 'email'] };
 // 한 계정으로 강사·업체 둘 다: 가입한 쪽(role)은 문서 위에, 나중에 더한 쪽은 side 칸에. 업체 승인(biz·approved·blocked)은 늘 위에
-const SIDE = { i: ['name', 'region', 'topics', 'intro', 'certs', 'career', 'photo', 'joined'], c: ['name', 'contact', 'joined', 'logo', 'forms'] };
+const SIDE = { i: ['name', 'region', 'topics', 'intro', 'certs', 'career', 'photo', 'joined'], c: ['name', 'contact', 'joined', 'logo', 'forms', 'items'] };
 const has = r => !!me && (me.role === r || (me.side && me.side.role === r) || (r === 'c' && !!me.staffOf));
 function asRole(x, r) {
   if (!x) return null;
@@ -96,7 +96,9 @@ function payloads() {
     if (!c || j.coId !== c) continue;
     holdFix(j);
     // 신고(reports)는 강사가 따로 씀 → 업체 저장에서 빼고 합쳐 씀 (flush의 MERGE)
-    out.set(`jobs/${j.id}`, omit(j, ['notices', 'reports']));
+    out.set(`jobs/${j.id}`, omit(j, ['notices', 'reports', 'plan']));
+    // 운영 시간표(누가 어느 칸)는 업체·연결된 강사만 보는 하위 문서로
+    if (j.plan) out.set(`jobs/${j.id}/plan/main`, { slots: j.plan.slots || [] });
     for (const n of j.notices || []) out.set(`notices/${n.id}`, { ...n, jobId: j.id, coId: c });
   }
   for (const a of S.apps) {
@@ -129,11 +131,12 @@ async function flush() {
   if (busy) { again = true; return; }
   busy = true; clearTimeout(timer);
   try {
-    const P = payloads(), R = readMarks(), order = k => k.startsWith('users/') ? 0 : k.startsWith('jobs/') ? 1 : k.startsWith('apps/') ? 2 : 3;
+    const P = payloads(), R = readMarks(), order = k => k.startsWith('users/') ? 0 : k.startsWith('jobs/') ? (k.includes('/plan/') ? 1.5 : 1) : k.startsWith('apps/') ? 2 : 3;
     const writes = [...P].filter(([k, v]) => last.get(k) !== stable(v)).sort((a, b) => order(a[0]) - order(b[0]));
     for (const [k, v] of writes) { const nw = k.startsWith('jobs/') && !last.has(k); await setDoc(doc(db, k), v, k.startsWith('jobs/') ? { merge: true } : {}); last.set(k, stable(v)); if (nw && TD) TD.cnt = { ...(TD.cnt || {}), [ymNow()]: ((TD.cnt || {})[ymNow()] || 0) + 1 }; }
     for (const [k, v] of R) if (last.get(k) !== v) { const p = k.split('#')[0]; await updateDoc(doc(db, p), { ['reads.' + uidMe]: v }); last.set(k, v); }
-    for (const k of [...last.keys()]) if (!k.includes('#') && !P.has(k) && mayDelete(k)) { await deleteDoc(doc(db, k)); last.delete(k); }
+    // 하위 문서(운영 시간표)를 먼저 지워야 보안 규칙이 공고를 찾을 수 있음
+    for (const k of [...last.keys()].sort((a, b) => b.split('/').length - a.split('/').length)) if (!k.includes('#') && !P.has(k) && mayDelete(k)) { await deleteDoc(doc(db, k)); last.delete(k); }
     if (role === 'c') await syncLinks();
   } catch (e) {
     console.error(e);
@@ -165,7 +168,18 @@ async function loadUser(id, withPriv) {
 async function loadInst(id, priv) { const x = asRole(await loadUser(id, priv).catch(() => null), 'i'); if (x) { upsert(S.insts, x); later(); } }
 async function loadCo(id) { if (S.cos.some(c => c.id === id)) return; const x = asRole(await loadUser(id, false).catch(() => null), 'c'); if (x) { upsert(S.cos, x); later(); } }
 async function loadJob(id) { if (S.jobs.some(j => j.id === id)) return; const d = await getDoc(doc(db, 'jobs', id)).catch(() => null); if (d && d.exists()) { putJob({ id, ...d.data() }); prime(new Set([`jobs/${id}`])); later(); } }
-function putJob(j) { const old = S.jobs.find(x => x.id === j.id); j.notices = old ? old.notices : []; upsert(S.jobs, j); loadCo(j.coId); }
+function putJob(j) {
+  const old = S.jobs.find(x => x.id === j.id); j.notices = old ? old.notices : []; if (old && old.plan) j.plan = old.plan;
+  upsert(S.jobs, j); loadCo(j.coId);
+  if (j.op && (!j.plan || !old || old.planAt !== j.planAt)) loadPlan(j.id);
+  else if (!j.op) delete j.plan;
+}
+// 운영 시간표: 업체와 확정(연결)된 강사만 읽을 수 있음. 못 읽으면 그냥 보통 강의처럼 보임
+async function loadPlan(id) {
+  const d = await getDoc(doc(db, 'jobs', id, 'plan', 'main')).catch(() => null), j = S.jobs.find(x => x.id === id);
+  if (!j || !d || !d.exists()) return;
+  j.plan = { slots: d.data().slots || [] }; prime(new Set([`jobs/${id}/plan/main`])); later();
+}
 
 // 서버에서 바뀐 것 반영 (먼저 내 쪽 변경을 보내고)
 function live(q, apply) {
@@ -190,7 +204,7 @@ function app(ch) {
   const a = { id: ch.doc.id, ...ch.doc.data() };
   if (ch.type === 'removed') { S.apps = S.apps.filter(x => x.id !== a.id); return; }
   upsert(S.apps, a);
-  if (role === 'i') loadJob(a.jobId); else if (!S.insts.some(x => x.id === a.instId)) loadInst(a.instId, true);
+  if (role === 'i') { loadJob(a.jobId); const j = job(a.jobId); if (j && j.op && !j.plan && a.status === '확정') setTimeout(() => loadPlan(j.id), 1500); } else if (!S.insts.some(x => x.id === a.instId)) loadInst(a.instId, true);
   // 강사가 확정 강의를 취소하면 마감했던 공고를 다시 모집으로
   if (role === 'c' && a.status === '취소' && a.cxConfirmed) { const j = job(a.jobId); if (j && j.status === '마감') { j.status = '모집'; SYNC(); } }
 }

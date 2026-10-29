@@ -134,6 +134,12 @@ service cloud.firestore {
           && request.resource.data.reports.diff(resource.data.get('reports', {})).affectedKeys().hasOnly([me()]))
         || (admin() && changed().hasOnly(['cleared', 'hold', 'status']) && holdOk(request.resource.data));
       allow delete: if mine(resource.data.coId);
+      // 운영 시간표(칸마다 강사): 업체와 이 업체에 확정(연결)된 강사만
+      match /plan/{p} {
+        function jco() { return get(/databases/$(db)/documents/jobs/$(j)).data.coId; }
+        allow read: if signed() && (mine(jco()) || linked(jco(), me()) || admin());
+        allow write: if mine(jco()) && active(jco());
+      }
     }
 
     // 공지: 업체가 쓰고, 받는 강사는 자기 '읽음'만 고침
@@ -160,7 +166,7 @@ service cloud.firestore {
         && request.resource.data.instId == resource.data.instId && request.resource.data.coId == resource.data.coId
         && request.resource.data.jobId == resource.data.jobId
         && (
-          (resource.data.instId == me() && active(me()) && !changed().hasAny(['paidAt', 'rem'])
+          (resource.data.instId == me() && active(me()) && !changed().hasAny(['paidAt', 'rem', 'ext'])
             && (!changed().hasAny(['status']) || request.resource.data.status in ['지원', '취소']))
           || (mine(resource.data.coId) && active(resource.data.coId) && !changed().hasAny(['km', 'toll', 'selfPaid', 'day', 'cxWhy', 'cxConfirmed'])
             && (!changed().hasAny(['paidAt']) || payOk(resource.data.coId))

@@ -197,8 +197,8 @@ exports.askBot = onRequest({ region: 'asia-northeast3', invoker: 'public', cors:
   const sys = BOT_RULE + '\n\n[설명서]\n' + await guideText();
   for (const m of botModel ? [botModel] : BOT_MODELS) {
     try {
-      const r = await ai.models.generateContent({ model: m, contents: [...hist, { role: 'user', parts: [{ text: q }] }], config: { systemInstruction: sys, temperature: 0.2, maxOutputTokens: 600 } });
-      botModel = m;
+      const r = await ai.models.generateContent({ model: m, contents: [...hist, { role: 'user', parts: [{ text: q }] }], config: { systemInstruction: sys, temperature: 0.2, maxOutputTokens: 4096 } }); // 생각하는 모델은 생각에도 토큰을 써서 넉넉히
+      botModel = m; if (r.candidates && r.candidates[0] && r.candidates[0].finishReason === 'MAX_TOKENS') console.warn('bot cut', m);
       return res.json({ a: (r.text || '').trim() || '답을 만들지 못했어요. 다시 물어봐 주세요' });
     } catch (e) {
       console.error('bot', m, e.status || '', String(e.message || e).slice(0, 200));
