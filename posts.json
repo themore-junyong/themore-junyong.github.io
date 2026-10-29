@@ -1,6 +1,16 @@
 {
- "updated": "2026-10-28T21:02:07.422246+00:00",
+ "updated": "2026-10-29T00:54:11.429390+00:00",
  "posts": [
+  {
+   "kind": "봉사",
+   "src": "tistory",
+   "title": "수원 창룡문 봄나들이 공튀기기 연날리기 | 꿈을키우는집 4월 봉사활동 후기",
+   "link": "https://changenavigator.tistory.com/entry/%EC%88%98%EC%9B%90-%EC%B0%BD%EB%A3%A1%EB%AC%B8-%EB%B4%84%EB%82%98%EB%93%A4%EC%9D%B4-%EA%B3%B5%ED%8A%80%EA%B8%B0%EA%B8%B0%C2%B7%EC%97%B0%EB%82%A0%EB%A6%AC%EA%B8%B0-%EA%BF%88%EC%9D%84%ED%82%A4%EC%9A%B0%EB%8A%94%EC%A7%91-4%EC%9B%94-%EB%B4%89%EC%82%AC%ED%99%9C%EB%8F%99-%ED%9B%84%EA%B8%B0",
+   "date": "2026-10-28T22:00:04+00:00",
+   "summary": "봄햇살이 포근하고 벚꽃이 예쁘게 핀 4월 11일, 꿈을키우는집 아이들과 수원 창룡문으로 봄나들이를 다녀왔습니다. 날씨가 좋은 만큼 아이들도 봉사자들도 꼭 소풍 온…",
+   "image": "https://blog.kakaocdn.net/dn/brt4yN/dJMcahsYvXL/XYLFM2brL4Q1XQotn8wzLK/img.png",
+   "cat": "봉사활동"
+  },
   {
    "kind": "영상",
    "src": "youtube",
@@ -1103,5 +1113,7 @@
    "cat": "설교&middot;묵상"
   }
  ],
- "errors": []
+ "errors": [
+  "youtube: HTTP Error 500: Internal Server Error"
+ ]
 }
