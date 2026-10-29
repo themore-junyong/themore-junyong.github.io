@@ -1,6 +1,16 @@
 {
- "updated": "2026-10-29T19:40:43.506377+00:00",
+ "updated": "2026-10-29T23:56:26.187338+00:00",
  "posts": [
+  {
+   "kind": "말씀",
+   "src": "tistory",
+   "title": "다이어트 실패하는 이유, 입맛이 기억하는 것 | 브랜딩 ③",
+   "link": "https://changenavigator.tistory.com/entry/%EB%8B%A4%EC%9D%B4%EC%96%B4%ED%8A%B8-%EC%8B%A4%ED%8C%A8%ED%95%98%EB%8A%94-%EC%9D%B4%EC%9C%A0-%EC%9E%85%EB%A7%9B%EC%9D%B4-%EA%B8%B0%EC%96%B5%ED%95%98%EB%8A%94-%EA%B2%83-%EB%B8%8C%EB%9E%9C%EB%94%A9-%E2%91%A2",
+   "date": "2026-10-29T22:00:11+00:00",
+   "summary": "다이어트, 왜 자꾸 실패할까요? 의지가 약해서? 아니요. 입맛이 그 맛을 기억하기 때문이죠. 브랜딩 1편 에서 금요일마다 사는 이야기를 나누겠다고 했는데, 오늘은…",
+   "image": "https://blog.kakaocdn.net/dn/PpfGo/dJMcaiSUJoN/cqugwBlMac4PNCxS4XD3WK/img.png",
+   "cat": "브랜딩"
+  },
   {
    "kind": "봉사",
    "src": "tistory",
@@ -1113,5 +1123,7 @@
    "cat": "설교&middot;묵상"
   }
  ],
- "errors": []
+ "errors": [
+  "youtube: HTTP Error 404: Not Found"
+ ]
 }
