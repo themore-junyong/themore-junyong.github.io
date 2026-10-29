@@ -471,7 +471,7 @@ async function showTerm() {
   if (LOCK) el.dataset.real = 'lockInfo'; else delete el.dataset.real;
 }
 // 기간이 끝나면 화면 이동·보기만 되고, 지원·등록·수정·내려받기·복사 등은 막음
-const OPEN_ACT = new Set(['report', 'alMore', 'alertGo', 'alertOk', 'back', 'closeSheet', 'closeSheetBg', 'cmon', 'csel', 'jmore', 'jf', 'mgo', 'mmon', 'mon', 'mview', 'openJob', 'sel', 'unpaid', 'year', 'install']);
+const OPEN_ACT = new Set(['slNav', 'report', 'alMore', 'alertGo', 'alertOk', 'back', 'closeSheet', 'closeSheetBg', 'cmon', 'csel', 'jmore', 'jf', 'mgo', 'mmon', 'mon', 'mview', 'openJob', 'sel', 'unpaid', 'year', 'install']);
 const OPEN_REAL = new Set(['push', 'out', 'ref', 'refCopy', 'refShare', 'reload', 'swap', 'lockInfo', 'staffLeave']);
 function lockSheet() {
   openSheet(`<div class="row"><h2 class="sp">이용 기간이 끝났어요</h2><button class="btn sm" data-act="closeSheet">닫기</button></div>
