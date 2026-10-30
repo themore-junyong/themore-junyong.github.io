@@ -99,6 +99,12 @@ exports.jasoDraft = onCall({ region: 'asia-northeast3', secrets: [GEMINI_KEY], m
     return '';
   });
   if (over) fail('resource-exhausted', over);
+  // AI가 실패하면 깎은 횟수를 돌려줌
+  const dec = FieldValue.increment(-1);
+  const undo = async (c, m) => {
+    await Promise.all([ref.set({ all: dec, u: { [uid]: dec }, c: { [code]: dec } }, { merge: true }), cRef.update({ used: dec })]).catch(() => {});
+    fail(c, m);
+  };
 
   const ai = new GoogleGenAI({ apiKey: GEMINI_KEY.value() });
   let r;
@@ -106,13 +112,13 @@ exports.jasoDraft = onCall({ region: 'asia-northeast3', secrets: [GEMINI_KEY], m
     r = await ai.models.generateContent({ model: MODEL, contents: prompt(d), config: { maxOutputTokens: 8192 } });
   } catch (e) {
     console.error('jaso', e.status || '', String(e.message || e).slice(0, 200));
-    if (e instanceof ApiError && e.status === 429) fail('resource-exhausted', '지금 요청이 많아요. 1분 뒤 다시 눌러 주세요');
-    fail('unavailable', 'AI 연결이 잠시 안 돼요. 다시 눌러 주시거나 질문지 복사로 만들어 주세요');
+    if (e instanceof ApiError && e.status === 429) await undo('resource-exhausted', '지금 요청이 많아요. 1분 뒤 다시 눌러 주세요');
+    await undo('unavailable', `AI 연결이 잠시 안 돼요(${e.status || '?'}). 다시 눌러 주시거나 질문지 복사로 만들어 주세요`);
   }
   const why = (r.candidates && r.candidates[0] && r.candidates[0].finishReason) || '';
-  if ((r.promptFeedback && r.promptFeedback.blockReason) || /SAFETY|PROHIBITED|BLOCKLIST|SPII/.test(why)) fail('failed-precondition', 'AI가 이 내용으로는 쓰지 않았어요. 입력을 고쳐 다시 해 보세요');
+  if ((r.promptFeedback && r.promptFeedback.blockReason) || /SAFETY|PROHIBITED|BLOCKLIST|SPII/.test(why)) await undo('failed-precondition', 'AI가 이 내용으로는 쓰지 않았어요. 입력을 고쳐 다시 해 보세요');
   const text = (r.text || '').trim();
-  if (!text) fail('unavailable', '초안을 만들지 못했어요. 다시 눌러 주세요');
+  if (!text) await undo('unavailable', '초안을 만들지 못했어요. 다시 눌러 주세요');
   const u = r.usageMetadata || {};
   console.log('jaso ok', code, r.modelVersion, u.promptTokenCount, u.candidatesTokenCount); // 비용 확인용 (글 내용은 안 남김)
   return { text, cut: why === 'MAX_TOKENS', left: Math.max(0, per - mine - 1) };
