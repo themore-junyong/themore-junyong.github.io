@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<meta name="build" content="261030-0339">
+<meta name="build" content="261030-0344">
 <title>강사로</title>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#2563EB">
@@ -353,7 +353,22 @@ function opGrid(j,cf,names,byD){const P=j.plan.slots,B=ui.brush||'',rows=[...new
   <div style="overflow-x:auto"><table class="sm" style="border-collapse:collapse;min-width:100%"><thead><tr><th></th>${byD.map(d=>`<th><button class="btn sm" data-act="paint" data-j="${j.id}" data-d="${d}" style="white-space:nowrap">${md(d)}(${dowOf(d)})</button></th>`).join('')}</tr></thead><tbody>
   ${rows.map(r=>`<tr><th style="text-align:left"><button class="btn sm" data-act="paint" data-j="${j.id}" data-r="${esc(r)}" style="text-align:left;white-space:nowrap">${short(r)}</button></th>${byD.map(d=>{const x=P.find(y=>y.d===d&&rowKey(y)===r);if(!x)return '<td style="background:var(--bg)"></td>';const w=who(x),hit=B&&val(x)===B;
     return `<td style="padding:2px"><button class="btn sm" data-act="paint" data-j="${j.id}" data-s="${x.id}" style="width:100%;min-width:64px;white-space:nowrap;${w?'background:var(--sf)':'background:var(--warns,#FDECE3);color:var(--r2)'};${hit?'outline:2px solid var(--ac)':''}">${w?esc(w)+(x.sub||x.subNm?'<span class="mu">+보조</span>':''):'미정'}${x.memo?`<br><span class="mu" style="font-size:11px">${esc(x.memo.slice(0,10))}</span>`:''}</button></td>`}).join('')}</tr>`).join('')}
-  </tbody></table></div>`}
+  </tbody></table></div>
+  <div class="row" style="flex-wrap:wrap"><button class="btn sm" data-act="opXls" data-j="${j.id}" data-k="grid">⬇ 시간표 엑셀로 받기</button><button class="btn sm" data-act="opXls" data-j="${j.id}" data-k="inst">⬇ 강사별 배정표 받기</button></div>`}
+// 시간표·강사별 배정표를 엑셀(.xls)로. 색·테두리가 그대로 보이게 표(HTML)로 만듦
+function opXls(j,k){const P=j.plan.slots,ds=[...new Set(P.map(x=>x.d))].sort(),who=x=>x.inst?inst(x.inst).name:x.nm||'',sub=x=>x.sub?inst(x.sub).name:x.subNm||'';
+  const td='border:1px solid #999;padding:4px 8px;vertical-align:middle;text-align:center',th=td+';background:#DCE6F8;font-weight:bold',
+    hd=`<tr><td colspan="9" style="font-size:16pt;font-weight:bold">${esc(j.title)}</td></tr><tr><td colspan="9">${esc([j.school,j.region].filter(Boolean).join(' · '))}</td></tr><tr></tr>`;let body;
+  if(k==='grid'){const rows=[...new Set(P.map(rowKey))].sort((a,b)=>a.localeCompare(b,'ko',{numeric:true}));
+    body=`<tr><th style="${th}">반·시간</th>${ds.map(d=>`<th style="${th}">${md(d)}(${dowOf(d)})</th>`).join('')}</tr>`+rows.map(r=>{const [c,t,pr]=r.split('|');
+      return `<tr><th style="${th}">${esc([c,t||pr].filter(Boolean).join(' '))}</th>${ds.map(d=>{const x=P.find(y=>y.d===d&&rowKey(y)===r);if(!x)return `<td style="${td};background:#EEE"></td>`;const w=who(x),s2=sub(x);
+        return `<td style="${td}${w?'':';background:#FDECE3;color:#C0392B'}"><b>${esc(w||'미정')}</b>${s2?`<br>보조 ${esc(s2)}`:''}${x.memo?`<br><span style="color:#666">${esc(x.memo)}</span>`:''}</td>`}).join('')}</tr>`}).join('')}
+  else{const L=P.filter(x=>who(x)||sub(x)).flatMap(x=>[who(x)&&[who(x),'강사',x],sub(x)&&[sub(x),'보조',x]].filter(Boolean)).sort((a,b)=>a[0].localeCompare(b[0],'ko')||a[2].d.localeCompare(b[2].d)||(a[2].time||'').localeCompare(b[2].time||''));
+    body=`<tr>${['강사','역할','날짜','반','시간','교시','수업 내용'].map(h=>`<th style="${th}">${h}</th>`).join('')}</tr>`+L.map(([n,r,x],i)=>`<tr><td style="${td}${i&&L[i-1][0]===n?';color:#999':';font-weight:bold'}">${esc(n)}</td><td style="${td}">${r}</td><td style="${td}">${md(x.d)}(${dowOf(x.d)})</td><td style="${td}">${esc(x.cls||'')}</td><td style="${td}">${esc(x.time||'')}</td><td style="${td}">${esc(x.per||'')}</td><td style="${td};text-align:left">${esc(x.memo||'')}</td></tr>`).join('')
+      +(P.some(x=>!who(x))?`<tr></tr><tr><td colspan="7" style="color:#C0392B">빈 칸(미정): ${P.filter(x=>!who(x)).map(x=>`${md(x.d)} ${x.cls||''} ${x.time||x.per||''}`).join(', ')}</td></tr>`:'')}
+  const html=`<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="utf-8"></head><body><table style="border-collapse:collapse;font-family:'맑은 고딕'">${hd}${body}</table></body></html>`;
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+html],{type:'application/vnd.ms-excel'}));a.download=`${(j.title||'운영').replace(/[\\/:*?"<>|]/g,'')}_${k==='grid'?'시간표':'강사별배정표'}.xls`;document.body.appendChild(a);a.click();a.remove();
+  toast('받았어요. 엑셀이 "형식이 다르다"고 물으면 [예]를 누르면 열려요')}
 // 칸 하나에 강사 넣기 (지원자면 확정). 확정한 사람 수를 돌려줌
 function assignSlot(j,x,k,v){const nk=k==='inst'?'nm':'subNm';
   if(v.startsWith('nm:')){x[k]='';x[nk]=v.slice(3);return 0}
@@ -1039,6 +1054,7 @@ document.addEventListener('click',async ev=>{
   if(A==='opMake'){const j=job(D.j);j.plan={slots:j.dates.map(d=>({id:uid(),d,cls:'',time:j.time||'',per:j.교시||'',n:perN(j.교시),inst:'',nm:'',sub:'',subNm:'',fee:''}))};j.feeMode=j.feeMode||'day';
     // 이미 확정한 강사가 한 명이면 그 강사를 모든 칸에
     const cf=appsOf(j.id).filter(a=>a.status==='확정');if(cf.length===1)j.plan.slots.forEach(x=>x.inst=cf[0].instId);planTouch(j);return toast('운영 시간표를 만들었어요. 칸을 더 만들거나 강사를 정하세요')}
+  if(A==='opXls')return opXls(job(D.j),D.k);
   if(A==='brush'){ui.brush=ui.brush===D.v?'':D.v;render();return}
   if(A==='brushNew'){const n=(prompt('강사 이름 (앱을 안 쓰는 강사는 기록만 돼요)')||'').trim();if(n){ui.brush='nm:'+n;render();toast(`'${n}'을 골랐어요. 칸을 누르세요`)}return}
   if(A==='paint'){const j=job(D.j),B=ui.brush;if(!B)return toast('위에서 강사(또는 지우개)를 먼저 골라 주세요');
@@ -1131,6 +1147,6 @@ document.addEventListener('input',ev=>{if(['pDates','pRaw'].includes(ev.target.i
 render();
 </script>
 <script src="../bot.js" defer></script>
-<script type="module" src="real.js?v=261030-0339"></script>
+<script type="module" src="real.js?v=261030-0344"></script>
 </body>
 </html>
