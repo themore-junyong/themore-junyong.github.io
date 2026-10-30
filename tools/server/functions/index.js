@@ -11,6 +11,7 @@ initializeApp();
 const db = getFirestore();
 const GEMINI_KEY = defineSecret('GEMINI_KEY');
 const MODEL = process.env.JASO_MODEL || 'gemini-flash-latest';
+const SPARE = process.env.JASO_SPARE || 'gemini-flash-lite-latest'; // 기본 모델이 붐비면(503) 대신 씀
 const ALL_MAX = 300; // 모든 코드 합쳐 하루 최대 (요금 안전장치)
 
 const fail = (code, msg) => { throw new HttpsError(code, msg); };
@@ -107,9 +108,17 @@ exports.jasoDraft = onCall({ region: 'asia-northeast3', secrets: [GEMINI_KEY], m
   };
 
   const ai = new GoogleGenAI({ apiKey: GEMINI_KEY.value() });
+  // 생각은 짧게(LOW): 기본값이면 2분 넘게 걸림. 붐비면 2초 뒤 한 번 더, 그래도 붐비면 가벼운 모델로
+  const ask = model => ai.models.generateContent({ model, contents: prompt(d), config: { maxOutputTokens: 8192, thinkingConfig: { thinkingLevel: 'LOW' } } });
+  const busy = e => e instanceof ApiError && (e.status === 503 || e.status === 500);
   let r;
   try {
-    r = await ai.models.generateContent({ model: MODEL, contents: prompt(d), config: { maxOutputTokens: 8192 } });
+    r = await ask(MODEL).catch(async e => {
+      if (!busy(e)) throw e;
+      console.warn('jaso retry', e.status);
+      await new Promise(ok => setTimeout(ok, 2000));
+      return ask(MODEL).catch(e2 => { if (!busy(e2)) throw e2; console.warn('jaso spare', e2.status); return ask(SPARE); });
+    });
   } catch (e) {
     console.error('jaso', e.status || '', String(e.message || e).slice(0, 200));
     if (e instanceof ApiError && e.status === 429) await undo('resource-exhausted', '지금 요청이 많아요. 1분 뒤 다시 눌러 주세요');

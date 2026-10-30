@@ -309,7 +309,7 @@ function bindResult(){
   gen.onclick=function(){
     if(!ok()||busy)return;
     if(D.draft&&!confirm('지금 초안을 새 초안으로 바꿀까요? (오늘 횟수 1번을 써요)'))return;
-    busy=true;gen.disabled=true;note.className='note';note.textContent='AI가 쓰는 중… (30초~1분 걸려요. 화면을 끄지 마세요)';
+    busy=true;gen.disabled=true;note.className='note';note.textContent='AI가 쓰는 중… (1분쯤 걸려요. 화면을 끄거나 새로고침하지 마세요)';
     AI.draft(CODE.code,payload())
      .then(function(r){out.value=r.text;D.draft=r.text;save();CODE.left=r.left;saveCode();note.className='note ok';
        note.textContent=r.cut?'길이 제한으로 끝이 잘렸어요. 경험을 줄여 다시 해 보세요.':'완성! 이제 아래 체크리스트대로 고쳐 쓰세요.'},
