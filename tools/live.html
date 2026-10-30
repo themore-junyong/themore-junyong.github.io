@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>실시간 반응판</title>
+<title>실시간 마인드맵</title>
 <meta name="robots" content="noindex">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap">
 <style>
@@ -130,11 +130,12 @@ const msg=e=>(e&&e.message&&!/^(internal|INTERNAL)$/.test(e.message))?(/permissi
 /* ================= 학생 ================= */
 const ST={pin:(P.get('r')||'').replace(/\D/g,'').slice(0,4),nick:lsGet('live-nick',''),room:null,mine:{},note:'',joined:false,unsub:null,draft:''};
 function stuRender(){
-  let h='<div class="top"><div class="brand"><small>위듀케이션 · 실시간 반응판</small></div></div>';
+  let h='<div class="top"><div class="brand"><small>위듀케이션 · 실시간 마인드맵</small></div></div>';
   if(!ST.joined){
     h+='<div class="card"><h2>수업 참여하기</h2><div class="f"><label for="pin">방 번호 (선생님 화면의 4자리)</label><input id="pin" class="pin" inputmode="numeric" maxlength="4" value="'+esc(ST.pin)+'" placeholder="0000"></div>'+
       '<div class="f"><label for="nick">닉네임 (퀴즈 점수판에 나와요)</label><input id="nick" maxlength="12" value="'+esc(ST.nick)+'" placeholder="예: 번개 / 3번"></div>'+
-      '<button class="btn pri" data-a="join">들어가기</button>'+(ST.note?'<p class="note bad">'+esc(ST.note)+'</p>':'')+'</div>';
+      '<button class="btn pri" data-a="join">들어가기</button>'+(ST.note?'<p class="note bad">'+esc(ST.note)+'</p>':'')+'</div>'+
+      '<a class="card" href="?host" style="text-decoration:none;color:inherit;flex-direction:row;justify-content:space-between;align-items:center"><span><b>👩‍🏫 선생님이세요?</b><br><span class="soft">초대코드로 방 만들기 (강사 화면)</span></span><b style="color:var(--blue)">방 만들기 →</b></a>';
     app.innerHTML=h;return;
   }
   const r=ST.room, q=r&&r.q;
@@ -212,7 +213,7 @@ Object.assign(H.score,lsGet('live-score-'+H.pin,{}));
 const saveQs=()=>lsSet('live-qs',H.qs);
 function hostRender(){
   document.body.classList.add('host');
-  let h='<div class="top"><div class="brand"><small>위듀케이션 · 실시간 반응판 (강사 화면)</small></div><a href="./">← 도구 모음</a></div>';
+  let h='<div class="top"><div class="brand"><small>위듀케이션 · 실시간 마인드맵 (강사 화면)</small></div><a href="./">← 도구 모음</a></div>';
   if(!H.pin){
     h+='<div class="card"><h2>방 만들기</h2><p class="soft">초대코드가 있어야 방을 만들 수 있어요. 방은 8시간 동안 열려 있어요.</p>'+
       '<div class="f"><label for="code">초대코드</label><input id="code" value="'+esc(H.code)+'" placeholder="예: OSAN-1106" style="text-transform:uppercase"></div>'+
