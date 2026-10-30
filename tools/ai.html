@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>AI 수업 도구</title>
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap">
+<style>
+/* 다섯 활동: #prompt 프롬프트 연습장(AI) · #lie AI 거짓말 찾기 · #who AI vs 사람 글 · #ethics AI 윤리 딜레마 · #future 내 직무 미래 지도(AI) */
+:root{
+  --bg:#f6f6f6; --ink:#333; --soft:#6f7480; --card:#fff; --line:#e2e3e8; --field:#fbfbfc;
+  --blue:#4e6bf1; --blue-ink:#fff; --blue-soft:#e9edfe; --ok:#2e8b4c; --bad:#c8432f; --mid:#c98a00;
+  --f:"Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#16181d; --ink:#eceef2; --soft:#a3a8b5; --card:#1f2229; --line:#323642; --field:#1a1d23;
+  --blue:#7c93ff; --blue-ink:#10121a; --blue-soft:#262d4a; --ok:#5cc47c; --bad:#ff7a63; --mid:#f0b93a; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#16181d; --ink:#eceef2; --soft:#a3a8b5; --card:#1f2229; --line:#323642; --field:#1a1d23;
+  --blue:#7c93ff; --blue-ink:#10121a; --blue-soft:#262d4a; --ok:#5cc47c; --bad:#ff7a63; --mid:#f0b93a; color-scheme:dark}
+body{background:var(--bg);color:var(--ink);font-family:var(--f);font-size:16px;line-height:1.6;margin:0;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:760px;margin:0 auto;padding-block:20px 60px;display:flex;flex-direction:column;gap:16px}
+h1,h2,h3{margin:0;text-wrap:balance;line-height:1.3}
+h1{font-size:1.75rem;font-weight:900} h2{font-size:1.35rem;font-weight:900} h3{font-size:1.05rem;font-weight:700}
+p{margin:0} .soft{color:var(--soft)}
+button,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+.top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.top a{color:var(--blue);font-weight:700;text-decoration:none}
+.brand small{letter-spacing:.12em;font-weight:700;color:var(--blue);font-size:.78rem}
+.card{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:18px;display:flex;flex-direction:column;gap:14px}
+.why{background:var(--blue-soft);border-radius:4px;padding:12px 14px;font-size:.95rem}
+.why b{color:var(--blue)}
+.note{font-size:.88rem;color:var(--soft)} .note.bad{color:var(--bad)} .note.ok{color:var(--ok)}
+.btns{display:flex;flex-wrap:wrap;gap:8px}
+.btn{border:1px solid var(--line);background:var(--card);border-radius:4px;padding:10px 16px;font-weight:700;color:var(--ink);text-decoration:none;display:inline-block}
+.btn.pri{background:var(--blue);color:var(--blue-ink);border-color:var(--blue)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.f{display:flex;flex-direction:column;gap:6px}
+.f label{font-weight:700}
+.f input,.f textarea{border:1px solid var(--line);background:var(--field);border-radius:4px;padding:10px 12px}
+.f textarea{min-height:110px;resize:vertical}
+.list{display:flex;flex-direction:column;gap:10px}
+a.g{display:flex;flex-direction:column;gap:4px;background:var(--card);border:1px solid var(--line);border-left:6px solid var(--blue);border-radius:4px;padding:14px 16px;color:var(--ink);text-decoration:none}
+a.g b{font-size:1.1rem} a.g span{color:var(--soft);font-size:.92rem}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media (max-width:640px){.two{grid-template-columns:1fr}}
+.out{white-space:pre-wrap;background:var(--field);border:1px solid var(--line);border-radius:4px;padding:12px;font-size:.95rem;line-height:1.7;min-height:60px}
+.tag{display:inline-block;font-weight:900;border-radius:4px;padding:2px 8px;font-size:.85rem}
+.tag.a{background:#fde3e0;color:#9a2a1c} .tag.b{background:#dff3e6;color:#1d6b3a}
+.sent{display:inline;border-radius:3px;padding:2px 2px;cursor:pointer;line-height:2}
+.sent[aria-pressed="true"]{background:#ffe08a;color:#333}
+.sent.false{text-decoration:underline wavy var(--bad);text-underline-offset:4px}
+.sent.hit{background:color-mix(in srgb,var(--ok) 25%,transparent)}
+.sent.miss{background:color-mix(in srgb,var(--bad) 22%,transparent)}
+.aibox{border:1px solid var(--line);border-radius:6px;padding:14px;background:var(--field)}
+.aibox .who{font-size:.8rem;color:var(--soft);font-weight:700;margin-bottom:6px}
+.pick{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.pick button{border:2px solid var(--line);background:var(--field);border-radius:6px;padding:12px;text-align:left;line-height:1.7;font-size:.95rem}
+.pick button.right{border-color:var(--ok)} .pick button.wrong{border-color:var(--bad)}
+@media (max-width:640px){.pick{grid-template-columns:1fr}}
+.vote{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.vote button{border:2px solid var(--line);background:var(--field);border-radius:6px;padding:14px;font-weight:900;font-size:1.05rem}
+.vote button[aria-pressed="true"]{border-color:var(--blue);background:var(--blue-soft)}
+.side{border-left:4px solid var(--blue);padding:8px 12px;background:var(--field);font-size:.95rem}
+.qno{color:var(--blue);font-weight:700;font-size:.9rem}
+.big{font-size:2.2rem;font-weight:900;text-align:center}
+</style>
+</head><body>
+<div class="wrap" id="app"></div>
+<script type="module" src="ai.js"></script>
+<script>
+(function(){
+var app=document.getElementById('app');
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+var AI=window.TM_AI||null, CODE={code:''};
+try{CODE=JSON.parse(localStorage.getItem('tm-code')||'null')||CODE}catch(e){}
+var qc=(new URLSearchParams(location.search).get('c')||'').trim().toUpperCase();if(qc&&qc!==CODE.code)CODE={code:qc};
+function saveCode(){try{localStorage.setItem('tm-code',JSON.stringify(CODE))}catch(e){}}
+window.addEventListener('tm-ai',function(){AI=window.TM_AI;if(CODE.code&&!CODE.ok)check()});
+function check(){AI.check(CODE.code).then(function(r){CODE.name=r.name;CODE.ok=1;delete CODE.err;saveCode();render()},function(e){CODE.ok=0;CODE.err=e.message;render()})}
+if(AI&&CODE.code&&!CODE.ok)check();
+var V=(location.hash||'').slice(1)||'home', busy=false, note='';
+window.addEventListener('hashchange',function(){V=(location.hash||'').slice(1)||'home';note='';render();window.scrollTo(0,0)});
+var st={};try{st=JSON.parse(localStorage.getItem('ai-v1')||'{}')}catch(e){}
+function save(){try{localStorage.setItem('ai-v1',JSON.stringify(st))}catch(e){}}
+
+function head(t){return '<div class="top"><div class="brand"><small>위듀케이션 · AI 수업 도구</small></div><a href="'+(V==='home'?'./':'#')+'">← '+(V==='home'?'도구 모음':'AI 수업 도구')+'</a></div>'+(t?'<h1>'+t+'</h1>':'')}
+function codeCard(){
+  if(CODE.ok)return '<p class="note ok">✔ 초대코드 '+esc(CODE.code)+(CODE.name?' · '+esc(CODE.name):'')+' <button class="btn" data-a="recode" style="padding:2px 8px;font-size:.8rem">바꾸기</button></p>';
+  return '<div class="card"><h3>초대코드</h3><p class="soft">AI를 쓰는 활동이라 선생님이 알려 준 코드가 필요해요.</p><div class="btns"><input id="code" value="'+esc(CODE.code||'')+'" placeholder="예: OSAN-1106" style="flex:1;min-width:0;border:1px solid var(--line);background:var(--field);border-radius:4px;padding:10px 12px;text-transform:uppercase"><button class="btn pri" data-a="code">확인</button></div>'+(CODE.err?'<p class="note bad">'+esc(CODE.err)+'</p>':'')+(!AI?'<p class="note">연결 준비 중…</p>':'')+'</div>';
+}
+function lab(p){busy=true;note='';render();return AI.lab(Object.assign({code:CODE.code},p)).finally(function(){busy=false})}
+
+/* ---------- 홈 ---------- */
+function home(){
+  return head('AI 수업 도구')+'<p class="soft">AI를 "잘 쓰는 사람"이 되기 위한 다섯 가지 활동이에요. ⚡표시는 AI가 실제로 답해요(초대코드 필요).</p><div class="list">'+
+   [['prompt','⚡ 프롬프트 연습장','대충 쓴 부탁 vs 잘 쓴 부탁, AI 답을 나란히 비교 + 프롬프트 채점'],
+    ['lie','🕵️ AI 거짓말 찾기','AI 답변 속 그럴듯한 거짓 문장을 찾아라 (환각 찾기)'],
+    ['who','🤖 AI가 쓴 글 vs 사람이 쓴 글','어느 쪽이 AI일까? AI 글의 특징 알아보기'],
+    ['ethics','⚖️ AI 윤리 딜레마','"AI로 자소서를 써도 될까?" 찬반 투표와 생각해 볼 점'],
+    ['future','⚡ 내 직무 미래 지도','내 직무에서 AI가 대신할 일·사람이 할 일·키울 역량']].map(function(x){return '<a class="g" href="#'+x[0]+'"><b>'+x[1]+'</b><span>'+x[2]+'</span></a>'}).join('')+'</div>'+
+   '<div class="why"><b>선생님 팁:</b> 윤리 딜레마 질문은 <a href="live.html?host">실시간 반응판</a>에 바로 넣어 반 전체 투표로 할 수 있어요(윤리 딜레마 화면 맨 아래 버튼).</div>';
+}
+
+/* ---------- ① 프롬프트 연습장 ---------- */
+var PEX=[
+ ['자소서 써 줘','너는 10년 차 채용 담당자야. 나는 반도체 장비 회사 생산직에 지원하는 공업고등학교 3학년이야. 나의 강점은 성실함이고, 3년 동안 지각·결석 0회, 전기기능사 자격증을 땄어. 이 내용으로 "성격의 장점" 항목을 500자 이내, ~습니다체로 써 줘. 없는 경험은 지어내지 마.'],
+ ['운동 알려 줘','너는 헬스 트레이너야. 나는 운동을 처음 하는 고등학생이고, 집에서 도구 없이 하루 15분만 할 수 있어. 일주일 계획을 요일별 표로 짜 줘. 무릎이 약하니 점프 동작은 빼 줘.'],
+ ['면접 질문 알려 줘','너는 공기업 면접관이야. 나는 고졸 사무직에 지원했어. 실제로 자주 나오는 인성 질문 5개를 골라, 질문마다 "면접관이 이 질문으로 알고 싶은 것"을 한 줄씩 붙여 줘.']
+];
+function prompt(){
+  var P=st.p||(st.p={a:'',b:'',ra:'',rb:'',rc:''});
+  var h=head('⚡ 프롬프트 연습장')+'<div class="why"><b>AI는 묻는 만큼 답해요.</b> 같은 부탁을 <span class="tag a">A 대충</span> <span class="tag b">B 꼼꼼히</span> 두 가지로 써서 결과를 비교해 보세요. 좋은 프롬프트의 5요소: <b>역할 · 목적 · 맥락 · 형식 · 조건</b></div>'+codeCard();
+  h+='<div class="card"><h3>예시로 시작하기</h3><div class="btns">'+PEX.map(function(x,i){return '<button class="btn" data-ex="'+i+'">'+esc(x[0])+'</button>'}).join('')+'</div></div>';
+  h+='<div class="two"><div class="card"><span class="tag a">A 대충 쓴 부탁</span><div class="f"><textarea id="pa" maxlength="600" placeholder="예: 자소서 써 줘">'+esc(P.a)+'</textarea></div><button class="btn" data-a="runA"'+(CODE.ok&&!busy?'':' disabled')+'>A 보내기</button>'+(P.ra?'<div class="out">'+esc(P.ra)+'</div>':'')+'</div>'+
+    '<div class="card"><span class="tag b">B 꼼꼼히 쓴 부탁</span><div class="f"><textarea id="pb" maxlength="600" placeholder="역할·목적·맥락·형식·조건을 넣어 보세요">'+esc(P.b)+'</textarea></div><div class="btns"><button class="btn pri" data-a="runB"'+(CODE.ok&&!busy?'':' disabled')+'>B 보내기</button><button class="btn" data-a="coach"'+(CODE.ok&&!busy?'':' disabled')+'>🧑‍🏫 B 채점받기</button></div>'+(P.rb?'<div class="out">'+esc(P.rb)+'</div>':'')+(P.rc?'<div class="out" style="border-color:var(--blue)">'+esc(P.rc)+'</div>':'')+'</div></div>';
+  if(busy)h+='<p class="note">AI가 답을 쓰는 중… (10~30초)</p>';if(note)h+='<p class="note bad">'+esc(note)+'</p>';
+  h+='<div class="card"><h3>비교해 볼 질문</h3><ol style="margin:0;padding-left:20px"><li>A와 B 중 바로 쓸 수 있는 답은?</li><li>A의 답에서 AI가 "마음대로 정해 버린" 것은?</li><li>B에 무엇을 더 넣으면 더 좋아질까?</li></ol><p class="note">⚠ 이름·전화번호·주소 같은 개인정보는 AI에 넣지 마세요. AI 답은 저장되지 않아요.</p></div>';
+  return h;
+}
+/* ---------- ② AI 거짓말 찾기 ---------- */
+var LIE=[
+ {t:'이순신 장군에 대해 알려 줘',s:[
+  ['이순신은 임진왜란 때 활약한 조선의 장군입니다.',0],['한산도 대첩에서 학이 날개를 편 모양의 학익진 전법으로 크게 이겼습니다.',0],
+  ['거북선은 임진왜란이 끝난 뒤 이순신이 처음 만들었습니다.',1,'거북선은 임진왜란이 일어나기 직전에 완성돼 전쟁 초기부터 쓰였어요.'],
+  ['그는 전쟁 중에 쓴 일기를 남겼는데, 이것이 『난중일기』입니다.',0],
+  ['노량 해전에서 승리한 뒤 한양으로 돌아가 영의정이 되어 오래 살았습니다.',1,'이순신은 노량 해전에서 적의 총탄에 맞아 전사했어요.']]},
+ {t:'재미있는 과학 상식 알려 줘',s:[
+  ['물은 1기압에서 100℃에 끓습니다.',0],['지구에서 가장 가까운 별은 북극성입니다.',1,'지구에서 가장 가까운 별은 태양이에요. 북극성은 아주 멀리 있어요.'],
+  ['어른의 뼈는 보통 206개 정도입니다.',0],['번개는 같은 곳에 두 번 떨어지지 않습니다.',1,'번개는 같은 곳에 여러 번 떨어질 수 있어요. 높은 건물은 해마다 여러 번 맞아요.'],
+  ['소리는 공기보다 물속에서 더 빠르게 전달됩니다.',0]]},
+ {t:'알바할 때 알아야 할 노동법 알려 줘',s:[
+  ['근로계약서는 꼭 쓰고, 회사는 근로자에게 한 부를 줘야 합니다.',0],['4시간 일하면 30분 이상 쉬는 시간을 줘야 합니다.',0],
+  ['수습 기간에는 최저임금을 주지 않아도 됩니다.',1,'수습이라도 최저임금은 지켜야 해요. 아주 제한된 조건에서만 일부 감액(90%)이 허용돼요.'],
+  ['아르바이트생에게는 주휴수당이 없습니다.',1,'일주일에 15시간 이상 일하고 약속한 날을 다 나왔다면 알바생도 주휴수당을 받아요.'],
+  ['만 15세 미만은 원칙적으로 근로자로 고용할 수 없습니다.',0]]},
+ {t:'AI를 쓸 때 주의할 점 알려 줘',s:[
+  ['AI는 그럴듯하지만 사실이 아닌 내용을 만들어 낼 수 있습니다. 이것을 "환각"이라고 합니다.',0],
+  ['AI가 알려 준 출처와 링크는 항상 실제로 존재합니다.',1,'AI는 있지도 않은 책·기사·링크를 만들어 낼 때가 있어요. 출처는 꼭 직접 열어 확인하세요.'],
+  ['AI는 학습한 시점 이후의 최신 소식을 모를 수 있습니다.',0],
+  ['AI에 입력한 개인정보는 어디에도 남지 않으니 마음껏 넣어도 됩니다.',1,'서비스에 따라 입력 내용이 저장·학습에 쓰일 수 있어요. 개인정보는 넣지 않는 게 원칙이에요.'],
+  ['같은 질문도 어떻게 묻느냐에 따라 답이 달라집니다.',0]]}
+];
+function lie(){
+  var L=st.lie||(st.lie={i:0,sel:{},done:{},score:0});
+  if(L.i>=LIE.length)return head('🕵️ AI 거짓말 찾기')+'<div class="card"><div class="big">'+L.score+'점</div><p style="text-align:center">맞게 찾은 거짓 문장 +1, 참인 문장을 거짓이라 하면 -1</p><div class="why"><b>오늘의 한 줄:</b> AI는 <b>틀린 말도 자신 있게</b> 해요. 숫자·사람·법·출처는 반드시 <b>다른 곳에서 한 번 더 확인</b>하세요.</div><button class="btn pri" data-a="lieRe">처음부터 다시</button></div>';
+  var R=LIE[L.i],sel=L.sel[L.i]||{},done=L.done[L.i];
+  var h=head('🕵️ AI 거짓말 찾기')+'<p class="soft">AI 답변 속에 <b>거짓 문장</b>이 숨어 있어요. 수상한 문장을 눌러 표시하고 "정답 확인"을 누르세요. ('+(L.i+1)+' / '+LIE.length+')</p>';
+  h+='<div class="card"><div class="aibox"><div class="who">🙋 질문: '+esc(R.t)+'</div><div class="who">🤖 AI 답변</div><p>'+R.s.map(function(x,j){var c='sent';if(done){if(x[1]&&sel[j])c+=' hit';else if(x[1])c+=' false';else if(sel[j])c+=' miss'}return '<span class="'+c+'" data-s="'+j+'" aria-pressed="'+(!!sel[j]&&!done)+'" role="button">'+esc(x[0])+'</span> '}).join('')+'</p></div>';
+  if(!done)h+='<button class="btn pri" data-a="lieCheck">정답 확인</button>';
+  else{
+    h+='<div class="list">'+R.s.map(function(x,j){if(!x[1])return '';return '<div class="side">'+(sel[j]?'✅ 찾았어요':'❌ 놓쳤어요')+' · <b>'+esc(x[0])+'</b><br>'+esc(x[2])+'</div>'}).join('')+'</div><button class="btn pri" data-a="lieNext">'+(L.i===LIE.length-1?'결과 보기':'다음 답변 →')+'</button>';
+  }
+  return h+'</div><p class="note">이 활동의 "AI 답변"은 수업용으로 만든 예시예요.</p>';
+}
+/* ---------- ③ AI vs 사람 ---------- */
+var WHO=[
+ {q:'"나의 장점" 자소서 한 문단',ai:'저의 가장 큰 장점은 책임감과 성실함입니다. 저는 어떤 일을 맡든 끝까지 최선을 다하며, 팀원들과의 원활한 소통을 통해 공동의 목표를 달성하는 데 기여해 왔습니다. 이러한 경험을 바탕으로 귀사에서도 맡은 바 업무를 성실히 수행하여 회사의 발전에 이바지하겠습니다.',
+  hu:'고2 여름, 실습실 선반이 자꾸 0.1mm씩 어긋났습니다. 선생님도 "기계가 오래돼서 그렇다"고 하셨지만, 저는 2주 동안 점심시간마다 남아 원인을 찾았고 척 조임 순서가 문제라는 걸 알아냈습니다. 그 뒤로 저는 "원래 그렇다"는 말을 잘 믿지 않습니다.',
+  why:'AI 글은 "책임감·성실함·원활한 소통·이바지"처럼 <b>누구에게나 맞는 말</b>로 매끄럽게 이어지지만 <b>구체적인 장면·숫자·감정이 없어요.</b> 사람 글에는 "고2 여름, 0.1mm, 점심시간, 2주"처럼 그 사람만의 장면이 있어요.'},
+ {q:'친구에게 보내는 생일 축하 메시지',ai:'생일 축하해! 🎉 오늘 하루가 행복과 기쁨으로 가득하길 바라. 앞으로도 너의 모든 꿈과 목표가 이루어지길 진심으로 응원할게. 언제나 곁에서 함께할게! 💕',
+  hu:'야 생일 축하해ㅋㅋ 작년에 네가 케이크 들고 오다 계단에서 넘어진 거 아직도 생각남. 올해는 내가 들고 갈게. 토요일 3시 그 떡볶이집 ㄱ?',
+  why:'AI는 <b>좋은 말을 고르게 나열</b>하고 이모지를 규칙적으로 붙여요. 사람은 <b>둘만 아는 추억, 맞춤법을 일부러 흐트러뜨린 말투, 구체적인 약속</b>이 들어가요.'},
+ {q:'"AI 시대에 필요한 능력" 짧은 글',ai:'AI 시대에는 다양한 능력이 요구됩니다. 첫째, 비판적 사고력이 중요합니다. 둘째, 창의성이 필요합니다. 셋째, 협업 능력이 강조됩니다. 결론적으로, 이러한 능력을 균형 있게 갖춘 인재가 미래 사회를 이끌어 갈 것입니다.',
+  hu:'솔직히 AI가 내 숙제를 더 잘 쓴다. 그래서 요즘은 AI 답을 받으면 "이거 진짜야?"부터 묻는다. 지난주엔 AI가 알려 준 책 제목을 검색했더니 세상에 없는 책이었다. 내가 키워야 할 능력은 결국 의심하는 힘 같다.',
+  why:'AI 글은 <b>"첫째·둘째·셋째·결론적으로"</b> 같은 깔끔한 틀과 무난한 결론을 좋아해요. 사람 글은 <b>직접 겪은 일에서 생각이 출발</b>하고, 결론이 덜 매끈해도 진짜 같아요.'},
+ {q:'카페 리뷰',ai:'분위기가 아늑하고 인테리어가 감각적인 카페입니다. 커피 맛이 훌륭하며 디저트 종류도 다양합니다. 직원분들도 친절하셔서 기분 좋게 머물다 왔습니다. 친구나 연인과 방문하기 좋은 곳으로 추천드립니다!',
+  hu:'창가 자리 콘센트가 하나뿐이라 노트북 들고 가면 눈치 싸움임. 바닐라라떼는 달아서 시럽 반만 해 달라고 하면 딱 좋음. 사장님이 키우는 고양이(이름 두부)가 3시쯤 나와서 자고 감.',
+  why:'AI 리뷰는 <b>어느 카페에도 붙일 수 있는 칭찬</b>이에요. 사람 리뷰는 <b>콘센트 개수, 시럽 반, 고양이 이름</b>처럼 가 본 사람만 아는 정보가 있어요.'},
+ {q:'면접 답변 "실패 경험"',ai:'저는 팀 프로젝트에서 일정 관리 실패를 경험한 적이 있습니다. 이를 통해 계획의 중요성을 깨달았고, 이후 체계적인 일정 관리 습관을 기르게 되었습니다. 이 경험은 저를 한층 성장시키는 계기가 되었습니다.',
+  hu:'졸업 작품 발표 전날 밤에 납땜이 떨어져서 LED 절반이 안 켜졌습니다. 다시 하기엔 시간이 없어서 발표 때 "왼쪽 절반만 보시면 됩니다"라고 했는데, 다들 웃었습니다. 그 뒤로는 마감 이틀 전에 무조건 전원부터 켜 봅니다.',
+  why:'"깨달았다·성장시키는 계기" 같은 <b>교훈 문장만 있고 장면이 없으면</b> AI 냄새가 나요. 면접관은 <b>구체적인 장면과 바뀐 행동</b>을 듣고 싶어 해요.'}
+];
+function who(){
+  var W=st.who||(st.who={i:0,pick:{},ord:{}});
+  if(W.i>=WHO.length){var ok=0;WHO.forEach(function(_,i){if(W.pick[i]==='ai')ok++});
+    return head('🤖 AI vs 사람 글')+'<div class="card"><div class="big">'+ok+' / '+WHO.length+'</div><div class="why"><b>AI 글을 알아보는 4가지 신호</b><br>① 누구에게나 맞는 무난한 말 ② 구체적인 장면·숫자·이름이 없음 ③ 첫째·둘째·결론적으로 같은 깔끔한 틀 ④ 교훈으로 매끈하게 끝남<br><br><b>그래서 자소서는?</b> AI 초안을 그대로 내면 면접관은 바로 알아봐요. AI로 뼈대를 만들고, <b>나만 아는 장면과 숫자</b>를 꼭 채워 넣으세요.</div><button class="btn pri" data-a="whoRe">다시 하기</button></div>';}
+  if(W.ord[W.i]==null){W.ord[W.i]=Math.random()<.5?0:1;save()}
+  var R=WHO[W.i],o=W.ord[W.i],L=o?[['hu',R.hu],['ai',R.ai]]:[['ai',R.ai],['hu',R.hu]],p=W.pick[W.i];
+  var h=head('🤖 AI vs 사람 글')+'<p class="soft">둘 중 <b>AI가 쓴 글</b>은 어느 쪽일까요? ('+(W.i+1)+' / '+WHO.length+')</p><div class="card"><span class="qno">주제: '+esc(R.q)+'</span><div class="pick">'+
+    L.map(function(x,j){var c=p?(x[0]==='ai'?'right':(p===x[0]?'wrong':'')):'';return '<button data-who="'+x[0]+'" class="'+c+'"'+(p?' disabled':'')+'><b>'+(j?'B':'A')+'</b> '+esc(x[1])+(p?'<br><b>'+(x[0]==='ai'?'🤖 AI':'🙋 사람')+'</b>':'')+'</button>'}).join('')+'</div>';
+  if(p)h+='<div class="side"><b>'+(p==='ai'?'정답!':'아쉬워요!')+'</b> '+R.why+'</div><button class="btn pri" data-a="whoNext">'+(W.i===WHO.length-1?'결과 보기':'다음 →')+'</button>';
+  return h+'</div><p class="note">이 활동의 글은 AI 글과 사람 글의 특징을 보여 주려고 수업용으로 만든 예시예요.</p>';
+}
+/* ---------- ④ 윤리 딜레마 ---------- */
+var ETH=[
+ {q:'AI로 자기소개서 초안을 써서 내도 될까?',yes:'시간을 아끼고 문장 실력이 부족해도 기회를 얻을 수 있어요. 초안을 내 경험으로 고친다면 도구일 뿐이에요.',no:'내 경험이 아닌 내용이 섞이면 거짓말이 되고, 면접에서 들통나요. 회사는 "나"를 알고 싶어 해요.',think:'어디까지가 "도움"이고 어디부터가 "대신"일까? 내 경험·숫자를 직접 채웠는지가 기준이 될 수 있어요.'},
+ {q:'회사가 AI로 지원자 서류를 1차로 걸러도 될까?',yes:'수천 장을 사람이 다 읽기 어려워요. 기준을 똑같이 적용하니 오히려 공정할 수 있어요.',no:'AI가 학습한 데이터에 편견이 있으면 특정 학교·성별을 불리하게 볼 수 있어요. 왜 떨어졌는지 설명하기도 어려워요.',think:'AI가 걸렀다면 지원자에게 알려 줘야 할까? 사람이 마지막 확인을 해야 할까?'},
+ {q:'숙제를 AI로 하고 "AI 사용"이라고 밝히면 괜찮을까?',yes:'솔직하게 밝혔고, AI를 잘 쓰는 것도 실력이에요. 사회에서도 AI를 쓰니까요.',no:'숙제의 목적은 내가 배우는 것이에요. 결과물만 있고 배움이 없으면 의미가 없어요.',think:'숙제 종류마다 다를까? (생각 정리 숙제 vs 자료 조사 숙제)'},
+ {q:'돌아가신 가족의 목소리를 AI로 만들어 대화해도 될까?',yes:'그리움을 달래고 마음을 정리하는 데 도움이 될 수 있어요.',no:'본인의 동의 없이 목소리를 쓰는 것이고, 이별을 받아들이지 못하게 할 수 있어요. 사기에 악용될 수도 있어요.',think:'살아 있을 때 동의를 받았다면 달라질까? 누가 그 목소리의 주인일까?'},
+ {q:'현장의 안전 감시를 AI 카메라가 24시간 해도 될까?',yes:'사람이 놓치는 위험(안전모 미착용, 쓰러짐)을 바로 잡아 사고를 줄여요.',no:'일하는 모든 순간이 감시되면 사생활과 존중이 사라지고, 영상이 다른 목적으로 쓰일 수 있어요.',think:'어떤 조건(영상 보관 기간, 안전 목적으로만)이면 받아들일 수 있을까?'},
+ {q:'AI가 그린 그림으로 공모전에 나가도 될까?',yes:'AI에게 무엇을 어떻게 그리게 할지 정한 것도 창작이에요.',no:'AI는 다른 작가들의 그림을 학습했어요. 직접 그린 사람들과 공정한 경쟁이 아니에요.',think:'공모전 규칙에 "AI 사용 여부"를 꼭 적게 해야 할까?'},
+ {q:'친구 사진으로 AI 합성 장난 영상을 만들어 단톡방에 올려도 될까?',yes:'친한 사이의 장난이고, 친구도 웃을 수 있어요.',no:'본인 동의 없는 합성은 사이버 폭력이 될 수 있고, 퍼지면 되돌릴 수 없어요. 법적 처벌 대상이 될 수도 있어요.',think:'"장난"과 "폭력"의 경계는 누가 정할까? 당하는 사람의 기분이 기준이에요.'},
+ {q:'AI가 내 직업을 대신하게 되면 회사는 나를 다시 교육시킬 책임이 있을까?',yes:'회사가 이익을 위해 AI를 도입했으니, 일자리를 잃는 사람에게 새 기회를 줄 책임이 있어요.',no:'회사는 이익을 내는 곳이고, 새로 배우는 건 개인의 몫이에요. 정부 지원 제도가 있어요.',think:'회사·정부·개인이 각각 무엇을 나눠 맡아야 할까?'}
+];
+function ethics(){
+  var E=st.eth||(st.eth={v:{}});
+  var h=head('⚖️ AI 윤리 딜레마')+'<p class="soft">정답은 없어요. 먼저 내 생각을 고르면 양쪽 입장과 "생각해 볼 점"이 열려요.</p>';
+  ETH.forEach(function(x,i){var v=E.v[i];
+    h+='<div class="card"><span class="qno">딜레마 '+(i+1)+'</span><h3>'+esc(x.q)+'</h3><div class="vote"><button data-ev="'+i+'_y" aria-pressed="'+(v==='y')+'">👍 된다</button><button data-ev="'+i+'_n" aria-pressed="'+(v==='n')+'">👎 안 된다</button></div>';
+    if(v)h+='<div class="side"><b>👍 된다는 입장:</b> '+esc(x.yes)+'</div><div class="side" style="border-color:var(--bad)"><b>👎 안 된다는 입장:</b> '+esc(x.no)+'</div><div class="why"><b>생각해 볼 점:</b> '+esc(x.think)+'</div>';
+    h+='</div>';
+  });
+  h+='<div class="card"><h3>👩‍🏫 선생님용: 반 전체 투표로 하기</h3><p class="soft">이 딜레마 8개를 실시간 반응판 질문 목록에 넣고 강사 화면을 열어요. (이 기기에서 반응판을 쓰는 경우)</p><button class="btn pri" data-a="toLive">반응판에 넣고 열기</button></div>';
+  return h;
+}
+/* ---------- ⑤ 직무 미래 지도 ---------- */
+function future(){
+  var F=st.fut||(st.fut={job:'',r:''});
+  var h=head('⚡ 내 직무 미래 지도')+'<div class="why">AI가 들어오면 일자리가 "사라진다"보다 <b>일의 내용이 바뀐다</b>가 더 정확해요. 내 직무에서 무엇이 바뀌고, 지금 무엇을 키워야 할지 알아봐요.</div>'+codeCard();
+  h+='<div class="card"><div class="f"><label for="job">관심 직무</label><input id="job" maxlength="60" value="'+esc(F.job)+'" placeholder="예: 반도체 장비 엔지니어, 간호조무사, 사무직"></div><button class="btn pri" data-a="fut"'+(CODE.ok&&!busy?'':' disabled')+'>🗺️ 미래 지도 그리기</button>'+(busy?'<p class="note">AI가 생각하는 중… (10~30초)</p>':'')+(note?'<p class="note bad">'+esc(note)+'</p>':'')+'</div>';
+  if(F.r)h+='<div class="card"><h3>'+esc(F.job)+'의 미래 지도</h3><div class="out">'+esc(F.r)+'</div><p class="note">AI가 일반적인 흐름으로 예상한 내용이에요. 정답이 아니니 선생님·현직자 이야기와 함께 보세요.</p></div>'+
+    '<div class="card"><h3>✍ 나의 다짐 한 줄</h3><p class="soft">위 "키울 역량" 중 하나를 골라, 이번 달에 할 행동으로 적어 보세요. 예) "엑셀 자격증 시험을 12월에 접수한다"</p></div>';
+  return h;
+}
+
+function render(){
+  var f={home:home,prompt:prompt,lie:lie,who:who,ethics:ethics,future:future}[V]||home;
+  app.innerHTML=f();
+}
+function readP(){var P=st.p,a=document.getElementById('pa'),b=document.getElementById('pb');if(a)P.a=a.value;if(b)P.b=b.value;save()}
+app.addEventListener('click',function(e){
+  var t=e.target.closest('[data-a],[data-ex],[data-s],[data-who],[data-ev]');if(!t)return;var d=t.dataset;
+  if(d.a==='code'){CODE={code:(document.getElementById('code').value||'').trim().toUpperCase()};saveCode();if(AI)check();render();return}
+  if(d.a==='recode'){CODE={code:''};saveCode();render();return}
+  if(d.ex!=null){st.p.a=PEX[d.ex][0];st.p.b=PEX[d.ex][1];st.p.ra=st.p.rb=st.p.rc='';save();render();return}
+  if(d.a==='runA'||d.a==='runB'||d.a==='coach'){readP();var P=st.p,txt=d.a==='runA'?P.a:P.b;if(!txt.trim()){note='부탁을 먼저 적어 주세요';render();return}
+    lab({mode:d.a==='coach'?'coach':'run',prompt:txt}).then(function(r){if(d.a==='runA')P.ra=r.text;else if(d.a==='runB')P.rb=r.text;else P.rc=r.text;save()},function(er){note=er.message}).then(render);return}
+  if(d.s!=null){var L=st.lie;if(L.done[L.i])return;var sel=L.sel[L.i]||(L.sel[L.i]={});sel[d.s]=!sel[d.s];save();render();return}
+  if(d.a==='lieCheck'){var L2=st.lie,R=LIE[L2.i],sl=L2.sel[L2.i]||{};R.s.forEach(function(x,j){if(sl[j])L2.score+=x[1]?1:-1});L2.done[L2.i]=1;save();render();return}
+  if(d.a==='lieNext'){st.lie.i++;save();render();window.scrollTo(0,0);return}
+  if(d.a==='lieRe'){st.lie={i:0,sel:{},done:{},score:0};save();render();return}
+  if(d.who){st.who.pick[st.who.i]=d.who;save();render();return}
+  if(d.a==='whoNext'){st.who.i++;save();render();window.scrollTo(0,0);return}
+  if(d.a==='whoRe'){st.who={i:0,pick:{},ord:{}};save();render();return}
+  if(d.ev){var p=d.ev.split('_');st.eth.v[p[0]]=p[1];save();var y=window.scrollY;render();window.scrollTo(0,y);return}
+  if(d.a==='toLive'){var qs=[];try{qs=JSON.parse(localStorage.getItem('live-qs')||'null')||[]}catch(er){}
+    ETH.forEach(function(x){if(!qs.some(function(q){return q.text===x.q}))qs.push({type:'poll',text:x.q,opts:['👍 된다','👎 안 된다']})});
+    try{localStorage.setItem('live-qs',JSON.stringify(qs))}catch(er){}location.href='live.html?host';return}
+  if(d.a==='fut'){var F=st.fut;F.job=(document.getElementById('job').value||'').trim();if(!F.job){note='직무를 먼저 적어 주세요';render();return}
+    lab({mode:'future',job:F.job}).then(function(r){F.r=r.text;save()},function(er){note=er.message}).then(render);return}
+});
+app.addEventListener('input',function(e){if(e.target.id==='pa'||e.target.id==='pb')readP()});
+render();
+})();
+</script>
+</body></html>

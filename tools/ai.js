@@ -19,6 +19,7 @@ if (firebaseConfig) {
     check: code => boot().then(call => call('codeCheck', { code }, 15000)).catch(e => { throw new Error(msg(e)); }),
     intro: p => boot().then(call => call('introChat', p, 120000)).catch(e => { throw new Error(msg(e)); }),
     draft: (code, d) => boot().then(call => call('jasoDraft', { code, d }, 300000)).catch(e => { throw new Error(msg(e)); }),
+    lab: p => boot().then(call => call('aiLab', p, 120000)).catch(e => { throw new Error(msg(e)); }),
   };
   window.dispatchEvent(new Event('tm-ai'));
 }

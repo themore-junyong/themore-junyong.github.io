@@ -251,3 +251,77 @@ exports.liveRoom = onCall({ region: 'asia-northeast3', maxInstances: 3, timeoutS
   }
   fail('resource-exhausted', '잠시 뒤 다시 눌러 주세요');
 });
+
+// ───── AI 수업 도구 ─────
+// run: 학생이 쓴 프롬프트를 그대로 실행(프롬프트 연습장) · coach: 프롬프트 채점과 고쳐 쓰기 · future: 내 직무 미래 지도
+// 가벼운 모델 위주. 1인 하루 LAB_MAX번, 전체 하루 LAB_ALL번. 초대코드 used(자소서 횟수)는 깎지 않음. 글 내용은 저장하지 않음.
+const LAB_MAX = 30, LAB_ALL = 1500;
+const LAB = {
+  run: d => ({
+    sys: '너는 고등학생 수업에서 쓰는 AI야. 학생의 요청에 한국어로 답해. 600자를 넘기지 말고, 굵게(**)·제목 기호는 쓰지 마. 위험하거나 부적절한 요청은 정중히 거절해.',
+    text: s(d.prompt, 600), tokens: 1200,
+  }),
+  coach: d => ({
+    sys: '너는 프롬프트(AI에게 하는 부탁) 작성 코치야. 고등학생 눈높이로 짧고 친절하게 말해. 굵게(**)·제목 기호는 쓰지 마.',
+    text: [
+      '아래 학생의 프롬프트를 5가지 기준으로 각각 0~2점(총 10점)으로 채점해 줘.',
+      '기준: 역할(AI에게 누구처럼 답하라고 했나), 목적(무엇을 원하는지 분명한가), 맥락(나의 상황·대상 정보), 형식(분량·말투·모양), 조건(꼭 지킬 것·피할 것).',
+      '출력 형식(이대로, 다른 말 없이):',
+      '점수: N/10',
+      '역할 N - 한 줄 이유', '목적 N - 한 줄 이유', '맥락 N - 한 줄 이유', '형식 N - 한 줄 이유', '조건 N - 한 줄 이유',
+      '고쳐 쓴 프롬프트: (학생의 뜻은 살리고 5가지를 모두 갖춘 한 문단)',
+      '', '[학생 프롬프트]', s(d.prompt, 600),
+    ].join('\n'), tokens: 1500,
+  }),
+  future: d => ({
+    sys: '너는 고등학생·사회초년생을 위한 진로 코치야. 과장하거나 겁주지 말고, 근거 있는 일반적인 흐름으로 말해. 굵게(**)·제목 기호는 쓰지 마. 확실하지 않은 숫자·통계는 쓰지 마.',
+    text: [
+      `직무: ${s(d.job, 60)}`,
+      '이 직무가 AI·자동화 때문에 앞으로 5~10년 동안 어떻게 바뀔지 아래 형식으로 써 줘. 각 항목 2~3개, 한 줄씩 짧게.',
+      '출력 형식(이대로):',
+      'AI가 대신하게 될 일:', '- ...', '사람이 계속 해야 할 일:', '- ...', '새로 생길 일·역할:', '- ...', '지금부터 키울 역량 3가지:', '- ...', '한 줄 응원:', '...',
+    ].join('\n'), tokens: 1500,
+  }),
+};
+exports.aiLab = onCall({ region: 'asia-northeast3', secrets: [GEMINI_KEY], maxInstances: 5, timeoutSeconds: 120 }, async req => {
+  const uid = req.auth && req.auth.uid;
+  if (!uid) fail('unauthenticated', '잠시 뒤 다시 열어 주세요');
+  const { code } = await codeOf(req.data && req.data.code);
+  const mode = req.data && req.data.mode, d = req.data || {};
+  if (!LAB[mode]) fail('invalid-argument', '잘못된 요청이에요');
+  const job = LAB[mode](d);
+  if (!job.text || (mode !== 'future' && !s(d.prompt, 600).trim()) || (mode === 'future' && !s(d.job, 60).trim())) fail('invalid-argument', '내용을 먼저 적어 주세요');
+
+  const ref = db.doc(`use/${kst()}`), inc = FieldValue.increment(1), dec = FieldValue.increment(-1);
+  const over = await db.runTransaction(async t => {
+    const u = (await t.get(ref)).data() || {};
+    if ((u.lab || 0) >= LAB_ALL) return '오늘은 사용하는 사람이 많아 쉬어요. 내일 다시 해 주세요';
+    if (((u.lu || {})[uid] || 0) >= LAB_MAX) return `오늘은 ${LAB_MAX}번 다 썼어요. 내일 다시 해 보세요`;
+    t.set(ref, { lab: inc, lu: { [uid]: inc }, lc: { [code]: inc } }, { merge: true });
+    return '';
+  });
+  if (over) fail('resource-exhausted', over);
+  const undo = async (k, m) => { await ref.set({ lab: dec, lu: { [uid]: dec }, lc: { [code]: dec } }, { merge: true }).catch(() => {}); fail(k, m); };
+
+  const ai = new GoogleGenAI({ apiKey: GEMINI_KEY.value() });
+  const busy = e => e instanceof ApiError && (e.status === 503 || e.status === 500 || e.status === 400);
+  const ask = model => ai.models.generateContent({
+    model, contents: job.text,
+    config: model === MODEL ? { systemInstruction: job.sys, maxOutputTokens: job.tokens * 2, thinkingConfig: { thinkingLevel: 'LOW' } } : { systemInstruction: job.sys, maxOutputTokens: job.tokens },
+  });
+  let r;
+  try {
+    r = await ask(SPARE).catch(e => { if (!busy(e)) throw e; console.warn('lab next', e.status); return ask(MODEL); });
+  } catch (e) {
+    console.error('lab', e.status || '', String(e.message || e).slice(0, 200));
+    if (e instanceof ApiError && e.status === 429) await undo('resource-exhausted', '지금 요청이 많아요. 1분 뒤 다시 눌러 주세요');
+    await undo('unavailable', `AI 연결이 잠시 안 돼요(${e.status || '?'}). 다시 눌러 주세요`);
+  }
+  const why = (r.candidates && r.candidates[0] && r.candidates[0].finishReason) || '';
+  if ((r.promptFeedback && r.promptFeedback.blockReason) || /SAFETY|PROHIBITED|BLOCKLIST|SPII/.test(why)) await undo('failed-precondition', 'AI가 이 내용에는 답하지 않았어요. 다른 부탁으로 해 보세요');
+  const text = (r.text || '').replace(/\*\*/g, '').trim();
+  if (!text) await undo('unavailable', '답을 만들지 못했어요. 다시 눌러 주세요');
+  const u = r.usageMetadata || {};
+  console.log('lab ok', mode, code, r.modelVersion, u.promptTokenCount, u.candidatesTokenCount);
+  return { text };
+});
