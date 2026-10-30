@@ -7,7 +7,7 @@
   - `introChat({code, job, company, memo, hist, write})` 1분 자기소개 꼬꼬무: 질문 하나씩(가벼운 모델, 1인 하루 60번) / write=true면 1분 멘트(1인 하루 perDay번, 코드 횟수 차감)
   - `jasoDraft({code, d})` 자소서 입력값 → AI 초안. 학생 글은 저장하지 않음
   - `liveRoom({code})` 실시간 반응판 방 만들기 → 4자리 PIN (8시간 유효, 만든 사람만 질문을 띄움)
-  - `aiLab({code, mode, prompt|job})` AI 수업 도구: run(프롬프트 실행)·coach(프롬프트 채점)·future(직무 미래 지도). 1인 하루 30번, 전체 하루 1500번
+  - `aiLab({code, mode, prompt|job})` AI 수업 도구: run(프롬프트 실행)·coach(프롬프트 채점)·future(직무 미래 지도)·iv/ivend(AI 모의면접 질문·채점표). 1인 하루 30번, 전체 하루 1500번
 - Firestore
   - `codes/{코드}` = `{ name, on: true, perDay: 3, max: 100, until: "2026-12-31", used: 0 }` (준용이 콘솔에서 직접 만듦, 코드는 영문 대문자·숫자·- 4자 이상)
   - `use/{날짜}` 하루 사용 횟수 (자동)

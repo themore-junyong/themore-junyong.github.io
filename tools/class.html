@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>교실 도구</title>
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap">
+<style>
+/* 강사 빔 화면용: #team 팀 나누기 · #pick 순서·한 명 뽑기 · #timer 큰 타이머. 명단은 이 기기에만 저장 */
+:root{
+  --bg:#f6f6f6; --ink:#333; --soft:#6f7480; --card:#fff; --line:#e2e3e8; --field:#fbfbfc;
+  --blue:#4e6bf1; --blue-ink:#fff; --blue-soft:#e9edfe; --ok:#2e8b4c; --bad:#c8432f;
+  --f:"Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#16181d; --ink:#eceef2; --soft:#a3a8b5; --card:#1f2229; --line:#323642; --field:#1a1d23;
+  --blue:#7c93ff; --blue-ink:#10121a; --blue-soft:#262d4a; --ok:#5cc47c; --bad:#ff7a63; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#16181d; --ink:#eceef2; --soft:#a3a8b5; --card:#1f2229; --line:#323642; --field:#1a1d23;
+  --blue:#7c93ff; --blue-ink:#10121a; --blue-soft:#262d4a; --ok:#5cc47c; --bad:#ff7a63; color-scheme:dark}
+body{background:var(--bg);color:var(--ink);font-family:var(--f);font-size:16px;line-height:1.6;margin:0;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:1100px;margin:0 auto;padding-block:16px 40px;display:flex;flex-direction:column;gap:16px}
+h1,h2,h3{margin:0;line-height:1.3} h1{font-size:1.6rem;font-weight:900} h3{font-size:1.05rem}
+p{margin:0} .soft{color:var(--soft)}
+button,input,textarea{font:inherit;color:inherit} button{cursor:pointer}
+:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+.top{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.top a{color:var(--blue);font-weight:700;text-decoration:none}
+.brand small{letter-spacing:.12em;font-weight:700;color:var(--blue);font-size:.78rem}
+.tabs{display:flex;gap:6px;flex-wrap:wrap}
+.tabs a{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:8px 18px;font-weight:700;color:var(--ink);text-decoration:none}
+.tabs a[aria-current="page"]{background:var(--blue);border-color:var(--blue);color:var(--blue-ink)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:18px;display:flex;flex-direction:column;gap:14px}
+.row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.btn{border:1px solid var(--line);background:var(--card);border-radius:4px;padding:10px 16px;font-weight:700;color:var(--ink)}
+.btn.pri{background:var(--blue);color:var(--blue-ink);border-color:var(--blue)}
+.btn.big{font-size:1.2rem;padding:14px 28px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+textarea,input{border:1px solid var(--line);background:var(--field);border-radius:4px;padding:10px 12px;box-sizing:border-box}
+textarea{width:100%;min-height:150px;resize:vertical}
+input[type=number]{width:80px}
+.split{display:grid;grid-template-columns:minmax(260px,340px) 1fr;gap:16px;align-items:start}
+@media (max-width:760px){.split{grid-template-columns:1fr}}
+.teams{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
+.team{border-radius:10px;padding:14px;border:3px solid var(--c);background:color-mix(in srgb,var(--c) 10%,var(--card))}
+.team h3{color:var(--c);font-size:1.3rem;font-weight:900;display:flex;justify-content:space-between}
+.team ul{margin:8px 0 0;padding:0;list-style:none;font-size:1.25rem;font-weight:700;line-height:1.7}
+.team li{animation:pop .35s both}
+@keyframes pop{from{opacity:0;transform:scale(.6)}to{opacity:1;transform:none}}
+.stage{min-height:220px;display:flex;align-items:center;justify-content:center;text-align:center;font-size:clamp(2.4rem,9vw,6rem);font-weight:900;color:var(--blue);border-radius:10px;background:var(--blue-soft);padding:20px}
+.stage.spin{color:var(--soft)}
+.order{display:flex;flex-wrap:wrap;gap:8px;margin:0;padding:0;list-style:none}
+.order li{background:var(--field);border:1px solid var(--line);border-radius:999px;padding:6px 14px;font-weight:700;font-size:1.1rem;animation:pop .3s both}
+.order li b{color:var(--blue);margin-right:6px}
+.order li.done{opacity:.45;text-decoration:line-through}
+.clock{font-size:clamp(5rem,22vw,15rem);font-weight:900;text-align:center;font-variant-numeric:tabular-nums;line-height:1;letter-spacing:-.02em}
+.clock.warn{color:var(--bad);animation:blink 1s infinite}
+.clock.over{color:var(--bad)}
+@keyframes blink{50%{opacity:.55}}
+.pbar{height:14px;background:var(--line);border-radius:7px;overflow:hidden}.pbar i{display:block;height:100%;background:var(--blue);transition:width .3s linear}
+.pbar.warn i{background:var(--bad)}
+.label{font-size:clamp(1.2rem,3vw,2rem);font-weight:900;text-align:center}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chips button{border:1px solid var(--line);background:var(--field);border-radius:999px;padding:8px 16px;font-weight:700}
+.note{font-size:.88rem;color:var(--soft)}
+:fullscreen .wrap{max-width:none;padding:24px}
+:fullscreen{background:var(--bg)}
+</style>
+</head><body>
+<div class="wrap" id="app"></div>
+<script>
+(function(){
+var app=document.getElementById('app');
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+var st={names:'',teamBy:'count',teamN:4,teams:null,tnames:0,pick:null,pickDone:[],tm:{set:300,label:''}};
+try{st=Object.assign(st,JSON.parse(localStorage.getItem('class-v1')||'{}'))}catch(e){}
+function save(){try{localStorage.setItem('class-v1',JSON.stringify(st))}catch(e){}}
+var V=(location.hash||'').slice(1)||'team';
+window.addEventListener('hashchange',function(){V=(location.hash||'').slice(1)||'team';render()});
+var COLORS=['#e5484d','#2f80ed','#2e9e5b','#f2a20c','#8e4ec6','#12a4b5','#e8618c','#6b7c2f','#c2571a','#4b5ad6'];
+var TNAMES=[['1모둠','2모둠','3모둠','4모둠','5모둠','6모둠','7모둠','8모둠','9모둠','10모둠'],['🔥 불꽃','🌊 파도','🌳 나무','⚡ 번개','🌙 달빛','☀️ 햇살','🍀 클로버','🚀 로켓','🐯 호랑이','🦅 독수리'],['A팀','B팀','C팀','D팀','E팀','F팀','G팀','H팀','I팀','J팀']];
+function names(){var ls=st.names.split(/[\n,]/).map(function(x){return x.trim()}).filter(Boolean);return ls}
+function shuffle(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t}return a}
+
+function head(){return '<div class="top"><div class="brand"><small>위듀케이션 · 강사용 교실 도구</small></div><div class="row"><button class="btn" data-a="fs">⛶ 전체 화면</button><a href="./">← 도구 모음</a></div></div>'+
+  '<div class="tabs">'+[['team','👥 팀 나누기'],['pick','🎯 순서·한 명 뽑기'],['timer','⏱ 타이머']].map(function(x){return '<a href="#'+x[0]+'"'+(V===x[0]?' aria-current="page"':'')+'>'+x[1]+'</a>'}).join('')+'</div>'}
+function nameBox(){var n=names().length;return '<div class="card"><h3>명단</h3><textarea id="names" placeholder="한 줄에 한 명 (쉼표도 돼요)&#10;이름 대신 번호만 써도 돼요">'+esc(st.names)+'</textarea><div class="row"><span class="note" id="cnt">'+n+'명</span><span class="soft">또는</span><input type="number" id="numN" min="2" max="60" placeholder="인원"><button class="btn" data-a="nums">번호로 채우기</button></div><p class="note">명단은 이 기기에만 저장돼요.</p></div>'}
+
+/* 팀 나누기 */
+function team(){
+  var h=head()+'<div class="split"><div style="display:flex;flex-direction:column;gap:16px">'+nameBox()+
+  '<div class="card"><h3>나누는 방법</h3><div class="chips"><button data-by="count" aria-pressed="'+(st.teamBy==='count')+'" style="'+(st.teamBy==='count'?'background:var(--blue);color:var(--blue-ink)':'')+'">팀 개수로</button><button data-by="size" style="'+(st.teamBy==='size'?'background:var(--blue);color:var(--blue-ink)':'')+'">한 팀 인원으로</button></div>'+
+  '<div class="row"><input type="number" id="teamN" min="1" max="30" value="'+st.teamN+'"><span>'+(st.teamBy==='count'?'개 팀':'명씩')+'</span></div>'+
+  '<div class="chips">'+TNAMES.map(function(t,i){return '<button data-tn="'+i+'" style="'+(st.tnames===i?'background:var(--blue);color:var(--blue-ink)':'')+'">'+t[0].replace(/^\S+ /,'')+'·'+t[1].replace(/^\S+ /,'')+'…</button>'}).join('')+'</div>'+
+  '<button class="btn pri big" data-a="split">🎲 팀 나누기</button></div></div>';
+  h+='<div>'+(st.teams?'<div class="teams">'+st.teams.map(function(m,i){var c=COLORS[i%COLORS.length];return '<div class="team" style="--c:'+c+'"><h3><span>'+esc(TNAMES[st.tnames][i]||((i+1)+'팀'))+'</span><span style="font-size:1rem">'+m.length+'명</span></h3><ul>'+m.map(function(n,j){return '<li style="animation-delay:'+(j*.12+i*.04)+'s">'+esc(n)+'</li>'}).join('')+'</ul></div>'}).join('')+'</div>':'<div class="stage spin" style="font-size:1.6rem">명단을 넣고 🎲 팀 나누기를 누르세요</div>')+'</div></div>';
+  return h;
+}
+/* 순서·한 명 뽑기 */
+var spinT=null;
+function pick(){
+  var src=st.teams&&st.pickSrc==='team'?st.teams.map(function(_,i){return TNAMES[st.tnames][i]||((i+1)+'팀')}):names();
+  var h=head()+'<div class="split"><div style="display:flex;flex-direction:column;gap:16px">'+nameBox()+
+   '<div class="card"><h3>무엇을 뽑을까요?</h3><div class="chips"><button data-src="name" style="'+(st.pickSrc!=='team'?'background:var(--blue);color:var(--blue-ink)':'')+'">명단에서</button><button data-src="team"'+(st.teams?'':' disabled')+' style="'+(st.pickSrc==='team'?'background:var(--blue);color:var(--blue-ink)':'')+'">나눈 팀에서</button></div>'+
+   '<div class="row"><button class="btn pri big" data-a="one">🎯 한 명 뽑기</button><button class="btn big" data-a="order">🔢 발표 순서 정하기</button></div>'+
+   '<label class="row note"><input type="checkbox" id="noRep"'+(st.noRep?' checked':'')+'> 한 번 뽑힌 사람은 빼고 뽑기</label>'+(st.pickDone.length?'<button class="btn" data-a="clearDone">뽑힌 기록 지우기 ('+st.pickDone.length+')</button>':'')+'</div></div>'+
+   '<div style="display:flex;flex-direction:column;gap:16px"><div class="stage" id="stage">'+esc(st.pick&&st.pick.one||'?')+'</div>';
+  if(st.pick&&st.pick.order)h+='<div class="card"><h3>발표 순서 <span class="note">(누르면 끝난 표시)</span></h3><ol class="order">'+st.pick.order.map(function(n,i){return '<li data-od="'+i+'" class="'+(st.pick.od&&st.pick.od[i]?'done':'')+'" style="animation-delay:'+(i*.08)+'s;cursor:pointer"><b>'+(i+1)+'</b>'+esc(n)+'</li>'}).join('')+'</ol></div>';
+  return h+'<p class="note">후보 '+src.length+'개'+(st.noRep&&st.pickSrc!=='team'?' · 남은 사람 '+src.filter(function(n){return st.pickDone.indexOf(n)<0}).length+'명':'')+'</p></div></div>';
+}
+/* 타이머 */
+var T={left:null,run:false,end:0,iv:null,beeped:false};
+function fmt(s){var neg=s<0;s=Math.abs(Math.ceil(s));var m=Math.floor(s/60),x=s%60;return (neg?'+':'')+m+':'+String(x).padStart(2,'0')}
+function timer(){
+  var left=T.left==null?st.tm.set:T.left, warn=left<=10&&left>0, over=left<=0&&T.left!=null;
+  return head()+'<div class="card"><input id="tlabel" value="'+esc(st.tm.label)+'" placeholder="활동 이름 (예: 모둠 토의)" style="font-size:1.3rem;font-weight:900;text-align:center;border:0;background:transparent"><div class="clock'+(warn?' warn':'')+(over?' over':'')+'" id="clock">'+fmt(left)+'</div>'+
+   '<div class="pbar'+(warn||over?' warn':'')+'" id="pbar"><i style="width:'+Math.max(0,Math.min(100,left/st.tm.set*100))+'%"></i></div>'+
+   '<div class="row" style="justify-content:center"><button class="btn pri big" data-a="tgo">'+(T.run?'⏸ 멈춤':(T.left!=null&&T.left>0&&T.left<st.tm.set?'▶ 계속':'▶ 시작'))+'</button><button class="btn big" data-a="treset">↺ 처음으로</button><button class="btn big" data-a="tplus">+1분</button></div>'+
+   '<div class="chips" style="justify-content:center">'+[30,60,120,180,300,600,900].map(function(s){return '<button data-set="'+s+'" style="'+(st.tm.set===s?'background:var(--blue);color:var(--blue-ink)':'')+'">'+(s<60?s+'초':(s/60)+'분')+'</button>'}).join('')+'<span class="row" style="gap:4px"><input type="number" id="tmin" min="1" max="180" placeholder="분"><button class="btn" data-a="tcustom">설정</button></span></div>'+
+   '<p class="note" style="text-align:center">끝나면 소리가 나요(처음 한 번은 시작 버튼을 눌러야 소리가 켜져요). 끝난 뒤에는 넘긴 시간이 +로 보여요. 스페이스바 = 시작/멈춤</p></div>';
+}
+var AC=null;
+function beep(){try{AC=AC||new (window.AudioContext||window.webkitAudioContext)();[0,.35,.7].forEach(function(d){var o=AC.createOscillator(),g=AC.createGain();o.frequency.value=880;o.connect(g);g.connect(AC.destination);g.gain.setValueAtTime(.0001,AC.currentTime+d);g.gain.exponentialRampToValueAtTime(.4,AC.currentTime+d+.02);g.gain.exponentialRampToValueAtTime(.0001,AC.currentTime+d+.3);o.start(AC.currentTime+d);o.stop(AC.currentTime+d+.32)})}catch(e){}}
+function ttick(){T.left=(T.end-Date.now())/1000;
+  if(T.left<=0&&!T.beeped){T.beeped=true;beep()}
+  var c=document.getElementById('clock'),p=document.getElementById('pbar');if(!c)return;
+  var warn=T.left<=10&&T.left>0;c.textContent=fmt(T.left);c.className='clock'+(warn?' warn':'')+(T.left<=0?' over':'');
+  p.className='pbar'+(warn||T.left<=0?' warn':'');p.firstChild.style.width=Math.max(0,Math.min(100,T.left/st.tm.set*100))+'%'}
+function tgo(){
+  if(T.run){clearInterval(T.iv);T.run=false;T.left=(T.end-Date.now())/1000}
+  else{try{AC=AC||new (window.AudioContext||window.webkitAudioContext)();AC.resume()}catch(e){}
+    if(T.left==null||T.left<=0){T.left=st.tm.set;T.beeped=false}T.end=Date.now()+T.left*1000;T.run=true;T.iv=setInterval(ttick,200)}
+  render()}
+function treset(){clearInterval(T.iv);T={left:null,run:false,end:0,iv:null,beeped:false};render()}
+
+function render(){
+  var f={team:team,pick:pick,timer:timer}[V]||team;app.innerHTML=f();
+  var nb=document.getElementById('names');if(nb)nb.addEventListener('input',function(){st.names=nb.value;save();document.getElementById('cnt').textContent=names().length+'명'});
+  var tl=document.getElementById('tlabel');if(tl)tl.addEventListener('input',function(){st.tm.label=tl.value;save()});
+}
+function doSplit(){
+  var ls=shuffle(names());if(ls.length<2){alert('명단을 2명 이상 넣어 주세요');return}
+  var n=Math.max(1,+document.getElementById('teamN').value||1);st.teamN=n;
+  var k=st.teamBy==='count'?Math.min(n,ls.length):Math.max(1,Math.round(ls.length/n));
+  var t=[];for(var i=0;i<k;i++)t.push([]);ls.forEach(function(x,i){t[i%k].push(x)});st.teams=t;save();render();
+}
+function onePick(){
+  var src=st.pickSrc==='team'&&st.teams?st.teams.map(function(_,i){return TNAMES[st.tnames][i]||((i+1)+'팀')}):names();
+  st.noRep=document.getElementById('noRep').checked;
+  var pool=st.noRep&&st.pickSrc!=='team'?src.filter(function(n){return st.pickDone.indexOf(n)<0}):src;
+  if(!pool.length){alert(src.length?'모두 뽑혔어요. "뽑힌 기록 지우기"를 누르세요':'명단을 먼저 넣어 주세요');return}
+  var el=document.getElementById('stage'),n=0,steps=18+Math.floor(Math.random()*6);el.classList.add('spin');clearTimeout(spinT);
+  (function go(){el.textContent=pool[Math.floor(Math.random()*pool.length)];n++;
+    if(n<steps)spinT=setTimeout(go,40+n*n*1.2);
+    else{var w=pool[Math.floor(Math.random()*pool.length)];el.textContent=w;el.classList.remove('spin');st.pick=Object.assign(st.pick||{},{one:w});if(st.pickSrc!=='team')st.pickDone.push(w);save();beep();render()}})();
+}
+app.addEventListener('click',function(e){
+  var t=e.target.closest('[data-a],[data-by],[data-tn],[data-src],[data-od],[data-set]');if(!t)return;var d=t.dataset;
+  if(d.a==='fs'){if(document.fullscreenElement)document.exitFullscreen();else document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen();return}
+  if(d.a==='nums'){var k=+document.getElementById('numN').value;if(k>=2&&k<=60){st.names=Array.from({length:k},function(_,i){return (i+1)+'번'}).join('\n');save();render()}return}
+  if(d.by){st.teamN=+document.getElementById('teamN').value||st.teamN;st.teamBy=d.by;save();render();return}
+  if(d.tn!=null){st.tnames=+d.tn;save();render();return}
+  if(d.a==='split'){doSplit();return}
+  if(d.src){st.pickSrc=d.src;save();render();return}
+  if(d.a==='one'){onePick();return}
+  if(d.a==='order'){var src=st.pickSrc==='team'&&st.teams?st.teams.map(function(_,i){return TNAMES[st.tnames][i]||((i+1)+'팀')}):names();if(src.length<2){alert('명단을 2명 이상 넣어 주세요');return}st.pick=Object.assign(st.pick||{},{order:shuffle(src),od:{}});save();render();return}
+  if(d.od!=null){st.pick.od=st.pick.od||{};st.pick.od[d.od]=!st.pick.od[d.od];save();render();return}
+  if(d.a==='clearDone'){st.pickDone=[];save();render();return}
+  if(d.set){clearInterval(T.iv);T={left:null,run:false,end:0,iv:null,beeped:false};st.tm.set=+d.set;save();render();return}
+  if(d.a==='tcustom'){var m=+document.getElementById('tmin').value;if(m>0){clearInterval(T.iv);T={left:null,run:false,end:0,iv:null,beeped:false};st.tm.set=Math.round(m*60);save();render()}return}
+  if(d.a==='tgo'){tgo();return}
+  if(d.a==='treset'){treset();return}
+  if(d.a==='tplus'){if(T.run){T.end+=60000;st.tm.set+=60}else{T.left=(T.left==null?st.tm.set:Math.max(0,T.left))+60;if(T.left>st.tm.set)st.tm.set=Math.ceil(T.left)}T.beeped=false;save();T.run?ttick():render();return}
+});
+document.addEventListener('keydown',function(e){if(V==='timer'&&e.code==='Space'&&!/INPUT|TEXTAREA/.test(e.target.tagName)){e.preventDefault();tgo()}});
+render();
+})();
+</script>
+</body></html>

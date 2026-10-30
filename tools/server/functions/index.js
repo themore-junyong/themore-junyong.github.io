@@ -253,13 +253,13 @@ exports.liveRoom = onCall({ region: 'asia-northeast3', maxInstances: 3, timeoutS
 });
 
 // ───── AI 수업 도구 ─────
-// run: 학생이 쓴 프롬프트를 그대로 실행(프롬프트 연습장) · coach: 프롬프트 채점과 고쳐 쓰기 · future: 내 직무 미래 지도
+// run: 학생이 쓴 프롬프트를 그대로 실행(프롬프트 연습장) · coach: 프롬프트 채점과 고쳐 쓰기 · future: 내 직무 미래 지도 · iv/ivend: AI 모의면접
 // 가벼운 모델 위주. 1인 하루 LAB_MAX번, 전체 하루 LAB_ALL번. 초대코드 used(자소서 횟수)는 깎지 않음. 글 내용은 저장하지 않음.
 const LAB_MAX = 30, LAB_ALL = 1500;
 const LAB = {
   run: d => ({
     sys: '너는 고등학생 수업에서 쓰는 AI야. 학생의 요청에 한국어로 답해. 600자를 넘기지 말고, 굵게(**)·제목 기호는 쓰지 마. 위험하거나 부적절한 요청은 정중히 거절해.',
-    text: s(d.prompt, 600), tokens: 1200,
+    text: s(d.prompt, 600), tokens: 1200, ok: s(d.prompt, 600).trim(),
   }),
   coach: d => ({
     sys: '너는 프롬프트(AI에게 하는 부탁) 작성 코치야. 고등학생 눈높이로 짧고 친절하게 말해. 굵게(**)·제목 기호는 쓰지 마.',
@@ -271,7 +271,7 @@ const LAB = {
       '역할 N - 한 줄 이유', '목적 N - 한 줄 이유', '맥락 N - 한 줄 이유', '형식 N - 한 줄 이유', '조건 N - 한 줄 이유',
       '고쳐 쓴 프롬프트: (학생의 뜻은 살리고 5가지를 모두 갖춘 한 문단)',
       '', '[학생 프롬프트]', s(d.prompt, 600),
-    ].join('\n'), tokens: 1500,
+    ].join('\n'), tokens: 1500, ok: s(d.prompt, 600).trim(),
   }),
   future: d => ({
     sys: '너는 고등학생·사회초년생을 위한 진로 코치야. 과장하거나 겁주지 말고, 근거 있는 일반적인 흐름으로 말해. 굵게(**)·제목 기호는 쓰지 마. 확실하지 않은 숫자·통계는 쓰지 마.',
@@ -280,9 +280,34 @@ const LAB = {
       '이 직무가 AI·자동화 때문에 앞으로 5~10년 동안 어떻게 바뀔지 아래 형식으로 써 줘. 각 항목 2~3개, 한 줄씩 짧게.',
       '출력 형식(이대로):',
       'AI가 대신하게 될 일:', '- ...', '사람이 계속 해야 할 일:', '- ...', '새로 생길 일·역할:', '- ...', '지금부터 키울 역량 3가지:', '- ...', '한 줄 응원:', '...',
-    ].join('\n'), tokens: 1500,
+    ].join('\n'), tokens: 1500, ok: s(d.job, 60).trim(),
   }),
+  // AI 모의면접: iv = 지난 답 짧은 피드백 + 다음 질문 하나 · ivend = 전체 채점표
+  iv: d => { const v = ivData(d); return {
+    sys: IV_SYS,
+    text: [ivHead(v), v.hist.length ? '[지금까지 면접]\n' + talk(v) : '(아직 질문 없음)', '',
+      v.hist.length
+        ? '마지막 답에 대해 면접관으로서 짧은 피드백(좋은 점 하나, 고칠 점 하나)을 주고, 다음 질문 하나를 해 줘. 마지막 답이 짧거나 막연하면 그 답을 파고드는 꼬리질문을, 충분하면 새 주제의 질문을 해.'
+        : '면접을 시작하는 첫 질문 하나를 해 줘(보통 1분 자기소개 또는 지원동기).',
+      '출력 형식(이대로, 다른 말 없이):', ...(v.hist.length ? ['피드백: (두 문장 이내)'] : []), '질문: (질문 한 문장)'].join('\n'),
+    tokens: 600, ok: v.job,
+  }; },
+  ivend: d => { const v = ivData(d); return {
+    sys: IV_SYS,
+    text: [ivHead(v), '[면접 기록]', talk(v), '',
+      '면접이 끝났어. 아래 형식으로 채점표를 써 줘. 학생이 실제로 한 답만 근거로, 지어내지 마. 고등학생에게 맞게 따뜻하지만 솔직하게.',
+      '출력 형식(이대로):', '총점: N/100', '태도·자신감 N/20 - 한 줄', '내용의 구체성 N/30 - 한 줄', '직무·회사 이해 N/30 - 한 줄', '논리·전달력 N/20 - 한 줄',
+      '가장 잘한 답:', '- ...', '다시 하면 좋을 답:', '- (질문) → (이렇게 고쳐 말해 보기: 예시 답 2~3문장)', '다음 면접까지 연습할 것 3가지:', '- ...'].join('\n'),
+    tokens: 1800, ok: v.job && v.hist.some(h => h.a), best: 1,
+  }; },
 };
+const IV_SYS = '너는 한국 기업의 친절하지만 날카로운 면접관이야. 지원자는 고등학생·사회초년생이야. 한국어 존댓말로, 굵게(**)·제목 기호는 쓰지 마. 개인정보(주소·전화번호·주민번호)는 묻지 마. 차별 소지가 있는 질문(가족 직업·외모·결혼·종교·정치)은 하지 마.';
+const IV_KIND = { mix: '인성과 직무를 섞어서', soft: '인성 질문 위주로(태도·협업·갈등·실패 경험)', job: '직무 질문 위주로(전공·자격증·실습·직무 지식)', press: '압박 면접처럼 날카롭게(그래도 무례하지 않게)' };
+function ivData(x) {
+  const hist = (Array.isArray(x.hist) ? x.hist : []).slice(0, 12).map(h => ({ q: s(h && h.q, 300), a: s(h && h.a, 800) })).filter(h => h.q);
+  return { job: s(x.job, 80).trim(), company: s(x.company, 80), kind: IV_KIND[x.kind] ? x.kind : 'mix', memo: s(x.memo, 600), hist };
+}
+const ivHead = v => [`지원 분야: ${v.job}${v.company ? ' / 회사: ' + v.company : ''}`, `면접 방식: ${IV_KIND[v.kind]}`, v.memo && `지원자 메모(참고만): ${v.memo}`].filter(Boolean).join('\n');
 exports.aiLab = onCall({ region: 'asia-northeast3', secrets: [GEMINI_KEY], maxInstances: 5, timeoutSeconds: 120 }, async req => {
   const uid = req.auth && req.auth.uid;
   if (!uid) fail('unauthenticated', '잠시 뒤 다시 열어 주세요');
@@ -290,7 +315,7 @@ exports.aiLab = onCall({ region: 'asia-northeast3', secrets: [GEMINI_KEY], maxIn
   const mode = req.data && req.data.mode, d = req.data || {};
   if (!LAB[mode]) fail('invalid-argument', '잘못된 요청이에요');
   const job = LAB[mode](d);
-  if (!job.text || (mode !== 'future' && !s(d.prompt, 600).trim()) || (mode === 'future' && !s(d.job, 60).trim())) fail('invalid-argument', '내용을 먼저 적어 주세요');
+  if (!job.text || !job.ok) fail('invalid-argument', '내용을 먼저 적어 주세요');
 
   const ref = db.doc(`use/${kst()}`), inc = FieldValue.increment(1), dec = FieldValue.increment(-1);
   const over = await db.runTransaction(async t => {
@@ -311,7 +336,8 @@ exports.aiLab = onCall({ region: 'asia-northeast3', secrets: [GEMINI_KEY], maxIn
   });
   let r;
   try {
-    r = await ask(SPARE).catch(e => { if (!busy(e)) throw e; console.warn('lab next', e.status); return ask(MODEL); });
+    const [m1, m2] = job.best ? [MODEL, SPARE] : [SPARE, MODEL]; // 채점표만 좋은 모델 먼저
+    r = await ask(m1).catch(e => { if (!busy(e)) throw e; console.warn('lab next', e.status); return ask(m2); });
   } catch (e) {
     console.error('lab', e.status || '', String(e.message || e).slice(0, 200));
     if (e instanceof ApiError && e.status === 429) await undo('resource-exhausted', '지금 요청이 많아요. 1분 뒤 다시 눌러 주세요');
