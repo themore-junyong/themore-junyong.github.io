@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<meta name="build" content="2026-10-26.2">
+<meta name="build" content="2026-10-30.1">
 <title>교회 출석 · THE MORE</title>
 <meta name="theme-color" content="#1F6F78">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -108,6 +108,8 @@ dialog input,dialog select{border:1px solid var(--line);background:var(--bg);bor
 .two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
 .two label{min-width:0}
 dialog input,dialog select,dialog textarea{width:100%;min-width:0}
+dialog .hint{font-size:13px;color:var(--muted)}
+#smsBody{border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:8px 10px;font-size:15px;color:var(--ink);font-family:inherit}
 dialog{max-height:calc(100dvh - 32px);overflow:auto}
 .ghost[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 .editing .p{border-style:dashed}
@@ -232,6 +234,7 @@ textarea.memo{min-height:60px;border:1px solid var(--line);background:var(--bg);
         <button class="ghost" id="editMode" aria-pressed="false">✎ 정보</button>
         <button class="ghost" id="histMode" aria-pressed="false">출석이력</button>
         <button class="ghost" id="toStats">통계</button>
+        <button class="ghost hidden" id="toSms">📨 문자</button>
         <a class="ghost hidden" id="toFinance" href="./finance.html" style="text-decoration:none">재정</a>
         <button class="ghost hidden" id="toAdmin">관리</button>
         <button class="ghost" data-act="logout">로그아웃</button>
@@ -451,6 +454,19 @@ textarea.memo{min-height:60px;border:1px solid var(--line);background:var(--bg);
     <h2 style="font-size:18px" id="histName"></h2>
     <div id="histDlgBody" style="font-size:14px;line-height:1.6;max-height:60vh;overflow-y:auto"></div>
     <div class="row"><button class="btn line" value="cancel">닫기</button></div>
+  </form>
+</dialog>
+
+<dialog id="smsDlg">
+  <form method="dialog">
+    <h2 style="font-size:18px">단체 문자</h2>
+    <p class="hint" id="smsWho" style="margin:0"></p>
+    <label>받는 번호<select id="smsTo"><option value="phone">연락처</option><option value="either">연락처, 없으면 비상연락처</option><option value="emergency">비상연락처 (부모님 등)</option></select></label>
+    <label>보낼 내용 (문자 앱에서 고칠 수 있어요)<textarea id="smsBody" rows="4" placeholder="이번 주 예배 안내드립니다."></textarea></label>
+    <p class="hint" style="margin:0">내 휴대폰 문자 앱이 받는 사람이 채워진 채로 열려요. 통신사가 막지 않도록 20명씩 나눠 보내요.</p>
+    <div id="smsBatches" style="display:flex;flex-direction:column;gap:8px"></div>
+    <div class="row"><button type="button" class="btn line" id="smsCopy">번호 모두 복사</button><button class="btn line" value="cancel">닫기</button></div>
+    <span id="smsMsg" class="ok"></span>
   </form>
 </dialog>
 
@@ -823,6 +839,7 @@ function pickChurch(c) {
   if (S.store.demo) $("#toFinance").href = "./finance.html?demo";
   S.canEdit = S.admin || (c.staff || []).includes((S.email || "").toLowerCase());
   $("#addBtn").classList.toggle("hidden", !S.canEdit);
+  $("#toSms").classList.toggle("hidden", !S.canEdit);
   $("#editMode").textContent = S.canEdit ? "✎ 정보" : "정보 보기";
   document.querySelectorAll(".edit-phone").forEach(el => el.classList.toggle("hidden", !S.canEdit));
   $("#q").placeholder = S.canEdit ? "이름·전화 뒷자리 찾기" : "이름 찾기";
@@ -1232,6 +1249,44 @@ function renderYears() {
 }
 $("#yrN").oninput = renderYears; $("#yrMode").onchange = renderYears;
 $("#toStats").onclick = openStats;
+
+// 단체 문자: 지금 고른 탭(전체·분류·셀·장결·기타)의 번호로 내 휴대폰 문자 앱을 염. 20명씩 나눔
+const SMS_BATCH = 20;
+const smsDigits = (v) => (String(v || "").match(/0\d{1,2}[-\s.]?\d{3,4}[-\s.]?\d{4}/) || [""])[0].replace(/\D/g, "");
+function smsNumbers() {
+  const to = $("#smsTo").value;
+  const pool = S.members.filter(m =>
+    S.chip === "장결자" ? !!m.longAbsent : S.chip === "기타출석" ? !!m.extra && !m.longAbsent
+    : !offList(m) && (S.chip === "전체" || m.group === S.chip || m.district === S.chip));
+  const nums = [], none = [];
+  for (const m of pool) {
+    const own = smsDigits(m.phone), em = smsDigits(m.emergency);
+    const n = to === "phone" ? own : to === "emergency" ? em : own || em;
+    if (n) nums.push(n); else none.push(m.name);
+  }
+  return { pool, nums: [...new Set(nums)], none };
+}
+function smsHref(nums, body) {
+  const ios = /iP(hone|ad|od)/.test(navigator.userAgent);
+  const b = body ? (ios ? "&" : "?") + "body=" + encodeURIComponent(body) : "";
+  return ios ? `sms:/open?addresses=${nums.join(",")}${b}` : `sms:${nums.join(",")}${b}`;
+}
+function renderSms() {
+  const { pool, nums, none } = smsNumbers(), body = $("#smsBody").value.trim();
+  $("#smsWho").textContent = `${S.chip === "전체" ? "전체" : S.chip} ${pool.length}명 중 번호 ${nums.length}개` + (none.length ? ` · 번호 없음 ${none.length}명(${none.slice(0, 5).join(", ")}${none.length > 5 ? " …" : ""})` : "") + " · 같은 번호는 한 번만";
+  const parts = []; for (let i = 0; i < nums.length; i += SMS_BATCH) parts.push(nums.slice(i, i + SMS_BATCH));
+  $("#smsBatches").innerHTML = parts.map((p, i) => `<a class="btn" style="text-align:center;text-decoration:none" data-sms href="${esc(smsHref(p, body))}">${parts.length > 1 ? `${i + 1}묶음 (${i * SMS_BATCH + 1}~${i * SMS_BATCH + p.length}번째) 보내기` : `${p.length}명에게 보내기`}</a>`).join("") || `<p class="hint">보낼 번호가 없어요.</p>`;
+  $("#smsMsg").textContent = "";
+}
+$("#toSms").onclick = () => { if (!S.canEdit) return; renderSms(); $("#smsDlg").showModal(); };
+$("#smsTo").onchange = renderSms; $("#smsBody").oninput = renderSms;
+$("#smsBatches").addEventListener("click", (e) => { const a = e.target.closest("a[data-sms]"); if (a) { a.style.opacity = ".5"; a.textContent = "✓ " + a.textContent.replace(/^✓ /, ""); } });
+$("#smsCopy").onclick = async () => {
+  const { nums } = smsNumbers();
+  const txt = nums.map(n => n.replace(/^(\d{3})(\d{3,4})(\d{4})$/, "$1-$2-$3")).join(", ");
+  try { await navigator.clipboard.writeText(txt); $("#smsMsg").textContent = `${nums.length}개 번호를 복사했어요.`; }
+  catch { $("#smsMsg").textContent = "복사하지 못했어요. 길게 눌러 복사해 주세요: " + txt; }
+};
 $("#statsBack").onclick = () => show("sMain");
 
 // ───────────── 관리자 ─────────────
