@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<meta name="build" content="261030-0614">
+<meta name="build" content="261030-0658">
 <title>강사로</title>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#2563EB">
@@ -319,7 +319,9 @@ function opBox(j,A){
       ${x.sub||x.subNm?`<label class="f">보조강사 금액<input type="number" inputmode="numeric" data-chg="slotSubFee" data-j="${j.id}" data-s="${x.id}" value="${x.subFee||''}"></label>`:''}</details></div>`};
   const ppl=A.filter(a=>a.status==='확정'&&payOf(j,a.instId,a).days.length),IT=extItems(co(j.coId));
   const itSel=id=>`<select id="${id}">${IT.map(([k,t])=>`<option value="${esc(k)}" data-tx="${t?1:0}">${esc(k)}${t?'':' (3.3% 안 뗌)'}</option>`).join('')}</select>`;
-  return `<div class="card"><div class="row"><h3 class="sp">운영 시간표 · ${P.length}칸${opEmpty(j)?` <span class="chip warn">빈 칸 ${opEmpty(j)}</span>`:''}</h3></div>
+  const nz=v=>String(v||'').replace(/\s|강사|님/g,''),LK=cf.map(a=>{const nm=nz(inst(a.instId).name),k=P.filter(x=>nm&&(nz(x.nm)===nm||nz(x.subNm)===nm)).length;return k?[a,k]:null}).filter(Boolean);
+  const lk=LK.length?`<div class="card" style="background:var(--acs);gap:6px"><b>초대한 강사가 들어왔어요</b><span class="sm">엑셀에 이름으로만 적혀 있던 칸을 이 강사 계정에 연결하면, 강사 달력에 자기 칸이 뜨고 확정 알림이 가요.</span>${LK.map(([a,k])=>`<div class="row"><span class="sp sm"><b>${esc(inst(a.instId).name)}</b> · 이름이 같은 칸 ${k}개${a.status==='지원'?' · 지원자':''}</span><button class="btn sm pri" data-act="opLink" data-j="${j.id}" data-i="${a.instId}">연결하고 확정</button></div>`).join('')}${LK.length>1?`<button class="btn sm" data-act="opLink" data-j="${j.id}" data-i="__all">모두 연결하고 확정</button>`:''}</div>`:'';
+  return lk+`<div class="card"><div class="row"><h3 class="sp">운영 시간표 · ${P.length}칸${opEmpty(j)?` <span class="chip warn">빈 칸 ${opEmpty(j)}</span>`:''}</h3></div>
     <div class="grid2"><label class="f">강사료 방식<select data-chg="opFee" data-j="${j.id}"><option value="day" ${j.feeMode!=='per'?'selected':''}>하루 총액</option><option value="per" ${j.feeMode==='per'?'selected':''}>교시당 단가</option></select></label>
     <label class="f">${j.feeMode==='per'?'교시당 단가(원)':'하루 총액(원)'}<input type="number" inputmode="numeric" data-chg="opAmt" data-j="${j.id}" value="${j.feeMode==='per'?(+j.feePer||''):(+j.fee||'')}"></label></div>
     <details><summary><b>＋ 칸 만들기</b> (날짜·반·시간을 고르면 한 번에)</summary>
@@ -1150,6 +1152,9 @@ document.addEventListener('click',async ev=>{
     // 반 없이 처음 만들어진 칸은 반 칸이 생기면 없앰. 그 칸에 강사가 있었으면 그날 첫 반 칸으로 옮김
     for(const x of j.plan.slots.filter(x=>x.cls==='')){const first=j.plan.slots.find(y=>y.d===x.d&&y.cls!=='');if(!first)continue;if((x.inst||x.nm)&&!first.inst&&!first.nm){first.inst=x.inst;first.nm=x.nm;first.sub=x.sub;first.subNm=x.subNm}x._del=1}
     j.plan.slots=j.plan.slots.filter(x=>!x._del);planTouch(j);return toast(`칸 ${n}개를 만들었어요`)}
+  if(A==='opLink'){const j=job(D.j),nz=v=>String(v||'').replace(/\s|강사|님/g,''),L=appsOf(j.id).filter(a=>(a.status==='확정'||a.status==='지원')&&(D.i==='__all'||a.instId===D.i));let n=0,c=0;
+    for(const a of L){const nm=nz(inst(a.instId).name);if(!nm)continue;let hit=0;for(const x of j.plan.slots){if(nz(x.nm)===nm){x.inst=a.instId;x.nm='';hit++}if(nz(x.subNm)===nm){x.sub=a.instId;x.subNm='';hit++}}if(hit){n+=hit;if(a.status==='지원'){confirmApp(a,j);c++}}}
+    planTouch(j);return toast(n?`칸 ${n}개를 연결했어요${c?` · ${c}명 확정 알림을 보냈어요`:''}`:'이름이 같은 칸이 없어요')}
   if(A==='opDel'){const j=job(D.j);j.plan.slots=j.plan.slots.filter(x=>x.id!==D.s);if(!j.plan.slots.length){delete j.plan;j.op=false}planTouch(j);return}
   if(A==='extAdd'||A==='extAll'){const add=(a,k,v,tx)=>{a.ext=[...(a.ext||[]),{k,amt:v,tx}]};
     const sel=$(A==='extAdd'?'#extK_'+D.a:'#extAllK'),v=+$(A==='extAdd'?'#extV_'+D.a:'#extAllV').value;if(!v)return toast('금액을 넣어 주세요');
@@ -1252,6 +1257,6 @@ document.addEventListener('input',ev=>{if(ev.target.matches&&ev.target.matches('
 render();
 </script>
 <script src="../bot.js" defer></script>
-<script type="module" src="real.js?v=261030-0614"></script>
+<script type="module" src="real.js?v=261030-0658"></script>
 </body>
 </html>
