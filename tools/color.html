@@ -1,0 +1,447 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>퍼스널컬러 진단</title>
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap">
+<style>
+/* Layout: 휴대폰 우선. 위 = 단계 막대, 가운데 = 지금 단계 카드, 아래 = 이전/다음 고정 바.
+   사진은 이 휴대폰 화면 안에서만 쓰고 저장·전송하지 않는다. */
+:root{
+  --bg:#f6f6f6; --ink:#333; --soft:#6f7480; --card:#fff; --line:#e2e3e8; --field:#fbfbfc;
+  --blue:#4e6bf1; --blue-ink:#fff; --blue-soft:#e9edfe; --ok:#2e8b4c; --bad:#c8432f;
+  --f:"Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#16181d; --ink:#eceef2; --soft:#a3a8b5; --card:#1f2229; --line:#323642; --field:#1a1d23;
+  --blue:#7c93ff; --blue-ink:#10121a; --blue-soft:#262d4a; --ok:#5cc47c; --bad:#ff7a63; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#16181d; --ink:#eceef2; --soft:#a3a8b5; --card:#1f2229; --line:#323642; --field:#1a1d23;
+  --blue:#7c93ff; --blue-ink:#10121a; --blue-soft:#262d4a; --ok:#5cc47c; --bad:#ff7a63; color-scheme:dark}
+body{background:var(--bg);color:var(--ink);font-family:var(--f);font-size:16px;line-height:1.6;margin:0;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:760px;margin:0 auto;padding-block:20px 120px;display:flex;flex-direction:column;gap:16px}
+h1,h2,h3{margin:0;text-wrap:balance;line-height:1.3}
+h1{font-size:1.75rem;font-weight:900}
+h2{font-size:1.35rem;font-weight:900}
+h3{font-size:1.05rem;font-weight:700}
+p{margin:0}
+.soft{color:var(--soft)}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+.top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.top a{color:var(--blue);font-weight:700;text-decoration:none}
+.brand small{letter-spacing:.12em;font-weight:700;color:var(--blue);font-size:.78rem}
+.steps{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.steps i{height:6px;border-radius:3px;background:var(--line)}
+.steps i.on{background:var(--blue)}
+.stephead{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}
+.stephead .no{font-weight:700;color:var(--blue);font-size:.9rem}
+.card{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:18px;display:flex;flex-direction:column;gap:14px}
+.why{background:var(--blue-soft);border-radius:4px;padding:12px 14px;font-size:.95rem}
+.why b{color:var(--blue)}
+.note{font-size:.9rem;color:var(--soft)}
+.note.bad{color:var(--bad)}
+.btns{display:flex;flex-wrap:wrap;gap:8px}
+.btn{border:1px solid var(--line);background:var(--card);border-radius:4px;padding:10px 16px;font-weight:700}
+.btn.pri{background:var(--blue);color:var(--blue-ink);border-color:var(--blue)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.checks{display:flex;flex-direction:column;gap:8px;margin:0;padding:0;list-style:none}
+.checks label{display:flex;gap:10px;align-items:flex-start}
+.checks input{width:20px;height:20px;margin-top:3px;flex:none}
+.f{display:flex;flex-direction:column;gap:6px}
+.f label{font-weight:700}
+.f input{border:1px solid var(--line);background:var(--field);border-radius:4px;padding:10px 12px}
+.seg{display:flex;border:1px solid var(--line);border-radius:4px;overflow:hidden}
+.seg button{flex:1;border:0;background:var(--field);padding:10px 4px;font-size:.95rem}
+.seg button[aria-pressed="true"]{background:var(--blue);color:var(--blue-ink);font-weight:700}
+
+/* 촬영·드레이핑 */
+.stage{position:relative;width:100%;max-width:420px;margin:0 auto;aspect-ratio:3/4;background:#111;border-radius:6px;overflow:hidden}
+.stage video,.stage canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.stage video{transform:scaleX(-1)}
+.stage svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.tag{position:absolute;left:10px;top:10px;background:rgba(0,0,0,.6);color:#fff;font-weight:900;border-radius:4px;padding:4px 10px;font-size:.95rem}
+.ab{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.ab button{border:2px solid var(--line);background:var(--field);border-radius:6px;padding:10px;display:flex;align-items:center;gap:10px;text-align:left}
+.ab button[aria-pressed="true"]{border-color:var(--blue)}
+.sw{width:28px;height:28px;border-radius:50%;flex:none;border:1px solid rgba(0,0,0,.15)}
+.pick{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.pick button{border:1px solid var(--line);background:var(--card);border-radius:4px;padding:12px 4px;font-weight:700}
+.look{font-size:.92rem;background:var(--field);border:1px solid var(--line);border-radius:4px;padding:10px 12px}
+.look b{color:var(--blue)}
+.meter{display:flex;flex-direction:column;gap:4px}
+.meter .row{display:flex;justify-content:space-between;font-size:.85rem;color:var(--soft)}
+.meter .track{position:relative;height:10px;border-radius:5px;background:var(--line)}
+.meter .dot{position:absolute;top:-4px;width:18px;height:18px;border-radius:50%;background:var(--blue);border:3px solid var(--card);transform:translateX(-50%)}
+
+/* 진단서 */
+.report{border:2px solid var(--ink);border-radius:6px;padding:18px;display:flex;flex-direction:column;gap:16px;background:var(--card)}
+.report .hd{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid var(--ink);padding-bottom:10px;gap:8px;flex-wrap:wrap}
+.type{font-size:2rem;font-weight:900;line-height:1.2}
+.pal{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.pal div{display:flex;flex-direction:column;gap:4px;font-size:.78rem;color:var(--soft);text-align:center}
+.pal i{display:block;aspect-ratio:1;border-radius:4px;border:1px solid rgba(0,0,0,.1)}
+.pal.bad i{position:relative}
+.pal.bad i::after{content:"";position:absolute;inset:0;background:linear-gradient(to top right,transparent 47%,var(--bad) 48%,var(--bad) 52%,transparent 53%)}
+.thumbs{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.thumbs figure{margin:0;display:flex;flex-direction:column;gap:4px;text-align:center;font-size:.85rem;font-weight:700}
+.thumbs img{width:100%;border-radius:4px;aspect-ratio:3/4;object-fit:cover}
+dl.dress{display:grid;grid-template-columns:auto 1fr;gap:8px 12px;margin:0}
+dl.dress dt{font-weight:700;color:var(--blue)}
+dl.dress dd{margin:0}
+.skin{display:flex;align-items:center;gap:12px}
+.skin i{width:44px;height:44px;border-radius:50%;border:1px solid rgba(0,0,0,.15);flex:none}
+
+.bar{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--line);
+  padding:10px max(16px,env(safe-area-inset-right,0px)) calc(10px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));z-index:5}
+.bar .in{max-width:760px;margin:0 auto;display:flex;gap:8px;justify-content:space-between}
+.bar .btn{flex:1;max-width:220px;padding:12px}
+@media print{.bar,.noprint{display:none!important}body{background:#fff}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head><body>
+<div class="wrap" id="app"></div>
+<script>
+(function(){
+/* ---------- 데이터 ---------- */
+// 1단계 온도(웜 A / 쿨 B), 2단계 명도(라이트 A / 딥 B), 3단계 채도(선명 A / 부드러움 B)
+var GOLD='gold', SILVER='silver';
+var R1=[
+ {a:['골드',GOLD],b:['실버',SILVER],look:'피부가 <b>매끈하고 환해</b> 보이는 쪽은? 칙칙하거나 잡티가 도드라지는 쪽은?'},
+ {a:['코랄','#ff7f6a'],b:['로즈 핑크','#e8739a'],look:'<b>입술·볼 혈색</b>이 살아나는 쪽은? 얼굴이 붉게 들뜨거나 창백해지는 쪽은?'},
+ {a:['카멜','#c19a6b'],b:['블루 그레이','#8a97a8'],look:'<b>다크서클·팔자 그림자</b>가 옅어지는 쪽은?'},
+ {a:['아이보리','#fff3d6'],b:['퓨어 화이트','#ffffff'],look:'얼굴이 <b>노랗게 뜨거나 붉어 보이지 않는</b> 쪽은?'},
+ {a:['토마토 레드','#e2492f'],b:['라즈베리 레드','#c81d4e'],look:'<b>눈빛과 턱선</b>이 또렷해 보이는 쪽은?'}
+];
+var R2={
+ w:[{a:['라이트 피치','#ffd3b6'],b:['초콜릿 브라운','#5a3825']},{a:['버터 옐로','#fbe6a2'],b:['딥 올리브','#4f5a26']},{a:['웜 베이지','#ead5bb'],b:['다크 테라코타','#7a3b22']}],
+ c:[{a:['파우더 블루','#bfd7ea'],b:['네이비','#1f2a44']},{a:['라벤더','#d8c8e8'],b:['버건디','#6d1a36']},{a:['라이트 그레이','#d9dde3'],b:['차콜','#36393f']}]
+};
+var R2L=['얼굴이 <b>가볍고 맑아</b> 보이는 쪽은? 무겁고 그늘져 보이는 쪽은?','<b>이목구비</b>가 묻히지 않고 자연스러운 쪽은?','<b>피부 결</b>이 고와 보이는 쪽은?'];
+var R3={
+ w:[{a:['비비드 오렌지','#f2552c'],b:['브릭','#b5735e']},{a:['선명한 그린','#25a84a'],b:['카키','#8f8a5b']},{a:['터콰이즈','#00b5ad'],b:['더스티 틸','#6e9b95']}],
+ c:[{a:['푸시아','#e0218a'],b:['더스티 로즈','#c49ba6']},{a:['로열 블루','#2f4fd8'],b:['그레이시 블루','#7d8fa9']},{a:['에메랄드','#009b77'],b:['세이지','#8fa89a']}]
+};
+var R3L=['옷 색이 <b>나보다 먼저 보이지 않는</b> 쪽은? (옷만 보이면 안 맞는 색)','얼굴이 <b>생기 있어</b> 보이는 쪽은?','<b>사진 찍듯</b> 보았을 때 더 세련된 쪽은?'];
+
+// 문진: 각 답 = [글, 온도T, 명도V, 채도C]
+var QS=[
+ ['손목 안쪽 혈관 색은?',[['초록빛이 많다',1,0,0],['파랑·보랏빛이 많다',-1,0,0],['잘 모르겠다 / 섞여 있다',0,0,0]]],
+ ['어울린다는 말을 더 듣는 액세서리는?',[['금(골드)',1,0,0],['은(실버)',-1,0,0],['둘 다 / 모르겠다',0,0,0]]],
+ ['햇볕에 오래 있으면?',[['금방 까무잡잡해진다',1,-.3,0],['빨갛게 익었다가 돌아온다',-1,.3,0],['둘 다 비슷하다',0,0,0]]],
+ ['흰 티를 고른다면 더 잘 받는 건?',[['살짝 노란 아이보리',1,0,-.3],['새하얀 흰색',-1,0,.4],['차이를 모르겠다',0,0,0]]],
+ ['화장 안 한 맨 얼굴의 볼 색은?',[['노르스름·복숭아빛',1,0,0],['붉은·분홍빛',-1,0,0],['잘 모르겠다',0,0,0]]],
+ ['원래 머리카락 색은? (염색 전)',[['밝은 갈색',.4,1,0],['짙은 갈색',.3,-.5,-.3],['새까만 흑발',-.3,-1,.5]]],
+ ['눈동자는?',[['밝은 갈색, 부드러운 눈빛',.4,.8,-.3],['짙은 갈색',0,-.4,-.3],['흑갈색에 흰자가 또렷하다',-.2,-.6,1]]],
+ ['피부 밝기는 친구들과 비교하면?',[['밝은 편',0,1,0],['중간',0,0,0],['어두운 편',0,-1,0]]],
+ ['머리·눈썹과 피부색의 차이(대비)는?',[['크다, 이목구비가 진하다',0,-.4,1],['보통이다',0,0,0],['작다, 전체가 부드럽다',0,.3,-1]]],
+ ['"잘 어울린다" 칭찬받은 옷 색은?',[['쨍한 원색·비비드',0,0,1],['연한 파스텔',0,1,-.3],['차분한 톤다운 색',0,-.2,-1],['검정·네이비 같은 짙은 색',-.2,-1,.3]]]
+];
+
+// 8가지 결과
+var T={
+ '봄 웜 라이트':{k:'맑고 화사한 봄빛',d:'노란 기가 도는 밝은 피부에, 연하고 따뜻한 색이 얼굴을 환하게 밝혀 줍니다. 무겁고 짙은 색은 얼굴을 지쳐 보이게 해요.',
+   best:[['피치','#ffc3a0'],['라이트 코랄','#ff9e8a'],['버터 옐로','#fbe6a2'],['아이보리','#fff3d6'],['라이트 카멜','#d9b38c'],['애플 그린','#a8d878'],['아쿠아','#7fd6cf'],['라이트 웜 그레이','#c9bfb2']],
+   worst:[['블랙','#111111'],['차콜','#36393f'],['버건디','#6d1a36'],['퓨어 화이트','#ffffff']],
+   suit:'라이트 베이지, 라이트 그레이(웜), 밝은 카멜. 블랙 정장보다 밝은 톤이 얼굴을 살립니다. 꼭 짙은 색이면 네이비.',shirt:'아이보리, 연한 피치, 연한 하늘색',tie:'코랄·살구색 계열 잔무늬, 밝은 브라운',blouse:'아이보리·피치 블라우스, 둥근 라운드넥',lip:'코랄·피치 립, 오렌지 기 도는 블러셔',metal:'옐로 골드, 로즈 골드',hair:'밝은 갈색, 부드러운 웨이브'},
+ '봄 웜 브라이트':{k:'생기 넘치는 선명한 봄',d:'따뜻한 피부에 맑고 선명한 색이 잘 받습니다. 눈빛이 반짝이는 타입이라 탁한 색은 얼굴을 흐리게 만들어요.',
+   best:[['코랄 레드','#ff5a4e'],['비비드 오렌지','#f2552c'],['선명한 옐로','#ffd23f'],['터콰이즈','#00b5ad'],['클리어 그린','#25a84a'],['웜 아이보리','#fff3d6'],['카멜','#c19a6b'],['브라이트 네이비','#24348a']],
+   worst:[['더스티 핑크','#c49ba6'],['그레이시 블루','#7d8fa9'],['차콜','#36393f'],['카키','#8f8a5b']],
+   suit:'선명한 네이비, 밝은 카멜, 밝은 웜 그레이. 블랙보다 네이비가 안전합니다.',shirt:'아이보리, 밝은 하늘색, 깨끗한 흰색보다 크림',tie:'코랄·오렌지·터콰이즈 포인트',blouse:'아이보리 블라우스에 코랄 포인트(스카프·브로치)',lip:'코랄 레드, 선명한 오렌지 레드',metal:'광택 있는 옐로 골드',hair:'밝은 브라운~오렌지 브라운'},
+ '여름 쿨 라이트':{k:'깨끗하고 청량한 여름',d:'붉은·분홍 기가 도는 밝은 피부에, 연하고 시원한 색이 맑아 보이게 합니다. 노란 색과 짙은 색은 얼굴을 칙칙하게 해요.',
+   best:[['파우더 블루','#bfd7ea'],['라벤더','#d8c8e8'],['베이비 핑크','#f6c6d6'],['소프트 화이트','#f7f8fa'],['라이트 그레이','#d9dde3'],['민트','#a8e0d0'],['스카이 블루','#8ec5f0'],['라이트 네이비','#4a5f8c']],
+   worst:[['오렌지','#f2552c'],['카멜','#c19a6b'],['머스터드','#d8a72c'],['초콜릿 브라운','#5a3825']],
+   suit:'라이트 그레이, 밝은 네이비, 그레이시 블루. 갈색 계열은 피하세요.',shirt:'흰색, 연한 하늘색, 연한 라벤더',tie:'하늘·라벤더·연분홍 잔무늬',blouse:'흰색·연한 하늘색 블라우스',lip:'로즈 핑크, 쿨 핑크',metal:'실버, 화이트 골드, 진주',hair:'자연 흑갈색, 애쉬 브라운'},
+ '여름 쿨 뮤트':{k:'우아하고 부드러운 여름',d:'회색빛이 살짝 섞인 부드러운 쿨 톤이 차분하고 세련되게 보입니다. 너무 쨍한 색은 옷만 튀어 보여요.',
+   best:[['더스티 로즈','#c49ba6'],['그레이시 블루','#7d8fa9'],['라벤더 그레이','#a9a3bd'],['소프트 네이비','#3d4b6b'],['쿨 그레이','#9aa0a8'],['세이지','#8fa89a'],['모브','#a07c95'],['소프트 화이트','#f2f2f0']],
+   worst:[['비비드 오렌지','#f2552c'],['선명한 옐로','#ffd23f'],['블랙','#111111'],['카멜','#c19a6b']],
+   suit:'그레이(미디엄·쿨), 소프트 네이비. 블랙은 무거우니 차콜 그레이가 낫습니다.',shirt:'소프트 화이트, 연한 그레이시 블루',tie:'모브·그레이시 블루·더스티 로즈',blouse:'그레이시 블루·소프트 화이트 블라우스',lip:'MLBB 로즈, 모브 핑크',metal:'무광 실버, 화이트 골드',hair:'애쉬 브라운, 자연 흑갈색'},
+ '가을 웜 뮤트':{k:'차분하고 고급스러운 가을',d:'노란 기가 도는 피부에, 탁하고 깊이 있는 따뜻한 색이 편안하고 신뢰감 있게 보입니다. 쨍한 원색과 차가운 핑크는 피하세요.',
+   best:[['카멜','#c19a6b'],['카키','#8f8a5b'],['브릭','#b5735e'],['올리브','#7a7a3a'],['웜 베이지','#ead5bb'],['더스티 틸','#6e9b95'],['모카','#8a6a55'],['머스터드','#c9a227']],
+   worst:[['푸시아','#e0218a'],['퓨어 화이트','#ffffff'],['로열 블루','#2f4fd8'],['블랙','#111111']],
+   suit:'브라운 그레이, 카멜, 웜 차콜. 네이비라면 살짝 그린 기 도는 짙은 네이비.',shirt:'아이보리, 베이지, 연한 카키',tie:'브라운·올리브·머스터드 무늬',blouse:'베이지·아이보리 블라우스, 웜톤 니트',lip:'베이지 코랄, 브릭·말린 장미',metal:'무광 골드, 브론즈',hair:'자연 갈색, 다크 브라운'},
+ '가을 웜 딥':{k:'깊고 강인한 가을',d:'따뜻하고 진한 색이 얼굴에 무게감과 카리스마를 줍니다. 연한 파스텔은 얼굴을 흐리게 만들어요.',
+   best:[['초콜릿 브라운','#5a3825'],['딥 올리브','#4f5a26'],['다크 테라코타','#7a3b22'],['머스터드','#c9a227'],['딥 틸','#1f5e5b'],['와인 브라운','#6b2e2a'],['카멜','#c19a6b'],['크림','#f3e3c3']],
+   worst:[['베이비 핑크','#f6c6d6'],['파우더 블루','#bfd7ea'],['라벤더','#d8c8e8'],['퓨어 화이트','#ffffff']],
+   suit:'다크 브라운, 딥 올리브 기 도는 차콜, 짙은 네이비.',shirt:'크림, 베이지',tie:'와인·딥 브라운·머스터드 포인트',blouse:'크림·카멜 블라우스',lip:'브릭 레드, 딥 코랄, 브라운 레드',metal:'앤틱 골드, 브론즈',hair:'다크 브라운, 흑갈색'},
+ '겨울 쿨 브라이트':{k:'선명하고 도시적인 겨울',d:'푸른 기가 도는 피부에 또렷한 원색과 흑백 대비가 가장 잘 받습니다. 탁하거나 노란 색은 얼굴을 어둡게 해요.',
+   best:[['퓨어 화이트','#ffffff'],['블랙','#111111'],['로열 블루','#2f4fd8'],['푸시아','#e0218a'],['에메랄드','#009b77'],['트루 레드','#d0103a'],['아이시 핑크','#f3d9e6'],['네이비','#1f2a44']],
+   worst:[['카멜','#c19a6b'],['카키','#8f8a5b'],['머스터드','#c9a227'],['피치','#ffc3a0']],
+   suit:'블랙, 네이비, 차콜. 흰 셔츠와의 대비가 크게 살아납니다.',shirt:'새하얀 흰색, 아이시 블루',tie:'선명한 네이비·버건디·로열 블루 단색',blouse:'흰색 블라우스, 깔끔한 블랙 정장',lip:'트루 레드, 푸시아',metal:'광택 실버, 플래티넘',hair:'새까만 흑발, 블루 블랙'},
+ '겨울 쿨 딥':{k:'깊고 신뢰감 있는 겨울',d:'짙고 차가운 색이 얼굴을 또렷하고 단단하게 보이게 합니다. 연하고 노란 색은 얼굴이 떠 보여요.',
+   best:[['네이비','#1f2a44'],['버건디','#6d1a36'],['차콜','#36393f'],['블랙','#111111'],['딥 퍼플','#4b2a6b'],['포레스트 그린','#1e4d3a'],['퓨어 화이트','#ffffff'],['아이시 그레이','#dfe3e8']],
+   worst:[['피치','#ffc3a0'],['버터 옐로','#fbe6a2'],['카멜','#c19a6b'],['라이트 코랄','#ff9e8a']],
+   suit:'차콜, 네이비, 블랙. 무게감 있는 짙은 정장이 가장 신뢰감 있어 보입니다.',shirt:'흰색, 아이시 그레이',tie:'버건디·딥 네이비·딥 퍼플',blouse:'흰색·아이시 그레이 블라우스',lip:'버건디 레드, 플럼',metal:'실버, 화이트 골드',hair:'흑발, 다크 애쉬'}
+};
+var STEPN=['준비','촬영','피부 측정','온도 진단','명도 진단','채도 진단','문진'];
+
+/* ---------- 상태 (사진은 메모리에만) ---------- */
+var S={step:-1,nick:'',sex:'',ready:[],r1:[],r2:[],r3:[],qa:[],skin:null,cam:false};
+var PH=null, stream=null, cur='a', flick=null, res=null, note='', SW=Math.random()<.5, WP=null, wpMode=false;
+try{var old=JSON.parse(localStorage.getItem('color-v1')||'null');if(old&&old.type)res=old}catch(e){}
+var app=document.getElementById('app');
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+function clamp(x,a,b){return Math.max(a,Math.min(b,x))}
+
+/* ---------- 카메라 ---------- */
+function camOn(){
+  note='';
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){note='이 브라우저는 카메라를 못 써요. 크롬·사파리로 열어 주세요.';render();return}
+  navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:960},height:{ideal:1280}},audio:false}).then(function(s){
+    stream=s;S.cam=true;render();
+  },function(){note='카메라 허용이 필요해요. 주소창의 카메라 아이콘에서 "허용"으로 바꿔 주세요.';render()});
+}
+function camOff(){if(stream){stream.getTracks().forEach(function(t){t.stop()});stream=null}S.cam=false}
+function shoot(){
+  var v=document.getElementById('vid');if(!v||!v.videoWidth)return;
+  var W=600,H=800,c=document.createElement('canvas');c.width=W;c.height=H;var x=c.getContext('2d');
+  var vw=v.videoWidth,vh=v.videoHeight,r=Math.max(W/vw,H/vh),dw=vw*r,dh=vh*r;
+  x.translate(W,0);x.scale(-1,1);x.drawImage(v,(W-dw)/2,(H-dh)/2,dw,dh);
+  PH=c;camOff();WP=null;wpMode=false;PTS=[[W*.37,H*.46],[W*.63,H*.46]];measure();S.step=2;render();
+}
+/* 얼굴 가이드: 가로 중앙, 세로 40% 지점, 턱 = 66% */
+var GUIDE='<svg viewBox="0 0 300 400" preserveAspectRatio="none"><defs><mask id="m"><rect width="300" height="400" fill="#fff"/><ellipse cx="150" cy="160" rx="78" ry="104" fill="#000"/></mask></defs><rect width="300" height="400" fill="rgba(0,0,0,.45)" mask="url(#m)"/><ellipse cx="150" cy="160" rx="78" ry="104" fill="none" stroke="#fff" stroke-width="2" stroke-dasharray="6 5"/><line x1="40" y1="292" x2="260" y2="292" stroke="#fff" stroke-width="1.5" stroke-dasharray="4 4"/><text x="150" y="312" fill="#fff" font-size="12" text-anchor="middle">어깨선</text></svg>';
+
+/* ---------- 드레이핑 그리기 ---------- */
+function fill(x,col,W,H){
+  if(col===GOLD||col===SILVER){
+    var g=x.createLinearGradient(0,H*.68,W,H);
+    var s=col===GOLD?['#8a6a1f','#e9c862','#fff1b0','#c9a13a','#7a5a18']:['#6f747c','#d7dbe0','#ffffff','#b0b6be','#666b73'];
+    s.forEach(function(c,i){g.addColorStop(i/4,c)});return g;
+  }
+  return col;
+}
+function drape(col,size){
+  var W=PH.width,H=PH.height,c=document.createElement('canvas');c.width=W;c.height=H;var x=c.getContext('2d');
+  x.drawImage(PH,0,0);
+  x.beginPath();x.moveTo(0,H);x.lineTo(0,H*.74);
+  x.quadraticCurveTo(W*.2,H*.69,W*.36,H*.695);x.lineTo(W*.5,H*.80);x.lineTo(W*.64,H*.695);
+  x.quadraticCurveTo(W*.8,H*.69,W,H*.74);x.lineTo(W,H);x.closePath();
+  x.fillStyle=fill(x,col,W,H);x.fill();
+  // 천 주름 느낌
+  var s=x.createLinearGradient(0,0,W,0);s.addColorStop(0,'rgba(0,0,0,.18)');s.addColorStop(.25,'rgba(255,255,255,.06)');s.addColorStop(.5,'rgba(0,0,0,.04)');s.addColorStop(.75,'rgba(255,255,255,.06)');s.addColorStop(1,'rgba(0,0,0,.18)');
+  x.fillStyle=s;x.fill();
+  if(size){var o=document.createElement('canvas');o.width=size;o.height=size*4/3;o.getContext('2d').drawImage(c,0,0,o.width,o.height);return o}
+  return c;
+}
+function paint(){
+  var cv=document.getElementById('cv'),R=disp();if(!cv||!R||!PH)return;
+  var d=drape(R[cur][1]);cv.width=d.width;cv.height=d.height;cv.getContext('2d').drawImage(d,0,0);
+  var t=document.getElementById('tg');if(t)t.textContent='천 '+cur.toUpperCase();
+  document.querySelectorAll('[data-ab]').forEach(function(b){b.setAttribute('aria-pressed',b.dataset.ab===cur)});
+}
+
+/* ---------- 피부 측정 ---------- */
+function lab(r,g,b){
+  function l(c){c/=255;return c>.04045?Math.pow((c+.055)/1.055,2.4):c/12.92}
+  r=l(r);g=l(g);b=l(b);
+  var X=(r*.4124+g*.3576+b*.1805)/.95047,Y=r*.2126+g*.7152+b*.0722,Z=(r*.0193+g*.1192+b*.9505)/1.08883;
+  function f(t){return t>.008856?Math.cbrt(t):7.787*t+16/116}
+  var L=116*f(Y)-16,A=500*(f(X)-f(Y)),B=200*(f(Y)-f(Z));
+  return {L:L,a:A,b:B,h:Math.atan2(B,A)*180/Math.PI,C:Math.sqrt(A*A+B*B)};
+}
+function sample(px,py){
+  var x=PH.getContext('2d'),r=Math.round(PH.width*.035),d=x.getImageData(Math.round(px-r),Math.round(py-r),r*2,r*2).data,n=0,R=0,G=0,B=0;
+  for(var i=0;i<d.length;i+=4){var s=d[i]+d[i+1]+d[i+2];if(s<90||s>735)continue;R+=d[i];G+=d[i+1];B+=d[i+2];n++}
+  if(!n)return null;return [R/n,G/n,B/n];
+}
+var PTS=null; // 볼 측정 위치 (찍은 직후 가이드 타원 기준 양쪽 볼)
+function measure(){
+  var a=sample(PTS[0][0],PTS[0][1]),b=sample(PTS[1][0],PTS[1][1]);
+  if(!a||!b){S.skin=null;return}
+  var m=[(a[0]+b[0])/2,(a[1]+b[1])/2,(a[2]+b[2])/2];
+  if(WP)m=m.map(function(v,i){return clamp(v*235/Math.max(WP[i],40),0,255)}); // 흰 종이가 흰색으로 보이도록 조명 색 보정
+  var L=lab(m[0],m[1],m[2]);
+  S.skin={rgb:m.map(Math.round),L:Math.round(L.L),h:Math.round(L.h),C:Math.round(L.C),wb:!!WP};
+}
+function drawSkin(){
+  var cv=document.getElementById('cv');if(!cv||!PH)return;
+  cv.width=PH.width;cv.height=PH.height;var x=cv.getContext('2d');x.drawImage(PH,0,0);
+  PTS.forEach(function(p,i){x.lineWidth=4;x.strokeStyle='#fff';x.beginPath();x.arc(p[0],p[1],PH.width*.035,0,7);x.stroke();
+    x.fillStyle='#fff';x.font='bold 22px sans-serif';x.fillText(i?'오른쪽 볼':'왼쪽 볼',p[0]-40,p[1]-PH.width*.05)});
+}
+
+/* ---------- 진단 계산 ---------- */
+function round(){
+  if(S.step===3)return R1[S.r1.length];
+  var t=temp()>=0?'w':'c';
+  if(S.step===4)return R2[t][S.r2.length];
+  if(S.step===5)return R3[t][S.r3.length];
+}
+function disp(){var R=round();return R&&SW?{a:R.b,b:R.a,look:R.look}:R} // 선입견 막으려고 A/B 순서는 매번 무작위
+function sum(arr){return arr.reduce(function(s,v){return s+v},0)}
+function quiz(i){return sum(S.qa.map(function(a,q){return a==null?0:QS[q][1][a][i]}))}
+function skinT(){return S.skin?clamp((S.skin.h-58)/8,-1,1)*(S.skin.wb?1:.5):0}
+function skinV(){return S.skin?clamp((S.skin.L-62)/10,-1,1)*(S.skin.wb?1:.5):0}
+function temp(){ // 드레이핑 55% + 문진 30% + 피부 15%
+  var d=S.r1.length?sum(S.r1)/R1.length:0, q=clamp(quiz(1)/4,-1,1), s=skinT();
+  return S.skin?(.55*d+.3*q+.15*s):(.62*d+.38*q);
+}
+function result(){
+  var Tv=temp(),
+      V=S.skin?(.55*sum(S.r2)/3+.3*clamp(quiz(2)/3,-1,1)+.15*skinV()):(.62*sum(S.r2)/3+.38*clamp(quiz(2)/3,-1,1)),
+      C=.6*sum(S.r3)/3+.4*clamp(quiz(3)/3,-1,1), name;
+  if(Tv>=0){ if(V+C>=0)name=V>=C?'봄 웜 라이트':'봄 웜 브라이트'; else name=-C>=-V?'가을 웜 뮤트':'가을 웜 딥'; }
+  else { if(V-C>=0)name=V>=-C?'여름 쿨 라이트':'여름 쿨 뮤트'; else name=C>=-V?'겨울 쿨 브라이트':'겨울 쿨 딥'; }
+  var agree=0,all=0;S.r1.forEach(function(v){if(v){all++;if((v>0)===(Tv>=0))agree++}});
+  var conf=Math.round(clamp(55+Math.abs(Tv)*40+(all?agree/all*10:0)-(S.skin?0:5),55,96));
+  var d=new Date();
+  var log=[];function L(rs,arr){arr.forEach(function(v,i){var R=rs[i];log.push(v>0?R.a[0]+' 〉 '+R.b[0]:v<0?R.b[0]+' 〉 '+R.a[0]:R.a[0]+' = '+R.b[0])})}
+  var tk=Tv>=0?'w':'c';L(R1,S.r1);L(R2[tk],S.r2);L(R3[tk],S.r3);
+  return {log:log,type:name,T:Tv,V:V,C:C,conf:conf,skin:S.skin,nick:S.nick,sex:S.sex,date:d.getFullYear()+'. '+(d.getMonth()+1)+'. '+d.getDate()+'.'};
+}
+
+/* ---------- 화면 ---------- */
+function stepbar(){
+  var h='<div class="steps">';for(var i=0;i<7;i++)h+='<i class="'+(i<=S.step?'on':'')+'"></i>';
+  return h+'</div><div class="stephead"><span class="no">'+(S.step+1)+' / 7 · '+STEPN[S.step]+'</span></div>';
+}
+function head(){return '<div class="top"><div class="brand"><small>THEMORE TOOLS</small></div><a href="./">← 도구 모음</a></div>'}
+function meter(lbl,l,r,v){return '<div class="meter"><div class="row"><span>'+l+'</span><b>'+lbl+'</b><span>'+r+'</span></div><div class="track"><span class="dot" style="left:'+Math.round(50-clamp(v,-1,1)*46)+'%"></span></div></div>'}
+function pct(v,a,b){var p=Math.round(50+Math.abs(clamp(v,-1,1))*50);return (v>=0?a:b)+' '+p+'%'}
+
+function home(){
+  var h=head()+'<div class="brand"><h1>퍼스널컬러 진단</h1><p class="soft">전문 진단처럼 색 천 22장 비교 · 피부 측정 · 문진 10문항으로 내 색을 찾고, 면접 복장까지 추천받아요.</p></div>';
+  if(res)h+='<div class="card"><h3>지난 진단: '+esc(res.type)+'</h3><div class="btns"><button class="btn" data-go="report">진단서 다시 보기</button></div></div>';
+  h+='<div class="card"><div class="why"><b>어떻게 진단하나요?</b><br>① 얼굴 사진을 찍고 ② 볼 피부색을 측정한 뒤 ③ 얼굴 아래에 색 천을 바꿔 대며 <b>온도(웜/쿨) → 명도(밝음/깊음) → 채도(선명/부드러움)</b> 3단계로 비교해요. ④ 마지막으로 문진 10문항을 합쳐 8가지 타입 중 하나로 진단해요.</div>'+
+   '<p class="note">🔒 사진은 이 휴대폰 화면에서만 쓰고 <b>어디에도 저장하거나 보내지 않아요.</b> 화면을 닫으면 사라져요.</p>'+
+   '<div class="f"><label for="nick">이름(별명)</label><input id="nick" maxlength="12" placeholder="예: 김더모어" value="'+esc(S.nick)+'"></div>'+
+   '<div class="f"><label>복장 추천 기준</label><div class="seg">'+['남','여','둘 다'].map(function(s){return '<button data-sex="'+s+'" aria-pressed="'+(S.sex===s)+'">'+s+'</button>'}).join('')+'</div></div>'+
+   '<button class="btn pri" data-go="start">진단 시작하기</button></div>';
+  return h;
+}
+var READY=['창가 자연광 또는 밝은 흰 조명 아래에 있어요 (노란 조명·역광 X)','화장·선크림을 최대한 지웠어요 (색조 화장은 결과를 바꿔요)','앞머리를 넘기고, 얼굴에 색이 비치는 옷·모자를 벗었어요','휴대폰 화면 밝기를 최대로 올렸어요','흰 종이(A4) 한 장을 턱 아래에 들고 찍을 준비가 됐어요 (조명 보정용, 선택)','같이 봐 줄 친구가 있으면 더 정확해요 (선택)'];
+function step0(){
+  return stepbar()+'<div class="card"><h2>진단 전 준비</h2><p class="soft">전문 진단실도 조명과 화장부터 맞춰요. 4가지 이상 체크하면 시작할 수 있어요.</p><ul class="checks">'+
+   READY.map(function(t,i){return '<li><label><input type="checkbox" data-ready="'+i+'"'+(S.ready.indexOf(i)>=0?' checked':'')+'><span>'+t+'</span></label></li>'}).join('')+'</ul></div>';
+}
+function step1(){
+  var h=stepbar()+'<div class="card"><h2>얼굴 촬영</h2><p class="soft">점선 타원 안에 얼굴을, 아래 점선에 어깨를 맞추고 정면을 봐 주세요. 무표정이 좋아요.</p>';
+  if(S.cam)h+='<div class="stage"><video id="vid" autoplay playsinline muted></video>'+GUIDE+'</div><div class="btns"><button class="btn pri" data-go="shoot">📸 찍기</button></div>';
+  else h+='<div class="stage" style="display:flex;align-items:center;justify-content:center;color:#fff">카메라 꺼짐</div><div class="btns"><button class="btn pri" data-go="cam">카메라 켜기</button></div>';
+  if(note)h+='<p class="note bad">'+esc(note)+'</p>';
+  return h+'<p class="note">카메라를 못 쓰면 <button class="btn" data-go="nocam" style="padding:4px 10px">문진만으로 진단</button> (정확도가 낮아져요)</p></div>';
+}
+function step2(){
+  var h=stepbar()+'<div class="card"><h2>피부 측정</h2><p class="soft">두 원이 <b>양쪽 볼의 가장 환한 곳</b>에 있는지 보세요. 아니면 사진에서 볼을 눌러 원을 옮겨요(왼쪽 → 오른쪽 순서).</p><div class="stage"><canvas id="cv"></canvas></div>';
+  if(S.skin){
+    var s=S.skin, warm=s.h>=58;
+    h+='<div class="skin"><i style="background:rgb('+s.rgb.join(',')+')"></i><div><b>측정한 피부색</b><br><span class="soft">밝기 L* '+s.L+' · 색상각 '+s.h+'° · 채도 '+s.C+'</span></div></div>'+
+      '<div class="why">색상각이 클수록 <b>노란 기(웜)</b>, 작을수록 <b>붉은 기(쿨)</b>예요. 측정값은 <b>'+(warm?'노란 기 쪽':'붉은 기 쪽')+'</b>이에요. 조명 영향이 커서 최종 진단에는 '+(WP?'15%':'8%(흰 종이 보정 안 함)')+'만 반영해요.</div>';
+  }else h+='<p class="note bad">측정이 안 됐어요. 볼 위치를 눌러 다시 재 보세요. 그래도 안 되면 "다음"으로 넘어가도 돼요(피부 측정 없이 진단).</p>';
+  h+='<div class="look">📄 <b>조명 보정(선택)</b> · 찍을 때 흰 종이(A4)를 턱 아래나 옆에 들고 찍었다면, 아래 버튼을 누른 뒤 사진 속 종이를 눌러 주세요. 조명 색을 빼고 피부색을 더 정확히 재요. '+(WP?'<b style="color:var(--ok)">✔ 보정됨</b>':'')+'</div>';
+  if(note)h+='<p class="note bad">'+esc(note)+'</p>';
+  return h+'<div class="btns"><button class="btn" data-go="wp"'+(wpMode?' style="border-color:var(--blue);color:var(--blue)"':'')+'>'+(wpMode?'사진 속 흰 종이를 누르세요':'📄 흰 종이 찍기')+'</button><button class="btn" data-go="retake">다시 찍기</button></div></div>';
+}
+function drapeStep(){
+  var R=disp(),n=S.step===3?S.r1.length:S.step===4?S.r2.length:S.r3.length,tot=S.step===3?5:3;
+  var title=['','','','온도 진단 · 웜 vs 쿨','명도 진단 · 밝음 vs 깊음','채도 진단 · 선명 vs 부드러움'][S.step];
+  var look=S.step===3?R.look:(S.step===4?R2L:R3L)[n];
+  var h=stepbar()+'<div class="card"><div class="top"><h2>'+title+'</h2><span class="soft">'+(n+1)+' / '+tot+'</span></div>';
+  if(PH){
+    h+='<div class="stage"><canvas id="cv"></canvas><span class="tag" id="tg"></span></div>'+
+     '<div class="ab">'+['a','b'].map(function(k){var c=R[k][1],bg=c===GOLD?'linear-gradient(135deg,#8a6a1f,#fff1b0,#c9a13a)':c===SILVER?'linear-gradient(135deg,#6f747c,#fff,#b0b6be)':c;
+       return '<button data-ab="'+k+'" aria-pressed="'+(cur===k)+'"><span class="sw" style="background:'+bg+'"></span><span><b>천 '+k.toUpperCase()+'</b></span></button>'}).join('')+'</div>'+
+     '<div class="btns"><button class="btn" data-go="flick">'+(flick?'⏸ 멈추기':'▶ 번갈아 보기')+'</button></div>';
+  }else{
+    h+='<div class="ab">'+['a','b'].map(function(k){var c=R[k][1];return '<div style="height:120px;border-radius:6px;border:1px solid var(--line);background:'+(c===GOLD?'linear-gradient(135deg,#8a6a1f,#fff1b0,#c9a13a)':c===SILVER?'linear-gradient(135deg,#6f747c,#fff,#b0b6be)':c)+';display:flex;align-items:flex-end;padding:8px;font-weight:700;color:#333;text-shadow:0 0 4px #fff">천 '+k.toUpperCase()+'</div>'}).join('')+'</div><p class="note">거울 앞에서 두 색 옷이나 종이를 얼굴 아래에 대 보고 골라 주세요.</p>';
+  }
+  h+='<div class="look">👀 <b>볼 곳</b> · '+look+'<br><span class="soft">천 이름은 선입견이 생기지 않게 숨겨 두었어요. 결과지에서 공개돼요.</span></div><div class="pick"><button data-pick="1">A가 낫다</button><button data-pick="0">비슷하다</button><button data-pick="-1">B가 낫다</button></div>';
+  return h+'</div>';
+}
+function step6(){
+  var h=stepbar()+'<div class="card"><h2>문진</h2><p class="soft">평소 모습을 떠올리며 골라 주세요. ('+S.qa.filter(function(v){return v!=null}).length+' / 10)</p>';
+  QS.forEach(function(q,i){
+    h+='<div class="f"><label>'+(i+1)+'. '+q[0]+'</label><div class="seg" style="flex-wrap:wrap">'+q[1].map(function(a,j){return '<button style="flex:1 1 45%" data-qa="'+i+'_'+j+'" aria-pressed="'+(S.qa[i]===j)+'">'+a[0]+'</button>'}).join('')+'</div></div>';
+  });
+  return h+'</div>';
+}
+function report(){
+  var r=res,t=T[r.type],h=head();
+  h+='<div class="report"><div class="hd"><div><small class="soft">PERSONAL COLOR REPORT</small><h2>퍼스널컬러 진단서</h2></div><div class="soft" style="text-align:right;font-size:.9rem">'+esc(r.nick||'')+'<br>'+r.date+'</div></div>'+
+   '<div><span class="soft">진단 결과</span><div class="type">'+r.type+'</div><p><b>'+t.k+'</b> · 진단 일치도 '+r.conf+'%</p></div><p>'+t.d+'</p>'+
+   '<div style="display:flex;flex-direction:column;gap:10px">'+meter(pct(r.T,'웜','쿨'),'웜(노란 기)','쿨(붉은·푸른 기)',r.T)+meter(pct(r.V,'라이트','딥'),'라이트(밝음)','딥(깊음)',r.V)+meter(pct(r.C,'브라이트','뮤트'),'브라이트(선명)','뮤트(부드러움)',r.C)+'</div>';
+  if(r.skin)h+='<div class="skin"><i style="background:rgb('+r.skin.rgb.join(',')+')"></i><div><b>측정 피부색</b><br><span class="soft">밝기 L* '+r.skin.L+' · 색상각 '+r.skin.h+'°</span></div></div>';
+  if(PH)h+='<div class="thumbs"><figure><img id="best" alt="베스트 컬러를 댄 얼굴"><span style="color:var(--ok)">✔ 베스트 · '+t.best[0][0]+'</span></figure><figure><img id="worst" alt="워스트 컬러를 댄 얼굴"><span style="color:var(--bad)">✘ 워스트 · '+t.worst[0][0]+'</span></figure></div>';
+  if(r.log&&r.log.length)h+='<details><summary><b>내가 고른 천 (진단 근거)</b></summary><ul style="margin:8px 0 0;padding-left:20px">'+r.log.map(function(l){return '<li>'+esc(l)+'</li>'}).join('')+'</ul></details>';
+  h+='<div><h3>베스트 컬러</h3></div><div class="pal">'+t.best.map(function(c){return '<div><i style="background:'+c[1]+'"></i>'+c[0]+'</div>'}).join('')+'</div>'+
+   '<div><h3>피하면 좋은 색</h3></div><div class="pal bad">'+t.worst.map(function(c){return '<div><i style="background:'+c[1]+'"></i>'+c[0]+'</div>'}).join('')+'</div>'+
+   '<div><h3>면접 복장 추천</h3></div><dl class="dress"><dt>정장</dt><dd>'+t.suit+'</dd><dt>셔츠</dt><dd>'+t.shirt+'</dd>'+
+   (r.sex!=='여'?'<dt>넥타이</dt><dd>'+t.tie+'</dd>':'')+(r.sex!=='남'?'<dt>블라우스</dt><dd>'+t.blouse+'</dd><dt>립</dt><dd>'+t.lip+'</dd>':'')+
+   '<dt>액세서리</dt><dd>'+t.metal+'</dd><dt>헤어</dt><dd>'+t.hair+'</dd></dl>'+
+   '<div class="why"><b>오늘의 한 줄</b><br>면접 첫인상은 비싼 옷이 아니라 <b>나한테 맞는 색</b>이 만든다. 지금 옷장에서 베스트 컬러 옷 한 벌을 찾아보세요.</div>'+
+   '<p class="note">이 진단은 휴대폰 화면·조명으로 하는 <b>참고용</b>이에요. 정확한 진단은 자연광 아래 실제 천으로 전문가에게 받으세요.</p></div>'+
+   '<div class="btns noprint"><button class="btn pri" data-go="again">다시 진단하기</button><button class="btn" data-go="print">진단서 인쇄·PDF</button></div><p class="note noprint">휴대폰은 화면을 캡처해서 저장하세요.</p>';
+  return h;
+}
+function render(){
+  if(flick&&!(S.step>=3&&S.step<=5)){clearInterval(flick);flick=null}
+  var h;
+  if(S.step==='report')h=report();
+  else if(S.step<0)h=home();
+  else h=[step0,step1,step2,drapeStep,drapeStep,drapeStep,step6][S.step]();
+  app.innerHTML=h;
+  var bar=document.getElementById('bar');if(bar)bar.remove();
+  if(S.step!=='report'&&S.step>=0){
+    var can=S.step===0?S.ready.length>=4:S.step===2?true:S.step===6?S.qa.filter(function(v){return v!=null}).length===10:false;
+    var nx=S.step===6?'진단 결과 보기':'다음';
+    if(S.step===0||S.step===2||S.step===6){
+      var b=document.createElement('div');b.className='bar';b.id='bar';
+      b.innerHTML='<div class="in"><button class="btn" data-go="prev">이전</button><button class="btn pri" data-go="next"'+(can?'':' disabled')+'>'+nx+'</button></div>';
+      document.body.appendChild(b);
+    }
+  }
+  if(S.step===1&&S.cam&&stream){var v=document.getElementById('vid');v.srcObject=stream;v.play&&v.play().catch(function(){})}
+  if(S.step===2&&PH)drawSkin();
+  if(S.step>=3&&S.step<=5)paint();
+  if(S.step==='report'&&PH){var t=T[res.type];document.getElementById('best').src=drape(t.best[0][1],300).toDataURL('image/jpeg',.85);document.getElementById('worst').src=drape(t.worst[0][1],300).toDataURL('image/jpeg',.85)}
+  window.scrollTo(0,0);
+}
+function go(k){
+  if(k==='start'){S.nick=(document.getElementById('nick')||{}).value||S.nick;S.step=0;S.ready=[];S.r1=[];S.r2=[];S.r3=[];S.qa=[];S.skin=null;PH=null}
+  else if(k==='report'){S.step='report'}
+  else if(k==='cam')camOn();
+  else if(k==='shoot'){shoot();return}
+  else if(k==='nocam'){camOff();PH=null;S.skin=null;S.step=3}
+  else if(k==='wp'){wpMode=!wpMode;note=''}
+  else if(k==='retake'){PH=null;S.skin=null;S.step=1;camOn()}
+  else if(k==='flick'){if(flick){clearInterval(flick);flick=null}else flick=setInterval(function(){cur=cur==='a'?'b':'a';paint()},900);var fb=document.querySelector('[data-go="flick"]');if(fb)fb.textContent=flick?'⏸ 멈추기':'▶ 번갈아 보기';return}
+  else if(k==='prev'){if(S.step===0)S.step=-1;else if(S.step===2){S.step=1;PH=null;camOn()}else if(S.step===6){S.step=5;S.r3.pop()}else S.step--}
+  else if(k==='next'){
+    if(S.step===0){S.step=1;camOn()}
+    else if(S.step===2)S.step=3;
+    else if(S.step===6){res=result();try{localStorage.setItem('color-v1',JSON.stringify(res))}catch(e){}S.step='report'}
+  }
+  else if(k==='again'){res=null;try{localStorage.removeItem('color-v1')}catch(e){}S.step=-1;PH=null}
+  else if(k==='print'){window.print();return}
+  render();
+}
+app.addEventListener('click',function(e){
+  var b=e.target.closest('button');
+  if(b&&b.dataset.go){go(b.dataset.go);return}
+  if(b&&b.dataset.sex){S.sex=b.dataset.sex;S.nick=(document.getElementById('nick')||{}).value||S.nick;render();return}
+  if(b&&b.dataset.ab){cur=b.dataset.ab;if(flick){clearInterval(flick);flick=null;var fb=document.querySelector('[data-go="flick"]');if(fb)fb.textContent='▶ 번갈아 보기'}paint();return}
+  if(b&&b.dataset.pick!=null){
+    var v=+b.dataset.pick*(SW?-1:1);cur='a';SW=Math.random()<.5;
+    if(S.step===3){S.r1.push(v);if(S.r1.length===5)S.step=4}
+    else if(S.step===4){S.r2.push(v);if(S.r2.length===3)S.step=5}
+    else if(S.step===5){S.r3.push(v);if(S.r3.length===3)S.step=6}
+    render();return;
+  }
+  if(b&&b.dataset.qa){var p=b.dataset.qa.split('_');S.qa[+p[0]]=+p[1];var y=window.scrollY;render();window.scrollTo(0,y);return}
+  if(e.target.id==='cv'&&S.step===2&&PH){
+    var cv=e.target,rc=cv.getBoundingClientRect(),px=(e.clientX-rc.left)/rc.width*PH.width,py=(e.clientY-rc.top)/rc.height*PH.height;
+    if(wpMode){var w=sample(px,py);if(w&&w[0]+w[1]+w[2]>360){WP=w;note=''}else note='흰 종이가 아니거나 너무 어두워요. 종이 한가운데를 눌러 주세요.';wpMode=false}
+    else PTS[px<PH.width/2?0:1]=[px,py];
+    measure();render();
+  }
+});
+app.addEventListener('change',function(e){
+  if(e.target.dataset.ready!=null){var i=+e.target.dataset.ready,k=S.ready.indexOf(i);if(e.target.checked&&k<0)S.ready.push(i);if(!e.target.checked&&k>=0)S.ready.splice(k,1);render()}
+});
+document.body.addEventListener('click',function(e){var b=e.target.closest('.bar button');if(b)go(b.dataset.go)});
+render();
+})();
+</script>
+</body></html>
