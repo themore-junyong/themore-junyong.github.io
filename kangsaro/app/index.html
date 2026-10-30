@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<meta name="build" content="261030-0423">
+<meta name="build" content="261030-0424">
 <title>강사로</title>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#2563EB">
@@ -966,7 +966,7 @@ function sheetNewJob(p){p=p||{};const N=['프로필','교안','강사카드','�
   ${(ui.jcal={ym:((p.dates||[])[0]||todayIso()).slice(0,7),mode:'day',start:'',we:false},'')}<div class="f"><span>날짜 고르기</span><div id="jCal">${jCalHtml((p.dates||[]))}</div></div>
   <input type="hidden" id="jDates" value="${esc((p.dates||[]).join(', '))}"><div class="row" id="jDateList">${jDateChips(p.dates||[])}</div><div id="jWarn"></div><div class="grid2">
   ${(()=>{const m=String(p.time||'').match(/(\d{1,2}):(\d{2})\s*[~\-–]\s*(\d{1,2}):(\d{2})/),z=(h,mi)=>String(h).padStart(2,'0')+':'+mi;const a=m?z(m[1],m[2]):'',b=m?z(m[3],m[4]):'';
-    return `<div class="f"><span>시간 <span class="mu sm">(눌러서 고르기)</span></span><div class="row" style="gap:6px;align-items:center"><input type="time" id="jT1" class="jTa" step="600" value="${a}" style="flex:1"><span>~</span><input type="time" id="jT2" class="jTb" step="600" value="${b}" style="flex:1"></div><div id="jTmore"></div><button type="button" class="btn sm" data-act="jTadd">＋ 시간 추가 (오전·오후처럼 강사가 바뀔 때)</button><input type="hidden" id="jTime" value="${a&&b?a+'~'+b:''}"></div>
+    return `<div class="f" style="grid-column:1/-1"><span>시간 <span class="mu sm">(눌러서 고르기)</span></span><div class="row" style="gap:6px;align-items:center;flex-wrap:wrap">${tPick('jTa','jT1',a)}<span>~</span>${tPick('jTb','jT2',b)}</div><div id="jTmore"></div><button type="button" class="btn sm" data-act="jTadd">＋ 시간 추가 (오전·오후처럼 강사가 바뀔 때)</button><input type="hidden" id="jTime" value="${a&&b?a+'~'+b:''}"></div>
     <label class="f">차시 <span class="mu sm">(시간을 고르면 자동, 고칠 수 있어요)</span><input id="jPer" value="${esc(p.per||'')}" placeholder="6교시" ${p.per?'data-man="1"':''}></label>`})()}
   <label class="f">대상·인원<input id="jFor" value="${esc(p.for||'')}" placeholder="3학년 100명"></label><label class="f"><span id="jFeeL">1일 강사료(원)</span><input id="jFee" type="number" inputmode="numeric" value="${p.fee||''}"></label></div>
   <label class="f">공고 내용 (강의 내용, 장소 주소, 기자재, 준비물, 참고 사항)<textarea id="jDesc" rows="5" placeholder="예) 3학년 대상 면접 실습. 노트북·HDMI 있음. 주차 가능. 점심 제공.">${esc(p.desc||'')}</textarea></label>
@@ -1157,8 +1157,8 @@ document.addEventListener('click',async ev=>{
     save();closeSheet();ui.tab='cjobs';ui.jobId=null;render();return toast(`${R.length}건 등록했어요${open?'. 강사 공고 목록에 바로 올라가요':''}`)}
   if(A==='jparse'){const raw=$('#jRaw').value,r=parseNotice(raw);const feeV=feeOf(raw),fee=[0,feeV?String(feeV):'',''];
     sheetNewJob({raw,desc:raw,title:r.강의명,school:r.학교명,region:r.지역,dates:r.dates,time:r.시간,per:r.교시,for:r.대상,fee:fee[1]?(+fee[1].replace(/,/g,''))*(fee[2]?10000:1):''});jWarn();return toast('읽었어요. 빈칸만 확인하세요')}
-  if(A==='jTadd'){const R=jRanges(),last=R.length?R[R.length-1][1]:'12:00',st=last<'13:00'?'13:00':last,d=document.createElement('div');d.className='row';d.style.cssText='gap:6px;align-items:center;margin-top:4px';
-    d.innerHTML=`<input type="time" class="jTa" step="600" value="${st}" style="flex:1"><span>~</span><input type="time" class="jTb" step="600" value="" style="flex:1"><button type="button" class="btn sm" data-act="jTdel">✕</button>`;$('#jTmore').appendChild(d);d.querySelector('.jTb').focus();return}
+  if(A==='jTadd'){const R=jRanges(),last=R.length?R[R.length-1][1]:'12:00',st=last<'13:00'?'13:00':last,d=document.createElement('div');d.className='row';d.style.cssText='gap:6px;align-items:center;margin-top:4px;flex-wrap:wrap';
+    d.innerHTML=`${tPick('jTa','',st)}<span>~</span>${tPick('jTb','','')}<button type="button" class="btn sm" data-act="jTdel">✕</button>`;$('#jTmore').appendChild(d);return}
   if(A==='jTdel'){el.parentElement.remove();jTimeSync();const fl=$('#jFeeL');if(fl&&jRanges().length<2)fl.textContent='1일 강사료(원)';return}
   if(A==='jdel')return jSetDates(jDatesNow().filter(x=>x!==D.d));
   if(A==='jcMode'){ui.jcal.mode=D.v;ui.jcal.start='';$('#jCal').innerHTML=jCalHtml(jDatesNow());return}
@@ -1222,8 +1222,14 @@ if(!INST.standalone){
 if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw.js').catch(()=>{});
 // 붙여넣기만 하면 바로 읽기 ('공고 읽기' 버튼을 안 눌러도 됨)
 document.addEventListener('paste',ev=>{if(ev.target.id==='pRaw')setTimeout(()=>{const b=document.querySelector('[data-act="parse"]');if(b&&$('#pRaw').value.trim().length>20)b.click()},0)});
-document.addEventListener('change',ev=>{if(ev.target.matches&&ev.target.matches('.jTa,.jTb'))jTimeSync()});
+document.addEventListener('change',ev=>{const sp=ev.target.closest&&ev.target.closest('.tp');if(sp)tPickSync(sp)});
 // 새 공고: 시작~끝 시간을 고르면 jTime을 채우고, 차시(1시간 = 1차시, 반올림)를 자동으로 넣음. 차시를 직접 고치면 그 뒤로는 안 건드림
+// 시간 고르기: 오전/오후 · 시(1~12) · 분(10분 단위). 값은 숨은 칸에 24시간 HH:MM으로
+function tPick(cls,id,v){const [h,m]=(v||'').split(':').map(Number),pm=v?h>=12:false,h12=v?(h%12||12):'',mi=v?m-m%10:'';
+  const o=(a,l,sel)=>`<option value="${a}" ${sel?'selected':''}>${l}</option>`,st='padding:6px 2px;width:auto;min-width:0';
+  return `<span class="row tp" style="gap:2px;flex:0 0 auto;flex-wrap:nowrap"><select class="tpA" style="${st}">${o('am','오전',!pm)}${o('pm','오후',pm)}</select><select class="tpH" style="${st}">${o('','시',!v)}${Array.from({length:12},(_,i)=>o(i+1,(i+1)+'시',h12===i+1)).join('')}</select><select class="tpM" style="${st}">${[0,10,20,30,40,50].map(x=>o(x,String(x).padStart(2,'0')+'분',v&&mi===x)).join('')}</select><input type="hidden" class="${cls}" ${id?`id="${id}"`:''} value="${v||''}"></span>`}
+function tPickSync(sp){const a=sp.querySelector('.tpA').value,h=+sp.querySelector('.tpH').value,m=+sp.querySelector('.tpM').value,hid=sp.querySelector('input[type=hidden]');
+  hid.value=h?String((h%12)+(a==='pm'?12:0)).padStart(2,'0')+':'+String(m).padStart(2,'0'):'';jTimeSync()}
 const jRanges=()=>{const A=$$('.jTa'),B=$$('.jTb');return A.map((x,i)=>[x.value,B[i].value]).filter(([a,b])=>a&&b&&a<b).sort()};
 function jTimeSync(){const R=jRanges(),t=$('#jTime'),pe=$('#jPer');t.value=R.length?R[0][0]+'~'+R[R.length-1][1]:'';if(!R.length)return;
   const mm=x=>{const [h,m]=x.split(':');return +h*60+ +m},d=R.reduce((s,[a,b])=>s+mm(b)-mm(a),0);if(!pe.dataset.man)pe.value=Math.max(1,Math.round(d/60))+'교시';const fl=$('#jFeeL');if(fl)fl.textContent=R.length>1?'강사료 (시간대 1칸당, 원)':'1일 강사료(원)';if(typeof jWarn==='function')jWarn()}
@@ -1231,6 +1237,6 @@ document.addEventListener('input',ev=>{if(ev.target.matches&&ev.target.matches('
 render();
 </script>
 <script src="../bot.js" defer></script>
-<script type="module" src="real.js?v=261030-0423"></script>
+<script type="module" src="real.js?v=261030-0424"></script>
 </body>
 </html>
