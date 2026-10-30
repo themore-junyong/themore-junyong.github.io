@@ -13,6 +13,8 @@ const lsGet = k => { try { return localStorage.getItem(k) || ''; } catch (e) { r
 if (Q.get('ref')) try { localStorage.setItem('kangsaro.ref', Q.get('ref')); } catch (e) { }
 // 업체 직원 초대 링크(?staff=코드)도 로그인 전에 기억
 if (Q.get('staff')) try { localStorage.setItem('kangsaro.staff', Q.get('staff')); } catch (e) { }
+// 강의 초대 링크(?job=공고)도 로그인 전에 기억
+if (Q.get('job')) try { localStorage.setItem('kangsaro.job', Q.get('job')); } catch (e) { }
 
 if (!firebaseConfig && !EMU) {
   REAL.gate = () => `<div class="card"><h2>강사로 준비 중이에요</h2><p class="mu">곧 열려요. 그동안 체험판으로 미리 써 보세요.</p><a class="btn pri" href="../try/">체험판 열기</a></div>`;
@@ -285,6 +287,14 @@ async function start(user, want) {
     SYNC();
   }
   ui.tab = NAV[role][0][0];
+  // 초대 링크로 들어온 강사: 그 공고를 불러와 '초대받은 강의'로 보여 줌
+  const inv = role === 'i' && lsGet('kangsaro.job');
+  if (inv) {
+    try { localStorage.removeItem('kangsaro.job'); } catch (e) { }
+    await loadJob(inv).catch(() => null);
+    if (S.jobs.some(j => j.id === inv)) { ui.inviteJob = inv; ui.tab = 'jobs'; }
+    else toast('초대받은 강의를 찾지 못했어요. 업체에 링크를 다시 받아 주세요');
+  }
   render();
   showTerm();
   pushSave(false);
