@@ -1,0 +1,8 @@
+rules_version = '2';
+// 더모어 도구 보안 규칙. 화면은 DB를 직접 읽고 쓰지 않고, 서버 함수만 씀.
+// 초대코드(codes)는 준용이 Firebase 콘솔 → Firestore에서 직접 만들고 고침.
+service cloud.firestore {
+  match /databases/{db}/documents {
+    match /{doc=**} { allow read, write: if false; }
+  }
+}
