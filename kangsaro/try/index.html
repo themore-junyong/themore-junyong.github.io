@@ -886,6 +886,7 @@ function vCJob(j){const A=appsOf(j.id),s=jobStats(j);
   <span class="mu sm">날짜·시간을 고치면 확정된 강사 달력에도 바로 바뀌고, 강사에게 변경 공지가 가요.</span>
   <span class="mu">${esc(j.교시)} · ${esc(j.대상)} · 강사료 ${feeLabel(j)} (강사에게 공개)</span>
   <label class="f">공고 내용<textarea data-act="jedit" data-k="desc" rows="4">${esc(j.desc||'')}</textarea></label>
+  ${needBox('cNeed',j.needs,'needEdit')}<div class="row"><input id="needNew" placeholder="목록에 없는 서류 (예: 성범죄 경력 회보서)" style="flex:1;min-width:0"><button class="btn sm" data-act="needAdd">＋ 넣기</button></div><span class="mu sm" style="margin-top:-6px">언제든 넣고 뺄 수 있어요. 새로 넣으면 확정된 강사에게 "서류 추가" 알림이 가요.</span>
   <div class="card" style="background:var(--acs);gap:6px"><b>강의 일정 초대하기</b><span class="sm">함께하던 강사에게 이 링크를 카톡으로 보내세요. 링크로 들어온 강사가 '함께할게요'를 누르면 지원자에 떠요. 칠하기나 '이 강사로 확정'으로 확정하면 돼요.</span>
   <div class="row"><button class="btn pri sm" data-act="invCopy" data-j="${j.id}">초대 링크 복사</button>${jOpen(j)?`<button class="btn sm" data-act="invMode" data-j="${j.id}">${j.status==='초대'?'공개 모집으로 바꾸기':'초대 전용으로 바꾸기'}</button>`:''}</div>
   <span class="mu sm">${j.status==='초대'?'초대 전용: 공고 목록에 안 올라가고, 링크를 받은 강사만 볼 수 있어요.':'공개 모집: 공고 목록에도 올라가고, 링크로도 들어올 수 있어요.'}</span></div>
@@ -965,10 +966,12 @@ function sheetBulkJobs(raw){const R=raw?bulkGroup(bulkParse(raw)):[],ok=R.filter
   ${aiHelp('co')}
   ${raw?`<h3>미리 보기 · ${R.length}건 중 ${ok.length}건 등록 가능</h3>
   <div style="overflow-x:auto"><table class="sm"><thead><tr><th>날짜</th><th>강의</th><th>학교·지역</th><th>시간</th><th>강사료</th><th></th></tr></thead><tbody>${R.map(j=>`<tr><td>${j.dates.map(md).join('·')||'<b style="color:var(--r2)">없음</b>'}</td><td>${esc(j.title)}${j.slots?`<br><span class="chip">운영 · 칸 ${j.slots.length}개</span>`:''}</td><td>${esc(j.school)} ${esc(j.region)}</td><td>${esc(j.time)}</td><td>${j.fee?won(j.fee):''}</td><td>${j.dates.length&&(j.title||j.school)?(j.miss.length?`<span class="chip warn">${j.miss.join('·')} 빔</span>`:'<span class="chip paid">OK</span>'):'<span class="chip off">건너뜀</span>'}</td></tr>`).join('')}</tbody></table></div>
-  ${ok.length?`<label class="sm"><input type="checkbox" id="bOpen" checked> 강사 모집 공고로 올리기 (끄면 업체 달력에 기록만 해요. 이미 강사가 정해진 일정을 옮길 때)</label>
+  ${ok.length?needBox('bNeed',['프로필','교안','통장사본']):''}${ok.length?`<label class="sm"><input type="checkbox" id="bOpen" checked> 강사 모집 공고로 올리기 (끄면 업체 달력에 기록만 해요. 이미 강사가 정해진 일정을 옮길 때)</label>
   <span class="mu sm">빈 칸은 나중에 공고를 열어 채울 수 있어요. 강사에게 받을 서류는 프로필·교안·통장사본으로 들어가요.</span>
   <button class="btn pri" data-act="bSave">${ok.length}건 등록</button>`:'<p class="mu">날짜와 강의(또는 학교)가 있는 줄이 없어요. 제목 줄까지 복사했는지 확인해 주세요.</p>'}`:''}`)}
-function sheetNewJob(p){p=p||{};const N=['프로필','교안','강사카드','교재카드','자격증 사본','통장사본','신분증 사본','주민등록번호','개인정보 동의서','범죄경력 조회 동의서','아동학대 조회 동의서','강사 확인서','출강 확인서','결과보고서','수업 사진'];
+const DOCN=['프로필','교안','강사카드','교재','교재카드','자격증 사본','통장사본','신분증 사본','주민등록번호','개인정보 동의서','범죄경력 조회 동의서','아동학대 조회 동의서','강사 확인서','출강 확인서','결과보고서','수업 사진'];
+const needBox=(cls,cur,act)=>`<fieldset class="card"><legend class="mu sm">강사에게 받을 것</legend><div class="row" style="flex-wrap:wrap">${[...new Set([...DOCN,...(cur||[])])].map(n=>`<label class="sm"><input type="checkbox" class="${cls}" value="${esc(n)}" ${(cur||[]).includes(n)?'checked':''} ${n==='프로필'?'disabled':''} ${act?`data-act="${act}"`:''}> ${esc(n)}</label>`).join('')}</div></fieldset>`;
+function sheetNewJob(p){p=p||{};const N=DOCN;
   openSheet(`<div class="row"><h2 class="sp">강의 등록</h2><button class="btn sm" data-act="closeSheet">닫기</button></div>
   <div class="card" style="background:var(--acs)"><h3>강사가 헷갈리지 않는 공고</h3><span class="sm">① 날짜는 달력에서 고르세요. 요일이 자동으로 붙어요.<br>② 시간은 09:00~15:50처럼, 교시도 함께 적어 주세요.<br>③ 대상은 학년과 인원까지 (예: 3학년 100명).<br>④ 장소는 학교 이름과 지역을 모두.<br>⑤ 1일 강사료와 받을 서류를 정해 주세요. 빠지면 등록되지 않아요.</span></div>
   <button class="btn" data-act="bulkJobs">📋 엑셀에서 여러 건 한 번에 올리기</button>
@@ -1111,6 +1114,9 @@ document.addEventListener('click',async ev=>{
   if(A==='copyYear'||A==='copyCSum')return copy(tableText(),'결산표');
   // 회사
   if(A==='openJob'){ui.jobId=D.j;render();return scrollTo(0,0)}
+  if(A==='needAdd'){const v=($('#needNew').value||'').trim();if(!v)return toast('서류 이름을 써 주세요');const j=job(ui.jobId);if(j.needs.includes(v))return toast('이미 받을 서류에 있어요');
+    j.needs=[...j.needs,v];const cf=appsOf(j.id).filter(a=>a.status==='확정');if(cf.length)j.notices.push({id:uid(),...(WHO?{by:WHO}:{}),text:`[서류 추가] ${j.school} ${j.title} 강의에 ${v}을(를) 내 주세요. 강의 상세에서 올릴 수 있어요.`,kind:'서류',to:cf.map(a=>a.instId),reads:{},at:new Date().toISOString()});
+    save();render();return toast(`${v}을(를) 받을 서류에 넣었어요${cf.length?` · 확정 강사 ${cf.length}명에게 알렸어요`:''}`)}
   if(A==='back'){ui.jobId=null;return render()}
   if(A==='confirm'){const a=S.apps.find(x=>x.id===D.a),j=job(a.jobId);
     const other=S.apps.filter(x=>x.instId===a.instId&&x.status==='확정'&&x.id!==a.id&&job(x.jobId).dates.some(d=>j.dates.includes(d)));
@@ -1172,7 +1178,7 @@ document.addEventListener('click',async ev=>{
   if(A==='evTpl'){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff날짜,기관,강의명,시간,강사료,상태\n2026-11-20,○○고,면접 특강,09:00~12:00,300000,확정\n"2026-11-24, 2026-11-25",○○센터,취업 캠프,09:00~16:00,350000,지원\n'],{type:'text/csv'}));a.download='강사로_내일정_양식.csv';document.body.appendChild(a);a.click();a.remove();return toast('양식을 받았어요. 엑셀로 채운 뒤 복사해 붙여 넣거나 저장한 파일을 고르세요')}
   if(A==='bTpl'){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff날짜,학교(기관),지역,강의명,시간,교시,대상,강사료,내용\n2026-11-20,○○고,수원,면접 특강,09:00~12:00,3교시,3학년 100명,300000,주차 가능\n'],{type:'text/csv'}));a.download='강사로_공고_양식.csv';document.body.appendChild(a);a.click();a.remove();return toast('양식을 받았어요. 엑셀로 열어 채운 뒤 복사해 붙여 넣으세요')}
   if(A==='bSave'){const R=bulkGroup(bulkParse($('#bRaw').value)).filter(j=>j.dates.length&&(j.title||j.school)),open=$('#bOpen').checked;
-    for(const x of R){const {miss,slots,cls,inst,sub,...j}=x;const n={...j,id:uid(),coId:meId(),status:open?'모집':'마감',needs:['프로필','교안','통장사본'],notices:[],created:todayIso(),at:new Date().toISOString()};
+    for(const x of R){const {miss,slots,cls,inst,sub,...j}=x;const n={...j,id:uid(),coId:meId(),status:open?'모집':'마감',needs:['프로필',...$$('.bNeed:checked').map(x=>x.value).filter(x=>x!=='프로필')],notices:[],created:todayIso(),at:new Date().toISOString()};
       if(slots){n.plan={slots};n.feeMode='day';n.op=true;n.planAt=n.at}holdFix(n);S.jobs.push(n)}
     save();closeSheet();ui.tab='cjobs';ui.jobId=null;render();return toast(`${R.length}건 등록했어요${open?'. 강사 공고 목록에 바로 올라가요':''}`)}
   if(A==='jparse'){const raw=$('#jRaw').value,r=parseNotice(raw);const feeV=feeOf(raw),fee=[0,feeV?String(feeV):'',''];
@@ -1219,6 +1225,9 @@ document.addEventListener('change',ev=>{const el=ev.target,D=el.dataset||{};
   if(D.act==='logo'&&el.files[0]){shrinkLogo(el.files[0]).then(u=>{if(!u)return toast('로고를 읽지 못했어요');co(meId()).logo=u;save();render();toast('로고를 올렸어요. 프로필 PDF에 들어가요')});return}
   if(D.act==='photo'&&el.files[0]){shrink(el.files[0],480).then(u=>{if(!u)return toast('사진을 읽지 못했어요');inst(meId()).photo=u;save();render();toast('프로필 사진을 올렸어요')});return}
   if(D.act==='doc'&&el.files[0]){const a=S.apps.find(x=>x.id===D.a);a.docs[D.n]=el.files[0].name;save();render();toast(`${D.n} 냈어요 (체험판은 파일 이름만 저장해요)`)}
+  if(D.act==='needEdit'){const j=job(ui.jobId),old=j.needs||[],nw=['프로필',...$$('.cNeed:checked').map(x=>x.value).filter(x=>x!=='프로필')],add=nw.filter(x=>!old.includes(x));j.needs=nw;
+    const cf=appsOf(j.id).filter(a=>a.status==='확정');if(add.length&&cf.length)j.notices.push({id:uid(),...(WHO?{by:WHO}:{}),text:`[서류 추가] ${j.school} ${j.title} 강의에 ${add.join(', ')}을(를) 내 주세요. 강의 상세에서 올릴 수 있어요.`,kind:'서류',to:cf.map(a=>a.instId),reads:{},at:new Date().toISOString()});
+    save();render();return toast(add.length?`${add.join(', ')}을(를) 받을 서류에 넣었어요${cf.length?` · 확정 강사 ${cf.length}명에게 알렸어요`:''}`:'받을 서류에서 뺐어요')}
   if(D.act==='jedit'){const j=job(ui.jobId);const old=j[D.k];let v=el.value.trim();
     if(D.k==='dates'){v=v.split(/[,\s]+/).filter(x=>/^\d{4}-\d{2}-\d{2}$/.test(x)).sort();if(!v.length)return toast('날짜는 2026-11-18처럼 넣어 주세요');if(v.join()===old.join())return}else if(v===old)return;
     j[D.k]=v;if(['title','school','desc','fee'].includes(D.k))j.cleared=false;holdFix(j);const to=appsOf(j.id).filter(a=>a.status==='확정').map(a=>a.instId);
