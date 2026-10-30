@@ -20,13 +20,19 @@ const s = (v, n) => String(v == null ? '' : v).replace(/\s+$/g, '').slice(0, n);
 const arr = (v, n, m) => (Array.isArray(v) ? v : []).slice(0, n).map(x => s(x, m)).filter(Boolean);
 
 // codes/{코드}: { name: '오산대 보컬K-POP 1106', on: true, perDay: 3, max: 100, until: '2026-12-31', used: 0 }
+// codes/PASS: 공용 코드. 학생은 pass 칸의 글자를 입력(준용이 pass만 바꾸면 코드가 바뀜). 횟수는 PASS 문서로 셈
+const PASS = 'PASS';
 async function codeOf(raw) {
   const code = s(raw, 40).trim().toUpperCase();
   if (!/^[A-Z0-9-]{4,40}$/.test(code)) fail('invalid-argument', '초대코드를 다시 확인해 주세요');
-  const snap = await db.doc(`codes/${code}`).get(), c = snap.data();
+  let id = code, c = code === PASS ? null : (await db.doc(`codes/${code}`).get()).data();
+  if (!c) {
+    const p = code === PASS ? null : (await db.doc(`codes/${PASS}`).get()).data();
+    if (p && s(p.pass, 40).trim().toUpperCase() === code) { id = PASS; c = p; }
+  }
   if (!c || c.on !== true) fail('permission-denied', '쓸 수 없는 초대코드예요. 선생님께 확인해 주세요');
   if (c.until && kst() > c.until) fail('permission-denied', '기간이 끝난 초대코드예요');
-  return { code, c };
+  return { code: id, c };
 }
 
 exports.codeCheck = onCall({ region: 'asia-northeast3', maxInstances: 3, timeoutSeconds: 10 }, async req => {
