@@ -97,7 +97,7 @@ pre.out{white-space:pre-wrap;word-break:keep-all;overflow-wrap:anywhere;backgrou
 
 <script>
 (function(){
-var h=(location.hash||'').slice(1), m={safety:'safety.html',river:'river.html',intro:'intro.html'};
+var h=(location.hash||'').slice(1), m={safety:'safety.html',river:'river.html',intro:'intro.html',color:'color.html'};
 if(m[h]){location.replace(m[h]);return;}
 
 /* ───── 선택지 ───── */
@@ -181,7 +181,8 @@ function home(){
   app.innerHTML='<header class="brand"><small>THE MORE · 김준용 강사</small><h1>더모어 취업 연구소</h1><p class="soft">내 경험으로 쓰는 자기소개서, 그리고 수업 게임</p></header>'+
    '<button class="hero" id="startJaso"><b>내 자소서 만들기</b><span>8단계 질문에 답하면 성장과정 · 장단점 · 직무경험 · 지원동기 초안이 나와요. 입력한 내용은 이 휴대폰에만 저장되고, AI 초안을 만들 때만 서버를 거쳐요(서버에 남지 않아요).</span><span class="go">'+(started?'이어서 쓰기 →':'시작하기 →')+'</span></button>'+
    '<span class="label">면접 준비</span><div class="list">'+
-   '<a class="g" href="intro.html" id="g-intro"><b>1분 자기소개 꼬꼬무</b><span>AI가 꼬리에 꼬리를 무는 질문 → 서론·본론·결론 1분 멘트 → 1분 타이머 연습</span></a></div>'+
+   '<a class="g" href="intro.html" id="g-intro"><b>1분 자기소개 꼬꼬무</b><span>AI가 꼬리에 꼬리를 무는 질문 → 서론·본론·결론 1분 멘트 → 1분 타이머 연습</span></a>'+
+   '<a class="g" href="color.html" id="g-color"><b>퍼스널컬러 진단</b><span>셀카 + 색 천 22장 드레이핑 + 문진 → 8타입 진단서와 면접 복장 색 추천 (사진은 폰 밖으로 안 나감)</span></a></div>'+
    '<span class="label">수업 게임</span><div class="list">'+
    '<a class="g" href="safety.html" id="g-safety"><b>안전 징검다리</b><span>현장 안전 팀 대결 · 맞히면 한 칸 앞으로, 틀리면 "아차!" 한 칸 뒤로</span></a>'+
    '<a class="g" href="river.html" id="g-river"><b>문제해결 강건너기</b><span>3단계 퍼즐 · 농부와 늑대, 모범생과 장난꾸러기, 17분 다리</span></a></div>';
