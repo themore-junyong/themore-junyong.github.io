@@ -302,7 +302,7 @@ function payOf(j,iid,a){const days=[];
       days.push({d,fee,time:L.map(s=>s.time).filter(Boolean).join(', '),lab:L.map(s=>`${s.cls?s.cls+' ':''}${s.per||''}${s.inst!==iid?'(보조)':''}`.trim()).filter(Boolean).join(', ')})}}
   const ext=(a&&a.ext)||[],base=days.reduce((t,x)=>t+x.fee,0),txE=ext.filter(x=>x.tx).reduce((t,x)=>t+(+x.amt||0),0),noE=ext.filter(x=>!x.tx).reduce((t,x)=>t+(+x.amt||0),0);
   const taxable=base+txE,tx=tax(taxable);return {days,dates:days.map(x=>x.d),base,ext,taxable,plus:noE,amt:taxable+noE,tx:{...tx,net:tx.net+noE}}}
-const feeLabel=j=>j.feeMode==='per'?`교시당 ${won(j.feePer)}`:`1일 ${won(j.fee)}`;
+const feeLabel=j=>j.feeMode==='per'?`교시당 ${won(j.feePer)}`:j.fee?`1일 ${won(j.fee)}`:'공고 내용 참고';
 const myDates=(j,iid)=>isOp(j)?payOf(j,iid).dates:j.dates;
 const opEmpty=j=>isOp(j)?j.plan.slots.filter(s=>!s.inst&&!s.nm).length:0;
 

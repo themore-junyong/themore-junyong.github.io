@@ -151,8 +151,39 @@ exports.termDaily = onSchedule({ schedule: 'every day 03:00', timeZone: 'Asia/Se
 });
 // 업체 공고 수 세기 (요금제 한도용)
 exports.jobCount = onDocumentCreated({ ...trig, document: 'jobs/{id}' }, async e => {
-  const j = e.data && e.data.data(); if (!j || !j.coId) return;
+  const j = e.data && e.data.data(); if (!j || !j.coId || j.pre) return; // 인수로 넘어온 공고는 안 셈
   await db.doc(`terms/${j.coId}`).set({ cnt: { [ymKst(new Date(e.time))]: FieldValue.increment(1) } }, { merge: true });
+});
+
+/* ===== 톡방 공고 인수 =====
+   운영자가 pre/{코드}에 미가입 업체 공고를 모아 둠(비공개) → 업체가 ?claim=코드 링크로 가입·승인되면
+   그 공고를 jobs로 옮김: 안 지난 강의는 '모집', 지난 강의는 '마감'(정산용 기록). 한 코드는 한 업체만 */
+const PRE_SCAM = /텔레그램|telegram|open\.kakao|오픈\s*카톡|오픈\s*채팅|선입금|보증금|가입비|등록비|교재비\s*(입금|선납|구입)|고수익|리딩방|코인|해외\s*취업/i;
+exports.claimPre = onCall({ region: 'asia-northeast3', maxInstances: 3, timeoutSeconds: 60 }, async req => {
+  const uid = req.auth && req.auth.uid; if (!uid) fail('unauthenticated', '로그인이 필요해요');
+  const code = String((req.data && req.data.code) || '').replace(/[^0-9a-f]/gi, '').slice(0, 16);
+  if (code.length < 8) fail('invalid-argument', '인수 링크가 잘못됐어요');
+  const u = (await db.doc(`users/${uid}`).get()).data();
+  if (!u || !isCo(u)) fail('failed-precondition', '업체로 가입한 뒤에 받을 수 있어요');
+  if (u.approved !== true || u.blocked) fail('failed-precondition', '사업자 확인이 끝난 뒤에 받을 수 있어요');
+  const ref = db.doc(`pre/${code}`), today = ymd(new Date(Date.now() + 9 * 3600e3)), now = new Date().toISOString();
+  return db.runTransaction(async t => {
+    const p = await t.get(ref);
+    if (!p.exists) fail('not-found', '인수 링크를 찾지 못했어요. 운영자에게 문의해 주세요: tobadyclup@naver.com');
+    const d = p.data();
+    if (d.claimedBy && d.claimedBy !== uid) fail('already-exists', '이미 다른 계정이 받은 링크예요. 문의: tobadyclup@naver.com');
+    if (d.claimedBy === uid) return { n: 0, again: true };
+    let n = 0;
+    for (const j of (d.jobs || []).slice(0, 400)) {
+      const dates = (j.dates || []).filter(x => /^\d{4}-\d{2}-\d{2}$/.test(x)).sort(); if (!dates.length) continue;
+      const fee = Math.max(0, Math.round(+j.fee || 0)), scam = PRE_SCAM.test(`${j.title} ${j.school} ${j.desc}`) || fee > 1000000;
+      t.set(db.collection('jobs').doc(), { coId: uid, title: clip(j.title, 60) || '강의', school: clip(j.school, 40), region: clip(j.region, 20), dates, time: clip(j.time, 30), 교시: clip(j.교시, 20), 대상: clip(j.대상, 40),
+        desc: String(j.desc || '').slice(0, 3000), fee, status: dates[dates.length - 1] < today ? '마감' : '모집', needs: ['프로필'], created: today, at: now, cleared: false, hold: scam, pre: code });
+      n++;
+    }
+    t.update(ref, { claimedBy: uid, claimedAt: now, claimedN: n });
+    return { n };
+  });
 });
 
 /* ===== AI 상담 봇 =====
