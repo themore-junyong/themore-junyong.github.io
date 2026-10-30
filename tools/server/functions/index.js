@@ -1,4 +1,4 @@
-// 더모어 도구 서버: 초대코드가 있는 학생만 AI 자소서 초안을 받게 함.
+// 강의 도구 서버: 초대코드가 있는 학생만 AI 자소서 초안을 받게 함.
 // 키는 코드에 없음 → `firebase functions:secrets:set GEMINI_KEY` 로 넣음 (aistudio.google.com 제미나이 API 키)
 // 학생 글은 저장하지 않고, 하루 횟수만 use/{날짜}에 셈.
 const { onCall, HttpsError } = require('firebase-functions/v2/https');

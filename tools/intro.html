@@ -138,7 +138,7 @@ function memo(){ // 자소서에 쓴 내용 요약 (있을 때만)
 function answered(){return S.hist.filter(function(h){return h.a}).length}
 function render(){
   var h='<div class="top"><a href="index.html">← 홈</a><span class="soft" style="font-size:.85rem">'+(CODE.ok?esc(CODE.name||'초대코드 확인됨'):'')+'</span></div>'+
-   '<header class="brand"><small>THE MORE · 면접 준비</small><h1>1분 자기소개 꼬꼬무</h1><p class="soft">AI 질문에 답할수록 내 이야기가 쌓여요. 마지막에 서론·본론·결론 1분 멘트로 정리해 드려요.</p></header>';
+   '<header class="brand"><small>위듀케이션 · 면접 준비</small><h1>1분 자기소개 꼬꼬무</h1><p class="soft">AI 질문에 답할수록 내 이야기가 쌓여요. 마지막에 서론·본론·결론 1분 멘트로 정리해 드려요.</p></header>';
   if(!ok()) h+=codeCard();
   else if(!S.hist.length&&!S.text) h+=setupCard();
   else h+=chatCard()+(S.text?scriptCard():'');
