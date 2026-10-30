@@ -68,6 +68,16 @@ button{cursor:pointer}
 .bar.right .lab::after{content:" ✔";color:var(--ok)}
 .cloud{display:flex;flex-wrap:wrap;gap:6px 18px;justify-content:center;align-items:center;min-height:240px;padding:12px}
 .cloud span{font-weight:900;line-height:1.1}
+/* 마인드맵: 가운데 주제 → 가지 → 학생 단어 */
+.mm{width:100%;height:auto;max-height:70vh;display:block}
+.mm text{font-family:var(--f);font-weight:900;dominant-baseline:middle}
+.mm .w{cursor:pointer}
+.br{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px}
+.br button{border:2px solid var(--line);background:var(--field);border-radius:6px;padding:10px;font-weight:700;font-size:1rem}
+.br button[aria-pressed="true"]{border-color:var(--c);background:color-mix(in srgb,var(--c) 15%,var(--field))}
+.mine{display:flex;flex-wrap:wrap;gap:6px}
+.mine span{background:var(--field);border:1px solid var(--line);border-radius:999px;padding:4px 10px;font-size:.92rem}
+.mine button{border:0;background:none;color:var(--bad);padding:0 0 0 4px}
 .texts{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
 .texts div{background:var(--field);border:1px solid var(--line);border-radius:6px;padding:12px;font-size:1.15rem;position:relative;word-break:keep-all;overflow-wrap:anywhere}
 .texts button{position:absolute;top:4px;right:4px;border:0;background:none;color:var(--soft);font-size:.8rem}
@@ -97,7 +107,10 @@ const V='10.12.2', G=`https://www.gstatic.com/firebasejs/${V}`;
 const app=document.getElementById('app');
 const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const COL=['var(--c1)','var(--c2)','var(--c3)','var(--c4)','var(--c5)','var(--c6)'];
-const TYPES={poll:'투표',quiz:'퀴즈',word:'단어 구름',text:'한 줄 답변'};
+const TYPES={poll:'투표',quiz:'퀴즈',word:'단어 구름',map:'마인드맵',text:'한 줄 답변'};
+const MC=['#4e6bf1','#f08a24','#2e9e6b','#d6457a','#8a5cd6','#2aa3b8','#b8860b','#e0533d'];
+// 마인드맵 답 v = "가지번호:단어" 줄바꿈으로 여러 개 (80자 안)
+const mapParse=v=>String(v||'').split('\n').map(x=>{const m=/^(\d):(.+)$/.exec(x);return m?[+m[1],m[2].trim()]:null}).filter(x=>x&&x[1]);
 const EMO=[['👍','이해했어요'],['🤔','헷갈려요'],['🐢','천천히요'],['😂','재밌어요'],['🔥','최고예요']];
 const P=new URLSearchParams(location.search), HOST=P.has('host');
 let F, db, me, call;   // 파이어베이스 모듈, DB, 내 익명 uid, 서버 함수 부르기
@@ -136,6 +149,11 @@ function stuRender(){
       let cls='opt';if(q.reveal&&q.type==='quiz')cls+=i===q.correct?' right':' wrong';
       return '<button class="'+cls+'" data-v="'+i+'" aria-pressed="'+(mine===i)+'"'+(q.open?'':' disabled')+'><i style="background:'+COL[i]+'">'+(i+1)+'</i>'+esc(o)+'</button>'}).join('')+'</div>';
     if(q.reveal&&q.type==='quiz')h+='<p class="big" style="color:'+(mine===q.correct?'var(--ok)':'var(--bad)')+'">'+(mine===q.correct?'정답! 🎉':mine==null?'정답은 '+(q.correct+1)+'번':'아쉬워요 😅 정답은 '+(q.correct+1)+'번')+'</p>';
+  }else if(q.type==='map'){
+    const L=mapParse(mine), b=ST.br!=null&&ST.br<q.opts.length?ST.br:null;
+    h+='<p class="soft">① 가지를 고르고 ② 떠오르는 단어를 써서 보내요. 여러 개 보낼 수 있어요.</p><div class="br">'+q.opts.map((o,i)=>'<button data-br="'+i+'" style="--c:'+MC[i%8]+'" aria-pressed="'+(b===i)+'"'+(q.open?'':' disabled')+'><span style="color:'+MC[i%8]+'">●</span> '+esc(o)+'</button>').join('')+'</div>'+
+      '<div class="f"><input id="txt" maxlength="12" placeholder="'+(b==null?'먼저 위에서 가지를 골라요':esc(q.opts[b])+' → 단어 하나')+'" value="'+esc(ST.draft)+'"'+(q.open&&b!=null?'':' disabled')+'></div><button class="btn pri" data-a="mapAdd"'+(q.open&&b!=null?'':' disabled')+'>붙이기</button>';
+    if(L.length)h+='<div class="mine">'+L.map(([i,w],k)=>'<span><b style="color:'+MC[i%8]+'">'+esc(q.opts[i]||'')+'</b> '+esc(w)+(q.open?'<button data-rm="'+k+'" title="빼기">✕</button>':'')+'</span>').join('')+'</div>';
   }else{
     const ph=q.type==='word'?'단어로 짧게 (쉼표로 3개까지)':'한 줄로 (익명이에요)';
     h+='<div class="f"><input id="txt" maxlength="'+(q.type==='word'?40:80)+'" placeholder="'+ph+'" value="'+esc(ST.draft)+'"'+(q.open?'':' disabled')+'></div><button class="btn pri" data-a="send"'+(q.open?'':' disabled')+'>'+(mine?'고쳐 보내기':'보내기')+'</button>';
@@ -160,8 +178,15 @@ async function join(){
     const ref=F.doc(db,'rooms',ST.pin),s=await F.getDoc(ref);
     if(!s.exists()||s.data().exp.toMillis()<Date.now()){ST.note='없는 방 번호예요. 다시 확인해 주세요';return stuRender()}
     ST.joined=true;ST.mine=lsGet('live-mine-'+ST.pin,{});
-    ST.unsub=F.onSnapshot(ref,d=>{const prev=ST.room&&ST.room.q&&ST.room.q.id;ST.room=d.exists()?d.data():null;if(ST.room&&ST.room.q&&ST.room.q.id!==prev){ST.draft='';ST.note=''}stuRender()},()=>{ST.room=null;stuRender()});
+    ST.unsub=F.onSnapshot(ref,d=>{const prev=ST.room&&ST.room.q&&ST.room.q.id;ST.room=d.exists()?d.data():null;if(ST.room&&ST.room.q&&ST.room.q.id!==prev){ST.draft='';ST.note='';ST.br=null}stuRender()},()=>{ST.room=null;stuRender()});
   }catch(e){ST.note=msg(e);stuRender()}
+}
+function mapAdd(){
+  const q=ST.room&&ST.room.q,w=(document.getElementById('txt').value||'').replace(/[:\n]/g,' ').trim().slice(0,12);if(!q||ST.br==null||!w)return;
+  const L=mapParse(ST.mine[q.id]);if(L.some(x=>x[0]===ST.br&&x[1]===w)){ST.draft='';return stuRender()}
+  L.push([ST.br,w]);let v=L.map(x=>x.join(':')).join('\n');
+  if(v.length>80){ST.note='많이 보냈어요! ✕로 하나를 빼고 다시 보내요';return stuRender()}
+  ST.draft='';send(v);
 }
 async function send(v){
   const q=ST.room&&ST.room.q;if(!q||!q.open)return;
@@ -176,6 +201,7 @@ async function send(v){
 /* ================= 강사 ================= */
 const SAMPLE=[
   {type:'word',text:'지금 기분을 한 단어로!'},
+  {type:'map',text:'MT',opts:['장소','음식','게임','추억거리','친목','장기자랑']},
   {type:'poll',text:'면접에서 가장 걱정되는 것은?',opts:['자기소개','예상 못한 질문','긴장·떨림','복장·태도']},
   {type:'quiz',text:'2026년 최저시급은?',opts:['9,860원','10,030원','10,320원','11,000원'],correct:2},
   {type:'text',text:'오늘 수업에서 하나만 가져간다면?'}
@@ -219,6 +245,7 @@ function resultHtml(q,live){
     if(q.type==='quiz'&&!rev)return '<div class="bars">'+q.opts.map((o,i)=>'<div class="bar"><span class="lab">'+(i+1)+'. '+esc(o)+'</span><span class="tr"></span><span class="n">?</span></div>').join('')+'</div><p class="count">정답 공개 전에는 결과를 숨겨요.</p>';
     return '<div class="bars">'+q.opts.map((o,i)=>'<div class="bar'+(q.type==='quiz'&&i===q.correct?' right':'')+'"><span class="lab">'+(i+1)+'. '+esc(o)+'</span><span class="tr"><span class="fl" style="display:block;width:'+Math.round(n[i]/mx*100)+'%;background:'+COL[i]+'"></span></span><span class="n">'+n[i]+'</span></div>').join('')+'</div>';
   }
+  if(q.type==='map')return mapSvg(q,A);
   if(q.type==='word'){
     const c={};A.forEach(a=>String(a.v).split(/[,，、\n]/).map(w=>w.trim().slice(0,15)).filter(Boolean).slice(0,3).forEach(w=>{if(!H.hide[w])c[w]=(c[w]||0)+1}));
     const ws=Object.entries(c).sort((a,b)=>b[1]-a[1]).slice(0,60),mx=ws.length?ws[0][1]:1;
@@ -226,6 +253,33 @@ function resultHtml(q,live){
     return '<div class="cloud">'+ws.sort(()=>Math.random()-.5).map(([w,k],i)=>'<span data-hw="'+esc(w)+'" title="눌러서 숨기기" style="cursor:pointer;font-size:'+(1+k/mx*2.8).toFixed(2)+'rem;color:'+COL[i%6]+'">'+esc(w)+'</span>').join('')+'</div><p class="count">부적절한 단어는 눌러서 숨길 수 있어요.</p>';
   }
   return '<div class="texts">'+A.filter(a=>!H.hide[a.id]).map(a=>'<div>'+esc(a.v)+'<button data-ht="'+esc(a.id)+'" title="숨기기">✕</button></div>').join('')+'</div>';
+}
+function mapSvg(q,A){
+  const W=1200,Hh=720,cx=W/2,cy=Hh/2,n=q.opts.length,cnt=q.opts.map(()=>({}));
+  A.forEach(a=>mapParse(a.v).forEach(([i,w])=>{if(i<n&&!H.hide[i+':'+w])cnt[i][w]=(cnt[i][w]||0)+1}));
+  const mx=Math.max(1,...cnt.flatMap(c=>Object.values(c)));
+  const box=(x,y,t,fill,fs,ink)=>{const w=Math.max(90,[...t].length*fs*.95+34);return '<rect x="'+(x-w/2)+'" y="'+(y-fs*.95)+'" width="'+w+'" height="'+(fs*1.9)+'" rx="10" fill="'+fill+'" stroke="'+(ink||'none')+'" stroke-width="3"/><text x="'+x+'" y="'+(y+1)+'" text-anchor="middle" font-size="'+fs+'" fill="'+(ink?ink:'#fff')+'">'+esc(t)+'</text>'};
+  let lines='',words='',brs='';
+  q.opts.forEach((o,i)=>{
+    const a=(-90+360*i/n)*Math.PI/180,bx=cx+Math.cos(a)*270,by=cy+Math.sin(a)*170,col=MC[i%8];
+    lines+='<line x1="'+cx+'" y1="'+cy+'" x2="'+bx+'" y2="'+by+'" stroke="'+col+'" stroke-width="5" stroke-linecap="round"/>';
+    const ws=Object.entries(cnt[i]).sort((x,y)=>y[1]-x[1]).slice(0,8),c=Math.cos(a),side=c>.3?1:c<-.3?-1:0;
+    const it=ws.map(([w,k])=>({w,k,fs:Math.round(20+k/mx*20)}));
+    if(side){ // 오른쪽·왼쪽 가지: 바깥쪽에 세로로 쌓기
+      const tot=it.reduce((t,x)=>t+x.fs*1.35,0);let y=Math.max(20,Math.min(Hh-20-tot,by-tot/2));
+      it.forEach(x=>{x.y=y+x.fs*.68;y+=x.fs*1.35;x.x=bx+side*(Math.max(70,[...q.opts[i]].length*13+40));x.anc=side>0?'start':'end'});
+    }else{ // 위·아래 가지: 바깥쪽에 가로로 두 줄
+      const up=Math.sin(a)<0?-1:1;const rows=[it.filter((_,j)=>j%2===0),it.filter((_,j)=>j%2===1)];
+      rows.forEach((r,ri)=>{const wd=r.map(x=>[...x.w].length*x.fs*.95+(x.k>1?x.fs:0)+24),tw=wd.reduce((t,v)=>t+v,0);let x0=bx-tw/2;
+        r.forEach((x,j)=>{x.x=x0+wd[j]/2;x0+=wd[j];x.y=by+up*(62+ri*46);x.anc='middle'})});
+    }
+    it.forEach(x=>{const wx=Math.max(10,Math.min(W-10,x.x)),wy=Math.max(18,Math.min(Hh-18,x.y));
+      lines+='<line x1="'+bx+'" y1="'+by+'" x2="'+wx+'" y2="'+wy+'" stroke="'+col+'" stroke-opacity=".35" stroke-width="2"/>';
+      words+='<text class="w" data-hw="'+esc(i+':'+x.w)+'" x="'+wx+'" y="'+wy+'" text-anchor="'+x.anc+'" font-size="'+x.fs+'" fill="'+col+'" paint-order="stroke" stroke="var(--card)" stroke-width="6">'+esc(x.w)+(x.k>1?'<tspan font-size="60%"> ×'+x.k+'</tspan>':'')+'</text>';
+    });
+    brs+=box(bx,by,o,'var(--card)',26,col);
+  });
+  return '<svg class="mm" viewBox="0 0 '+W+' '+Hh+'" role="img" aria-label="마인드맵">'+lines+brs+box(cx,cy,q.text,'#2e9e6b',38)+words+'</svg><p class="count">같은 단어가 많을수록 커져요. 부적절한 단어는 눌러서 숨길 수 있어요.</p>';
 }
 function rankHtml(){
   const L=Object.values(H.score).sort((a,b)=>b.s-a.s||a.tm-b.tm).slice(0,10);
@@ -235,13 +289,14 @@ function editHtml(){
   const e=H.edit;
   return '<h2>'+(e.i<0?'질문 추가':'질문 고치기')+'</h2><div class="f"><label>종류</label><select id="et">'+Object.entries(TYPES).map(([k,v])=>'<option value="'+k+'"'+(e.type===k?' selected':'')+'>'+v+'</option>').join('')+'</select></div>'+
    '<div class="f"><label for="ex">질문</label><input id="ex" maxlength="80" value="'+esc(e.text)+'"></div>'+
+   (e.type==='map'?'<div class="f"><label for="eo">가지 (한 줄에 하나, 2~8개) · 질문 칸에는 가운데 주제를 써요</label><button class="btn sm" data-a="aiBr" style="align-self:flex-start"'+(H.aiBusy?' disabled':'')+'>'+(H.aiBusy?'AI가 고르는 중…':'✨ AI 가지 추천')+'</button><textarea id="eo" rows="8">'+esc((e.opts||[]).join('\n'))+'</textarea></div>':'')+
    ((e.type==='poll'||e.type==='quiz')?'<div class="f"><label for="eo">보기 (한 줄에 하나, 2~6개)</label><textarea id="eo" rows="6">'+esc((e.opts||[]).join('\n'))+'</textarea></div>':'')+
    (e.type==='quiz'?'<div class="f"><label for="ec">정답 번호</label><input id="ec" type="number" min="1" max="6" value="'+((e.correct||0)+1)+'"></div>':'')+
    '<div class="row"><button class="btn pri" data-a="save">저장</button>'+(e.i>=0?'<button class="btn" data-a="del" style="color:var(--bad)">삭제</button>':'')+'</div>';
 }
 function readEdit(){
   const e=H.edit;e.type=document.getElementById('et').value;e.text=document.getElementById('ex').value.trim();
-  const o=document.getElementById('eo');if(o)e.opts=o.value.split('\n').map(s=>s.trim()).filter(Boolean).slice(0,6);
+  const o=document.getElementById('eo');if(o)e.opts=o.value.split('\n').map(s=>s.trim().slice(0,12)).filter(Boolean).slice(0,e.type==='map'?8:6);
   const c=document.getElementById('ec');if(c)e.correct=Math.max(0,Math.min((e.opts||[]).length-1,(+c.value||1)-1));
 }
 async function mk(){
@@ -306,10 +361,13 @@ function hostClick(e){
   if(d.ht){H.hide[d.ht]=1;return hostRender()}
   const a=d.a;
   if(a==='new'){H.edit={i:-1,type:'poll',text:'',opts:['',''],correct:0};H.view='edit'}
-  else if(a==='save'){readEdit();const e=H.edit,ok=e.text&&((e.type!=='poll'&&e.type!=='quiz')||e.opts.length>=2);
+  else if(a==='save'){readEdit();const e=H.edit,ok=e.text&&((e.type!=='poll'&&e.type!=='quiz'&&e.type!=='map')||e.opts.length>=2);
     if(!ok){H.note='질문과 보기(2개 이상)를 넣어 주세요';return hostRender()}
-    const x={type:e.type,text:e.text};if(e.type==='poll'||e.type==='quiz')x.opts=e.opts;if(e.type==='quiz')x.correct=e.correct;
+    const x={type:e.type,text:e.text};if(e.type==='poll'||e.type==='quiz'||e.type==='map')x.opts=e.opts;if(e.type==='quiz')x.correct=e.correct;
     if(e.i<0)H.qs.push(x);else H.qs[e.i]=x;saveQs();H.view='q';H.note=''}
+  else if(a==='aiBr'){readEdit();if(!H.edit.text){H.note='질문 칸에 가운데 주제를 먼저 써 주세요';return hostRender()}
+    H.aiBusy=true;H.note='';hostRender();
+    call('aiLab',{code:H.code,mode:'branches',topic:H.edit.text}).then(r=>{const L=String(r.text||'').split(/[,，、\n]/).map(x=>x.replace(/^[\s\d.\-·*]+/,'').trim().slice(0,12)).filter(Boolean).slice(0,8);if(L.length>=2&&H.edit)H.edit.opts=L;else H.note='추천을 못 받았어요. 다시 눌러 주세요'},e=>{H.note=msg(e)}).then(()=>{H.aiBusy=false;hostRender()});return}
   else if(a==='del'){H.qs.splice(H.edit.i,1);saveQs();H.cur=-1;H.view='q'}
   else if(a==='close')return setQ(Object.assign({},H.room.q,{open:false}));
   else if(a==='open')return setQ(Object.assign({},H.room.q,{open:true}));
@@ -320,7 +378,7 @@ function hostClick(e){
   else if(a==='end'){if(!confirm('방을 닫을까요? 학생 화면도 끝나요.'))return;setQ(null);H.pin='';H.cur=-1;lsSet('live-host',{});if(H.unsub)H.unsub();if(rxUnsub){rxUnsub();rxUnsub=null}}
   hostRender();
 }
-app.addEventListener('change',e=>{if(e.target.id==='et'&&H.edit){readEdit();H.edit.type=e.target.value;if((H.edit.type==='poll'||H.edit.type==='quiz')&&!(H.edit.opts||[]).length)H.edit.opts=['',''];hostRender()}});
+app.addEventListener('change',e=>{if(e.target.id==='et'&&H.edit){readEdit();H.edit.type=e.target.value;if((H.edit.type==='poll'||H.edit.type==='quiz'||H.edit.type==='map')&&!(H.edit.opts||[]).length)H.edit.opts=['',''];hostRender()}});
 
 /* ================= 시작 ================= */
 app.addEventListener('click',e=>{
@@ -329,9 +387,13 @@ app.addEventListener('click',e=>{
   if(b.dataset.a==='join')return join();
   if(b.dataset.e)return react(b.dataset.e);
   if(b.dataset.v!=null)return send(+b.dataset.v);
+  if(b.dataset.br!=null){ST.br=+b.dataset.br;stuRender();const t=document.getElementById('txt');if(t)t.focus();return}
+  if(b.dataset.a==='mapAdd')return mapAdd();
+  if(b.dataset.rm!=null){const q=ST.room&&ST.room.q,L=mapParse(ST.mine[q.id]);L.splice(+b.dataset.rm,1);return L.length?send(L.map(x=>x.join(':')).join('\n')):send('-')}
   if(b.dataset.a==='send'){const t=(document.getElementById('txt').value||'').trim();if(t){ST.draft=t;send(t)}}
 });
 app.addEventListener('input',e=>{if(e.target.id==='txt')ST.draft=e.target.value});
+app.addEventListener('keydown',e=>{if(!HOST&&e.target.id==='txt'&&e.key==='Enter'){const q=ST.room&&ST.room.q;if(q&&q.type==='map')mapAdd();else{const t=e.target.value.trim();if(t){ST.draft=t;send(t)}}}});
 boot().then(()=>{
   if(HOST){if(H.pin)watchRoom();hostRender()}
   else{if(ST.pin&&ST.nick!==undefined&&P.get('r'))stuRender();stuRender()}
