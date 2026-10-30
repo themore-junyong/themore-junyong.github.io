@@ -289,7 +289,7 @@ function editHtml(){
   const e=H.edit;
   return '<h2>'+(e.i<0?'질문 추가':'질문 고치기')+'</h2><div class="f"><label>종류</label><select id="et">'+Object.entries(TYPES).map(([k,v])=>'<option value="'+k+'"'+(e.type===k?' selected':'')+'>'+v+'</option>').join('')+'</select></div>'+
    '<div class="f"><label for="ex">질문</label><input id="ex" maxlength="80" value="'+esc(e.text)+'"></div>'+
-   (e.type==='map'?'<div class="f"><label for="eo">가지 (한 줄에 하나, 2~8개) · 질문 칸에는 가운데 주제를 써요</label><textarea id="eo" rows="8">'+esc((e.opts||[]).join('\n'))+'</textarea></div>':'')+
+   (e.type==='map'?'<div class="f"><label for="eo">가지 (한 줄에 하나, 2~8개) · 질문 칸에는 가운데 주제를 써요</label><button class="btn sm" data-a="aiBr" style="align-self:flex-start"'+(H.aiBusy?' disabled':'')+'>'+(H.aiBusy?'AI가 고르는 중…':'✨ AI 가지 추천')+'</button><textarea id="eo" rows="8">'+esc((e.opts||[]).join('\n'))+'</textarea></div>':'')+
    ((e.type==='poll'||e.type==='quiz')?'<div class="f"><label for="eo">보기 (한 줄에 하나, 2~6개)</label><textarea id="eo" rows="6">'+esc((e.opts||[]).join('\n'))+'</textarea></div>':'')+
    (e.type==='quiz'?'<div class="f"><label for="ec">정답 번호</label><input id="ec" type="number" min="1" max="6" value="'+((e.correct||0)+1)+'"></div>':'')+
    '<div class="row"><button class="btn pri" data-a="save">저장</button>'+(e.i>=0?'<button class="btn" data-a="del" style="color:var(--bad)">삭제</button>':'')+'</div>';
@@ -365,6 +365,9 @@ function hostClick(e){
     if(!ok){H.note='질문과 보기(2개 이상)를 넣어 주세요';return hostRender()}
     const x={type:e.type,text:e.text};if(e.type==='poll'||e.type==='quiz'||e.type==='map')x.opts=e.opts;if(e.type==='quiz')x.correct=e.correct;
     if(e.i<0)H.qs.push(x);else H.qs[e.i]=x;saveQs();H.view='q';H.note=''}
+  else if(a==='aiBr'){readEdit();if(!H.edit.text){H.note='질문 칸에 가운데 주제를 먼저 써 주세요';return hostRender()}
+    H.aiBusy=true;H.note='';hostRender();
+    call('aiLab',{code:H.code,mode:'branches',topic:H.edit.text}).then(r=>{const L=String(r.text||'').split(/[,，、\n]/).map(x=>x.replace(/^[\s\d.\-·*]+/,'').trim().slice(0,12)).filter(Boolean).slice(0,8);if(L.length>=2&&H.edit)H.edit.opts=L;else H.note='추천을 못 받았어요. 다시 눌러 주세요'},e=>{H.note=msg(e)}).then(()=>{H.aiBusy=false;hostRender()});return}
   else if(a==='del'){H.qs.splice(H.edit.i,1);saveQs();H.cur=-1;H.view='q'}
   else if(a==='close')return setQ(Object.assign({},H.room.q,{open:false}));
   else if(a==='open')return setQ(Object.assign({},H.room.q,{open:true}));
