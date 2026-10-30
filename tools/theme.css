@@ -1,0 +1,44 @@
+/* 위듀케이션 공통 테마: 각 페이지 <style> 뒤에 불러와 색·글꼴·모양만 덮어씀 (변수 이름 --blue 는 그대로 두고 값만 초록으로)
+   방향: 강사로(파랑·각진 업무 앱)와 다르게, 따뜻한 종이색 + 깊은 초록 + 귤색 포인트, 둥근 카드 */
+@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css");
+:root{
+  --bg:#f7f3ea; --ink:#23302b; --soft:#66706a; --card:#fffdf8; --line:#e6dfd0; --field:#fbf8f1;
+  --blue:#1f6b52; --blue-ink:#fffdf8; --blue-soft:#e3efe6; --yel:#ffb547; --ok:#2f7d4a; --bad:#c4492f; --mid:#b97a00;
+  --pop:#ff8a3d; --shadow:0 1px 2px rgba(60,50,30,.06),0 6px 18px -8px rgba(60,50,30,.14);
+  --f:"Pretendard Variable",Pretendard,"Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#141a17; --ink:#ecefe9; --soft:#a5ada7; --card:#1d2420; --line:#313b35; --field:#18201c;
+  --blue:#6fcf9f; --blue-ink:#10241a; --blue-soft:#20352a; --ok:#6fcf8a; --bad:#ff8a6e; --mid:#f0b93a;
+  --pop:#ffa264; --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 20px -10px rgba(0,0,0,.5); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#141a17; --ink:#ecefe9; --soft:#a5ada7; --card:#1d2420; --line:#313b35; --field:#18201c;
+  --blue:#6fcf9f; --blue-ink:#10241a; --blue-soft:#20352a; --ok:#6fcf8a; --bad:#ff8a6e; --mid:#f0b93a;
+  --pop:#ffa264; --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 20px -10px rgba(0,0,0,.5); color-scheme:dark}
+
+body{font-family:var(--f);letter-spacing:-.01em;word-break:keep-all}
+h1{font-weight:800;letter-spacing:-.03em}
+h2{font-weight:800;letter-spacing:-.02em}
+.brand small,.top .brand small{color:var(--pop);letter-spacing:.06em}
+
+/* 카드·목록: 둥글게, 테두리 대신 그림자 */
+.card{border-radius:18px;border-color:transparent;box-shadow:var(--shadow)}
+a.g{border-radius:16px;border:1px solid transparent;border-left:0;box-shadow:var(--shadow);padding:16px 18px 16px 20px;position:relative;transition:transform .15s}
+a.g::after{content:"→";position:absolute;right:16px;top:50%;transform:translateY(-50%);color:var(--blue);font-weight:800}
+a.g{padding-right:40px}
+a.g:hover{transform:translateY(-2px)}
+.why{border-radius:12px}
+.hero{border-radius:22px;background:linear-gradient(135deg,var(--blue),color-mix(in srgb,var(--blue) 70%,#0a2f22));box-shadow:var(--shadow)}
+.hero .go{border-radius:999px;background:var(--pop);color:#2a1606}
+.label{color:var(--blue);letter-spacing:.04em;margin-top:6px}
+
+/* 버튼·입력: 알약 모양 */
+.btn,.ghost{border-radius:999px}
+.btn.pri{box-shadow:0 4px 12px -4px color-mix(in srgb,var(--blue) 60%,transparent)}
+input[type=text],input:not([type]),input[type=number],textarea,select,.f input,.f textarea{border-radius:12px}
+.seg{border-radius:999px}
+.exp,.aibox,.out,pre.out{border-radius:12px}
+.chip{border-radius:999px}
+.tag{border-radius:8px}
+.side{border-radius:0 10px 10px 0}
+.pick button,.vote button{border-radius:14px}
