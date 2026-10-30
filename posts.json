@@ -1,6 +1,15 @@
 {
- "updated": "2026-10-30T05:45:39.822201+00:00",
+ "updated": "2026-10-30T12:52:23.489734+00:00",
  "posts": [
+  {
+   "kind": "영상",
+   "src": "youtube",
+   "title": "다이어트, 왜 자꾸 실패할까? | 입맛이 기억하는 것 · 노는 목회자 ③ #shorts",
+   "link": "https://www.youtube.com/watch?v=lsGivFO8pwU",
+   "date": "2026-10-30T11:00:31+00:00",
+   "summary": "의지가 약해서? 아니요. 입맛이 그 맛을 기억하기 때문이죠. 지난여름 8킬로를 뺐는데, 다이어트 끝났다고 빵 하나, 두 개 먹었더니 빵이 너무 먹고 싶습니다. 그…",
+   "image": "https://i.ytimg.com/vi/lsGivFO8pwU/hqdefault.jpg"
+  },
   {
    "kind": "말씀",
    "src": "tistory",
@@ -1123,7 +1132,5 @@
    "cat": "설교&middot;묵상"
   }
  ],
- "errors": [
-  "youtube: HTTP Error 404: Not Found"
- ]
+ "errors": []
 }
