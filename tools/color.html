@@ -178,7 +178,7 @@ var STEPN=['준비','촬영','피부 측정','온도 진단','명도 진단','�
 
 /* ---------- 상태 (사진은 메모리에만) ---------- */
 var S={step:-1,nick:'',sex:'',ready:[],r1:[],r2:[],r3:[],qa:[],skin:null,cam:false};
-var PH=null, stream=null, cur='a', flick=null, res=null, note='';
+var PH=null, stream=null, cur='a', flick=null, res=null, note='', SW=Math.random()<.5, WP=null, wpMode=false;
 try{var old=JSON.parse(localStorage.getItem('color-v1')||'null');if(old&&old.type)res=old}catch(e){}
 var app=document.getElementById('app');
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
@@ -198,7 +198,7 @@ function shoot(){
   var W=600,H=800,c=document.createElement('canvas');c.width=W;c.height=H;var x=c.getContext('2d');
   var vw=v.videoWidth,vh=v.videoHeight,r=Math.max(W/vw,H/vh),dw=vw*r,dh=vh*r;
   x.translate(W,0);x.scale(-1,1);x.drawImage(v,(W-dw)/2,(H-dh)/2,dw,dh);
-  PH=c;camOff();PTS=[[W*.37,H*.46],[W*.63,H*.46]];measure();S.step=2;render();
+  PH=c;camOff();WP=null;wpMode=false;PTS=[[W*.37,H*.46],[W*.63,H*.46]];measure();S.step=2;render();
 }
 /* 얼굴 가이드: 가로 중앙, 세로 40% 지점, 턱 = 66% */
 var GUIDE='<svg viewBox="0 0 300 400" preserveAspectRatio="none"><defs><mask id="m"><rect width="300" height="400" fill="#fff"/><ellipse cx="150" cy="160" rx="78" ry="104" fill="#000"/></mask></defs><rect width="300" height="400" fill="rgba(0,0,0,.45)" mask="url(#m)"/><ellipse cx="150" cy="160" rx="78" ry="104" fill="none" stroke="#fff" stroke-width="2" stroke-dasharray="6 5"/><line x1="40" y1="292" x2="260" y2="292" stroke="#fff" stroke-width="1.5" stroke-dasharray="4 4"/><text x="150" y="312" fill="#fff" font-size="12" text-anchor="middle">어깨선</text></svg>';
@@ -226,9 +226,9 @@ function drape(col,size){
   return c;
 }
 function paint(){
-  var cv=document.getElementById('cv'),R=round();if(!cv||!R||!PH)return;
+  var cv=document.getElementById('cv'),R=disp();if(!cv||!R||!PH)return;
   var d=drape(R[cur][1]);cv.width=d.width;cv.height=d.height;cv.getContext('2d').drawImage(d,0,0);
-  var t=document.getElementById('tg');if(t)t.textContent=cur.toUpperCase()+' · '+R[cur][0];
+  var t=document.getElementById('tg');if(t)t.textContent='천 '+cur.toUpperCase();
   document.querySelectorAll('[data-ab]').forEach(function(b){b.setAttribute('aria-pressed',b.dataset.ab===cur)});
 }
 
@@ -250,8 +250,10 @@ var PTS=null; // 볼 측정 위치 (찍은 직후 가이드 타원 기준 양쪽
 function measure(){
   var a=sample(PTS[0][0],PTS[0][1]),b=sample(PTS[1][0],PTS[1][1]);
   if(!a||!b){S.skin=null;return}
-  var m=[(a[0]+b[0])/2,(a[1]+b[1])/2,(a[2]+b[2])/2],L=lab(m[0],m[1],m[2]);
-  S.skin={rgb:m.map(Math.round),L:Math.round(L.L),h:Math.round(L.h),C:Math.round(L.C)};
+  var m=[(a[0]+b[0])/2,(a[1]+b[1])/2,(a[2]+b[2])/2];
+  if(WP)m=m.map(function(v,i){return clamp(v*235/Math.max(WP[i],40),0,255)}); // 흰 종이가 흰색으로 보이도록 조명 색 보정
+  var L=lab(m[0],m[1],m[2]);
+  S.skin={rgb:m.map(Math.round),L:Math.round(L.L),h:Math.round(L.h),C:Math.round(L.C),wb:!!WP};
 }
 function drawSkin(){
   var cv=document.getElementById('cv');if(!cv||!PH)return;
@@ -267,10 +269,11 @@ function round(){
   if(S.step===4)return R2[t][S.r2.length];
   if(S.step===5)return R3[t][S.r3.length];
 }
+function disp(){var R=round();return R&&SW?{a:R.b,b:R.a,look:R.look}:R} // 선입견 막으려고 A/B 순서는 매번 무작위
 function sum(arr){return arr.reduce(function(s,v){return s+v},0)}
 function quiz(i){return sum(S.qa.map(function(a,q){return a==null?0:QS[q][1][a][i]}))}
-function skinT(){return S.skin?clamp((S.skin.h-58)/8,-1,1):0}
-function skinV(){return S.skin?clamp((S.skin.L-62)/10,-1,1):0}
+function skinT(){return S.skin?clamp((S.skin.h-58)/8,-1,1)*(S.skin.wb?1:.5):0}
+function skinV(){return S.skin?clamp((S.skin.L-62)/10,-1,1)*(S.skin.wb?1:.5):0}
 function temp(){ // 드레이핑 55% + 문진 30% + 피부 15%
   var d=S.r1.length?sum(S.r1)/R1.length:0, q=clamp(quiz(1)/4,-1,1), s=skinT();
   return S.skin?(.55*d+.3*q+.15*s):(.62*d+.38*q);
@@ -284,7 +287,9 @@ function result(){
   var agree=0,all=0;S.r1.forEach(function(v){if(v){all++;if((v>0)===(Tv>=0))agree++}});
   var conf=Math.round(clamp(55+Math.abs(Tv)*40+(all?agree/all*10:0)-(S.skin?0:5),55,96));
   var d=new Date();
-  return {type:name,T:Tv,V:V,C:C,conf:conf,skin:S.skin,nick:S.nick,sex:S.sex,date:d.getFullYear()+'. '+(d.getMonth()+1)+'. '+d.getDate()+'.'};
+  var log=[];function L(rs,arr){arr.forEach(function(v,i){var R=rs[i];log.push(v>0?R.a[0]+' 〉 '+R.b[0]:v<0?R.b[0]+' 〉 '+R.a[0]:R.a[0]+' = '+R.b[0])})}
+  var tk=Tv>=0?'w':'c';L(R1,S.r1);L(R2[tk],S.r2);L(R3[tk],S.r3);
+  return {log:log,type:name,T:Tv,V:V,C:C,conf:conf,skin:S.skin,nick:S.nick,sex:S.sex,date:d.getFullYear()+'. '+(d.getMonth()+1)+'. '+d.getDate()+'.'};
 }
 
 /* ---------- 화면 ---------- */
@@ -306,7 +311,7 @@ function home(){
    '<button class="btn pri" data-go="start">진단 시작하기</button></div>';
   return h;
 }
-var READY=['창가 자연광 또는 밝은 흰 조명 아래에 있어요 (노란 조명·역광 X)','화장·선크림을 최대한 지웠어요 (색조 화장은 결과를 바꿔요)','앞머리를 넘기고, 얼굴에 색이 비치는 옷·모자를 벗었어요','휴대폰 화면 밝기를 최대로 올렸어요','같이 봐 줄 친구가 있으면 더 정확해요 (선택)'];
+var READY=['창가 자연광 또는 밝은 흰 조명 아래에 있어요 (노란 조명·역광 X)','화장·선크림을 최대한 지웠어요 (색조 화장은 결과를 바꿔요)','앞머리를 넘기고, 얼굴에 색이 비치는 옷·모자를 벗었어요','휴대폰 화면 밝기를 최대로 올렸어요','흰 종이(A4) 한 장을 턱 아래에 들고 찍을 준비가 됐어요 (조명 보정용, 선택)','같이 봐 줄 친구가 있으면 더 정확해요 (선택)'];
 function step0(){
   return stepbar()+'<div class="card"><h2>진단 전 준비</h2><p class="soft">전문 진단실도 조명과 화장부터 맞춰요. 4가지 이상 체크하면 시작할 수 있어요.</p><ul class="checks">'+
    READY.map(function(t,i){return '<li><label><input type="checkbox" data-ready="'+i+'"'+(S.ready.indexOf(i)>=0?' checked':'')+'><span>'+t+'</span></label></li>'}).join('')+'</ul></div>';
@@ -323,24 +328,26 @@ function step2(){
   if(S.skin){
     var s=S.skin, warm=s.h>=58;
     h+='<div class="skin"><i style="background:rgb('+s.rgb.join(',')+')"></i><div><b>측정한 피부색</b><br><span class="soft">밝기 L* '+s.L+' · 색상각 '+s.h+'° · 채도 '+s.C+'</span></div></div>'+
-      '<div class="why">색상각이 클수록 <b>노란 기(웜)</b>, 작을수록 <b>붉은 기(쿨)</b>예요. 측정값은 <b>'+(warm?'노란 기 쪽':'붉은 기 쪽')+'</b>이에요. 조명 영향이 커서 최종 진단에는 15%만 반영해요.</div>';
+      '<div class="why">색상각이 클수록 <b>노란 기(웜)</b>, 작을수록 <b>붉은 기(쿨)</b>예요. 측정값은 <b>'+(warm?'노란 기 쪽':'붉은 기 쪽')+'</b>이에요. 조명 영향이 커서 최종 진단에는 '+(WP?'15%':'8%(흰 종이 보정 안 함)')+'만 반영해요.</div>';
   }else h+='<p class="note bad">측정이 안 됐어요. 볼 위치를 눌러 다시 재 보세요. 그래도 안 되면 "다음"으로 넘어가도 돼요(피부 측정 없이 진단).</p>';
-  return h+'<div class="btns"><button class="btn" data-go="retake">다시 찍기</button></div></div>';
+  h+='<div class="look">📄 <b>조명 보정(선택)</b> · 찍을 때 흰 종이(A4)를 턱 아래나 옆에 들고 찍었다면, 아래 버튼을 누른 뒤 사진 속 종이를 눌러 주세요. 조명 색을 빼고 피부색을 더 정확히 재요. '+(WP?'<b style="color:var(--ok)">✔ 보정됨</b>':'')+'</div>';
+  if(note)h+='<p class="note bad">'+esc(note)+'</p>';
+  return h+'<div class="btns"><button class="btn" data-go="wp"'+(wpMode?' style="border-color:var(--blue);color:var(--blue)"':'')+'>'+(wpMode?'사진 속 흰 종이를 누르세요':'📄 흰 종이 찍기')+'</button><button class="btn" data-go="retake">다시 찍기</button></div></div>';
 }
 function drapeStep(){
-  var R=round(),n=S.step===3?S.r1.length:S.step===4?S.r2.length:S.r3.length,tot=S.step===3?5:3;
+  var R=disp(),n=S.step===3?S.r1.length:S.step===4?S.r2.length:S.r3.length,tot=S.step===3?5:3;
   var title=['','','','온도 진단 · 웜 vs 쿨','명도 진단 · 밝음 vs 깊음','채도 진단 · 선명 vs 부드러움'][S.step];
   var look=S.step===3?R.look:(S.step===4?R2L:R3L)[n];
   var h=stepbar()+'<div class="card"><div class="top"><h2>'+title+'</h2><span class="soft">'+(n+1)+' / '+tot+'</span></div>';
   if(PH){
     h+='<div class="stage"><canvas id="cv"></canvas><span class="tag" id="tg"></span></div>'+
      '<div class="ab">'+['a','b'].map(function(k){var c=R[k][1],bg=c===GOLD?'linear-gradient(135deg,#8a6a1f,#fff1b0,#c9a13a)':c===SILVER?'linear-gradient(135deg,#6f747c,#fff,#b0b6be)':c;
-       return '<button data-ab="'+k+'" aria-pressed="'+(cur===k)+'"><span class="sw" style="background:'+bg+'"></span><span><b>'+k.toUpperCase()+'</b> '+R[k][0]+'</span></button>'}).join('')+'</div>'+
+       return '<button data-ab="'+k+'" aria-pressed="'+(cur===k)+'"><span class="sw" style="background:'+bg+'"></span><span><b>천 '+k.toUpperCase()+'</b></span></button>'}).join('')+'</div>'+
      '<div class="btns"><button class="btn" data-go="flick">'+(flick?'⏸ 멈추기':'▶ 번갈아 보기')+'</button></div>';
   }else{
-    h+='<div class="ab">'+['a','b'].map(function(k){var c=R[k][1];return '<div style="height:120px;border-radius:6px;border:1px solid var(--line);background:'+(c===GOLD?'linear-gradient(135deg,#8a6a1f,#fff1b0,#c9a13a)':c===SILVER?'linear-gradient(135deg,#6f747c,#fff,#b0b6be)':c)+';display:flex;align-items:flex-end;padding:8px;font-weight:700;color:#333;text-shadow:0 0 4px #fff">'+k.toUpperCase()+' '+R[k][0]+'</div>'}).join('')+'</div><p class="note">거울 앞에서 두 색 옷이나 종이를 얼굴 아래에 대 보고 골라 주세요.</p>';
+    h+='<div class="ab">'+['a','b'].map(function(k){var c=R[k][1];return '<div style="height:120px;border-radius:6px;border:1px solid var(--line);background:'+(c===GOLD?'linear-gradient(135deg,#8a6a1f,#fff1b0,#c9a13a)':c===SILVER?'linear-gradient(135deg,#6f747c,#fff,#b0b6be)':c)+';display:flex;align-items:flex-end;padding:8px;font-weight:700;color:#333;text-shadow:0 0 4px #fff">천 '+k.toUpperCase()+'</div>'}).join('')+'</div><p class="note">거울 앞에서 두 색 옷이나 종이를 얼굴 아래에 대 보고 골라 주세요.</p>';
   }
-  h+='<div class="look">👀 <b>볼 곳</b> · '+look+'</div><div class="pick"><button data-pick="1">A가 낫다</button><button data-pick="0">비슷하다</button><button data-pick="-1">B가 낫다</button></div>';
+  h+='<div class="look">👀 <b>볼 곳</b> · '+look+'<br><span class="soft">천 이름은 선입견이 생기지 않게 숨겨 두었어요. 결과지에서 공개돼요.</span></div><div class="pick"><button data-pick="1">A가 낫다</button><button data-pick="0">비슷하다</button><button data-pick="-1">B가 낫다</button></div>';
   return h+'</div>';
 }
 function step6(){
@@ -357,6 +364,7 @@ function report(){
    '<div style="display:flex;flex-direction:column;gap:10px">'+meter(pct(r.T,'웜','쿨'),'웜(노란 기)','쿨(붉은·푸른 기)',r.T)+meter(pct(r.V,'라이트','딥'),'라이트(밝음)','딥(깊음)',r.V)+meter(pct(r.C,'브라이트','뮤트'),'브라이트(선명)','뮤트(부드러움)',r.C)+'</div>';
   if(r.skin)h+='<div class="skin"><i style="background:rgb('+r.skin.rgb.join(',')+')"></i><div><b>측정 피부색</b><br><span class="soft">밝기 L* '+r.skin.L+' · 색상각 '+r.skin.h+'°</span></div></div>';
   if(PH)h+='<div class="thumbs"><figure><img id="best" alt="베스트 컬러를 댄 얼굴"><span style="color:var(--ok)">✔ 베스트 · '+t.best[0][0]+'</span></figure><figure><img id="worst" alt="워스트 컬러를 댄 얼굴"><span style="color:var(--bad)">✘ 워스트 · '+t.worst[0][0]+'</span></figure></div>';
+  if(r.log&&r.log.length)h+='<details><summary><b>내가 고른 천 (진단 근거)</b></summary><ul style="margin:8px 0 0;padding-left:20px">'+r.log.map(function(l){return '<li>'+esc(l)+'</li>'}).join('')+'</ul></details>';
   h+='<div><h3>베스트 컬러</h3></div><div class="pal">'+t.best.map(function(c){return '<div><i style="background:'+c[1]+'"></i>'+c[0]+'</div>'}).join('')+'</div>'+
    '<div><h3>피하면 좋은 색</h3></div><div class="pal bad">'+t.worst.map(function(c){return '<div><i style="background:'+c[1]+'"></i>'+c[0]+'</div>'}).join('')+'</div>'+
    '<div><h3>면접 복장 추천</h3></div><dl class="dress"><dt>정장</dt><dd>'+t.suit+'</dd><dt>셔츠</dt><dd>'+t.shirt+'</dd>'+
@@ -396,6 +404,7 @@ function go(k){
   else if(k==='cam')camOn();
   else if(k==='shoot'){shoot();return}
   else if(k==='nocam'){camOff();PH=null;S.skin=null;S.step=3}
+  else if(k==='wp'){wpMode=!wpMode;note=''}
   else if(k==='retake'){PH=null;S.skin=null;S.step=1;camOn()}
   else if(k==='flick'){if(flick){clearInterval(flick);flick=null}else flick=setInterval(function(){cur=cur==='a'?'b':'a';paint()},900);var fb=document.querySelector('[data-go="flick"]');if(fb)fb.textContent=flick?'⏸ 멈추기':'▶ 번갈아 보기';return}
   else if(k==='prev'){if(S.step===0)S.step=-1;else if(S.step===2){S.step=1;PH=null;camOn()}else if(S.step===6){S.step=5;S.r3.pop()}else S.step--}
@@ -414,7 +423,7 @@ app.addEventListener('click',function(e){
   if(b&&b.dataset.sex){S.sex=b.dataset.sex;S.nick=(document.getElementById('nick')||{}).value||S.nick;render();return}
   if(b&&b.dataset.ab){cur=b.dataset.ab;if(flick){clearInterval(flick);flick=null;var fb=document.querySelector('[data-go="flick"]');if(fb)fb.textContent='▶ 번갈아 보기'}paint();return}
   if(b&&b.dataset.pick!=null){
-    var v=+b.dataset.pick;cur='a';
+    var v=+b.dataset.pick*(SW?-1:1);cur='a';SW=Math.random()<.5;
     if(S.step===3){S.r1.push(v);if(S.r1.length===5)S.step=4}
     else if(S.step===4){S.r2.push(v);if(S.r2.length===3)S.step=5}
     else if(S.step===5){S.r3.push(v);if(S.r3.length===3)S.step=6}
@@ -423,7 +432,9 @@ app.addEventListener('click',function(e){
   if(b&&b.dataset.qa){var p=b.dataset.qa.split('_');S.qa[+p[0]]=+p[1];var y=window.scrollY;render();window.scrollTo(0,y);return}
   if(e.target.id==='cv'&&S.step===2&&PH){
     var cv=e.target,rc=cv.getBoundingClientRect(),px=(e.clientX-rc.left)/rc.width*PH.width,py=(e.clientY-rc.top)/rc.height*PH.height;
-    PTS[px<PH.width/2?0:1]=[px,py];measure();render();
+    if(wpMode){var w=sample(px,py);if(w&&w[0]+w[1]+w[2]>360){WP=w;note=''}else note='흰 종이가 아니거나 너무 어두워요. 종이 한가운데를 눌러 주세요.';wpMode=false}
+    else PTS[px<PH.width/2?0:1]=[px,py];
+    measure();render();
   }
 });
 app.addEventListener('change',function(e){
