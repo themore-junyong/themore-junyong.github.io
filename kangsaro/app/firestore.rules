@@ -181,6 +181,11 @@ service cloud.firestore {
       }
     }
 
+    // 톡방에서 모은 미가입 업체 공고 (운영자만). 업체가 인수 링크로 가입하면 서버(claimPre)가 그 업체 공고로 옮김
+    match /pre/{c} {
+      allow read, write: if admin();
+    }
+
     // 이용 기간·요금제: 본인·직원·운영자만 봄, 운영자만 고침(기간 늘리기·요금제)
     match /terms/{u} {
       allow read: if signed() && (me() == u || isStaff(u) || admin());

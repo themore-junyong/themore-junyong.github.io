@@ -11,6 +11,8 @@ const EMU = Q.has('emu');
 // 소개 링크(?ref=소개한 사람)는 로그인 전에 기억해 둠
 const lsGet = k => { try { return localStorage.getItem(k) || ''; } catch (e) { return ''; } };
 if (Q.get('ref')) try { localStorage.setItem('kangsaro.ref', Q.get('ref')); } catch (e) { }
+// 톡방 공고 인수 링크(?claim=코드)도 로그인 전에 기억
+if (Q.get('claim')) try { localStorage.setItem('kangsaro.claim', Q.get('claim')); } catch (e) { }
 // 업체 직원 초대 링크(?staff=코드)도 로그인 전에 기억
 if (Q.get('staff')) try { localStorage.setItem('kangsaro.staff', Q.get('staff')); } catch (e) { }
 // 강의 초대 링크(?job=공고)도 로그인 전에 기억
@@ -42,6 +44,17 @@ async function claimBiz(n) {
   const r = doc(db, 'biz', n), d = await getDoc(r);
   if (d.exists()) { if (d.data().uid === uidMe) return true; toast('이미 가입된 사업자등록번호예요. 문의: tobadyclup@naver.com'); return false; }
   await setDoc(r, { uid: uidMe, at: new Date().toISOString() }); return true;
+}
+// 톡방 공고 인수: 승인된 업체 대표가 ?claim 링크로 들어왔으면 서버가 공고를 이 업체로 옮김 (실시간 목록에 바로 뜸)
+async function claimPre() {
+  const code = lsGet('kangsaro.claim'); if (!code || role !== 'c' || isStaffView()) return;
+  if (!(me && me.approved)) return; // 사업자 확인 뒤에 다시 부름
+  try {
+    const r = await callFn('claimPre', { code });
+    try { localStorage.removeItem('kangsaro.claim'); } catch (e) { }
+    const n = (r.data && r.data.n) || 0;
+    toast(r.data && r.data.again ? '이미 받은 강의예요' : n ? `톡방에 올리셨던 강의 ${n}건을 업체 계정으로 옮겼어요. 지난 강의는 '마감'으로 들어와서 정산에 바로 쓸 수 있어요` : '옮길 강의가 없었어요');
+  } catch (e) { toast(e.message && !/^internal$/i.test(e.message) ? e.message : '강의를 옮기지 못했어요. 조금 뒤 다시 열어 주세요'); if (/이미 다른|찾지 못/.test(e.message || '')) try { localStorage.removeItem('kangsaro.claim'); } catch (x) { } }
 }
 // 국세청 확인(서버)을 켰으면 서버가 확인하고 승인. 안 켰으면 예전처럼 검증 숫자만 보고 바로 승인
 const ntsOn = () => !!(SITE && SITE.nts);
@@ -296,6 +309,7 @@ async function start(user, want) {
     else toast('초대받은 강의를 찾지 못했어요. 업체에 링크를 다시 받아 주세요');
   }
   render();
+  if (role === 'c' && !isStaffView()) claimPre();
   showTerm();
   pushSave(false);
   if (isAdm()) adminQueue().then(l => { if (l.length) toast(`확인 대기·신고 공고 ${l.length}건이 있어요. '업체 관리'에서 봐 주세요`); });
@@ -320,8 +334,9 @@ REAL.gate = () => {
   if (me && me.gone) return `<div class="card"><h2>업체 직원 연결이 끝났어요</h2><p class="mu">업체에서 내보냈거나 스스로 나갔어요. 다시 일하려면 업체에 새 초대 링크를 받아 주세요.</p><button class="btn sm" data-real="out">로그아웃</button></div>`;
   return `<div class="card"><h2>어느 쪽으로 가입할까요?</h2>
     <span class="mu sm">${esc(auth.currentUser.email || '')}로 로그인했어요.</span>
+    ${lsGet('kangsaro.claim') ? `<div class="alert"><b>강사로 운영자가 초대한 업체예요.</b> '강의 업체예요'를 고르고 사업자등록번호를 넣어 가입하면, 톡방에 올리셨던 강의가 이 업체 계정으로 바로 넘어와요.</div>` : ''}
     ${lsGet('kangsaro.ref') ? '<div class="alert">소개로 오셨어요. 가입하면 소개한 분과 함께 무료 기간이 늘어요 (업체 1개월, 강사 1주일).</div>' : ''}
-    <div class="row"><label class="sm"><input type="radio" name="rRole" value="i" checked> 강사예요</label><label class="sm"><input type="radio" name="rRole" value="c"> 강의 업체예요</label></div>
+    <div class="row"><label class="sm"><input type="radio" name="rRole" value="i" ${lsGet('kangsaro.claim') ? '' : 'checked'}> 강사예요</label><label class="sm"><input type="radio" name="rRole" value="c" ${lsGet('kangsaro.claim') ? 'checked' : ''}> 강의 업체예요</label></div>
     <label class="f">이름 (업체는 업체명)<input id="rName" autocomplete="name"></label>
     <label class="f">연락처<input id="rPhone" type="tel" autocomplete="tel" placeholder="010-0000-0000"></label>
     <label class="f" id="rRegionF">사는 곳 (순수익·거리 계산용)<select id="rRegion">${Object.keys(GEO).map(k => `<option>${k}</option>`).join('')}</select></label>
@@ -378,6 +393,19 @@ document.addEventListener('click', async e => {
     if (r === 'i') { ui.tab = 'me'; render(); }
   }
   if (k === 'admin') return adminSheet();
+  if (k === 'preCopy') { try { await navigator.clipboard.writeText(b.dataset.u); toast('인수 링크를 복사했어요'); } catch (err) { prompt('인수 링크', b.dataset.u); } return; }
+  if (k === 'preImport') {
+    const f = $('#preFile') && $('#preFile').files[0]; if (!f) return toast('JSON 파일을 골라 주세요');
+    let x; try { x = JSON.parse(await f.text()); } catch (err) { return toast('파일을 읽지 못했어요'); }
+    let n = 0, skip = 0;
+    for (const [code, v] of Object.entries(x.pre || {})) {
+      if (!/^[0-9a-f]{8,16}$/.test(code) || !v || !Array.isArray(v.jobs)) continue;
+      const old = await getDoc(doc(db, 'pre', code)).catch(() => null);
+      if (old && old.exists() && old.data().claimedBy) { skip++; continue; } // 이미 인수한 업체는 그대로
+      await setDoc(doc(db, 'pre', code), { name: String(v.name || ''), mails: v.mails || [], jobs: v.jobs, at: new Date().toISOString() }); n++;
+    }
+    toast(`미가입 업체 ${n}곳을 올렸어요${skip ? ` (이미 인수한 ${skip}곳은 그대로)` : ''}`); return adminSheet();
+  }
   if (k === 'terms') return termsAdmin();
   if (k === 'tAdd' || k === 'tPlan') {
     const id = b.dataset.u, r = doc(db, 'terms', id), t = (await getDoc(r)).data() || {};
@@ -429,7 +457,7 @@ document.addEventListener('click', async e => {
     try { if (ntsOn()) { if (!await verifyBiz(n)) return; } else { if (!await claimBiz(n)) return; await updateDoc(doc(db, 'users', uidMe), { biz: n, approved: true }); } }
     catch (err) { return toast('등록하지 못했어요: ' + err.code); }
     me.biz = n; me.approved = true; const c = S.cos.find(x => x.id === uidMe); if (c) { c.biz = n; c.approved = true; }
-    prime(new Set([`users/${uidMe}`])); toast('등록했어요. 이제 공고를 올릴 수 있어요'); render();
+    prime(new Set([`users/${uidMe}`])); toast('등록했어요. 이제 공고를 올릴 수 있어요'); render(); claimPre();
   }
   if (k === 'swap') return swapTo(role === 'i' ? 'c' : 'i');
   if (k === 'addSide') return sideSheet(role === 'i' ? 'c' : 'i');
@@ -611,6 +639,7 @@ async function adminSheet() {
     <div class="card"><div class="row"><b class="sp">국세청 사업자 확인 ${SITE.nts ? '<span class="chip paid">켜짐</span>' : '<span class="chip off">꺼짐</span>'}</b><button class="btn sm" data-real="ntsT">${SITE.nts ? '끄기' : '켜기'}</button></div><span class="mu sm">서버(verifyBiz)를 올린 뒤에 켜요. 켜면 새 업체는 국세청에서 '계속사업자'로 확인돼야 승인돼요. 끄면 예전처럼 번호 검증 숫자만 봐요.</span></div>
     <p class="mu sm">업체는 사업자등록번호를 넣으면 바로 공고를 올려요. 이상한 업체는 '승인 취소'로 멈출 수 있어요. 홈택스 '사업자 상태 조회'로 휴·폐업 여부를 볼 수 있어요.</p>
     <div class="card"><div class="row"><b class="sp">이용 기간·요금제</b><button class="btn sm" data-real="terms">열기</button></div><span class="mu sm">계좌이체 등으로 받았을 때 기간을 늘리고 요금제를 정해요. 요금제가 없으면 무료 기간처럼 모든 기능을 써요.</span></div>
+    ${await preAdmin()}
     ${await jobAdmin()}
     ${await refAdmin()}
     ${rows.map(card).join('') || '<p class="mu">가입한 업체가 없어요.</p>'}`);
@@ -641,6 +670,15 @@ async function termsAdmin() {
   if (q) $('#tq').dispatchEvent(new Event('input'));
 }
 
+// 운영자: 톡방에서 모은 미가입 업체 (pre/{코드}). Claude가 만든 JSON 파일을 올리면 한 업체씩 저장
+async function preAdmin() {
+  const s = await getDocs(collection(db, 'pre')).catch(() => null), L = s ? s.docs.map(d => ({ id: d.id, ...d.data() })) : [];
+  const got = L.filter(x => x.claimedBy).length, url = c => `${location.origin}${location.pathname}?claim=${c}`;
+  return `<details class="card"><summary><b>톡방 미가입 업체 ${L.length}곳</b> <span class="mu sm">· 인수 ${got}곳</span></summary>
+    <span class="mu sm">강사에게는 안 보여요. 업체가 인수 링크로 가입·사업자 확인을 마치면 공고가 그 업체 계정으로 넘어가요(지난 강의는 마감).</span>
+    <div class="row"><input type="file" id="preFile" accept=".json,application/json"><button class="btn sm pri" data-real="preImport">파일 올리기</button></div>
+    ${L.sort((a, b) => (b.jobs || []).length - (a.jobs || []).length).map(x => `<div class="row" style="border-top:1px solid var(--bd);padding-top:6px"><span class="sp sm"><b>${esc(x.name || x.id)}</b> · 강의 ${(x.jobs || []).length}건 ${x.claimedBy ? `<span class="chip paid">인수 ${x.claimedN || 0}건</span>` : ''}</span><button class="btn sm" data-real="preCopy" data-u="${esc(url(x.id))}">링크 복사</button></div>`).join('') || '<p class="mu sm">아직 없어요.</p>'}</details>`;
+}
 // 확인 대기(사기 의심 단어) + 신고 3건 이상(통과 안 된) 공고
 let ADMQ = 0;
 async function adminQueue() {

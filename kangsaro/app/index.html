@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<meta name="build" content="261030-0444">
+<meta name="build" content="261030-0456">
 <title>강사로</title>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#2563EB">
@@ -302,7 +302,7 @@ function payOf(j,iid,a){const days=[];
       days.push({d,fee,time:L.map(s=>s.time).filter(Boolean).join(', '),lab:L.map(s=>`${s.cls?s.cls+' ':''}${s.per||''}${s.inst!==iid?'(보조)':''}`.trim()).filter(Boolean).join(', ')})}}
   const ext=(a&&a.ext)||[],base=days.reduce((t,x)=>t+x.fee,0),txE=ext.filter(x=>x.tx).reduce((t,x)=>t+(+x.amt||0),0),noE=ext.filter(x=>!x.tx).reduce((t,x)=>t+(+x.amt||0),0);
   const taxable=base+txE,tx=tax(taxable);return {days,dates:days.map(x=>x.d),base,ext,taxable,plus:noE,amt:taxable+noE,tx:{...tx,net:tx.net+noE}}}
-const feeLabel=j=>j.feeMode==='per'?`교시당 ${won(j.feePer)}`:`1일 ${won(j.fee)}`;
+const feeLabel=j=>j.feeMode==='per'?`교시당 ${won(j.feePer)}`:j.fee?`1일 ${won(j.fee)}`:'공고 내용 참고';
 const myDates=(j,iid)=>isOp(j)?payOf(j,iid).dates:j.dates;
 const opEmpty=j=>isOp(j)?j.plan.slots.filter(s=>!s.inst&&!s.nm).length:0;
 
@@ -1252,6 +1252,6 @@ document.addEventListener('input',ev=>{if(ev.target.matches&&ev.target.matches('
 render();
 </script>
 <script src="../bot.js" defer></script>
-<script type="module" src="real.js?v=261030-0444"></script>
+<script type="module" src="real.js?v=261030-0456"></script>
 </body>
 </html>
