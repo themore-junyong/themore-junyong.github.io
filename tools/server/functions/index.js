@@ -4,7 +4,7 @@
 const { onCall, HttpsError } = require('firebase-functions/v2/https');
 const { defineSecret } = require('firebase-functions/params');
 const { initializeApp } = require('firebase-admin/app');
-const { getFirestore, FieldValue } = require('firebase-admin/firestore');
+const { getFirestore, FieldValue, Timestamp } = require('firebase-admin/firestore');
 const { GoogleGenAI, ApiError } = require('@google/genai');
 
 initializeApp();
@@ -231,4 +231,23 @@ exports.introChat = onCall({ region: 'asia-northeast3', secrets: [GEMINI_KEY], m
   const u = r.usageMetadata || {};
   console.log('intro ok', write ? 'write' : 'ask', code, r.modelVersion, u.promptTokenCount, u.candidatesTokenCount);
   return write ? { text, left: Math.max(0, per - mine - 1) } : { q: text.split('\n').find(x => x.trim()).trim().slice(0, 300) };
+});
+
+// 실시간 반응판: 초대코드가 있는 강사만 방(번호 4자리, 8시간)을 만듦.
+// 질문 띄우기·학생 답은 화면이 DB에 직접 씀 (허용 범위는 firestore.rules).
+exports.liveRoom = onCall({ region: 'asia-northeast3', maxInstances: 3, timeoutSeconds: 15 }, async req => {
+  const uid = req.auth && req.auth.uid;
+  if (!uid) fail('unauthenticated', '잠시 뒤 다시 열어 주세요');
+  const { code } = await codeOf(req.data && req.data.code);
+  for (let i = 0; i < 10; i++) {
+    const pin = String(1000 + Math.floor(Math.random() * 9000)), ref = db.doc(`rooms/${pin}`);
+    const ok = await db.runTransaction(async t => {
+      const d = await t.get(ref);
+      if (d.exists && d.data().exp.toMillis() > Date.now()) return false;
+      t.set(ref, { owner: uid, code, exp: Timestamp.fromMillis(Date.now() + 8 * 3600e3), q: null });
+      return true;
+    });
+    if (ok) { console.log('live room', code, pin); return { pin }; }
+  }
+  fail('resource-exhausted', '잠시 뒤 다시 눌러 주세요');
 });
