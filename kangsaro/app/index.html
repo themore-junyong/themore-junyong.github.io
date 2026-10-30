@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<meta name="build" content="261030-0738">
+<meta name="build" content="261030-0742">
 <title>강사로</title>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#2563EB">
@@ -365,7 +365,7 @@ function opGrid(j,cf,names,byD){const P=j.plan.slots,B=ui.brush||'',PN=opPanels(
   const pick=(v,l,cls)=>`<button class="btn sm ${B===v?'pri':''} ${cls||''}" data-act="brush" data-v="${esc(v)}">${l}</button>`;
 
   return `<div class="card" style="background:var(--acs);gap:6px"><b class="sm">1. 강사를 고르고 → 2. 표에서 칸을 누르세요</b><span class="mu sm">${day?`${md(day)}(${dowOf(day)}) 하루 시간표예요. 왼쪽 반을 누르면 그 반, 맨 위 시간을 누르면 그 시간의 빈 칸이 한 번에 채워져요.`:'줄 이름을 누르면 그 줄의 빈 칸, 맨 위 날짜를 누르면 그날의 빈 칸이 한 번에 채워져요.'} 같은 강사로 칸을 한 번 더 누르면 비워져요.</span>
-    <div class="row" style="flex-wrap:wrap">${cf.map(a=>pick(a.instId,esc(inst(a.instId).name)+(a.status==='지원'?' <span class="mu">(지원)</span>':''))).join('')}${names.map(n=>pick('nm:'+n,esc(n)+' <span class="mu">(앱 밖)</span>')).join('')}<button class="btn sm" data-act="brushNew">＋ 이름</button>${pick('__clear','지우개')}</div>
+    <div class="row" style="flex-wrap:wrap">${cf.map(a=>pick(a.instId,esc(inst(a.instId).name)+(a.status==='지원'?' <span class="mu">(지원)</span>':''))).join('')}${names.map(n=>pick('nm:'+n,esc(n)+' <span class="mu">(앱 밖)</span>')).join('')}<button class="btn sm" data-act="planUndo" data-j="${j.id}" ${(planSeen(j).st.length)?'':'disabled'}>↶ 되돌리기${planSeen(j).st.length?` (${planSeen(j).st.length})`:''}</button><button class="btn sm" data-act="brushNew">＋ 이름</button>${pick('__clear','지우개')}</div>
     ${B?`<span class="sm">지금: <b>${B==='__clear'?'지우개 (칸 비우기)':esc(B.startsWith('nm:')?B.slice(3):inst(B).name)}</b></span>`:''}${B&&!B.startsWith('nm:')&&B!=='__clear'&&names.length?`<span class="sm" style="color:var(--ac)">앱 밖 이름을 누르면 그 이름의 칸이 모두 <b>${esc(inst(B).name)}</b> 계정으로 바뀌어요 (같은 사람이 초대받고 들어왔을 때).</span>`:''}</div>
   ${PN.map((X,gi)=>{const short=t=>{const [a,b2]=X.rLab(t);return `<b>${esc(a)}</b>${b2?`<br><span class="mu">${esc(b2)}</span>`:''}`},RW=X.memo?112:72;
   return `${X.title?`<b style="margin-top:6px">${esc(X.title)}</b>`:''}<div style="overflow-x:auto"><table class="sm" style="border-collapse:collapse;table-layout:fixed;width:100%;min-width:${RW+X.cols.length*96}px"><colgroup><col style="width:${RW}px">${X.cols.map(()=>'<col>').join('')}</colgroup><thead><tr><th class="mu">${X.memo?'':'반'}</th>${X.cols.map(v=>`<th style="padding:2px"><button class="btn sm" data-act="paint" data-j="${j.id}" data-g="${gi}" data-cv="${esc(v)}" style="width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(X.cLab(v))}</button></th>`).join('')}</tr></thead><tbody>
@@ -430,7 +430,14 @@ function assignSlot(j,x,k,v){const nk=k==='inst'?'nm':'subNm';
   if(v.startsWith('nm:')){x[k]='';x[nk]=v.slice(3);return 0}
   x[k]=v;x[nk]='';const a=v&&appsOf(j.id).find(y=>y.instId===v&&y.status==='지원');if(a){confirmApp(a,j);return 1}return 0}
 function confirmApp(a,j){if(a.status==='확정')return;a.status='확정';S.alerts.push({id:uid(),instId:a.instId,appId:a.id,text:`[확정] ${co(j.coId).name} · ${j.region} ${j.school} ${j.title} (${j.dates.map(d=>`${md(d)}(${dowOf(d)})`).join('·')} ${j.time}) 강의가 확정되었어요.`,at:new Date().toISOString(),read:false})}
-const planTouch=j=>{j.planAt=new Date().toISOString();j.op=true;save();render()};
+// 되돌리기: 운영 칸·지원 상태를 바꿀 때마다 직전 모습을 쌓아 둠 (화면을 닫으면 사라짐)
+const planSnap=j=>JSON.stringify({slots:(j.plan&&j.plan.slots)||[],st:appsOf(j.id).map(a=>[a.id,a.status])});
+const planSeen=j=>{ui.undo=ui.undo||{};const U=ui.undo[j.id]=ui.undo[j.id]||{st:[],last:null};if(U.last===null)U.last=planSnap(j);return U};
+const planTouch=j=>{const U=planSeen(j),now=planSnap(j);if(now!==U.last){U.st.push(U.last);if(U.st.length>30)U.st.shift();U.last=now}j.planAt=new Date().toISOString();j.op=true;save();render()};
+function planUndo(j){const U=planSeen(j);if(!U.st.length)return toast('되돌릴 게 없어요');const o=JSON.parse(U.st.pop());let un=0;
+  if(o.slots.length){j.plan=j.plan||{};j.plan.slots=o.slots}else{delete j.plan;j.op=false}
+  for(const [id,st] of o.st){const a=S.apps.find(x=>x.id===id);if(a&&a.status!==st){if(a.status==='확정'&&st==='지원'){S.alerts.push({id:uid(),instId:a.instId,appId:a.id,text:`[확정 취소] ${co(j.coId).name} · ${j.school} ${j.title} 배정이 잘못 눌려 취소되었어요. 다시 확정되면 알려 드릴게요.`,at:new Date().toISOString(),read:false});un++}a.status=st}}
+  U.last=planSnap(j);j.planAt=new Date().toISOString();save();render();toast(`되돌렸어요${un?` · 잘못 확정된 ${un}명에게 취소 알림을 보냈어요`:''}`)}
 
 /* ===== 강사: 달력 항목 모으기 ===== */
 function travel(x,who){const p=who||inst(meId());return Math.round((+x.km||0)/(+p.kmpl||15)*(+p.fuel||1650))+(+x.toll||0)}
@@ -1144,6 +1151,7 @@ document.addEventListener('click',async ev=>{
     const cf=appsOf(j.id).filter(a=>a.status==='확정');if(cf.length===1)j.plan.slots.forEach(x=>x.inst=cf[0].instId);planTouch(j);return toast('운영 시간표를 만들었어요. 칸을 더 만들거나 강사를 정하세요')}
   if(A==='opXls')return opXls(job(D.j),D.k);
   if(A==='opPng')return opPng(job(D.j),!!D.n,D.k);
+  if(A==='planUndo')return planUndo(job(D.j));
   if(A==='brush'){const B=ui.brush||'';
     if(B&&!B.startsWith('nm:')&&B!=='__clear'&&D.v.startsWith('nm:')){const j=job(ui.jobId),n=D.v.slice(3);let k=0;for(const x of j.plan.slots){if(x.nm===n){x.inst=B;x.nm='';k++}if(x.subNm===n){x.sub=B;x.subNm='';k++}}
       const ap=appsOf(j.id).find(y=>y.instId===B&&y.status==='지원');if(ap)confirmApp(ap,j);ui.brush='';planTouch(j);return toast(`'${n}' 칸 ${k}개를 ${inst(B).name} 강사 계정으로 바꿨어요${ap?' · 확정 알림을 보냈어요':''}`)}
@@ -1271,6 +1279,6 @@ document.addEventListener('input',ev=>{if(ev.target.matches&&ev.target.matches('
 render();
 </script>
 <script src="../bot.js" defer></script>
-<script type="module" src="real.js?v=261030-0738"></script>
+<script type="module" src="real.js?v=261030-0742"></script>
 </body>
 </html>
