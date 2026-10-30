@@ -354,7 +354,7 @@ function opGrid(j,cf,names,byD){const P=j.plan.slots,B=ui.brush||'',rows=[...new
   ${rows.map(r=>`<tr><th style="text-align:left"><button class="btn sm" data-act="paint" data-j="${j.id}" data-r="${esc(r)}" style="text-align:left;white-space:nowrap">${short(r)}</button></th>${byD.map(d=>{const x=P.find(y=>y.d===d&&rowKey(y)===r);if(!x)return '<td style="background:var(--bg)"></td>';const w=who(x),hit=B&&val(x)===B;
     return `<td style="padding:2px"><button class="btn sm" data-act="paint" data-j="${j.id}" data-s="${x.id}" style="width:100%;min-width:64px;white-space:nowrap;${w?'background:var(--sf)':'background:var(--warns,#FDECE3);color:var(--r2)'};${hit?'outline:2px solid var(--ac)':''}">${w?esc(w)+(x.sub||x.subNm?'<span class="mu">+보조</span>':''):'미정'}${x.memo?`<br><span class="mu" style="font-size:11px">${esc(x.memo.slice(0,10))}</span>`:''}</button></td>`}).join('')}</tr>`).join('')}
   </tbody></table></div>
-  <div class="row" style="flex-wrap:wrap"><button class="btn sm" data-act="opPng" data-j="${j.id}">⬇ 시간표 이미지로 받기</button><button class="btn sm" data-act="opPng" data-j="${j.id}" data-n="1">시간표를 공지에 넣기</button><button class="btn sm" data-act="opXls" data-j="${j.id}" data-k="grid">⬇ 시간표 엑셀로 받기</button><button class="btn sm" data-act="opXls" data-j="${j.id}" data-k="inst">⬇ 강사별 배정표 받기</button></div>`}
+  ${[['grid','시간표','반·날짜별'],['inst','강사별 배정표','강사 이름순']].map(([k,n,h])=>`<div class="row" style="flex-wrap:wrap;gap:4px"><b class="sm" style="min-width:92px">${n} <span class="mu">(${h})</span></b><button class="btn sm" data-act="opPng" data-j="${j.id}" data-k="${k}">⬇ 이미지</button><button class="btn sm" data-act="opPng" data-j="${j.id}" data-k="${k}" data-n="1">공지에 넣기</button>${k==='inst'?`<button class="btn sm" data-act="opXls" data-j="${j.id}" data-k="inst">⬇ 엑셀</button>`:''}</div>`).join('')}`}
 // 시간표·강사별 배정표를 엑셀(.xls)로. 색·테두리가 그대로 보이게 표(HTML)로 만듦
 function opXls(j,k){const P=j.plan.slots,ds=[...new Set(P.map(x=>x.d))].sort(),who=x=>x.inst?inst(x.inst).name:x.nm||'',sub=x=>x.sub?inst(x.sub).name:x.subNm||'';
   const td='border:1px solid #999;padding:4px 8px;vertical-align:middle;text-align:center',th=td+';background:#DCE6F8;font-weight:bold',
@@ -386,9 +386,24 @@ function opCanvas(j){const P=j.plan.slots,ds=[...new Set(P.map(x=>x.d))].sort(),
       if(sub(s2))L.push(['보조 '+sub(s2),`13px ${F}`,'#444']);if(s2.memo){g.font=`12px ${F}`;let a='',m=s2.memo,k=0;while(k<m.length&&g.measureText(a+m[k]).width<=CW-12)a+=m[k++];L.push([a,`12px ${F}`,'#777']);if(k<m.length)L.push([m.slice(k),`12px ${F}`,'#777'])}box(x,y,CW,RH,w?'#fff':'#FDECE3');
       const lh=L.length>3?17:20,y0=y+RH/2-(L.length-1)*lh/2;L.forEach(([t,f,col],k)=>txt(t,x+CW/2,y0+k*lh,f,col,CW-10))})});
   g.textAlign='right';txt('강사로 · themore-junyong.github.io/kangsaro',W-M,H-16,`12px ${F}`,'#999',W);return c}
-function opPng(j,toNotice){const c=opCanvas(j),nm=`${(j.title||'운영').replace(/[\\/:*?"<>|]/g,'')}_시간표.png`;
-  c.toBlob(b=>{if(toNotice){const inp=$('#ntImg');if(!inp)return toast('공지 칸은 확정 강사가 있을 때 보여요');const dt=new DataTransfer();dt.items.add(new File([b],nm,{type:'image/png'}));inp.files=dt.files;const k=$('#ntKind');if(k)k.value='시간표';inp.scrollIntoView({behavior:'smooth',block:'center'});return toast('공지에 시간표 그림을 넣었어요. 내용을 쓰고 보내기를 누르세요')}
-    const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=nm;document.body.appendChild(a);a.click();a.remove();toast('시간표 그림을 받았어요. 카톡 공지에 바로 올릴 수 있어요')},'image/png')}
+function opCanvasInst(j){const P=j.plan.slots,who=x=>x.inst?inst(x.inst).name:x.nm||'',sub=x=>x.sub?inst(x.sub).name:x.subNm||'';
+  const L=P.flatMap(x=>[who(x)&&[who(x),'강사',x],sub(x)&&[sub(x),'보조',x]].filter(Boolean)).sort((a,b)=>a[0].localeCompare(b[0],'ko')||a[2].d.localeCompare(b[2].d)||(a[2].time||'').localeCompare(b[2].time||'')),E=P.filter(x=>!who(x));
+  const F='"Pretendard","Malgun Gothic","Apple SD Gothic Neo",sans-serif',hasMemo=P.some(x=>x.memo),C=[['강사',110],['역할',60],['날짜',100],['반 · 시간',220]].concat(hasMemo?[['수업 내용',300]]:[]),M=24,TOP=86,HH=40,RH=32;
+  const c=document.createElement('canvas'),W=M*2+C.reduce((a,x)=>a+x[1],0),H=TOP+HH+RH*L.length+(E.length?40:0)+M+22;c.width=W;c.height=H;const g=c.getContext('2d');
+  const fit=(t,w,f)=>{g.font=f;if(g.measureText(t).width<=w)return t;while(t.length>1&&g.measureText(t+'…').width>w)t=t.slice(0,-1);return t+'…'};
+  const txt=(t,x,y,f,col,w)=>{g.font=f;g.fillStyle=col;g.fillText(fit(t,w,f),x,y)},box=(x,y,w,h,bg)=>{g.fillStyle=bg;g.fillRect(x,y,w,h);g.strokeStyle='#9AA4B2';g.lineWidth=1;g.strokeRect(x+.5,y+.5,w,h)};
+  g.fillStyle='#fff';g.fillRect(0,0,W,H);g.textBaseline='middle';g.textAlign='left';
+  txt((j.title||'운영')+' · 강사별 배정표',M,34,`bold 24px ${F}`,'#111',W-M*2);txt([co(j.coId).name,j.school,j.region].filter(Boolean).join(' · '),M,64,`15px ${F}`,'#555',W-M*2);
+  g.textAlign='center';let x=M;for(const [n,w] of C){box(x,TOP,w,HH,'#DCE6F8');txt(n,x+w/2,TOP+HH/2,`bold 15px ${F}`,'#1E3A8A',w-8);x+=w}
+  L.forEach(([n,r,s2],i)=>{const y=TOP+HH+RH*i,first=!i||L[i-1][0]!==n,bg=r==='보조'?'#F7F8FA':'#fff';
+    if(first&&i){g.fillStyle='#1E3A8A';g.fillRect(M,y-1,W-M*2,2)}
+    const V=[[first?n:'',`bold 15px ${F}`,'#111'],[r,`14px ${F}`,r==='보조'?'#666':'#111'],[`${md(s2.d)}(${dowOf(s2.d)})`,`14px ${F}`,'#111'],[[s2.cls,s2.time||s2.per].filter(Boolean).join(' '),`14px ${F}`,'#111']].concat(hasMemo?[[s2.memo||'',`13px ${F}`,'#555']]:[]);
+    let x=M;C.forEach(([,w],k)=>{box(x,y,w,RH,k?bg:'#F1F5FB');txt(V[k][0],x+w/2,y+RH/2,V[k][1],V[k][2],w-10);x+=w})});
+  g.textAlign='left';if(E.length)txt('미정 칸: '+E.map(x=>`${md(x.d)} ${[x.cls,x.time||x.per].filter(Boolean).join(' ')}`).join(', '),M,TOP+HH+RH*L.length+22,`bold 14px ${F}`,'#C0392B',W-M*2);
+  g.textAlign='right';txt('강사로 · themore-junyong.github.io/kangsaro',W-M,H-16,`12px ${F}`,'#999',W);return c}
+function opPng(j,toNotice,k){const c=k==='inst'?opCanvasInst(j):opCanvas(j),nm=`${(j.title||'운영').replace(/[\\/:*?"<>|]/g,'')}_${k==='inst'?'강사별배정표':'시간표'}.png`;
+  c.toBlob(b=>{if(toNotice){const inp=$('#ntImg');if(!inp)return toast('공지 칸은 확정 강사가 있을 때 보여요');const dt=new DataTransfer();dt.items.add(new File([b],nm,{type:'image/png'}));inp.files=dt.files;const sk=$('#ntKind');if(sk)sk.value='시간표';inp.scrollIntoView({behavior:'smooth',block:'center'});return toast(`공지에 ${k==='inst'?'배정표':'시간표'} 그림을 넣었어요. 내용을 쓰고 보내기를 누르세요`)}
+    const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=nm;document.body.appendChild(a);a.click();a.remove();toast('그림을 받았어요. 카톡 공지에 바로 올릴 수 있어요')},'image/png')}
 // 칸 하나에 강사 넣기 (지원자면 확정). 확정한 사람 수를 돌려줌
 function assignSlot(j,x,k,v){const nk=k==='inst'?'nm':'subNm';
   if(v.startsWith('nm:')){x[k]='';x[nk]=v.slice(3);return 0}
@@ -1075,7 +1090,7 @@ document.addEventListener('click',async ev=>{
     // 이미 확정한 강사가 한 명이면 그 강사를 모든 칸에
     const cf=appsOf(j.id).filter(a=>a.status==='확정');if(cf.length===1)j.plan.slots.forEach(x=>x.inst=cf[0].instId);planTouch(j);return toast('운영 시간표를 만들었어요. 칸을 더 만들거나 강사를 정하세요')}
   if(A==='opXls')return opXls(job(D.j),D.k);
-  if(A==='opPng')return opPng(job(D.j),!!D.n);
+  if(A==='opPng')return opPng(job(D.j),!!D.n,D.k);
   if(A==='brush'){ui.brush=ui.brush===D.v?'':D.v;render();return}
   if(A==='brushNew'){const n=(prompt('강사 이름 (앱을 안 쓰는 강사는 기록만 돼요)')||'').trim();if(n){ui.brush='nm:'+n;render();toast(`'${n}'을 골랐어요. 칸을 누르세요`)}return}
   if(A==='paint'){const j=job(D.j),B=ui.brush;if(!B)return toast('위에서 강사(또는 지우개)를 먼저 골라 주세요');
