@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<meta name="build" content="261030-0420">
+<meta name="build" content="261030-0423">
 <title>강사로</title>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#2563EB">
@@ -966,9 +966,9 @@ function sheetNewJob(p){p=p||{};const N=['프로필','교안','강사카드','�
   ${(ui.jcal={ym:((p.dates||[])[0]||todayIso()).slice(0,7),mode:'day',start:'',we:false},'')}<div class="f"><span>날짜 고르기</span><div id="jCal">${jCalHtml((p.dates||[]))}</div></div>
   <input type="hidden" id="jDates" value="${esc((p.dates||[]).join(', '))}"><div class="row" id="jDateList">${jDateChips(p.dates||[])}</div><div id="jWarn"></div><div class="grid2">
   ${(()=>{const m=String(p.time||'').match(/(\d{1,2}):(\d{2})\s*[~\-–]\s*(\d{1,2}):(\d{2})/),z=(h,mi)=>String(h).padStart(2,'0')+':'+mi;const a=m?z(m[1],m[2]):'',b=m?z(m[3],m[4]):'';
-    return `<div class="f"><span>시간 <span class="mu sm">(눌러서 고르기)</span></span><div class="row" style="gap:6px;align-items:center"><input type="time" id="jT1" step="600" value="${a}" style="flex:1"><span>~</span><input type="time" id="jT2" step="600" value="${b}" style="flex:1"></div><input type="hidden" id="jTime" value="${a&&b?a+'~'+b:''}"></div>
+    return `<div class="f"><span>시간 <span class="mu sm">(눌러서 고르기)</span></span><div class="row" style="gap:6px;align-items:center"><input type="time" id="jT1" class="jTa" step="600" value="${a}" style="flex:1"><span>~</span><input type="time" id="jT2" class="jTb" step="600" value="${b}" style="flex:1"></div><div id="jTmore"></div><button type="button" class="btn sm" data-act="jTadd">＋ 시간 추가 (오전·오후처럼 강사가 바뀔 때)</button><input type="hidden" id="jTime" value="${a&&b?a+'~'+b:''}"></div>
     <label class="f">차시 <span class="mu sm">(시간을 고르면 자동, 고칠 수 있어요)</span><input id="jPer" value="${esc(p.per||'')}" placeholder="6교시" ${p.per?'data-man="1"':''}></label>`})()}
-  <label class="f">대상·인원<input id="jFor" value="${esc(p.for||'')}" placeholder="3학년 100명"></label><label class="f">1일 강사료(원)<input id="jFee" type="number" inputmode="numeric" value="${p.fee||''}"></label></div>
+  <label class="f">대상·인원<input id="jFor" value="${esc(p.for||'')}" placeholder="3학년 100명"></label><label class="f"><span id="jFeeL">1일 강사료(원)</span><input id="jFee" type="number" inputmode="numeric" value="${p.fee||''}"></label></div>
   <label class="f">공고 내용 (강의 내용, 장소 주소, 기자재, 준비물, 참고 사항)<textarea id="jDesc" rows="5" placeholder="예) 3학년 대상 면접 실습. 노트북·HDMI 있음. 주차 가능. 점심 제공.">${esc(p.desc||'')}</textarea></label>
   <fieldset class="card"><legend class="mu sm">강사에게 받을 것</legend><div class="row">${N.map(n=>`<label class="sm"><input type="checkbox" class="jNeed" value="${n}" ${['프로필','교안','통장사본'].includes(n)?'checked':''} ${n==='프로필'?'disabled':''}> ${n}</label>`).join('')}</div></fieldset>
   <p class="mu sm">강사료는 공고에 공개돼요. 공개 공고에 지원이 더 많이 와요.</p>
@@ -1157,6 +1157,9 @@ document.addEventListener('click',async ev=>{
     save();closeSheet();ui.tab='cjobs';ui.jobId=null;render();return toast(`${R.length}건 등록했어요${open?'. 강사 공고 목록에 바로 올라가요':''}`)}
   if(A==='jparse'){const raw=$('#jRaw').value,r=parseNotice(raw);const feeV=feeOf(raw),fee=[0,feeV?String(feeV):'',''];
     sheetNewJob({raw,desc:raw,title:r.강의명,school:r.학교명,region:r.지역,dates:r.dates,time:r.시간,per:r.교시,for:r.대상,fee:fee[1]?(+fee[1].replace(/,/g,''))*(fee[2]?10000:1):''});jWarn();return toast('읽었어요. 빈칸만 확인하세요')}
+  if(A==='jTadd'){const R=jRanges(),last=R.length?R[R.length-1][1]:'12:00',st=last<'13:00'?'13:00':last,d=document.createElement('div');d.className='row';d.style.cssText='gap:6px;align-items:center;margin-top:4px';
+    d.innerHTML=`<input type="time" class="jTa" step="600" value="${st}" style="flex:1"><span>~</span><input type="time" class="jTb" step="600" value="" style="flex:1"><button type="button" class="btn sm" data-act="jTdel">✕</button>`;$('#jTmore').appendChild(d);d.querySelector('.jTb').focus();return}
+  if(A==='jTdel'){el.parentElement.remove();jTimeSync();const fl=$('#jFeeL');if(fl&&jRanges().length<2)fl.textContent='1일 강사료(원)';return}
   if(A==='jdel')return jSetDates(jDatesNow().filter(x=>x!==D.d));
   if(A==='jcMode'){ui.jcal.mode=D.v;ui.jcal.start='';$('#jCal').innerHTML=jCalHtml(jDatesNow());return}
   if(A==='jcMon'){const [y,m]=ui.jcal.ym.split('-').map(Number),d=new Date(y,m-1+(+D.v),1);ui.jcal.ym=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;$('#jCal').innerHTML=jCalHtml(jDatesNow());return}
@@ -1169,6 +1172,7 @@ document.addEventListener('click',async ev=>{
     const miss=[!g('jTitle')&&'강의',!dates.length&&'날짜',!/^\d{2}:\d{2}~\d{2}:\d{2}$/.test(g('jTime'))&&'시간(시작·끝 고르기)',!g('jPer')&&'교시',!g('jFor')&&'대상',!(g('jSchool')&&g('jRegion'))&&'학교·지역',!+g('jFee')&&'강사료'].filter(Boolean);
     if(miss.length)return toast('빠졌어요: '+miss.join(', '));
     const j={id:uid(),coId:meId(),title:g('jTitle'),school:g('jSchool'),region:g('jRegion'),dates,time:g('jTime'),교시:g('jPer'),대상:g('jFor'),desc:g('jDesc'),fee:+g('jFee'),status:'모집',needs:['프로필',...$$('.jNeed:checked').map(x=>x.value).filter(x=>x!=='프로필')],notices:[],created:todayIso(),at:new Date().toISOString()};
+    const R=jRanges();if(R.length>1){const mm=x=>{const [h,m]=x.split(':');return +h*60+ +m};j.plan={slots:dates.flatMap(d=>R.map(([a,b])=>({id:uid(),d,cls:'',time:a+'~'+b,per:'',n:Math.max(1,Math.round((mm(b)-mm(a))/60)),inst:'',nm:'',sub:'',subNm:'',fee:j.fee})))};j.feeMode='day';j.op=true;j.planAt=j.at}
     const held=holdFix(j);S.jobs.push(j);save();closeSheet();ui.tab='cjobs';ui.jobId=j.id;render();const W=dateWarn(dates);return toast(held?'등록했어요. '+HOLD_MSG:W.length?W[0]:'등록했어요. 강사 공고 목록에 바로 올라가요')}
   if(A==='bulk'){const blob=new Blob([bulkCsv()],{type:'text/csv'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`대량이체_${todayIso()}.csv`;document.body.appendChild(a);a.click();a.remove();return toast('파일을 받았어요')}
   if(A==='bulkCopy')return copy(bulkCsv().replace('﻿',''),'대량이체 내용');
@@ -1218,14 +1222,15 @@ if(!INST.standalone){
 if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw.js').catch(()=>{});
 // 붙여넣기만 하면 바로 읽기 ('공고 읽기' 버튼을 안 눌러도 됨)
 document.addEventListener('paste',ev=>{if(ev.target.id==='pRaw')setTimeout(()=>{const b=document.querySelector('[data-act="parse"]');if(b&&$('#pRaw').value.trim().length>20)b.click()},0)});
-document.addEventListener('change',ev=>{if(ev.target.id==='jT1'||ev.target.id==='jT2')jTimeSync()});
+document.addEventListener('change',ev=>{if(ev.target.matches&&ev.target.matches('.jTa,.jTb'))jTimeSync()});
 // 새 공고: 시작~끝 시간을 고르면 jTime을 채우고, 차시(1시간 = 1차시, 반올림)를 자동으로 넣음. 차시를 직접 고치면 그 뒤로는 안 건드림
-function jTimeSync(){const a=$('#jT1').value,b=$('#jT2').value,t=$('#jTime'),pe=$('#jPer');t.value=a&&b?a+'~'+b:'';if(!(a&&b))return;
-  const mm=x=>{const [h,m]=x.split(':');return +h*60+ +m},d=mm(b)-mm(a);if(d<=0)return toast('끝나는 시간이 시작보다 늦어야 해요');if(!pe.dataset.man)pe.value=Math.max(1,Math.round(d/60))+'교시';if(typeof jWarn==='function')jWarn()}
-document.addEventListener('input',ev=>{if(ev.target.id==='jT1'||ev.target.id==='jT2')jTimeSync();if(ev.target.id==='jPer')ev.target.dataset.man=ev.target.value?'1':'';if(['pDates','pRaw'].includes(ev.target.id))pWarn();if(['pDates','pFee','pKm','pToll'].includes(ev.target.id))pNet()});
+const jRanges=()=>{const A=$$('.jTa'),B=$$('.jTb');return A.map((x,i)=>[x.value,B[i].value]).filter(([a,b])=>a&&b&&a<b).sort()};
+function jTimeSync(){const R=jRanges(),t=$('#jTime'),pe=$('#jPer');t.value=R.length?R[0][0]+'~'+R[R.length-1][1]:'';if(!R.length)return;
+  const mm=x=>{const [h,m]=x.split(':');return +h*60+ +m},d=R.reduce((s,[a,b])=>s+mm(b)-mm(a),0);if(!pe.dataset.man)pe.value=Math.max(1,Math.round(d/60))+'교시';const fl=$('#jFeeL');if(fl)fl.textContent=R.length>1?'강사료 (시간대 1칸당, 원)':'1일 강사료(원)';if(typeof jWarn==='function')jWarn()}
+document.addEventListener('input',ev=>{if(ev.target.matches&&ev.target.matches('.jTa,.jTb'))jTimeSync();if(ev.target.id==='jPer')ev.target.dataset.man=ev.target.value?'1':'';if(['pDates','pRaw'].includes(ev.target.id))pWarn();if(['pDates','pFee','pKm','pToll'].includes(ev.target.id))pNet()});
 render();
 </script>
 <script src="../bot.js" defer></script>
-<script type="module" src="real.js?v=261030-0420"></script>
+<script type="module" src="real.js?v=261030-0423"></script>
 </body>
 </html>
