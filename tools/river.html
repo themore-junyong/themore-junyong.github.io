@@ -1,0 +1,444 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>:root{color-scheme:light}body{margin:0;font-family:system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>문제해결 강건너기</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Gowun+Dodum&family=Noto+Sans+KR:wght@400;700;900&display=swap">
+<style>
+/* Layout: 교실 빔프로젝터용 한 화면 게임판. 위 = 상태줄, 가운데 = 출발 기슭 | 강 | 도착 기슭, 아래 = 조작 버튼 */
+:root{
+  --sky:#e8f1ee; --sand:#efe2c4; --sand-edge:#d9c79c; --water:#2f8a96; --water-deep:#1f6a75;
+  --ink:#1d2b2c; --ink-soft:#4d6163; --card:#fffdf7; --accent:#f2a33a; --accent-ink:#3a2300;
+  --ok:#2f8f4e; --bad:#c8432f; --line:rgba(29,43,44,.14);
+  --f-display:"Black Han Sans","Noto Sans KR",system-ui,sans-serif;
+  --f-body:"Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  --f-soft:"Gowun Dodum","Noto Sans KR",system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --sky:#10201f; --sand:#3a3324; --sand-edge:#56492f; --water:#1d5f68; --water-deep:#134249;
+  --ink:#eef4f1; --ink-soft:#a9bcb9; --card:#1a2a29; --accent:#f2a33a; --accent-ink:#2a1900;
+  --ok:#5cc47c; --bad:#ff7a63; --line:rgba(238,244,241,.16); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --sky:#10201f; --sand:#3a3324; --sand-edge:#56492f; --water:#1d5f68; --water-deep:#134249;
+  --ink:#eef4f1; --ink-soft:#a9bcb9; --card:#1a2a29; --accent:#f2a33a; --accent-ink:#2a1900;
+  --ok:#5cc47c; --bad:#ff7a63; --line:rgba(238,244,241,.16); color-scheme:dark}
+html,body{height:100%}
+body{background:var(--sky);color:var(--ink);font-family:var(--f-body);font-size:16px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:1180px;margin:0 auto;padding-block:18px 28px;display:flex;flex-direction:column;gap:16px;min-height:100%;box-sizing:border-box}
+h1,h2,h3{font-family:var(--f-display);font-weight:400;margin:0;text-wrap:balance;letter-spacing:.01em}
+button{font:inherit;cursor:pointer}
+button:focus-visible,.token:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+
+/* 시작 화면 */
+.hero{display:flex;flex-direction:column;gap:6px}
+.hero h1{font-size:clamp(2.2rem,6vw,4.2rem);line-height:1.05}
+.hero h1 em{font-style:normal;color:var(--water)}
+.hero p{margin:0;color:var(--ink-soft);font-family:var(--f-soft);font-size:clamp(1rem,2vw,1.2rem)}
+.levels{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+.lv{background:var(--card);border:2px solid var(--line);border-radius:14px;padding:18px;text-align:left;color:var(--ink);
+  display:flex;flex-direction:column;gap:10px;transition:transform .15s,border-color .15s}
+.lv:hover{transform:translateY(-3px);border-color:var(--water)}
+.lv .row{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.lv .tag{font-size:.8rem;letter-spacing:.06em;color:var(--ink-soft)}
+.lv h3{font-size:1.7rem}
+.lv .cast{font-size:2rem;letter-spacing:.1em}
+.lv .rule{font-size:.95rem;color:var(--ink-soft);line-height:1.55;margin:0}
+.stars{color:var(--accent);font-size:1rem;letter-spacing:.1em}
+.clear{font-size:.8rem;font-weight:700;color:var(--ok)}
+.tip{font-family:var(--f-soft);color:var(--ink-soft);font-size:.95rem;line-height:1.6;border-top:1px dashed var(--line);padding-top:12px;margin:0}
+
+/* 게임 화면 */
+.bar{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;justify-content:space-between}
+.bar h2{font-size:clamp(1.4rem,3.4vw,2.2rem)}
+.stats{display:flex;gap:10px;flex-wrap:wrap}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:6px 12px;font-variant-numeric:tabular-nums;font-weight:700;font-size:1.05rem}
+.stat small{font-weight:400;color:var(--ink-soft);margin-right:6px;font-size:.8rem}
+.stat.warn{color:var(--bad);border-color:var(--bad)}
+.rules{margin:0;background:var(--card);border-left:5px solid var(--accent);border-radius:6px;padding:10px 14px;line-height:1.6;font-size:1rem}
+.rules b{color:var(--water-deep)}
+:root[data-theme="dark"] .rules b{color:var(--accent)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .rules b{color:var(--accent)}}
+
+.board{display:grid;grid-template-columns:1fr 1.25fr 1fr;border-radius:16px;overflow:hidden;min-height:340px;border:2px solid var(--line)}
+.bank{background:var(--sand);padding:14px 10px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.bank.left{border-right:6px solid var(--sand-edge)} .bank.right{border-left:6px solid var(--sand-edge)}
+.bank h4{margin:0;font-family:var(--f-display);font-weight:400;font-size:1.1rem;color:var(--ink-soft);text-align:center}
+.slots{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;align-content:flex-start;flex:1}
+.river{position:relative;background:repeating-linear-gradient(170deg,var(--water) 0 22px,var(--water-deep) 22px 26px);min-width:0;overflow:hidden}
+.river.bridge{background:linear-gradient(var(--water-deep),var(--water-deep))}
+.river.bridge::before{content:"";position:absolute;left:0;right:0;top:50%;height:44px;transform:translateY(-50%);
+  background:repeating-linear-gradient(90deg,#8a5a2b 0 18px,#6e4520 18px 21px);box-shadow:0 0 0 3px #4a2e14}
+.river.bridge.dark::after{content:"";position:absolute;inset:0;background:radial-gradient(circle at var(--lx,15%) 50%,transparent 0 70px,rgba(0,0,0,.55) 140px)}
+.boat{position:absolute;top:50%;left:6px;transform:translateY(-50%);width:calc(50% - 6px);min-height:120px;
+  background:#b8743a;border:4px solid #7a4a20;border-radius:12px 12px 40px 40px;padding:10px 6px;box-sizing:border-box;
+  display:flex;flex-wrap:wrap;gap:6px;justify-content:center;align-content:center;transition:left .8s cubic-bezier(.5,.1,.3,1);z-index:2}
+.boat.at-right{left:calc(50%)}
+.boat.walk{background:transparent;border:3px dashed rgba(255,255,255,.65);border-radius:12px}
+.boat .cap{position:absolute;bottom:-26px;left:0;right:0;text-align:center;font-size:.8rem;color:#fff;font-weight:700;text-shadow:0 1px 2px rgba(0,0,0,.5)}
+.token{width:84px;min-height:84px;border-radius:14px;background:var(--card);border:3px solid var(--line);color:var(--ink);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:4px;box-sizing:border-box;transition:transform .12s,border-color .12s}
+.token .e{font-size:2.3rem;line-height:1}
+.token .n{font-size:.78rem;font-weight:700;line-height:1.2;text-align:center}
+.token .t{font-size:.72rem;color:var(--ink-soft);font-variant-numeric:tabular-nums}
+.token.can:hover{transform:translateY(-3px);border-color:var(--water)}
+.token.off{opacity:.45;cursor:not-allowed}
+.token.hint{animation:pulse 1s infinite;border-color:var(--accent)}
+.lamp{font-size:1.6rem;text-align:center}
+@keyframes pulse{50%{transform:scale(1.08);box-shadow:0 0 0 6px color-mix(in srgb,var(--accent) 35%,transparent)}}
+
+.controls{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
+.btn{border:2px solid var(--line);background:var(--card);color:var(--ink);border-radius:12px;padding:12px 18px;font-weight:700;font-size:1.05rem}
+.btn.go{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-size:1.25rem;padding:12px 30px;font-family:var(--f-display);font-weight:400}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.msg{text-align:center;min-height:1.6em;font-weight:700;color:var(--ink-soft);margin:0}
+
+/* 결과 창 */
+.over{position:fixed;inset:0;background:rgba(10,20,20,.6);display:flex;align-items:center;justify-content:center;z-index:20;
+  padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.card{background:var(--card);color:var(--ink);border-radius:18px;max-width:640px;width:100%;max-height:100%;overflow:auto;padding:24px;box-sizing:border-box;display:flex;flex-direction:column;gap:14px}
+.card .big{font-size:3.2rem;line-height:1}
+.card h2{font-size:clamp(1.8rem,4vw,2.4rem)}
+.card h2.ok{color:var(--ok)} .card h2.bad{color:var(--bad)}
+.card p{margin:0;line-height:1.7;font-size:1.05rem}
+.card .lesson{background:var(--sky);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:8px}
+.card .lesson h3{font-size:1.4rem;color:var(--water-deep)}
+:root[data-theme="dark"] .card .lesson h3{color:var(--accent)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .card .lesson h3{color:var(--accent)}}
+.card .q{font-family:var(--f-soft);font-size:1.1rem;border-left:4px solid var(--accent);padding-left:10px}
+.star-box{border:2px dashed var(--line);border-radius:12px;padding:12px 14px;display:grid;grid-template-columns:auto 1fr;gap:6px 10px;font-size:.95rem;line-height:1.55}
+.star-box b{font-family:var(--f-display);font-weight:400;color:var(--water);font-size:1.1rem}
+.star-box .hd{grid-column:1/-1;font-weight:700}
+.card .actions{display:flex;flex-wrap:wrap;gap:10px;justify-content:flex-end}
+
+@media (max-width:700px){
+  .board{grid-template-columns:1fr 1fr 1fr;min-height:300px}
+  .token{width:62px;min-height:66px} .token .e{font-size:1.7rem} .token .n{font-size:.66rem}
+  .boat{min-height:96px}
+  .bank{padding:10px 4px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<div class="wrap" id="app"></div>
+
+<script>
+(() => {
+/* ───── 레벨 정의 ───── */
+const LEVELS = [
+ {
+  id:'farm', no:1, title:'농부의 강건너기', tag:'워밍업 · 문제 정의', mode:'boat', cap:2, cast:'🧑‍🌾🐺🐐🥬',
+  people:[
+   {id:'f',name:'농부',e:'🧑‍🌾'},{id:'w',name:'늑대',e:'🐺'},{id:'g',name:'염소',e:'🐐'},{id:'c',name:'양배추',e:'🥬'}],
+  rules:'배에는 <b>농부 + 1개</b>만 탈 수 있고, <b>노는 농부만</b> 저어요. 농부가 없으면 <b>늑대는 염소</b>를, <b>염소는 양배추</b>를 먹어 버려요.',
+  short:'농부가 늑대·염소·양배추를 모두 건너편으로. 농부가 없으면 서로 잡아먹어요.',
+  canMove(sub){ return sub.some(p=>p.id==='f') ? null : '노 젓는 사람이 없어요! 농부가 꼭 타야 해요.'; },
+  check(side){ // side = 이 쪽에 있는 사람 id 배열
+    const has=id=>side.includes(id);
+    if(has('f')) return null;
+    if(has('w')&&has('g')) return '늑대가 염소를 꿀꺽! 🐺🍽️🐐';
+    if(has('g')&&has('c')) return '염소가 양배추를 냠냠! 🐐🥬';
+    return null;
+  },
+  lesson:{
+   title:'되돌아가는 것도 전진이다',
+   body:'이 문제는 건너간 염소를 <b>한 번 다시 데려오는 수</b>를 떠올려야 풀려요. 앞으로만 가려고 하면 막힙니다. 일도 똑같아요. 막히면 한 단계 되돌아가 다른 길을 찾는 것, 그게 문제해결능력의 시작입니다. 그리고 그 전에 할 일은 <b>"누구랑 누구를 같이 두면 안 되나"(제약 조건)</b>부터 적는 거예요.',
+   q:'최근에 "한 발 물러섰더니" 오히려 풀린 일이 있었나요?',
+   star:['강 건너편으로 넷을 옮겨야 하는 상황','아무도 잡아먹히지 않게 모두 건너기','위험한 조합(늑대-염소, 염소-양배추)을 먼저 적고, 막히자 염소를 다시 데려오는 방법을 시도','7번 만에 모두 안전하게 도착']
+  }
+ },
+ {
+  id:'class', no:2, title:'모범생과 장난꾸러기', tag:'중급 · 규칙 지키며 목표 가기', mode:'boat', cap:2, cast:'🧑‍🎓🧑‍🎓🧑‍🎓😜😜😜',
+  people:[
+   {id:'m1',name:'모범생 A',e:'🧑‍🎓',k:'m'},{id:'m2',name:'모범생 B',e:'🧑‍🎓',k:'m'},{id:'m3',name:'모범생 C',e:'🧑‍🎓',k:'m'},
+   {id:'j1',name:'장난꾸러기 1',e:'😜',k:'j'},{id:'j2',name:'장난꾸러기 2',e:'😜',k:'j'},{id:'j3',name:'장난꾸러기 3',e:'😜',k:'j'}],
+  rules:'배에는 <b>최대 2명</b>, 누구든 저을 수 있지만 <b>빈 배는 못 가요</b>. 어느 쪽 기슭이든 <b>장난꾸러기가 모범생보다 많아지면</b> 모범생이 PC방으로 끌려가요. (모범생이 0명이면 괜찮아요)',
+  short:'모범생 3명·장난꾸러기 3명. 장난꾸러기가 더 많아지면 모범생이 끌려가요.',
+  canMove(sub){ return sub.length ? null : '빈 배는 못 가요!'; },
+  check(side,L){
+    const m=side.filter(id=>id[0]==='m').length, j=side.filter(id=>id[0]==='j').length;
+    if(m>0 && j>m) return `장난꾸러기 ${j}명 vs 모범생 ${m}명… 모범생이 PC방으로 끌려갔어요! 🎮`;
+    return null;
+  },
+  lesson:{
+   title:'과정의 모든 순간이 규칙 안에 있어야 한다',
+   body:'이번엔 "도착"만 맞으면 끝이 아니었죠. 배가 오갈 <b>때마다 양쪽 상태를 확인</b>해야 했어요. 현장 실습도 똑같습니다. 결과만 맞으면 되는 게 아니라, 과정 한 단계 한 단계가 안전 수칙을 지켜야 해요. <b>한 수 두기 전에 "지금 괜찮나?" 확인하는 습관</b>이 사고 안 내는 신입을 만듭니다.',
+   q:'실습실·현장 안전 수칙 중 "귀찮지만 꼭 지켜야 하는 것" 하나는?',
+   star:['인원 6명을 배 하나(2인승)로 옮겨야 하는 상황','이동하는 매 순간 "더 많아지면 안 된다" 규칙 지키기','배가 움직일 때마다 양쪽 인원 수를 세고, 위험해지는 수는 미리 제외','11번 만에 규칙 위반 없이 모두 도착']
+  }
+ },
+ {
+  id:'bridge', no:3, title:'한밤의 실습장 다리', tag:'고급 · 직관을 의심하라', mode:'bridge', cap:2, limit:17, cast:'⚡🙂🐢👨‍🏫🔦',
+  people:[
+   {id:'a',name:'민준(육상부)',e:'⚡',t:1},{id:'b',name:'서연',e:'🙂',t:2},{id:'c',name:'도윤(공구가방)',e:'🐢',t:5},{id:'d',name:'담임쌤(무릎)',e:'👨‍🏫',t:10}],
+  rules:'정전된 밤, 낡은 다리를 건너야 해요. 다리엔 <b>한 번에 2명까지</b>, 손전등은 <b>딱 1개</b>라 꼭 들고 건너야 해요(누군가 다시 가져와야 함). 둘이 가면 <b>느린 사람 속도</b>로 걸어요. 제한 시간 <b>17분</b>!',
+  short:'1·2·5·10분 걸리는 네 명, 손전등 1개, 제한 17분.',
+  canMove(sub){ return sub.length ? null : '손전등은 혼자 못 걸어가요!'; },
+  check(){ return null; },
+  lesson:{
+   title:'직관을 의심하라, 그리고 사람을 잘 묶어라',
+   body:'대부분 "제일 빠른 민준이가 한 명씩 데려다주면 되겠지!"라고 먼저 생각해요. 그러면 <b>19분</b>, 실패예요. 정답은 <b>제일 느린 두 사람(5분·10분)을 같이 보내는 것</b>. 느린 시간이 한 번만 계산되니까요. 첫 느낌이 정답이 아닐 수 있다는 것, 그리고 팀에서 <b>누구와 누구를 묶어 배치하느냐</b>가 결과를 바꾼다는 것. 이게 문제해결과 팀워크의 핵심입니다.',
+   q:'우리 반(팀)에서 "같이 묶었을 때" 더 잘 되는 일은 뭐가 있을까요?',
+   star:['정전된 밤, 손전등 하나로 네 명이 17분 안에 다리를 건너야 하는 상황','가장 느린 사람이 있어도 제한 시간 안에 모두 건너기','"빠른 사람이 계속 왕복"하면 19분임을 계산해 보고, 느린 두 명을 한 번에 보내는 방법으로 바꿈','정확히 17분 만에 모두 도착']
+  }
+ }
+];
+LEVELS.forEach(L=>L.people.forEach((p,i)=>p.i=i));
+
+/* ───── 풀이기(힌트·최소 횟수용) ───── */
+function subsets(arr,max){
+  const out=[]; const n=arr.length;
+  for(let m=1;m<(1<<n);m++){const s=[];for(let k=0;k<n;k++) if(m&(1<<k)) s.push(arr[k]); if(s.length<=max) out.push(s);}
+  return out;
+}
+function sideIds(L,pos,s){ return L.people.filter(p=>pos[p.i]===s).map(p=>p.id); }
+function legalMoves(L,pos,boat){
+  const here=L.people.filter(p=>pos[p.i]===boat);
+  const res=[];
+  for(const sub of subsets(here,L.cap)){
+    if(L.canMove(sub)) continue;
+    const np=pos.slice(); sub.forEach(p=>np[p.i]=1-boat);
+    const bad=L.check(sideIds(L,np,0),L)||L.check(sideIds(L,np,1),L);
+    if(bad) continue;
+    res.push({sub,np,cost: L.mode==='bridge'? Math.max(...sub.map(p=>p.t)) : 1});
+  }
+  return res;
+}
+function solve(L,pos,boat){ // 다익스트라: 지금 상태에서 남은 최소 비용과 첫 수
+  const key=(p,b)=>p.join('')+b;
+  const dist=new Map(); const first=new Map();
+  let q=[{p:pos,b:boat,d:0,f:null}]; dist.set(key(pos,boat),0);
+  while(q.length){
+    q.sort((x,y)=>x.d-y.d); const cur=q.shift();
+    if(cur.d>dist.get(key(cur.p,cur.b))) continue;
+    if(cur.p.every(v=>v===1)) return {cost:cur.d,first:cur.f};
+    for(const mv of legalMoves(L,cur.p,cur.b)){
+      const nb=1-cur.b, k=key(mv.np,nb), nd=cur.d+mv.cost;
+      if(!dist.has(k)||nd<dist.get(k)){dist.set(k,nd);q.push({p:mv.np,b:nb,d:nd,f:cur.f||mv.sub});}
+    }
+  }
+  return null;
+}
+LEVELS.forEach(L=>{L.best=solve(L,L.people.map(()=>0),0).cost;});
+
+/* ───── 효과음 (첫 터치 후에만) ───── */
+let ac=null, sound=true;
+function beep(f,d=.12,type='sine',v=.08){
+  if(!sound) return;
+  try{ ac=ac||new (window.AudioContext||window.webkitAudioContext)();
+    const o=ac.createOscillator(),g=ac.createGain(); o.type=type;o.frequency.value=f;
+    g.gain.setValueAtTime(v,ac.currentTime); g.gain.exponentialRampToValueAtTime(.0001,ac.currentTime+d);
+    o.connect(g).connect(ac.destination); o.start(); o.stop(ac.currentTime+d);}catch(e){}
+}
+const sfx={pick:()=>beep(660,.07),go:()=>{beep(330,.15,'triangle');setTimeout(()=>beep(440,.15,'triangle'),120)},
+  win:()=>[523,659,784,1046].forEach((f,i)=>setTimeout(()=>beep(f,.2,'triangle',.1),i*130)),
+  fail:()=>[300,220,160].forEach((f,i)=>setTimeout(()=>beep(f,.25,'sawtooth',.06),i*160))};
+
+/* ───── 기록 (이 브라우저에만) ───── */
+let cleared={};
+try{cleared=JSON.parse(localStorage.getItem('rc-cleared')||'{}')}catch(e){}
+function saveClear(id,score){try{ if(!cleared[id]||score<cleared[id]) cleared[id]=score; localStorage.setItem('rc-cleared',JSON.stringify(cleared)); }catch(e){ cleared[id]=Math.min(cleared[id]||1e9,score);} }
+
+/* ───── 화면 ───── */
+const app=document.getElementById('app');
+let G=null, timer=null;
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+function home(){
+  clearInterval(timer); G=null;
+  app.innerHTML=`
+  <header class="hero">
+    <h1>문제해결 <em>강건너기</em></h1>
+    <p>규칙을 지키며 모두를 건너편으로. 막히면 되돌아가도 괜찮아요.</p>
+  </header>
+  <section class="levels">
+    ${LEVELS.map(L=>`
+    <button class="lv" data-lv="${L.no-1}" id="lv-${L.id}">
+      <div class="row"><span class="tag">단계 ${L.no} · ${esc(L.tag)}</span>${cleared[L.id]?`<span class="clear">✔ 클리어</span>`:''}</div>
+      <h3>${esc(L.title)}</h3>
+      <div class="cast" aria-hidden="true">${L.cast}</div>
+      <p class="rule">${esc(L.short)}</p>
+      <div class="row"><span class="stars">${'★'.repeat(L.no)}${'☆'.repeat(3-L.no)}</span><span class="tag">${L.mode==='bridge'?`최단 ${L.best}분`:`최소 ${L.best}번 이동`}</span></div>
+    </button>`).join('')}
+  </section>
+  <p class="tip"><b>진행 팁</b> · 빔프로젝터에 띄우고 팀마다 돌아가며 "다음 수"를 외치게 하세요. 틀리면 <b>한 수 되돌리기</b>로 다시. 성공하면 나오는 <b>교훈</b>과 <b>자소서 STAR 문장</b>으로 정리하고 다음 단계로 넘어가면 됩니다. 휴대폰에서도 돼요.</p>`;
+  app.querySelectorAll('.lv').forEach(b=>b.onclick=()=>{sfx.pick();start(+b.dataset.lv)});
+}
+
+function start(li){
+  const L=LEVELS[li];
+  G={L,li,pos:L.people.map(()=>0),boat:0,sel:[],moves:0,time:0,hist:[],busy:false,t0:Date.now(),hint:null,over:false};
+  clearInterval(timer); timer=setInterval(()=>{const el=document.getElementById('clock'); if(el&&G&&!G.over) el.textContent=fmt((Date.now()-G.t0)/1000)},500);
+  draw();
+}
+const fmt=s=>{s=Math.floor(s);return `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`};
+
+function tokenHTML(p,where){
+  const L=G.L, onBoatSide=G.pos[p.i]===G.boat;
+  const can = !G.busy && !G.over && (where==='boat' || onBoatSide);
+  const hint = G.hint && G.hint.some(h=>h.id===p.id) ? ' hint':'';
+  return `<button class="token ${can?'can':'off'}${hint}" data-p="${p.i}" id="tk-${p.id}" ${can?'':'aria-disabled="true"'}
+     aria-label="${esc(p.name)}${where==='boat'?' (배에서 내리기)':''}">
+     <span class="e" aria-hidden="true">${p.e}</span><span class="n">${esc(p.name)}</span>${p.t?`<span class="t">${p.t}분</span>`:''}</button>`;
+}
+
+function draw(){
+  const L=G.L, bridge=L.mode==='bridge';
+  const onBank=s=>L.people.filter(p=>G.pos[p.i]===s && !G.sel.includes(p.i));
+  const crew=G.sel.map(i=>L.people[i]);
+  const lamp=bridge?`<div class="lamp" title="손전등">🔦</div>`:'';
+  const timeLeft = bridge ? L.limit-G.time : 0;
+  app.innerHTML=`
+  <div class="bar">
+    <h2>${L.no}단계 · ${esc(L.title)}</h2>
+    <div class="stats">
+      <span class="stat"><small>이동</small>${G.moves}번</span>
+      ${bridge?`<span class="stat ${timeLeft<=3?'warn':''}"><small>걸린 시간</small>${G.time} / ${L.limit}분</span>`
+              :`<span class="stat"><small>최소</small>${L.best}번</span>`}
+      <span class="stat"><small>경과</small><span id="clock">${fmt((Date.now()-G.t0)/1000)}</span></span>
+    </div>
+  </div>
+  <p class="rules">${L.rules}</p>
+  <div class="board">
+    <div class="bank left"><h4>출발</h4>${G.boat===0?lamp:''}<div class="slots">${onBank(0).map(p=>tokenHTML(p,'bank')).join('')}</div></div>
+    <div class="river ${bridge?'bridge dark':''}" style="--lx:${G.boat===0?'18%':'82%'}">
+      <div class="boat ${G.boat===1?'at-right':''} ${bridge?'walk':''}" id="boat">
+        ${crew.map(p=>tokenHTML(p,'boat')).join('')}
+        <span class="cap">${bridge?'건널 사람':'배'} ${crew.length}/${L.cap}</span>
+      </div>
+    </div>
+    <div class="bank right"><h4>도착</h4>${G.boat===1?lamp:''}<div class="slots">${onBank(1).map(p=>tokenHTML(p,'bank')).join('')}</div></div>
+  </div>
+  <p class="msg" id="msg" role="status">${G.boat===0?'👉 출발 쪽 인물을 눌러 태우세요':'👈 도착 쪽 인물을 눌러 태우세요'}</p>
+  <div class="controls">
+    <button class="btn go" id="go" ${G.sel.length&&!G.busy?'':'disabled'}>${bridge?'🔦 건너기':'⛵ 출발!'}</button>
+    <button class="btn" id="undo" ${G.hist.length&&!G.busy?'':'disabled'}>↩ 한 수 되돌리기</button>
+    <button class="btn" id="hint">💡 힌트</button>
+    <button class="btn" id="reset">처음부터</button>
+    <button class="btn" id="home">단계 고르기</button>
+    <button class="btn" id="snd" aria-pressed="${sound}">${sound?'🔊':'🔇'}</button>
+  </div>`;
+  app.querySelectorAll('.token.can').forEach(b=>b.onclick=()=>toggle(+b.dataset.p));
+  document.getElementById('go').onclick=go;
+  document.getElementById('undo').onclick=undo;
+  document.getElementById('hint').onclick=hint;
+  document.getElementById('reset').onclick=()=>start(G.li);
+  document.getElementById('home').onclick=home;
+  document.getElementById('snd').onclick=()=>{sound=!sound;draw()};
+}
+const say=t=>{const m=document.getElementById('msg'); if(m) m.textContent=t;};
+
+function toggle(i){
+  if(G.busy||G.over) return;
+  G.hint=null;
+  const k=G.sel.indexOf(i);
+  if(k>=0){G.sel.splice(k,1);sfx.pick();draw();return;}
+  if(G.sel.length>=G.L.cap){draw();say(`${G.L.mode==='bridge'?'다리':'배'}에는 ${G.L.cap}명까지만!`);beep(200,.15,'square',.05);return;}
+  G.sel.push(i);sfx.pick();draw();
+}
+
+function go(){
+  const L=G.L; if(G.busy||!G.sel.length) return;
+  const crew=G.sel.map(i=>L.people[i]);
+  const why=L.canMove(crew); if(why){say(why);beep(200,.15,'square',.05);return;}
+  G.hist.push({pos:G.pos.slice(),boat:G.boat,moves:G.moves,time:G.time});
+  G.busy=true; G.hint=null; sfx.go();
+  const boatEl=document.getElementById('boat'); boatEl.classList.toggle('at-right');
+  const riv=boatEl.parentElement; riv.style.setProperty('--lx',G.boat===0?'82%':'18%');
+  app.querySelectorAll('.btn').forEach(b=>b.disabled=true);
+  const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  setTimeout(()=>{
+    const to=1-G.boat;
+    G.sel.forEach(i=>G.pos[i]=to); G.boat=to; G.sel=[]; G.moves++; G.busy=false;
+    if(L.mode==='bridge') G.time+=Math.max(...crew.map(p=>p.t));
+    draw();
+    const bad=L.check(sideIds(L,G.pos,0),L)||L.check(sideIds(L,G.pos,1),L);
+    if(bad){fail(bad);return;}
+    if(L.mode==='bridge'&&G.time>L.limit){fail(`${G.time}분이 걸렸어요. 제한 시간 ${L.limit}분 초과! 손전등 배터리가 꺼졌어요. 🪫`);return;}
+    if(G.pos.every(v=>v===1)) win();
+  }, reduce?50:850);
+}
+
+function undo(){
+  if(!G.hist.length||G.busy) return;
+  const h=G.hist.pop(); Object.assign(G,{pos:h.pos,boat:h.boat,moves:h.moves,time:h.time,sel:[],hint:null,over:false});
+  closeOver(); draw(); say('한 수 되돌렸어요. 다른 길을 찾아보세요!');
+}
+
+function hint(){
+  if(G.busy) return;
+  const L=G.L; G.sel=[];
+  const s=solve(L,G.pos,G.boat);
+  if(!s || (L.mode==='bridge' && G.time+s.cost>L.limit)){
+    draw(); say('지금 상태로는 성공이 어려워요. ↩ 되돌리기로 앞 수를 바꿔 보세요.'); return;}
+  G.hint=s.first; draw(); say(`💡 반짝이는 ${s.first.map(p=>p.name).join(' + ')}을(를) 태워 보세요. (남은 최소 ${L.mode==='bridge'?s.cost+'분':s.cost+'번'})`);
+}
+
+function overlay(html){
+  closeOver();
+  const o=document.createElement('div'); o.className='over'; o.id='over'; o.innerHTML=`<div class="card" role="dialog" aria-modal="true">${html}</div>`;
+  document.body.appendChild(o); return o;
+}
+function closeOver(){const o=document.getElementById('over'); if(o) o.remove();}
+
+function fail(reason){
+  G.over=true; clearInterval(timer); sfx.fail(); draw();
+  const o=overlay(`
+    <div class="big" aria-hidden="true">💦</div>
+    <h2 class="bad">앗, 실패!</h2>
+    <p>${esc(reason)}</p>
+    <p class="q">실패는 정보예요. 어떤 수가 문제였는지 찾았다면, 이미 한 걸음 나아간 거예요.</p>
+    <div class="actions">
+      <button class="btn" id="o-home">단계 고르기</button>
+      <button class="btn" id="o-reset">처음부터</button>
+      <button class="btn go" id="o-undo">↩ 한 수 되돌리기</button>
+    </div>`);
+  o.querySelector('#o-undo').onclick=()=>{undo(); restartClock();};
+  o.querySelector('#o-reset').onclick=()=>{closeOver();start(G.li)};
+  o.querySelector('#o-home').onclick=()=>{closeOver();home()};
+  o.querySelector('#o-undo').focus();
+}
+function restartClock(){clearInterval(timer);timer=setInterval(()=>{const el=document.getElementById('clock'); if(el&&G&&!G.over) el.textContent=fmt((Date.now()-G.t0)/1000)},500);}
+
+function win(){
+  const L=G.L; G.over=true; clearInterval(timer); sfx.win();
+  const score = L.mode==='bridge'?G.time:G.moves;
+  saveClear(L.id,score);
+  const perfect = score===L.best;
+  const S=['S 상황','T 과제','A 행동','R 결과'];
+  const next=LEVELS[G.li+1];
+  const o=overlay(`
+    <div class="big" aria-hidden="true">🎉</div>
+    <h2 class="ok">성공! ${L.mode==='bridge'?`${G.time}분`:`${G.moves}번`} 만에 건넜어요</h2>
+    <p>${perfect?'<b>최단 기록!</b> 완벽한 풀이예요.':`최단 기록은 <b>${L.best}${L.mode==='bridge'?'분':'번'}</b>이에요. 더 줄일 수 있을까요?`} · 걸린 시간 ${fmt((Date.now()-G.t0)/1000)}</p>
+    <div class="lesson">
+      <h3>오늘의 교훈 · ${esc(L.lesson.title)}</h3>
+      <p>${L.lesson.body}</p>
+      <p class="q">🙋 ${esc(L.lesson.q)}</p>
+    </div>
+    <div class="star-box">
+      <span class="hd">✍️ 이 경험을 자소서 문장(STAR)으로 바꾸면</span>
+      ${L.lesson.star.map((t,i)=>`<b>${S[i].split(' ')[0]}</b><span>${esc(t)}</span>`).join('')}
+    </div>
+    <div class="actions">
+      <button class="btn" id="o-home">단계 고르기</button>
+      <button class="btn" id="o-again">다시 하기</button>
+      ${next?`<button class="btn go" id="o-next">다음 단계 ▶</button>`:''}
+    </div>`);
+  o.querySelector('#o-home').onclick=()=>{closeOver();home()};
+  o.querySelector('#o-again').onclick=()=>{closeOver();start(G.li)};
+  if(next){o.querySelector('#o-next').onclick=()=>{closeOver();start(G.li+1)}; o.querySelector('#o-next').focus();}
+}
+
+document.addEventListener('keydown',e=>{
+  if(!G||G.busy) return;
+  if(e.key==='Escape'&&document.getElementById('over')) return;
+  if((e.key==='Enter'||e.key===' ')&&e.target===document.body){e.preventDefault();go();}
+  if((e.key==='z'||e.key==='Backspace')&&!document.getElementById('over')) undo();
+});
+
+home();
+})();
+</script>
+
+<a href="index.html" style="position:fixed;left:max(10px,env(safe-area-inset-left,0px));bottom:max(10px,env(safe-area-inset-bottom,0px));font:700 14px system-ui;background:#333;color:#fff;padding:8px 12px;border-radius:8px;text-decoration:none;opacity:.8;z-index:30">← 게임 목록</a>
