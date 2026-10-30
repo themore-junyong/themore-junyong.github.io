@@ -9,8 +9,8 @@
   - `codes/{코드}` = `{ name, on: true, perDay: 3, max: 100, until: "2026-12-31", used: 0 }` (준용이 콘솔에서 직접 만듦, 코드는 영문 대문자·숫자·- 4자 이상)
   - `use/{날짜}` 하루 사용 횟수 (자동)
   - 규칙은 전부 막음(서버 함수만 읽고 씀)
-- 비밀값: `ANTHROPIC_KEY` (Secret Manager에만, 저장소·메모에 쓰지 않음)
-- 모델 바꾸기: 함수 환경변수 `JASO_MODEL`, `JASO_EFFORT` (`functions/.env` 에 한 줄씩)
+- 비밀값: `GEMINI_KEY` 제미나이 API 키 (Secret Manager에만, 저장소·메모에 쓰지 않음)
+- 모델 바꾸기: `functions/.env` 에 `JASO_MODEL=모델이름` (기본 gemini-flash-latest)
 
 ## 배포 (준용 PC PowerShell, 한 줄씩)
 
@@ -18,6 +18,6 @@
 cd C:\Users\tobad\themore-tools-server
 npm.cmd --prefix functions install
 npx.cmd -y firebase-tools@latest login
-npx.cmd -y firebase-tools@latest functions:secrets:set ANTHROPIC_KEY
+npx.cmd -y firebase-tools@latest functions:secrets:set GEMINI_KEY
 npx.cmd -y firebase-tools@latest deploy --only functions,firestore:rules
 ```

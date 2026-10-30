@@ -1,17 +1,16 @@
 // 더모어 도구 서버: 초대코드가 있는 학생만 AI 자소서 초안을 받게 함.
-// 키는 코드에 없음 → `firebase functions:secrets:set ANTHROPIC_KEY` 로 넣음 (console.anthropic.com API 키)
+// 키는 코드에 없음 → `firebase functions:secrets:set GEMINI_KEY` 로 넣음 (aistudio.google.com 제미나이 API 키)
 // 학생 글은 저장하지 않고, 하루 횟수만 use/{날짜}에 셈.
 const { onCall, HttpsError } = require('firebase-functions/v2/https');
 const { defineSecret } = require('firebase-functions/params');
 const { initializeApp } = require('firebase-admin/app');
 const { getFirestore, FieldValue } = require('firebase-admin/firestore');
-const Anthropic = require('@anthropic-ai/sdk');
+const { GoogleGenAI, ApiError } = require('@google/genai');
 
 initializeApp();
 const db = getFirestore();
-const ANTHROPIC_KEY = defineSecret('ANTHROPIC_KEY');
-const MODEL = process.env.JASO_MODEL || 'claude-opus-5-5';
-const EFFORT = process.env.JASO_EFFORT || 'medium';
+const GEMINI_KEY = defineSecret('GEMINI_KEY');
+const MODEL = process.env.JASO_MODEL || 'gemini-flash-latest';
 const ALL_MAX = 300; // 모든 코드 합쳐 하루 최대 (요금 안전장치)
 
 const fail = (code, msg) => { throw new HttpsError(code, msg); };
@@ -80,7 +79,7 @@ function prompt(d) {
     '출력 형식: 항목마다 "## 1. 성장과정 (OOO자)"처럼 제목과 실제 글자 수를 쓰고 본문. 그 밖의 설명은 쓰지 마.');
 }
 
-exports.jasoDraft = onCall({ region: 'asia-northeast3', secrets: [ANTHROPIC_KEY], maxInstances: 5, timeoutSeconds: 300, memory: '512MiB' }, async req => {
+exports.jasoDraft = onCall({ region: 'asia-northeast3', secrets: [GEMINI_KEY], maxInstances: 5, timeoutSeconds: 300, memory: '512MiB' }, async req => {
   const uid = req.auth && req.auth.uid;
   if (!uid) fail('unauthenticated', '잠시 뒤 다시 열어 주세요');
   const { code, c } = await codeOf(req.data && req.data.code);
@@ -101,22 +100,20 @@ exports.jasoDraft = onCall({ region: 'asia-northeast3', secrets: [ANTHROPIC_KEY]
   });
   if (over) fail('resource-exhausted', over);
 
-  const client = new Anthropic({ apiKey: ANTHROPIC_KEY.value() });
+  const ai = new GoogleGenAI({ apiKey: GEMINI_KEY.value() });
   let r;
   try {
-    r = await client.beta.messages.create({
-      model: MODEL, max_tokens: 16000, output_config: { effort: EFFORT },
-      betas: ['server-side-fallback-2026-07-01'], fallbacks: 'default', // 안전 분류기가 거절하면 서버에서 다른 모델로 다시
-      messages: [{ role: 'user', content: prompt(d) }],
-    });
+    r = await ai.models.generateContent({ model: MODEL, contents: prompt(d), config: { maxOutputTokens: 8192 } });
   } catch (e) {
     console.error('jaso', e.status || '', String(e.message || e).slice(0, 200));
-    if (e instanceof Anthropic.RateLimitError) fail('resource-exhausted', '지금 요청이 많아요. 1분 뒤 다시 눌러 주세요');
+    if (e instanceof ApiError && e.status === 429) fail('resource-exhausted', '지금 요청이 많아요. 1분 뒤 다시 눌러 주세요');
     fail('unavailable', 'AI 연결이 잠시 안 돼요. 다시 눌러 주시거나 질문지 복사로 만들어 주세요');
   }
-  if (r.stop_reason === 'refusal') fail('failed-precondition', 'AI가 이 내용으로는 쓰지 않았어요. 입력을 고쳐 다시 해 보세요');
-  const text = r.content.filter(b => b.type === 'text').map(b => b.text).join('').trim();
+  const why = (r.candidates && r.candidates[0] && r.candidates[0].finishReason) || '';
+  if ((r.promptFeedback && r.promptFeedback.blockReason) || /SAFETY|PROHIBITED|BLOCKLIST|SPII/.test(why)) fail('failed-precondition', 'AI가 이 내용으로는 쓰지 않았어요. 입력을 고쳐 다시 해 보세요');
+  const text = (r.text || '').trim();
   if (!text) fail('unavailable', '초안을 만들지 못했어요. 다시 눌러 주세요');
-  console.log('jaso ok', code, r.model, r.usage && r.usage.input_tokens, r.usage && r.usage.output_tokens); // 비용 확인용 (글 내용은 안 남김)
-  return { text, cut: r.stop_reason === 'max_tokens', left: Math.max(0, per - mine - 1) };
+  const u = r.usageMetadata || {};
+  console.log('jaso ok', code, r.modelVersion, u.promptTokenCount, u.candidatesTokenCount); // 비용 확인용 (글 내용은 안 남김)
+  return { text, cut: why === 'MAX_TOKENS', left: Math.max(0, per - mine - 1) };
 });
