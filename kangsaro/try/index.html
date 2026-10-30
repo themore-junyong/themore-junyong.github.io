@@ -884,7 +884,7 @@ function vCJob(j){const A=appsOf(j.id),s=jobStats(j);
   <span class="mu sm">날짜·시간을 고치면 확정된 강사 달력에도 바로 바뀌고, 강사에게 변경 공지가 가요.</span>
   <span class="mu">${esc(j.교시)} · ${esc(j.대상)} · 강사료 ${feeLabel(j)} (강사에게 공개)</span>
   <label class="f">공고 내용<textarea data-act="jedit" data-k="desc" rows="4">${esc(j.desc||'')}</textarea></label>
-  <div class="card" style="background:var(--acs);gap:6px"><b>강사 초대 링크</b><span class="sm">함께할 강사에게 카톡으로 보내세요. 링크로 들어온 강사가 '함께할게요'를 누르면 지원자에 떠요. 칠하기나 '이 강사로 확정'으로 확정하면 돼요.</span>
+  <div class="card" style="background:var(--acs);gap:6px"><b>강의 일정 초대하기</b><span class="sm">함께하던 강사에게 이 링크를 카톡으로 보내세요. 링크로 들어온 강사가 '함께할게요'를 누르면 지원자에 떠요. 칠하기나 '이 강사로 확정'으로 확정하면 돼요.</span>
   <div class="row"><button class="btn pri sm" data-act="invCopy" data-j="${j.id}">초대 링크 복사</button>${jOpen(j)?`<button class="btn sm" data-act="invMode" data-j="${j.id}">${j.status==='초대'?'공개 모집으로 바꾸기':'초대 전용으로 바꾸기'}</button>`:''}</div>
   <span class="mu sm">${j.status==='초대'?'초대 전용: 공고 목록에 안 올라가고, 링크를 받은 강사만 볼 수 있어요.':'공개 모집: 공고 목록에도 올라가고, 링크로도 들어올 수 있어요.'}</span></div>
   ${jOpen(j)?`<button class="btn nv" data-act="close" data-j="${j.id}">모집 마감</button><span class="mu sm">마감하면 확정하지 않은 지원자는 미선정이 되고, 그 강사 달력에서 사라져요.</span>`:''}
