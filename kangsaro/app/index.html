@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<meta name="build" content="261030-0734">
+<meta name="build" content="261030-0738">
 <title>강사로</title>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#2563EB">
@@ -882,6 +882,7 @@ function vCJob(j){const A=appsOf(j.id),s=jobStats(j);
   return `<button class="btn sm" data-act="back">‹ 목록</button>
   ${j.hold?`<div class="alert"><b>확인 대기 · 강사에게 아직 안 보여요</b><br>${scamWhy(j)} 때문이에요. 표현을 고쳐 저장하면 바로 다시 검사해서 올라가요. 그대로 두면 운영자 확인 뒤 올라가요. 문의: tobadyclup@naver.com</div>`:''}${downByReports(j)?'<div class="alert"><b>강사 신고 3건으로 내려갔어요.</b> 운영자가 확인 중이에요. 문의: tobadyclup@naver.com</div>':''}
   <div class="card"><div class="row">${jChip(j)}<h2 class="sp">${esc(j.region)} ${esc(j.school)} ${esc(j.title)}</h2></div>
+  <div class="grid2"><label class="f">강의 제목<input data-act="jedit" data-k="title" value="${esc(j.title||'')}"></label><label class="f">학교(기관)<input data-act="jedit" data-k="school" value="${esc(j.school||'')}"></label><label class="f">지역<input data-act="jedit" data-k="region" value="${esc(j.region||'')}"></label></div>
   <div class="grid2"><label class="f">날짜 (쉼표로)<input data-act="jedit" data-k="dates" value="${j.dates.join(', ')}"></label><label class="f">시간<input data-act="jedit" data-k="time" value="${esc(j.time)}"></label></div>
   <span class="mu sm">날짜·시간을 고치면 확정된 강사 달력에도 바로 바뀌고, 강사에게 변경 공지가 가요.</span>
   <span class="mu">${esc(j.교시)} · ${esc(j.대상)} · 강사료 ${feeLabel(j)} (강사에게 공개)</span>
@@ -1234,6 +1235,7 @@ document.addEventListener('change',ev=>{const el=ev.target,D=el.dataset||{};
   if(D.act==='jedit'){const j=job(ui.jobId);const old=j[D.k];let v=el.value.trim();
     if(D.k==='dates'){v=v.split(/[,\s]+/).filter(x=>/^\d{4}-\d{2}-\d{2}$/.test(x)).sort();if(!v.length)return toast('날짜는 2026-11-18처럼 넣어 주세요');if(v.join()===old.join())return}else if(v===old)return;
     j[D.k]=v;if(['title','school','desc','fee'].includes(D.k))j.cleared=false;holdFix(j);const to=appsOf(j.id).filter(a=>a.status==='확정').map(a=>a.instId);
+    if(['title','school','region'].includes(D.k)){if(!v&&D.k!=='region'){el.value=old||'';return toast('비워 둘 수 없어요')}save();render();return toast('바꿨어요')}
     if(D.k==='desc'){if(to.length)j.notices.push({id:uid(),kind:'일반',text:`[공고 내용 변경] ${j.school} ${j.title} 공고 내용이 바뀌었어요. "공고 내용 보기"에서 확인해 주세요.`,at:new Date().toISOString(),to,reads:{}});save();render();return toast('공고 내용을 고쳤어요')}
     if(to.length)j.notices.push({id:uid(),text:`[일정 변경] ${j.school} ${j.title}: ${D.k==='dates'?'날짜':'시간'}이 ${D.k==='dates'?old.map(md).join('·'):old} → ${D.k==='dates'?v.map(md).join('·'):v}(으)로 바뀌었어요.`,at:new Date().toISOString(),to,reads:{}});
     save();render();toast(to.length?`바꿨어요. 확정 강사 ${to.length}명에게 변경 공지가 갔어요`:'바꿨어요')}
@@ -1269,6 +1271,6 @@ document.addEventListener('input',ev=>{if(ev.target.matches&&ev.target.matches('
 render();
 </script>
 <script src="../bot.js" defer></script>
-<script type="module" src="real.js?v=261030-0734"></script>
+<script type="module" src="real.js?v=261030-0738"></script>
 </body>
 </html>
