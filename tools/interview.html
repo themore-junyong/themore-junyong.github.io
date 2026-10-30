@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>AI 모의면접</title>
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap">
+<style>
+/* 흐름: 준비(코드·직무·방식·문항 수) → 면접(질문 → 답(타자·말하기) → 피드백+다음 질문) → 채점표 */
+:root{
+  --bg:#f6f6f6; --ink:#333; --soft:#6f7480; --card:#fff; --line:#e2e3e8; --field:#fbfbfc;
+  --blue:#4e6bf1; --blue-ink:#fff; --blue-soft:#e9edfe; --ok:#2e8b4c; --bad:#c8432f;
+  --f:"Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#16181d; --ink:#eceef2; --soft:#a3a8b5; --card:#1f2229; --line:#323642; --field:#1a1d23;
+  --blue:#7c93ff; --blue-ink:#10121a; --blue-soft:#262d4a; --ok:#5cc47c; --bad:#ff7a63; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#16181d; --ink:#eceef2; --soft:#a3a8b5; --card:#1f2229; --line:#323642; --field:#1a1d23;
+  --blue:#7c93ff; --blue-ink:#10121a; --blue-soft:#262d4a; --ok:#5cc47c; --bad:#ff7a63; color-scheme:dark}
+body{background:var(--bg);color:var(--ink);font-family:var(--f);font-size:16px;line-height:1.6;margin:0;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:720px;margin:0 auto;padding-block:20px 60px;display:flex;flex-direction:column;gap:16px}
+h1,h2,h3{margin:0;text-wrap:balance;line-height:1.3}
+h1{font-size:1.75rem;font-weight:900} h3{font-size:1.05rem;font-weight:700}
+p{margin:0} .soft{color:var(--soft)}
+button,input,textarea{font:inherit;color:inherit} button{cursor:pointer}
+:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+.top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.top a{color:var(--blue);font-weight:700;text-decoration:none}
+.brand small{letter-spacing:.12em;font-weight:700;color:var(--blue);font-size:.78rem}
+.card{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:18px;display:flex;flex-direction:column;gap:14px}
+.why{background:var(--blue-soft);border-radius:4px;padding:12px 14px;font-size:.95rem} .why b{color:var(--blue)}
+.note{font-size:.88rem;color:var(--soft)} .note.bad{color:var(--bad)} .note.ok{color:var(--ok)}
+.btns{display:flex;flex-wrap:wrap;gap:8px}
+.btn{border:1px solid var(--line);background:var(--card);border-radius:4px;padding:10px 16px;font-weight:700;color:var(--ink)}
+.btn.pri{background:var(--blue);color:var(--blue-ink);border-color:var(--blue)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.f{display:flex;flex-direction:column;gap:6px}
+.f label{font-weight:700} .f .hint{font-size:.85rem;color:var(--soft)}
+.f input,.f textarea{border:1px solid var(--line);background:var(--field);border-radius:4px;padding:10px 12px;width:100%;box-sizing:border-box}
+.f textarea{min-height:130px;resize:vertical}
+.seg{display:flex;flex-wrap:wrap;gap:6px}
+.seg button{border:1px solid var(--line);background:var(--field);border-radius:999px;padding:6px 14px;font-size:.95rem}
+.seg button[aria-pressed="true"]{background:var(--blue);border-color:var(--blue);color:var(--blue-ink);font-weight:700}
+.q{display:flex;gap:10px;align-items:flex-start}
+.q .who{flex:none;width:40px;height:40px;border-radius:50%;background:var(--blue);color:var(--blue-ink);display:flex;align-items:center;justify-content:center;font-size:1.3rem}
+.q .bub{background:var(--field);border:1px solid var(--line);border-radius:4px 14px 14px 14px;padding:12px 14px;font-size:1.08rem;font-weight:700;flex:1}
+.a{align-self:flex-end;background:var(--blue-soft);border-radius:14px 4px 14px 14px;padding:10px 14px;max-width:85%;white-space:pre-wrap;font-size:.95rem}
+.fb{border-left:4px solid var(--ok);background:var(--field);padding:8px 12px;font-size:.92rem}
+.no{font-weight:700;color:var(--blue);font-size:.9rem}
+.bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden} .bar i{display:block;height:100%;background:var(--blue)}
+.tm{font-variant-numeric:tabular-nums;font-weight:700}
+.tm.long{color:var(--bad)}
+.out{white-space:pre-wrap;background:var(--field);border:1px solid var(--line);border-radius:4px;padding:14px;line-height:1.75}
+.big{font-size:2.6rem;font-weight:900;text-align:center;color:var(--blue)}
+.rec{background:var(--bad)!important;border-color:var(--bad)!important;color:#fff!important}
+details summary{cursor:pointer;font-weight:700}
+@media print{.btns,.top a{display:none}}
+</style>
+</head><body>
+<div class="wrap" id="app"></div>
+<script type="module" src="ai.js"></script>
+<script>
+(function(){
+var app=document.getElementById('app');
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+var AI=window.TM_AI||null, CODE={code:''};
+try{CODE=JSON.parse(localStorage.getItem('tm-code')||'null')||CODE}catch(e){}
+var qc=(new URLSearchParams(location.search).get('c')||'').trim().toUpperCase();if(qc&&qc!==CODE.code)CODE={code:qc};
+function saveCode(){try{localStorage.setItem('tm-code',JSON.stringify(CODE))}catch(e){}}
+function check(){AI.check(CODE.code).then(function(r){CODE.name=r.name;CODE.ok=1;delete CODE.err;saveCode();render()},function(e){CODE.ok=0;CODE.err=e.message;render()})}
+window.addEventListener('tm-ai',function(){AI=window.TM_AI;if(CODE.code&&!CODE.ok)check();else render()});
+if(AI&&CODE.code&&!CODE.ok)check();
+
+var KINDS=[['mix','인성+직무'],['soft','인성 위주'],['job','직무 위주'],['press','압박 면접']], NS=[3,5,7];
+var S={job:'',company:'',kind:'mix',n:5,memo:'',hist:[],fb:[],end:'',stage:'set'};
+try{S=Object.assign(S,JSON.parse(localStorage.getItem('iv-v1')||'{}'))}catch(e){}
+function save(){try{localStorage.setItem('iv-v1',JSON.stringify(S))}catch(e){}}
+var busy=false, note='', t0=0, tick=null, rec=null, talking=false;
+var VOICE=!!(window.speechSynthesis), STT=window.SpeechRecognition||window.webkitSpeechRecognition;
+
+function head(){return '<div class="top"><div class="brand"><small>위듀케이션 · AI 모의면접</small></div><a href="./">← 도구 모음</a></div>'}
+function codeCard(){
+  if(CODE.ok)return '<p class="note ok">✔ 초대코드 '+esc(CODE.code)+(CODE.name?' · '+esc(CODE.name):'')+' <button class="btn" data-a="recode" style="padding:2px 8px;font-size:.8rem">바꾸기</button></p>';
+  return '<div class="card"><h3>초대코드</h3><p class="soft">선생님이 알려 준 코드를 넣어 주세요.</p><div class="btns"><input id="code" value="'+esc(CODE.code||'')+'" placeholder="예: OSAN-1106" style="flex:1;min-width:0;border:1px solid var(--line);background:var(--field);border-radius:4px;padding:10px 12px;text-transform:uppercase"><button class="btn pri" data-a="code">확인</button></div>'+(CODE.err?'<p class="note bad">'+esc(CODE.err)+'</p>':'')+(!AI?'<p class="note">연결 준비 중…</p>':'')+'</div>';
+}
+function setView(){
+  return head()+'<h1>🎤 AI 모의면접</h1><div class="why">AI 면접관이 <b>질문 → 내 답 → 짧은 피드백 → 꼬리질문</b>으로 진짜 면접처럼 이어 가요. 끝나면 <b>100점 채점표</b>와 고쳐 말하기 예시가 나와요. 답은 말로 해도 되고(마이크), 글로 써도 돼요.</div>'+codeCard()+
+  '<div class="card"><div class="f"><label for="job">지원 분야(직무)</label><input id="job" maxlength="80" value="'+esc(S.job)+'" placeholder="예: 반도체 장비 유지보수, 사무직, 조리"></div>'+
+  '<div class="f"><label for="company">회사 이름 <span class="soft">(선택)</span></label><input id="company" maxlength="80" value="'+esc(S.company)+'" placeholder="예: OO전자"></div>'+
+  '<div class="f"><label>면접 방식</label><div class="seg">'+KINDS.map(function(k){return '<button data-kind="'+k[0]+'" aria-pressed="'+(S.kind===k[0])+'">'+k[1]+'</button>'}).join('')+'</div></div>'+
+  '<div class="f"><label>질문 수</label><div class="seg">'+NS.map(function(n){return '<button data-n="'+n+'" aria-pressed="'+(S.n===n)+'">'+n+'개</button>'}).join('')+'</div></div>'+
+  '<div class="f"><label for="memo">면접관에게 알려 줄 내 정보 <span class="soft">(선택)</span></label><textarea id="memo" maxlength="600" style="min-height:80px" placeholder="예: 전기과 3학년, 전기기능사 취득, 현장실습 2주 경험">'+esc(S.memo)+'</textarea><span class="hint">이름·연락처 같은 개인정보는 쓰지 마세요.</span></div>'+
+  '<button class="btn pri" data-a="start"'+(CODE.ok&&!busy?'':' disabled')+'>면접 시작</button>'+(busy?'<p class="note">면접관이 들어오는 중…</p>':'')+(note?'<p class="note bad">'+esc(note)+'</p>':'')+'</div>'+
+  '<div class="card"><h3>면접 잘 보는 3가지</h3><ol style="margin:0;padding-left:20px"><li><b>결론 먼저</b>: "네, 있습니다. 그때…"</li><li><b>장면 하나</b>: 언제·어디서·무엇을·숫자</li><li><b>마무리 한 줄</b>: "그래서 입사하면 ~하겠습니다"</li></ol></div>';
+}
+function ivView(){
+  var n=S.hist.length, cur=S.hist[n-1], h=head()+'<div class="no">질문 '+n+' / '+S.n+' · '+esc(S.job)+(S.company?' · '+esc(S.company):'')+'</div><div class="bar"><i style="width:'+((n-1)/S.n*100)+'%"></i></div>';
+  if(n>1){h+='<details><summary>지난 질문과 답 보기 ('+(n-1)+')</summary><div class="card" style="margin-top:8px">';
+    for(var i=0;i<n-1;i++)h+='<div class="q"><div class="who">🧑‍💼</div><div class="bub" style="font-size:.95rem">'+esc(S.hist[i].q)+'</div></div><div class="a">'+esc(S.hist[i].a)+'</div>'+(S.fb[i+1]?'<div class="fb">'+esc(S.fb[i+1])+'</div>':'');
+    h+='</div></details>';}
+  if(S.fb[n-1])h+='<div class="fb"><b>면접관 피드백</b><br>'+esc(S.fb[n-1])+'</div>';
+  h+='<div class="card"><div class="q"><div class="who">🧑‍💼</div><div class="bub">'+esc(cur.q)+'</div></div>'+
+   (VOICE?'<div class="btns"><button class="btn" data-a="say">🔊 질문 다시 듣기</button></div>':'')+
+   '<div class="f"><label for="ans">내 답 <span class="tm" id="tm"></span></label><textarea id="ans" maxlength="800" placeholder="결론 먼저 → 장면 하나 → 마무리 한 줄">'+esc(cur.a||'')+'</textarea><span class="hint">1분 안팎(200~350자)이 좋아요.'+(STT?' 🎙 버튼을 누르고 말하면 글로 받아 적어요.':'')+'</span></div>'+
+   '<div class="btns">'+(STT?'<button class="btn'+(talking?' rec':'')+'" data-a="mic">'+(talking?'⏹ 그만 말하기':'🎙 말로 답하기')+'</button>':'')+
+   '<button class="btn pri" data-a="next"'+(busy?' disabled':'')+'>'+(n>=S.n?'답하고 채점받기':'답하고 다음 질문')+'</button></div>'+
+   (busy?'<p class="note">'+(n>=S.n?'면접관이 채점표를 쓰는 중… (20~40초)':'면접관이 생각하는 중…')+'</p>':'')+(note?'<p class="note bad">'+esc(note)+'</p>':'')+
+   '<div class="btns"><button class="btn" data-a="quit" style="font-size:.85rem;padding:6px 12px">여기서 끝내고 채점</button><button class="btn" data-a="reset" style="font-size:.85rem;padding:6px 12px">처음부터</button></div></div>';
+  return h;
+}
+function endView(){
+  var m=/총점\s*[:：]\s*(\d+)/.exec(S.end), sc=m?m[1]:'';
+  var h=head()+'<h1>📋 면접 채점표</h1><p class="soft">'+esc(S.job)+(S.company?' · '+esc(S.company):'')+' · 질문 '+S.hist.filter(function(x){return x.a}).length+'개</p>';
+  if(sc)h+='<div class="card"><div class="big">'+sc+'점</div></div>';
+  h+='<div class="card"><div class="out">'+esc(S.end.replace(/^총점.*\n?/,''))+'</div><p class="note">AI 면접관의 연습용 평가예요. 실제 회사의 평가 기준과는 다를 수 있어요.</p></div>'+
+   '<div class="card"><h3>면접 기록</h3>'+S.hist.map(function(x,i){return x.a?'<div class="q"><div class="who">🧑‍💼</div><div class="bub" style="font-size:.95rem">'+esc(x.q)+'</div></div><div class="a">'+esc(x.a)+'</div>'+(S.fb[i+1]?'<div class="fb">'+esc(S.fb[i+1])+'</div>':''):''}).join('')+'</div>'+
+   '<div class="btns"><button class="btn pri" data-a="copy">채점표 복사</button><button class="btn" data-a="again">같은 직무로 다시</button><button class="btn" data-a="reset">새로 하기</button></div>';
+  return h;
+}
+function render(){
+  stopTick();
+  app.innerHTML=S.stage==='iv'&&S.hist.length?ivView():S.stage==='end'&&S.end?endView():setView();
+  if(S.stage==='iv'&&S.hist.length){var a=document.getElementById('ans');t0=Date.now();if(a){a.addEventListener('input',function(){S.hist[S.hist.length-1].a=a.value;save()})}tick=setInterval(showT,1000);showT()}
+}
+function showT(){var el=document.getElementById('tm');if(!el)return;var s=Math.floor((Date.now()-t0)/1000);el.textContent='⏱ '+Math.floor(s/60)+':'+String(s%60).padStart(2,'0');el.className='tm'+(s>90?' long':'')}
+function stopTick(){if(tick)clearInterval(tick);tick=null}
+function say(t){if(!VOICE)return;try{speechSynthesis.cancel();var u=new SpeechSynthesisUtterance(t);u.lang='ko-KR';u.rate=1;speechSynthesis.speak(u)}catch(e){}}
+function parse(t){var q=/질문\s*[:：]\s*([\s\S]+)/.exec(t),f=/피드백\s*[:：]\s*([\s\S]*?)(?=\n\s*질문\s*[:：]|$)/.exec(t);
+  return {q:(q?q[1]:t).trim().split('\n')[0].trim(),f:f?f[1].trim():''}}
+function call(mode){busy=true;note='';render();
+  return AI.lab({code:CODE.code,mode:mode,job:S.job,company:S.company,kind:S.kind,memo:S.memo,hist:S.hist.map(function(x){return{q:x.q,a:x.a||''}})}).finally(function(){busy=false})}
+function finish(){S.hist=S.hist.filter(function(x){return (x.a||'').trim()});if(!S.hist.length){note='답을 하나 이상 해 주세요';render();return}
+  call('ivend').then(function(r){S.end=r.text;S.stage='end';save()},function(e){note=e.message}).then(function(){render();window.scrollTo(0,0)})}
+function mic(){
+  if(talking&&rec){rec.stop();return}
+  var a=document.getElementById('ans'),base=a.value?a.value.replace(/\s*$/,' '):'';
+  rec=new STT();rec.lang='ko-KR';rec.interimResults=true;rec.continuous=true;
+  rec.onresult=function(e){var t='';for(var i=0;i<e.results.length;i++)t+=e.results[i][0].transcript;var el=document.getElementById('ans');if(el){el.value=base+t;S.hist[S.hist.length-1].a=el.value;save()}};
+  rec.onend=function(){talking=false;var b=document.querySelector('[data-a="mic"]');if(b){b.classList.remove('rec');b.textContent='🎙 말로 답하기'}};
+  rec.onerror=function(e){note=e.error==='not-allowed'?'마이크를 허용해 주세요':'';};
+  try{rec.start();talking=true;var b=document.querySelector('[data-a="mic"]');b.classList.add('rec');b.textContent='⏹ 그만 말하기'}catch(e){}
+}
+function readSet(){['job','company','memo'].forEach(function(k){var el=document.getElementById(k);if(el)S[k]=el.value.trim()});save()}
+app.addEventListener('click',function(e){
+  var t=e.target.closest('[data-a],[data-kind],[data-n]');if(!t)return;var d=t.dataset;
+  if(d.kind){readSet();S.kind=d.kind;save();render();return}
+  if(d.n){readSet();S.n=+d.n;save();render();return}
+  if(d.a==='code'){readSet();CODE={code:(document.getElementById('code').value||'').trim().toUpperCase()};saveCode();if(AI)check();render();return}
+  if(d.a==='recode'){readSet();CODE={code:''};saveCode();render();return}
+  if(d.a==='start'){readSet();if(!S.job){note='지원 분야를 먼저 적어 주세요';render();return}
+    S.hist=[];S.fb=[];S.end='';call('iv').then(function(r){var p=parse(r.text);S.hist=[{q:p.q,a:''}];S.fb=[''];S.stage='iv';save();say(p.q)},function(er){note=er.message}).then(render);return}
+  if(d.a==='say'){say(S.hist[S.hist.length-1].q);return}
+  if(d.a==='mic'){mic();return}
+  if(d.a==='next'){if(rec&&talking)rec.stop();var cur=S.hist[S.hist.length-1];cur.a=(document.getElementById('ans').value||'').trim();save();
+    if(!cur.a){note='답을 먼저 해 주세요 (모르면 "잘 모르겠습니다"도 괜찮아요)';render();return}
+    if(S.hist.length>=S.n){finish();return}
+    call('iv').then(function(r){var p=parse(r.text);S.fb.push(p.f);S.hist.push({q:p.q,a:''});save();say(p.q)},function(er){note=er.message}).then(function(){render();window.scrollTo(0,0)});return}
+  if(d.a==='quit'){if(rec&&talking)rec.stop();finish();return}
+  if(d.a==='reset'){S.hist=[];S.fb=[];S.end='';S.stage='set';save();render();return}
+  if(d.a==='again'){S.hist=[];S.fb=[];S.end='';S.stage='set';save();render();return}
+  if(d.a==='copy'){var txt='[AI 모의면접 채점표] '+S.job+'\n\n'+S.end;(navigator.clipboard?navigator.clipboard.writeText(txt):Promise.reject()).then(function(){t.textContent='복사됨 ✔'},function(){t.textContent='복사 안 됨'});return}
+});
+render();
+})();
+</script>
+</body></html>
