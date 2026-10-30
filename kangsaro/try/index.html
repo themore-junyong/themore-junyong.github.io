@@ -368,7 +368,8 @@ function opGrid(j,cf,names,byD){const P=j.plan.slots,B=ui.brush||'',PN=opPanels(
   ${X.rows.map(r=>`<tr><th style="padding:2px"><button class="btn sm" data-act="paint" data-j="${j.id}" data-g="${gi}" data-rv="${esc(r)}" style="width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${short(r)}</button></th>${X.cols.map(v=>{const x=P.find(y=>X.in(y)&&X.cO(y)===v&&X.rO(y)===r);if(!x)return '<td style="background:var(--bg)"></td>';const w=who(x),hit=B&&val(x)===B;
     return `<td style="padding:2px"><button class="btn sm" data-act="paint" data-j="${j.id}" data-s="${x.id}" style="width:100%;height:${CH}px;padding:2px 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;${w?'background:var(--sf)':'background:var(--warns,#FDECE3);color:var(--r2)'};${hit?'outline:2px solid var(--ac)':''}">${w?esc(w)+(x.sub||x.subNm?'<span class="mu">+보조</span>':''):'미정'}${X.memo&&x.memo?`<span class="mu" style="display:block;font-size:11px;overflow:hidden;text-overflow:ellipsis">${esc(x.memo)}</span>`:''}</button></td>`}).join('')}</tr>`).join('')}
   </tbody></table></div>`}).join('')}
-  ${[['grid','시간표','반·날짜별'],['inst','강사별 배정표','강사 이름순']].map(([k,n,h])=>`<div class="row" style="flex-wrap:wrap;gap:4px"><b class="sm" style="min-width:92px">${n} <span class="mu">(${h})</span></b><button class="btn sm" data-act="opPng" data-j="${j.id}" data-k="${k}">⬇ 이미지</button><button class="btn sm" data-act="opPng" data-j="${j.id}" data-k="${k}" data-n="1">공지에 넣기</button>${k==='inst'?`<button class="btn sm" data-act="opXls" data-j="${j.id}" data-k="inst">⬇ 엑셀</button>`:''}</div>`).join('')}`}
+  <div class="row" style="flex-wrap:wrap;gap:4px"><b class="sm">시간표</b><button class="btn sm" data-act="opPng" data-j="${j.id}" data-k="grid">⬇ 이미지</button><button class="btn sm" data-act="opPng" data-j="${j.id}" data-k="grid" data-n="1">공지에 넣기</button><button class="btn sm" data-act="opXls" data-j="${j.id}" data-k="inst">⬇ 강사별 엑셀 (정산용)</button></div>
+  <span class="mu sm">시간표 모양은 강의에 맞게 저절로 바뀌어요. 여러 날 운영은 날짜별 표, 하루에 여러 반은 프로그램·학년별 반 목록으로 나와요.</span>`}
 // 시간표·강사별 배정표를 엑셀(.xls)로. 색·테두리가 그대로 보이게 표(HTML)로 만듦
 function opXls(j,k){const P=j.plan.slots,ds=[...new Set(P.map(x=>x.d))].sort(),who=x=>x.inst?inst(x.inst).name:x.nm||'',sub=x=>x.sub?inst(x.sub).name:x.subNm||'';
   const td='border:1px solid #999;padding:4px 8px;vertical-align:middle;text-align:center',th=td+';background:#DCE6F8;font-weight:bold',
@@ -960,7 +961,8 @@ function sheetNewJob(p){p=p||{};const N=['프로필','교안','강사카드','�
   <button class="btn" data-act="bulkJobs">📋 엑셀에서 여러 건 한 번에 올리기</button>
   <label class="f">학교 요청이나 기존 공고를 붙여 넣으면 채워져요<textarea id="jRaw" rows="4">${esc(p.raw||'')}</textarea></label><button class="btn" data-act="jparse">읽기</button>
   <div class="grid2"><label class="f">강의<input id="jTitle" value="${esc(p.title||'')}"></label><label class="f">학교·기관<input id="jSchool" value="${esc(p.school||'')}"></label>
-  <label class="f">지역<input id="jRegion" value="${esc(p.region||'')}"></label><label class="f">날짜 고르기<input id="jPick" type="date" data-act="jpick"></label></div>
+  <label class="f">지역<input id="jRegion" value="${esc(p.region||'')}"></label></div>
+  ${(ui.jcal={ym:((p.dates||[])[0]||todayIso()).slice(0,7),mode:'day',start:'',we:true},'')}<div class="f"><span>날짜 고르기</span><div id="jCal">${jCalHtml((p.dates||[]))}</div></div>
   <input type="hidden" id="jDates" value="${esc((p.dates||[]).join(', '))}"><div class="row" id="jDateList">${jDateChips(p.dates||[])}</div><div id="jWarn"></div><div class="grid2">
   ${(()=>{const m=String(p.time||'').match(/(\d{1,2}):(\d{2})\s*[~\-–]\s*(\d{1,2}):(\d{2})/),z=(h,mi)=>String(h).padStart(2,'0')+':'+mi;const a=m?z(m[1],m[2]):'',b=m?z(m[3],m[4]):'';
     return `<div class="f"><span>시간 <span class="mu sm">(눌러서 고르기)</span></span><div class="row" style="gap:6px;align-items:center"><input type="time" id="jT1" step="600" value="${a}" style="flex:1"><span>~</span><input type="time" id="jT2" step="600" value="${b}" style="flex:1"></div><input type="hidden" id="jTime" value="${a&&b?a+'~'+b:''}"></div>
@@ -971,6 +973,16 @@ function sheetNewJob(p){p=p||{};const N=['프로필','교안','강사카드','�
   <p class="mu sm">강사료는 공고에 공개돼요. 공개 공고에 지원이 더 많이 와요.</p>
   <button class="btn pri" data-act="jsave">등록하고 모집 시작</button>`)}
 
+// 새 공고 달력: 하루씩 누르거나, '기간'에서 첫날→끝날을 눌러 한 번에 (주말 빼기 기본). 닫히지 않음
+function jCalHtml(ds){const C=ui.jcal,[y,m]=C.ym.split('-').map(Number),first=new Date(y,m-1,1),n=new Date(y,m,0).getDate(),pad=first.getDay(),iso=d=>`${C.ym}-${String(d).padStart(2,'0')}`,T=todayIso();
+  const cells=[...Array(pad).fill(''),...Array.from({length:n},(_,i)=>i+1)];
+  return `<div class="card" style="padding:8px;gap:6px"><div class="row" style="gap:4px;flex-wrap:wrap"><button type="button" class="btn sm ${C.mode==='day'?'pri':''}" data-act="jcMode" data-v="day">하루씩</button><button type="button" class="btn sm ${C.mode==='range'?'pri':''}" data-act="jcMode" data-v="range">기간 (첫날→끝날)</button>${C.mode==='range'?`<label class="sm"><input type="checkbox" id="jcWe" ${C.we?'checked':''}> 주말 빼기</label>`:''}</div>
+  ${C.mode==='range'?`<span class="sm" style="color:var(--ac)">${C.start?`${mdK(C.start)}부터예요. 끝날을 누르세요`:'첫날을 누르세요'}</span>`:''}
+  <div class="row" style="justify-content:space-between"><button type="button" class="btn sm" data-act="jcMon" data-v="-1">‹</button><b>${y}년 ${m}월</b><button type="button" class="btn sm" data-act="jcMon" data-v="1">›</button></div>
+  <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;text-align:center">${['일','월','화','수','목','금','토'].map((w,i)=>`<span class="sm ${i===0?'':'mu'}" style="${i===0?'color:var(--r2)':''}">${w}</span>`).join('')}
+  ${cells.map(d=>{if(!d)return '<span></span>';const v=iso(d),on=ds.includes(v),st=C.start===v,dw=(pad+d-1)%7;return `<button type="button" class="btn sm" data-act="jcDay" data-d="${v}" style="padding:6px 0;${on?'background:var(--ac);color:#fff;border-color:var(--ac)':st?'outline:2px solid var(--ac)':''};${!on&&dw===0?'color:var(--r2)':''};${v<T&&!on?'opacity:.45':''}">${d}</button>`}).join('')}</div></div>`}
+function jSetDates(ds){ds=[...new Set(ds)].sort();$('#jDates').value=ds.join(', ');$('#jDateList').innerHTML=jDateChips(ds);$('#jCal').innerHTML=jCalHtml(ds);jWarn()}
+const jDatesNow=()=>$('#jDates').value.split(/[,\s]+/).filter(x=>/^\d{4}-\d{2}-\d{2}$/.test(x));
 function jDateChips(ds){return ds.length?ds.map(d=>`<button class="btn sm" data-act="jdel" data-d="${d}" aria-label="${mdK(d)} 빼기">${mdK(d)}(${dowOf(d)}) ✕</button>`).join(''):'<span class="mu sm">날짜를 고르면 여기에 요일과 함께 보여요. 여러 날이면 계속 고르세요.</span>'}
 function jWarn(){const ds=$('#jDates').value.split(/[,\s]+/).filter(x=>/^\d{4}-\d{2}-\d{2}$/.test(x));$('#jWarn').innerHTML=dateWarn(ds).map(w=>`<div class="alert">${esc(w)}</div>`).join('')}
 // 이미지는 긴 변 1200px JPEG로 줄여 저장 (체험판은 기기 저장 공간이 작음)
@@ -1144,7 +1156,14 @@ document.addEventListener('click',async ev=>{
     save();closeSheet();ui.tab='cjobs';ui.jobId=null;render();return toast(`${R.length}건 등록했어요${open?'. 강사 공고 목록에 바로 올라가요':''}`)}
   if(A==='jparse'){const raw=$('#jRaw').value,r=parseNotice(raw);const feeV=feeOf(raw),fee=[0,feeV?String(feeV):'',''];
     sheetNewJob({raw,desc:raw,title:r.강의명,school:r.학교명,region:r.지역,dates:r.dates,time:r.시간,per:r.교시,for:r.대상,fee:fee[1]?(+fee[1].replace(/,/g,''))*(fee[2]?10000:1):''});jWarn();return toast('읽었어요. 빈칸만 확인하세요')}
-  if(A==='jdel'){const ds=$('#jDates').value.split(/[,\s]+/).filter(x=>x&&x!==D.d);$('#jDates').value=ds.join(', ');$('#jDateList').innerHTML=jDateChips(ds);return jWarn()}
+  if(A==='jdel')return jSetDates(jDatesNow().filter(x=>x!==D.d));
+  if(A==='jcMode'){ui.jcal.mode=D.v;ui.jcal.start='';$('#jCal').innerHTML=jCalHtml(jDatesNow());return}
+  if(A==='jcMon'){const [y,m]=ui.jcal.ym.split('-').map(Number),d=new Date(y,m-1+(+D.v),1);ui.jcal.ym=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;$('#jCal').innerHTML=jCalHtml(jDatesNow());return}
+  if(A==='jcDay'){const C=ui.jcal,ds=jDatesNow();
+    if(C.mode==='day')return jSetDates(ds.includes(D.d)?ds.filter(x=>x!==D.d):[...ds,D.d]);
+    if(!C.start){C.start=D.d;$('#jCal').innerHTML=jCalHtml(ds);return}
+    let [a,b]=[C.start,D.d].sort(),add=[];for(let d=a;d<=b;d=addDays(d,1)){const w=new Date(d+'T00:00').getDay();if(!(C.we&&(w===0||w===6)))add.push(d)}
+    C.start='';jSetDates([...ds,...add]);return toast(`${add.length}일을 넣었어요`)}
   if(A==='jsave'){const g=id=>$('#'+id).value.trim();const dates=g('jDates').split(/[,\s]+/).filter(x=>/^\d{4}-\d{2}-\d{2}$/.test(x)).sort();
     const miss=[!g('jTitle')&&'강의',!dates.length&&'날짜',!/^\d{2}:\d{2}~\d{2}:\d{2}$/.test(g('jTime'))&&'시간(시작·끝 고르기)',!g('jPer')&&'교시',!g('jFor')&&'대상',!(g('jSchool')&&g('jRegion'))&&'학교·지역',!+g('jFee')&&'강사료'].filter(Boolean);
     if(miss.length)return toast('빠졌어요: '+miss.join(', '));
@@ -1156,6 +1175,7 @@ document.addEventListener('click',async ev=>{
 document.addEventListener('toggle',ev=>{const el=ev.target;if(el.dataset&&el.dataset.act==='readNotices'&&el.open){const j=job(el.dataset.j),id=meId();let ch=0;for(const n of j.notices)if((n.to||[]).includes(id)&&!n.reads[id]){n.reads[id]=new Date().toISOString();ch++}if(ch){save();const un=unreadCount();const nb=$('[data-tab="jobs"]');if(nb)nb.innerHTML='공고'+(un?`<span class="dot">${un}</span>`:'')}}},true);
 document.addEventListener('change',ev=>{const el=ev.target,D=el.dataset||{};
   if(el.id==='who'){S.me=el.value;ui.jobId=null;ui.tab=NAV[meRole()][0][0];save();render();return toast(el.options[el.selectedIndex].text+'(으)로 보고 있어요')}
+  if(el.id==='jcWe'){ui.jcal.we=el.checked;return}
   if(D.act==='jpick'&&el.value){const ds=[...new Set([...$('#jDates').value.split(/[,\s]+/).filter(Boolean),el.value])].sort();$('#jDates').value=ds.join(', ');$('#jDateList').innerHTML=jDateChips(ds);el.value='';jWarn();return}
   if(D.chg==='opFee'){const j=job(D.j);j.feeMode=el.value;planTouch(j);return}
   if(D.chg==='opAmt'){const j=job(D.j),v=+el.value||0;if(j.feeMode==='per'){j.feePer=v;const ns=j.plan.slots.map(x=>+x.n||perN(x.per)).sort((a,b)=>a-b);j.fee=v*(ns[ns.length>>1]||1)}else j.fee=v;holdFix(j);planTouch(j);return}
