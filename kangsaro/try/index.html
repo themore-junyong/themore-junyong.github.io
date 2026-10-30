@@ -352,7 +352,7 @@ function opGrid(j,cf,names,byD){const P=j.plan.slots,B=ui.brush||'',rows=[...new
     ${B?`<span class="sm">지금: <b>${B==='__clear'?'지우개 (칸 비우기)':esc(B.startsWith('nm:')?B.slice(3):inst(B).name)}</b></span>`:''}</div>
   <div style="overflow-x:auto"><table class="sm" style="border-collapse:collapse;min-width:100%"><thead><tr><th></th>${byD.map(d=>`<th><button class="btn sm" data-act="paint" data-j="${j.id}" data-d="${d}" style="white-space:nowrap">${md(d)}(${dowOf(d)})</button></th>`).join('')}</tr></thead><tbody>
   ${rows.map(r=>`<tr><th style="text-align:left"><button class="btn sm" data-act="paint" data-j="${j.id}" data-r="${esc(r)}" style="text-align:left;white-space:nowrap">${short(r)}</button></th>${byD.map(d=>{const x=P.find(y=>y.d===d&&rowKey(y)===r);if(!x)return '<td style="background:var(--bg)"></td>';const w=who(x),hit=B&&val(x)===B;
-    return `<td style="padding:2px"><button class="btn sm" data-act="paint" data-j="${j.id}" data-s="${x.id}" style="width:100%;min-width:64px;white-space:nowrap;${w?'background:var(--sf)':'background:var(--warns,#FDECE3);color:var(--r2)'};${hit?'outline:2px solid var(--ac)':''}">${w?esc(w)+(x.sub||x.subNm?'<span class="mu">+보조</span>':''):'미정'}</button></td>`}).join('')}</tr>`).join('')}
+    return `<td style="padding:2px"><button class="btn sm" data-act="paint" data-j="${j.id}" data-s="${x.id}" style="width:100%;min-width:64px;white-space:nowrap;${w?'background:var(--sf)':'background:var(--warns,#FDECE3);color:var(--r2)'};${hit?'outline:2px solid var(--ac)':''}">${w?esc(w)+(x.sub||x.subNm?'<span class="mu">+보조</span>':''):'미정'}${x.memo?`<br><span class="mu" style="font-size:11px">${esc(x.memo.slice(0,10))}</span>`:''}</button></td>`}).join('')}</tr>`).join('')}
   </tbody></table></div>`}
 // 칸 하나에 강사 넣기 (지원자면 확정). 확정한 사람 수를 돌려줌
 function assignSlot(j,x,k,v){const nk=k==='inst'?'nm':'subNm';
@@ -857,7 +857,7 @@ const aiHelp=k=>`<details class="sm"><summary><b>🤖 AI로 표 만들기</b> (�
   <li>AI가 만든 표를 통째로 복사해서 ${k==='co'?'위 칸':'아래 칸'}에 붙여 넣어요. 표 모양 그대로(| 줄) 붙여도 읽어요.</li><li>${k==='co'?'미리 보기로 확인하고 등록해요.':"'붙여 넣은 일정 가져오기'를 눌러요."} AI가 틀린 칸은 나중에 일정을 눌러 고치면 돼요.</li></ol>
   <button class="btn sm" data-act="aiAsk" data-k="${k}">부탁 문구 복사</button></details>`;
 // 제목 줄이 있으면 열 이름으로, 없으면 날짜·지역·학교·강의·시간·교시·대상·강사료·내용 순서로 읽음
-const BK=[['d',/날짜|일자|일시|강의일|교육일|출강일/],['time',/시간/],['fee',/강사료|강사비|강의료|금액|단가|페이|사례비/],['per',/교시|차시/],['for',/대상|학년|인원/],['school',/학교|기관|장소|교육처/],['region',/지역|시군|시·군/],['title',/강의|과목|주제|프로그램|교육명|과정/],['desc',/내용|비고|메모|참고/],['st',/상태|진행/]];
+const BK=[['sub',/보조/],['inst',/^강사$|^강사\s*(이름|명)|담당\s*강사|배정/],['cls',/^반$|반\s*이름|반명|학급/],['d',/날짜|일자|일시|강의일|교육일|출강일/],['time',/시간/],['fee',/강사료|강사비|강의료|금액|단가|페이|사례비/],['per',/교시|차시/],['for',/대상|학년|인원/],['school',/학교|기관|장소|교육처/],['region',/지역|시군|시·군/],['title',/강의|과목|주제|프로그램|교육명|과정/],['desc',/내용|비고|메모|참고/],['st',/상태|진행/]];
 const BK_ORDER=['d','region','school','title','time','per','for','fee','desc'];
 function bulkParse(raw){const L=String(raw||'').replace(/\r/g,'').replace(/^```\w*$/gm,'').split('\n').filter(x=>x.trim()&&!/^\s*\|?\s*:?-{2,}/.test(x));if(!L.length)return [];
   const sp=x=>x.includes('\t')?x.split('\t'):/^\s*\|/.test(x)?x.trim().replace(/^\||\|$/g,'').split('|').map(c=>c.trim()):x.split(/\s*,\s*(?=(?:[^"]*"[^"]*")*[^"]*$)/).map(c=>c.replace(/^"|"$/g,''));
@@ -866,16 +866,25 @@ function bulkParse(raw){const L=String(raw||'').replace(/\r/g,'').replace(/^```\
   return rows.map(ln=>{const c=sp(ln),o={};cols.forEach((k,i)=>{if(k&&c[i]!=null&&!o[k])o[k]=String(c[i]).trim()});
     const P=parseNotice((o.d||'')+'\n'+(o.time||''));const fv=String(o.fee||'').replace(/[^\d.만]/g,'');let fee=parseFloat(fv.replace('만',''))||0;if(/만/.test(fv)||fee&&fee<=50)fee*=1e4;
     const region=o.region||Object.keys(GEO).find(k=>`${o.school||''} ${o.title||''}`.includes(k))||'';
-    const j={title:o.title||'',school:o.school||'',region,dates:P.dates,time:P.시간||o.time||'',교시:o.per||'',대상:o.for||'',fee:Math.round(fee),desc:o.desc||'',st:o.st||''};
+    const j={title:o.title||'',school:o.school||'',region,dates:P.dates,time:P.시간||o.time||'',교시:o.per||'',대상:o.for||'',fee:Math.round(fee),desc:o.desc||'',st:o.st||'',cls:o.cls||'',inst:o.inst||'',sub:o.sub||''};
     j.miss=[!j.dates.length&&'날짜',!j.title&&'강의',!j.school&&'학교',!j.region&&'지역',!j.time&&'시간',!j.fee&&'강사료'].filter(Boolean);return j})}
-function sheetBulkJobs(raw){const R=raw?bulkParse(raw):[],ok=R.filter(j=>j.dates.length&&(j.title||j.school));
+// 반·강사가 있는 줄(칸 한 줄)은 같은 강의명·학교끼리 운영 1건 + 시간표 칸으로 묶음
+function bulkGroup(R){const out=[],G={};for(const j of R){if(!(j.cls||j.inst||j.sub)){out.push(j);continue}
+    const k=(j.title||'')+'|'+(j.school||'');let g=G[k];if(!g){g=G[k]={...j,dates:[],desc:'',slots:[],miss:[]};delete g.cls;delete g.inst;delete g.sub;out.push(g)}
+    for(const d of j.dates){if(!g.dates.includes(d))g.dates.push(d);const nm=x=>/^(미정|없음|-)$/.test(x)?'':x;
+      g.slots.push({id:uid(),d,cls:j.cls,time:j.time,per:j.교시,n:perN(j.교시||j.time),inst:'',nm:nm(j.inst),sub:'',subNm:nm(j.sub),fee:'',memo:j.desc||''})}
+    if(!g.fee&&j.fee)g.fee=j.fee}
+  for(const g of out)if(g.slots){g.dates.sort();const ts=[...new Set(g.slots.map(x=>x.time).filter(Boolean))];const tt=ts.flatMap(t=>t.match(/\d{1,2}:\d{2}/g)||[]).sort();g.time=ts.length===1?ts[0]:tt.length?tt[0]+'~'+tt[tt.length-1]:'';g.교시='';
+    g.miss=[!g.region&&'지역',!g.fee&&'강사료'].filter(Boolean)}
+  return out}
+function sheetBulkJobs(raw){const R=raw?bulkGroup(bulkParse(raw)):[],ok=R.filter(j=>j.dates.length&&(j.title||j.school));
   openSheet(`<div class="row"><h2 class="sp">여러 건 한 번에 올리기</h2><button class="btn sm" data-act="closeSheet">닫기</button></div>
   <p class="mu sm">엑셀에서 <b>제목 줄까지 같이</b> 드래그해 복사(Ctrl+C)한 뒤 아래에 붙여 넣으세요. 열 순서는 상관없어요. 날짜·학교(기관)·지역·강의명·시간·교시·대상·강사료·내용 이름을 알아봐요. 한 칸에 날짜가 여러 개(11/20, 11/21)면 하루 이상 강의로 들어가요.</p>
   <textarea id="bRaw" rows="7" placeholder="날짜&#9;학교&#9;지역&#9;강의명&#9;시간&#9;교시&#9;대상&#9;강사료">${esc(raw||'')}</textarea>
   <div class="row"><button class="btn" data-act="bPrev">미리 보기</button><button class="btn sm" data-act="bTpl">엑셀 양식 받기</button></div>
   ${aiHelp('co')}
-  ${raw?`<h3>미리 보기 · ${R.length}줄 중 ${ok.length}건 등록 가능</h3>
-  <div style="overflow-x:auto"><table class="sm"><thead><tr><th>날짜</th><th>강의</th><th>학교·지역</th><th>시간</th><th>강사료</th><th></th></tr></thead><tbody>${R.map(j=>`<tr><td>${j.dates.map(md).join('·')||'<b style="color:var(--r2)">없음</b>'}</td><td>${esc(j.title)}</td><td>${esc(j.school)} ${esc(j.region)}</td><td>${esc(j.time)}</td><td>${j.fee?won(j.fee):''}</td><td>${j.dates.length&&(j.title||j.school)?(j.miss.length?`<span class="chip warn">${j.miss.join('·')} 빔</span>`:'<span class="chip paid">OK</span>'):'<span class="chip off">건너뜀</span>'}</td></tr>`).join('')}</tbody></table></div>
+  ${raw?`<h3>미리 보기 · ${R.length}건 중 ${ok.length}건 등록 가능</h3>
+  <div style="overflow-x:auto"><table class="sm"><thead><tr><th>날짜</th><th>강의</th><th>학교·지역</th><th>시간</th><th>강사료</th><th></th></tr></thead><tbody>${R.map(j=>`<tr><td>${j.dates.map(md).join('·')||'<b style="color:var(--r2)">없음</b>'}</td><td>${esc(j.title)}${j.slots?`<br><span class="chip">운영 · 칸 ${j.slots.length}개</span>`:''}</td><td>${esc(j.school)} ${esc(j.region)}</td><td>${esc(j.time)}</td><td>${j.fee?won(j.fee):''}</td><td>${j.dates.length&&(j.title||j.school)?(j.miss.length?`<span class="chip warn">${j.miss.join('·')} 빔</span>`:'<span class="chip paid">OK</span>'):'<span class="chip off">건너뜀</span>'}</td></tr>`).join('')}</tbody></table></div>
   ${ok.length?`<label class="sm"><input type="checkbox" id="bOpen" checked> 강사 모집 공고로 올리기 (끄면 업체 달력에 기록만 해요. 이미 강사가 정해진 일정을 옮길 때)</label>
   <span class="mu sm">빈 칸은 나중에 공고를 열어 채울 수 있어요. 강사에게 받을 서류는 프로필·교안·통장사본으로 들어가요.</span>
   <button class="btn pri" data-act="bSave">${ok.length}건 등록</button>`:'<p class="mu">날짜와 강의(또는 학교)가 있는 줄이 없어요. 제목 줄까지 복사했는지 확인해 주세요.</p>'}`:''}`)}
@@ -1059,8 +1068,9 @@ document.addEventListener('click',async ev=>{
   if(A==='aiAsk')return copy(AI_ASK[D.k],'AI 부탁 문구');
   if(A==='evTpl'){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff날짜,기관,강의명,시간,강사료,상태\n2026-11-20,○○고,면접 특강,09:00~12:00,300000,확정\n"2026-11-24, 2026-11-25",○○센터,취업 캠프,09:00~16:00,350000,지원\n'],{type:'text/csv'}));a.download='강사로_내일정_양식.csv';document.body.appendChild(a);a.click();a.remove();return toast('양식을 받았어요. 엑셀로 채운 뒤 복사해 붙여 넣거나 저장한 파일을 고르세요')}
   if(A==='bTpl'){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff날짜,학교(기관),지역,강의명,시간,교시,대상,강사료,내용\n2026-11-20,○○고,수원,면접 특강,09:00~12:00,3교시,3학년 100명,300000,주차 가능\n'],{type:'text/csv'}));a.download='강사로_공고_양식.csv';document.body.appendChild(a);a.click();a.remove();return toast('양식을 받았어요. 엑셀로 열어 채운 뒤 복사해 붙여 넣으세요')}
-  if(A==='bSave'){const R=bulkParse($('#bRaw').value).filter(j=>j.dates.length&&(j.title||j.school)),open=$('#bOpen').checked;
-    for(const x of R){const {miss,...j}=x;const n={...j,id:uid(),coId:meId(),status:open?'모집':'마감',needs:['프로필','교안','통장사본'],notices:[],created:todayIso(),at:new Date().toISOString()};holdFix(n);S.jobs.push(n)}
+  if(A==='bSave'){const R=bulkGroup(bulkParse($('#bRaw').value)).filter(j=>j.dates.length&&(j.title||j.school)),open=$('#bOpen').checked;
+    for(const x of R){const {miss,slots,cls,inst,sub,...j}=x;const n={...j,id:uid(),coId:meId(),status:open?'모집':'마감',needs:['프로필','교안','통장사본'],notices:[],created:todayIso(),at:new Date().toISOString()};
+      if(slots){n.plan={slots};n.feeMode='day';n.op=true;n.planAt=n.at}holdFix(n);S.jobs.push(n)}
     save();closeSheet();ui.tab='cjobs';ui.jobId=null;render();return toast(`${R.length}건 등록했어요${open?'. 강사 공고 목록에 바로 올라가요':''}`)}
   if(A==='jparse'){const raw=$('#jRaw').value,r=parseNotice(raw);const feeV=feeOf(raw),fee=[0,feeV?String(feeV):'',''];
     sheetNewJob({raw,desc:raw,title:r.강의명,school:r.학교명,region:r.지역,dates:r.dates,time:r.시간,per:r.교시,for:r.대상,fee:fee[1]?(+fee[1].replace(/,/g,''))*(fee[2]?10000:1):''});jWarn();return toast('읽었어요. 빈칸만 확인하세요')}
