@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<meta name="build" content="261030-0424">
+<meta name="build" content="261030-0431">
 <title>강사로</title>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#2563EB">
@@ -324,7 +324,8 @@ function opBox(j,A){
     <label class="f">${j.feeMode==='per'?'교시당 단가(원)':'하루 총액(원)'}<input type="number" inputmode="numeric" data-chg="opAmt" data-j="${j.id}" value="${j.feeMode==='per'?(+j.feePer||''):(+j.fee||'')}"></label></div>
     <details><summary><b>＋ 칸 만들기</b> (날짜·반·시간을 고르면 한 번에)</summary>
       <div class="row" style="flex-wrap:wrap">${j.dates.map(d=>`<label class="sm"><input type="checkbox" class="opD" value="${d}" checked> ${md(d)}(${dowOf(d)})</label>`).join('')}</div>
-      <label class="f">반 (여러 개면 쉼표로, 하나면 비워 두세요)<input id="opCls" placeholder="예: 1반, 2반, 3반 또는 3학년 1반, 3학년 2반"></label>
+      <label class="f">반 (하나면 비워 두세요)<input id="opCls" placeholder="예: 2학년 1~8반  또는  1반, 2반, 3반"></label><span class="mu sm">'2학년 1~8반'처럼 쓰면 2학년 1반부터 8반까지 한 번에 만들어져요.</span>
+      <label class="f">수업 내용 (선택, 반 배정표 제목이 돼요)<input id="opMemo" placeholder="예: 중소기업이해"></label>
       <div class="grid2"><label class="f">시간<input id="opTime" placeholder="09:00~12:00" value="${esc(j.time||'')}"></label><label class="f">교시<input id="opPer" placeholder="1~3교시" value="${esc(j.교시||'')}"></label></div>
       <div class="row"><button class="btn sm" data-act="opQuick" data-v="오전">오전 09:00~12:00</button><button class="btn sm" data-act="opQuick" data-v="오후">오후 13:00~16:00</button></div>
       <button class="btn pri" data-act="opAdd" data-j="${j.id}">칸 만들기</button></details>
@@ -1130,11 +1131,13 @@ document.addEventListener('click',async ev=>{
     for(const x of L){if(B==='__clear'||(D.s&&v(x)===B)){x.inst='';x.nm='';continue}if(!D.s&&v(x))continue;n++;c+=assignSlot(j,x,'inst',B)}
     planTouch(j);if(c)toast(`${inst(B).name} 강사를 확정했어요. 강사에게 알림이 갔어요`);else if(!D.s&&B!=='__clear')toast(n?`빈 칸 ${n}개에 넣었어요`:'빈 칸이 없어요');return}
   if(A==='opQuick'){$('#opTime').value=D.v==='오전'?'09:00~12:00':'13:00~16:00';$('#opPer').value=D.v==='오전'?'1~3교시':'4~6교시';return}
-  if(A==='opAdd'){const j=job(D.j),ds=$$('.opD:checked').map(x=>x.value),cls=$('#opCls').value.split(/[,，]/).map(x=>x.trim()).filter(Boolean),time=$('#opTime').value.trim(),per=$('#opPer').value.trim();
+  if(A==='opAdd'){const j=job(D.j),ds=$$('.opD:checked').map(x=>x.value),cls=$('#opCls').value.split(/[,，]/).map(x=>x.trim()).filter(Boolean).flatMap(x=>{const m=x.match(/^(.*?)(\d+)\s*[~\-]\s*(\d+)\s*(반)?$/);if(!m||+m[3]<+m[2]||+m[3]-+m[2]>40)return [x];return Array.from({length:+m[3]-+m[2]+1},(_,i)=>`${m[1]}${+m[2]+i}${m[4]||'반'}`.replace(/(\S)(\d+반)$/,'$1 $2').replace(/\s+/g,' ').trim())}),memo=($('#opMemo')||{}).value?.trim()||'',time=$('#opTime').value.trim(),per=$('#opPer').value.trim();
     if(!ds.length)return toast('날짜를 하나 이상 골라 주세요');if(!time&&!per)return toast('시간이나 교시를 넣어 주세요');
     // 처음 만든 빈 기본 칸(반·강사 없음)과 같은 날·시간이면 그 칸은 바꿔 씀
-    let n=0;for(const d of ds)for(const c of (cls.length?cls:[''])){const dup=j.plan.slots.find(x=>x.d===d&&x.cls===c&&x.time===time&&x.per===per);if(dup)continue;j.plan.slots.push({id:uid(),d,cls:c,time,per,n:perN(per||time),inst:'',nm:'',sub:'',subNm:'',fee:''});n++}
-    j.plan.slots=j.plan.slots.filter(x=>!(x.cls===''&&!x.inst&&!x.nm&&j.plan.slots.some(y=>y!==x&&y.d===x.d&&y.cls!=='')));planTouch(j);return toast(`칸 ${n}개를 만들었어요`)}
+    let n=0;for(const d of ds)for(const c of (cls.length?cls:[''])){const dup=j.plan.slots.find(x=>x.d===d&&x.cls===c&&x.time===time&&x.per===per);if(dup)continue;j.plan.slots.push({id:uid(),d,cls:c,time,per,n:perN(per||time),inst:'',nm:'',sub:'',subNm:'',fee:'',...(memo?{memo}:{})});n++}
+    // 반 없이 처음 만들어진 칸은 반 칸이 생기면 없앰. 그 칸에 강사가 있었으면 그날 첫 반 칸으로 옮김
+    for(const x of j.plan.slots.filter(x=>x.cls==='')){const first=j.plan.slots.find(y=>y.d===x.d&&y.cls!=='');if(!first)continue;if((x.inst||x.nm)&&!first.inst&&!first.nm){first.inst=x.inst;first.nm=x.nm;first.sub=x.sub;first.subNm=x.subNm}x._del=1}
+    j.plan.slots=j.plan.slots.filter(x=>!x._del);planTouch(j);return toast(`칸 ${n}개를 만들었어요`)}
   if(A==='opDel'){const j=job(D.j);j.plan.slots=j.plan.slots.filter(x=>x.id!==D.s);if(!j.plan.slots.length){delete j.plan;j.op=false}planTouch(j);return}
   if(A==='extAdd'||A==='extAll'){const add=(a,k,v,tx)=>{a.ext=[...(a.ext||[]),{k,amt:v,tx}]};
     const sel=$(A==='extAdd'?'#extK_'+D.a:'#extAllK'),v=+$(A==='extAdd'?'#extV_'+D.a:'#extAllV').value;if(!v)return toast('금액을 넣어 주세요');
@@ -1237,6 +1240,6 @@ document.addEventListener('input',ev=>{if(ev.target.matches&&ev.target.matches('
 render();
 </script>
 <script src="../bot.js" defer></script>
-<script type="module" src="real.js?v=261030-0424"></script>
+<script type="module" src="real.js?v=261030-0431"></script>
 </body>
 </html>
