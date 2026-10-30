@@ -4,6 +4,7 @@
 
 - 함수 (asia-northeast3, Node 22)
   - `codeCheck({code})` 초대코드 확인 → 반 이름, 하루 횟수
+  - `introChat({code, job, company, memo, hist, write})` 1분 자기소개 꼬꼬무: 질문 하나씩(가벼운 모델, 1인 하루 60번) / write=true면 1분 멘트(1인 하루 perDay번, 코드 횟수 차감)
   - `jasoDraft({code, d})` 자소서 입력값 → Claude 초안. 학생 글은 저장하지 않음
 - Firestore
   - `codes/{코드}` = `{ name, on: true, perDay: 3, max: 100, until: "2026-12-31", used: 0 }` (준용이 콘솔에서 직접 만듦, 코드는 영문 대문자·숫자·- 4자 이상)
