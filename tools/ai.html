@@ -100,7 +100,7 @@ function home(){
     ['who','🤖 AI가 쓴 글 vs 사람이 쓴 글','어느 쪽이 AI일까? AI 글의 특징 알아보기'],
     ['ethics','⚖️ AI 윤리 딜레마','"AI로 자소서를 써도 될까?" 찬반 투표와 생각해 볼 점'],
     ['future','⚡ 내 직무 미래 지도','내 직무에서 AI가 대신할 일·사람이 할 일·키울 역량']].map(function(x){return '<a class="g" href="#'+x[0]+'"><b>'+x[1]+'</b><span>'+x[2]+'</span></a>'}).join('')+'</div>'+
-   '<div class="why"><b>선생님 팁:</b> 윤리 딜레마 질문은 <a href="live.html?host">실시간 반응판</a>에 바로 넣어 반 전체 투표로 할 수 있어요(윤리 딜레마 화면 맨 아래 버튼).</div>';
+   '<div class="why"><b>선생님 팁:</b> 윤리 딜레마 질문은 <a href="live.html?host">실시간 마인드맵</a>에 바로 넣어 반 전체 투표로 할 수 있어요(윤리 딜레마 화면 맨 아래 버튼).</div>';
 }
 
 /* ---------- ① 프롬프트 연습장 ---------- */
@@ -202,7 +202,7 @@ function ethics(){
     if(v)h+='<div class="side"><b>👍 된다는 입장:</b> '+esc(x.yes)+'</div><div class="side" style="border-color:var(--bad)"><b>👎 안 된다는 입장:</b> '+esc(x.no)+'</div><div class="why"><b>생각해 볼 점:</b> '+esc(x.think)+'</div>';
     h+='</div>';
   });
-  h+='<div class="card"><h3>👩‍🏫 선생님용: 반 전체 투표로 하기</h3><p class="soft">이 딜레마 8개를 실시간 반응판 질문 목록에 넣고 강사 화면을 열어요. (이 기기에서 반응판을 쓰는 경우)</p><button class="btn pri" data-a="toLive">반응판에 넣고 열기</button></div>';
+  h+='<div class="card"><h3>👩‍🏫 선생님용: 반 전체 투표로 하기</h3><p class="soft">이 딜레마 8개를 실시간 마인드맵 질문 목록에 넣고 강사 화면을 열어요. (이 기기에서 실시간 마인드맵을 쓰는 경우)</p><button class="btn pri" data-a="toLive">마인드맵 화면에 넣고 열기</button></div>';
   return h;
 }
 /* ---------- ⑤ 직무 미래 지도 ---------- */
