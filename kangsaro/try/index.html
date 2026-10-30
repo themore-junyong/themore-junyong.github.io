@@ -366,7 +366,7 @@ function opGrid(j,cf,names,byD){const P=j.plan.slots,B=ui.brush||'',PN=opPanels(
 
   return `<div class="card" style="background:var(--acs);gap:6px"><b class="sm">1. 강사를 고르고 → 2. 표에서 칸을 누르세요</b><span class="mu sm">${day?`${md(day)}(${dowOf(day)}) 하루 시간표예요. 왼쪽 반을 누르면 그 반, 맨 위 시간을 누르면 그 시간의 빈 칸이 한 번에 채워져요.`:'줄 이름을 누르면 그 줄의 빈 칸, 맨 위 날짜를 누르면 그날의 빈 칸이 한 번에 채워져요.'} 같은 강사로 칸을 한 번 더 누르면 비워져요.</span>
     <div class="row" style="flex-wrap:wrap">${cf.map(a=>pick(a.instId,esc(inst(a.instId).name)+(a.status==='지원'?' <span class="mu">(지원)</span>':''))).join('')}${names.map(n=>pick('nm:'+n,esc(n)+' <span class="mu">(앱 밖)</span>')).join('')}<button class="btn sm" data-act="brushNew">＋ 이름</button>${pick('__clear','지우개')}</div>
-    ${B?`<span class="sm">지금: <b>${B==='__clear'?'지우개 (칸 비우기)':esc(B.startsWith('nm:')?B.slice(3):inst(B).name)}</b></span>`:''}</div>
+    ${B?`<span class="sm">지금: <b>${B==='__clear'?'지우개 (칸 비우기)':esc(B.startsWith('nm:')?B.slice(3):inst(B).name)}</b></span>`:''}${B&&!B.startsWith('nm:')&&B!=='__clear'&&names.length?`<span class="sm" style="color:var(--ac)">앱 밖 이름을 누르면 그 이름의 칸이 모두 <b>${esc(inst(B).name)}</b> 계정으로 바뀌어요 (같은 사람이 초대받고 들어왔을 때).</span>`:''}</div>
   ${PN.map((X,gi)=>{const short=t=>{const [a,b2]=X.rLab(t);return `<b>${esc(a)}</b>${b2?`<br><span class="mu">${esc(b2)}</span>`:''}`},RW=X.memo?112:72;
   return `${X.title?`<b style="margin-top:6px">${esc(X.title)}</b>`:''}<div style="overflow-x:auto"><table class="sm" style="border-collapse:collapse;table-layout:fixed;width:100%;min-width:${RW+X.cols.length*96}px"><colgroup><col style="width:${RW}px">${X.cols.map(()=>'<col>').join('')}</colgroup><thead><tr><th class="mu">${X.memo?'':'반'}</th>${X.cols.map(v=>`<th style="padding:2px"><button class="btn sm" data-act="paint" data-j="${j.id}" data-g="${gi}" data-cv="${esc(v)}" style="width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(X.cLab(v))}</button></th>`).join('')}</tr></thead><tbody>
   ${X.rows.map(r=>`<tr><th style="padding:2px"><button class="btn sm" data-act="paint" data-j="${j.id}" data-g="${gi}" data-rv="${esc(r)}" style="width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${short(r)}</button></th>${X.cols.map(v=>{const x=P.find(y=>X.in(y)&&X.cO(y)===v&&X.rO(y)===r);if(!x)return '<td style="background:var(--bg)"></td>';const w=who(x),hit=B&&val(x)===B;
@@ -1143,7 +1143,10 @@ document.addEventListener('click',async ev=>{
     const cf=appsOf(j.id).filter(a=>a.status==='확정');if(cf.length===1)j.plan.slots.forEach(x=>x.inst=cf[0].instId);planTouch(j);return toast('운영 시간표를 만들었어요. 칸을 더 만들거나 강사를 정하세요')}
   if(A==='opXls')return opXls(job(D.j),D.k);
   if(A==='opPng')return opPng(job(D.j),!!D.n,D.k);
-  if(A==='brush'){ui.brush=ui.brush===D.v?'':D.v;render();return}
+  if(A==='brush'){const B=ui.brush||'';
+    if(B&&!B.startsWith('nm:')&&B!=='__clear'&&D.v.startsWith('nm:')){const j=job(ui.jobId),n=D.v.slice(3);let k=0;for(const x of j.plan.slots){if(x.nm===n){x.inst=B;x.nm='';k++}if(x.subNm===n){x.sub=B;x.subNm='';k++}}
+      const ap=appsOf(j.id).find(y=>y.instId===B&&y.status==='지원');if(ap)confirmApp(ap,j);ui.brush='';planTouch(j);return toast(`'${n}' 칸 ${k}개를 ${inst(B).name} 강사 계정으로 바꿨어요${ap?' · 확정 알림을 보냈어요':''}`)}
+    ui.brush=B===D.v?'':D.v;render();return}
   if(A==='brushNew'){const n=(prompt('강사 이름 (앱을 안 쓰는 강사는 기록만 돼요)')||'').trim();if(n){ui.brush='nm:'+n;render();toast(`'${n}'을 골랐어요. 칸을 누르세요`)}return}
   if(A==='paint'){const j=job(D.j),B=ui.brush;if(!B)return toast('위에서 강사(또는 지우개)를 먼저 골라 주세요');
     const X=opPanels(j.plan.slots)[+D.g||0],L=D.s?j.plan.slots.filter(x=>x.id===D.s):j.plan.slots.filter(x=>X.in(x)&&(D.cv!=null?X.cO(x)===D.cv:X.rO(x)===D.rv));
