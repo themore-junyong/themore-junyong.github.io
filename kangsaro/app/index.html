@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<meta name="build" content="261030-0431">
+<meta name="build" content="261030-0435">
 <title>강사로</title>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#2563EB">
@@ -291,7 +291,7 @@ const isOp=j=>!!(j&&j.plan&&j.plan.slots&&j.plan.slots.length);
 const perN=t=>{t=String(t||'');const m=t.match(/(\d+)\s*[~\-–]\s*(\d+)/);if(m)return Math.max(1,+m[2]-+m[1]+1);const k=t.match(/(\d+)\s*(교시|차시|시간)/);return k?+k[1]:1};
 const EXT0=[['교통비',false],['숙박비',false],['교안비',true]]; // 기본 추가 항목 (이름, 3.3% 떼기)
 const extItems=c=>[...EXT0,...((c&&c.items)||[]).map(x=>[x.k,x.tx!==false])];
-function slotFee(j,s,who){if(s.sub===who&&s.inst!==who)return +s.subFee||0;if(s.fee!==''&&s.fee!=null)return +s.fee;return j.feeMode==='per'?(+j.feePer||0)*(+s.n||perN(s.per)):null}
+function slotFee(j,s,who){if(s.sub===who&&s.inst!==who)return +s.subFee||0;if(s.fee!==''&&s.fee!=null&&!(s.fa&&j.feeMode==='per'))return +s.fee;return j.feeMode==='per'?(+j.feePer||0)*(+s.n||perN(s.per)):null}
 // 강사 한 명이 이 운영(또는 보통 강의)에서 받을 돈: 날짜별 금액 + 추가 금액
 function payOf(j,iid,a){const days=[];
   if(!isOp(j))for(const d of j.dates)days.push({d,fee:+j.fee||0,time:j.time,lab:''});
@@ -1175,7 +1175,7 @@ document.addEventListener('click',async ev=>{
     const miss=[!g('jTitle')&&'강의',!dates.length&&'날짜',!/^\d{2}:\d{2}~\d{2}:\d{2}$/.test(g('jTime'))&&'시간(시작·끝 고르기)',!g('jPer')&&'교시',!g('jFor')&&'대상',!(g('jSchool')&&g('jRegion'))&&'학교·지역',!+g('jFee')&&'강사료'].filter(Boolean);
     if(miss.length)return toast('빠졌어요: '+miss.join(', '));
     const j={id:uid(),coId:meId(),title:g('jTitle'),school:g('jSchool'),region:g('jRegion'),dates,time:g('jTime'),교시:g('jPer'),대상:g('jFor'),desc:g('jDesc'),fee:+g('jFee'),status:'모집',needs:['프로필',...$$('.jNeed:checked').map(x=>x.value).filter(x=>x!=='프로필')],notices:[],created:todayIso(),at:new Date().toISOString()};
-    const R=jRanges();if(R.length>1){const mm=x=>{const [h,m]=x.split(':');return +h*60+ +m};j.plan={slots:dates.flatMap(d=>R.map(([a,b])=>({id:uid(),d,cls:'',time:a+'~'+b,per:'',n:Math.max(1,Math.round((mm(b)-mm(a))/60)),inst:'',nm:'',sub:'',subNm:'',fee:j.fee})))};j.feeMode='day';j.op=true;j.planAt=j.at}
+    const R=jRanges();if(R.length>1){const mm=x=>{const [h,m]=x.split(':');return +h*60+ +m};j.plan={slots:dates.flatMap(d=>R.map(([a,b])=>({id:uid(),d,cls:'',time:a+'~'+b,per:'',n:Math.max(1,Math.round((mm(b)-mm(a))/60)),inst:'',nm:'',sub:'',subNm:'',fee:j.fee,fa:1})))};j.feeMode='day';j.op=true;j.planAt=j.at}
     const held=holdFix(j);S.jobs.push(j);save();closeSheet();ui.tab='cjobs';ui.jobId=j.id;render();const W=dateWarn(dates);return toast(held?'등록했어요. '+HOLD_MSG:W.length?W[0]:'등록했어요. 강사 공고 목록에 바로 올라가요')}
   if(A==='bulk'){const blob=new Blob([bulkCsv()],{type:'text/csv'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`대량이체_${todayIso()}.csv`;document.body.appendChild(a);a.click();a.remove();return toast('파일을 받았어요')}
   if(A==='bulkCopy')return copy(bulkCsv().replace('﻿',''),'대량이체 내용');
@@ -1186,7 +1186,7 @@ document.addEventListener('change',ev=>{const el=ev.target,D=el.dataset||{};
   if(el.id==='jcWe'){ui.jcal.we=el.checked;return}
   if(D.act==='jpick'&&el.value){const ds=[...new Set([...$('#jDates').value.split(/[,\s]+/).filter(Boolean),el.value])].sort();$('#jDates').value=ds.join(', ');$('#jDateList').innerHTML=jDateChips(ds);el.value='';jWarn();return}
   if(D.chg==='opFee'){const j=job(D.j);j.feeMode=el.value;planTouch(j);return}
-  if(D.chg==='opAmt'){const j=job(D.j),v=+el.value||0;if(j.feeMode==='per'){j.feePer=v;const ns=j.plan.slots.map(x=>+x.n||perN(x.per)).sort((a,b)=>a-b);j.fee=v*(ns[ns.length>>1]||1)}else j.fee=v;holdFix(j);planTouch(j);return}
+  if(D.chg==='opAmt'){const j=job(D.j),v=+el.value||0;j.plan.slots.forEach(x=>{if(x.fa){x.fee='';delete x.fa}});if(j.feeMode==='per'){j.feePer=v;const ns=j.plan.slots.map(x=>+x.n||perN(x.per)).sort((a,b)=>a-b);j.fee=v*(ns[ns.length>>1]||1)}else j.fee=v;holdFix(j);planTouch(j);return}
   if(D.chg==='slotFee'||D.chg==='slotSubFee'){const j=job(D.j),x=j.plan.slots.find(y=>y.id===D.s);x[D.chg==='slotFee'?'fee':'subFee']=el.value===''?'':+el.value;planTouch(j);return}
   if(D.chg==='slotSel'){const j=job(D.j),x=j.plan.slots.find(y=>y.id===D.s),k=D.k,nk=k==='inst'?'nm':'subNm';let v=el.value;
     if(v==='__nm'){const n=(prompt('강사 이름 (앱을 안 쓰는 강사는 기록만 돼요)')||'').trim();if(!n){render();return}x[k]='';x[nk]=n}
@@ -1240,6 +1240,6 @@ document.addEventListener('input',ev=>{if(ev.target.matches&&ev.target.matches('
 render();
 </script>
 <script src="../bot.js" defer></script>
-<script type="module" src="real.js?v=261030-0431"></script>
+<script type="module" src="real.js?v=261030-0435"></script>
 </body>
 </html>
