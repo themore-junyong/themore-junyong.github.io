@@ -10,6 +10,7 @@
   - `aiLab({code, mode, prompt|job})` AI 수업 도구: run(프롬프트 실행)·coach(프롬프트 채점)·future(직무 미래 지도)·iv/ivend(AI 모의면접 질문·채점표). 1인 하루 30번, 전체 하루 1500번
 - Firestore
   - `codes/{코드}` = `{ name, on: true, perDay: 3, max: 100, until: "2026-12-31", used: 0 }` (준용이 콘솔에서 직접 만듦, 코드는 영문 대문자·숫자·- 4자 이상)
+  - `codes/PASS` = `{ pass: "WEDU-1101", name: "전체 공용", on: true, perDay: 3, used: 0 }` 공용 코드: 학생은 pass 값을 입력. **코드를 바꿀 때는 pass 칸만 고치면 됨** (옛 값은 그 순간 막힘)
   - `use/{날짜}` 하루 사용 횟수 (자동)
   - `rooms/{PIN}` · `rx/{uid}` · `ans/{id}` 실시간 반응판 (규칙: 방 주인만 질문·답 보기, 학생은 자기 답만 쓰기)
   - 그 밖은 규칙으로 전부 막음(서버 함수만 읽고 씀)
