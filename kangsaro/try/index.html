@@ -343,16 +343,21 @@ function opBox(j,A){
       <div class="row" style="flex-wrap:wrap"><input id="coItem" placeholder="예: 식비" style="width:120px"><label class="sm"><input type="checkbox" id="coItemTx"> 3.3% 떼기</label><button class="btn sm" data-act="coItemAdd" data-j="${j.id}">등록</button></div></details></div>`:''}`}
 // 칠하기: 강사를 고르고 표의 칸·줄·날짜를 누르면 배정
 const rowKey=x=>[x.cls||'',x.time||'',x.per||''].join('|');
-function opGrid(j,cf,names,byD){const P=j.plan.slots,B=ui.brush||'',rows=[...new Set(P.map(rowKey))].sort((a,b)=>{const [c1,t1]=a.split('|'),[c2,t2]=b.split('|');return (c1+t1).localeCompare(c2+t2,'ko',{numeric:true})});
+// 표의 가로·세로: 보통은 날짜(가로) × 반·시간(세로). 하루짜리에 반이 여럿이면 학교 시간표처럼 반(가로) × 교시·시간(세로)
+const tKey=x=>[x.time||'',x.per||''].join('|');
+function opAxes(P){const ds=[...new Set(P.map(x=>x.d))].sort(),cs=[...new Set(P.map(x=>x.cls||''))];
+  if(ds.length===1&&cs.length>1)return {day:ds[0],cols:cs.sort((a,b)=>a.localeCompare(b,'ko',{numeric:true})),rows:[...new Set(P.map(tKey))].sort((a,b)=>a.localeCompare(b,'ko',{numeric:true})),cO:x=>x.cls||'',rO:tKey,cLab:v=>v||'(반 없음)',rLab:v=>{const [t,pr]=v.split('|');return [t||pr,t&&pr?pr:'']},corner:'시간 · 반'};
+  return {cols:ds,rows:[...new Set(P.map(rowKey))].sort((a,b)=>a.localeCompare(b,'ko',{numeric:true})),cO:x=>x.d,rO:rowKey,cLab:d=>`${md(d)}(${dowOf(d)})`,rLab:v=>{const [c,t,pr]=v.split('|');return c&&(t||pr)?[c,t||pr]:[c||t||pr||'','']},corner:'반 · 시간'}}
+function opGrid(j,cf,names,byD){const P=j.plan.slots,B=ui.brush||'',X=opAxes(P),rows=X.rows,CH=P.some(x=>x.memo)?54:40;
   const who=x=>x.inst?inst(x.inst).name:x.nm||'',val=x=>x.inst||(x.nm?'nm:'+x.nm:'');
   const pick=(v,l,cls)=>`<button class="btn sm ${B===v?'pri':''} ${cls||''}" data-act="brush" data-v="${esc(v)}">${l}</button>`;
-  const short=t=>{const [c,tm,pr]=t.split('|');return `${c?`<b>${esc(c)}</b><br>`:''}<span class="mu">${esc(tm||pr)}</span>`};
-  return `<div class="card" style="background:var(--acs);gap:6px"><b class="sm">1. 강사를 고르고 → 2. 표에서 칸을 누르세요</b><span class="mu sm">줄 이름을 누르면 그 줄의 빈 칸, 날짜를 누르면 그날의 빈 칸이 한 번에 채워져요. 같은 강사로 칸을 한 번 더 누르면 비워져요.</span>
+  const short=t=>{const [a,b2]=X.rLab(t);return `<b>${esc(a)}</b>${b2?`<br><span class="mu">${esc(b2)}</span>`:''}`};
+  return `<div class="card" style="background:var(--acs);gap:6px"><b class="sm">1. 강사를 고르고 → 2. 표에서 칸을 누르세요</b><span class="mu sm">${X.day?`${md(X.day)}(${dowOf(X.day)}) 하루 시간표예요. `:''}줄 이름을 누르면 그 줄의 빈 칸, 맨 위 ${X.day?'반':'날짜'}를 누르면 그 ${X.day?'반':'날'}의 빈 칸이 한 번에 채워져요. 같은 강사로 칸을 한 번 더 누르면 비워져요.</span>
     <div class="row" style="flex-wrap:wrap">${cf.map(a=>pick(a.instId,esc(inst(a.instId).name)+(a.status==='지원'?' <span class="mu">(지원)</span>':''))).join('')}${names.map(n=>pick('nm:'+n,esc(n)+' <span class="mu">(앱 밖)</span>')).join('')}<button class="btn sm" data-act="brushNew">＋ 이름</button>${pick('__clear','지우개')}</div>
     ${B?`<span class="sm">지금: <b>${B==='__clear'?'지우개 (칸 비우기)':esc(B.startsWith('nm:')?B.slice(3):inst(B).name)}</b></span>`:''}</div>
-  <div style="overflow-x:auto"><table class="sm" style="border-collapse:collapse;min-width:100%"><thead><tr><th></th>${byD.map(d=>`<th><button class="btn sm" data-act="paint" data-j="${j.id}" data-d="${d}" style="white-space:nowrap">${md(d)}(${dowOf(d)})</button></th>`).join('')}</tr></thead><tbody>
-  ${rows.map(r=>`<tr><th style="text-align:left"><button class="btn sm" data-act="paint" data-j="${j.id}" data-r="${esc(r)}" style="text-align:left;white-space:nowrap">${short(r)}</button></th>${byD.map(d=>{const x=P.find(y=>y.d===d&&rowKey(y)===r);if(!x)return '<td style="background:var(--bg)"></td>';const w=who(x),hit=B&&val(x)===B;
-    return `<td style="padding:2px"><button class="btn sm" data-act="paint" data-j="${j.id}" data-s="${x.id}" style="width:100%;min-width:64px;white-space:nowrap;${w?'background:var(--sf)':'background:var(--warns,#FDECE3);color:var(--r2)'};${hit?'outline:2px solid var(--ac)':''}">${w?esc(w)+(x.sub||x.subNm?'<span class="mu">+보조</span>':''):'미정'}${x.memo?`<br><span class="mu" style="font-size:11px">${esc(x.memo.slice(0,10))}</span>`:''}</button></td>`}).join('')}</tr>`).join('')}
+  <div style="overflow-x:auto"><table class="sm" style="border-collapse:collapse;table-layout:fixed;width:100%;min-width:${112+X.cols.length*96}px"><colgroup><col style="width:112px">${X.cols.map(()=>'<col>').join('')}</colgroup><thead><tr><th></th>${X.cols.map(v=>`<th style="padding:2px"><button class="btn sm" data-act="paint" data-j="${j.id}" data-cv="${esc(v)}" style="width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(X.cLab(v))}</button></th>`).join('')}</tr></thead><tbody>
+  ${rows.map(r=>`<tr><th style="padding:2px"><button class="btn sm" data-act="paint" data-j="${j.id}" data-rv="${esc(r)}" style="width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${short(r)}</button></th>${X.cols.map(v=>{const x=P.find(y=>X.cO(y)===v&&X.rO(y)===r);if(!x)return '<td style="background:var(--bg)"></td>';const w=who(x),hit=B&&val(x)===B;
+    return `<td style="padding:2px"><button class="btn sm" data-act="paint" data-j="${j.id}" data-s="${x.id}" style="width:100%;height:${CH}px;padding:2px 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;${w?'background:var(--sf)':'background:var(--warns,#FDECE3);color:var(--r2)'};${hit?'outline:2px solid var(--ac)':''}">${w?esc(w)+(x.sub||x.subNm?'<span class="mu">+보조</span>':''):'미정'}${x.memo?`<span class="mu" style="display:block;font-size:11px;overflow:hidden;text-overflow:ellipsis">${esc(x.memo)}</span>`:''}</button></td>`}).join('')}</tr>`).join('')}
   </tbody></table></div>
   ${[['grid','시간표','반·날짜별'],['inst','강사별 배정표','강사 이름순']].map(([k,n,h])=>`<div class="row" style="flex-wrap:wrap;gap:4px"><b class="sm" style="min-width:92px">${n} <span class="mu">(${h})</span></b><button class="btn sm" data-act="opPng" data-j="${j.id}" data-k="${k}">⬇ 이미지</button><button class="btn sm" data-act="opPng" data-j="${j.id}" data-k="${k}" data-n="1">공지에 넣기</button>${k==='inst'?`<button class="btn sm" data-act="opXls" data-j="${j.id}" data-k="inst">⬇ 엑셀</button>`:''}</div>`).join('')}`}
 // 시간표·강사별 배정표를 엑셀(.xls)로. 색·테두리가 그대로 보이게 표(HTML)로 만듦
@@ -370,19 +375,19 @@ function opXls(j,k){const P=j.plan.slots,ds=[...new Set(P.map(x=>x.d))].sort(),w
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+html],{type:'application/vnd.ms-excel'}));a.download=`${(j.title||'운영').replace(/[\\/:*?"<>|]/g,'')}_${k==='grid'?'시간표':'강사별배정표'}.xls`;document.body.appendChild(a);a.click();a.remove();
   toast('받았어요. 엑셀이 "형식이 다르다"고 물으면 [예]를 누르면 열려요')}
 // 시간표를 그림(PNG)으로: 카톡 공지·강사 공지에 바로 올리기 좋게
-function opCanvas(j){const P=j.plan.slots,ds=[...new Set(P.map(x=>x.d))].sort(),rows=[...new Set(P.map(rowKey))].sort((a,b)=>a.localeCompare(b,'ko',{numeric:true})),who=x=>x.inst?inst(x.inst).name:x.nm||'',sub=x=>x.sub?inst(x.sub).name:x.subNm||'';
+function opCanvas(j){const P=j.plan.slots,X=opAxes(P),ds=X.cols,rows=X.rows,who=x=>x.inst?inst(x.inst).name:x.nm||'',sub=x=>x.sub?inst(x.sub).name:x.subNm||'';
   const F='"Pretendard","Malgun Gothic","Apple SD Gothic Neo",sans-serif',hasSub=P.some(sub),hasMemo=P.some(x=>x.memo),RW=170,CW=Math.max(hasMemo?140:110,Math.min(170,Math.floor(1100/ds.length))),HH=44,RH=34+(hasSub?20:0)+(hasMemo?36:0),M=24,TOP=86;
   const c=document.createElement('canvas'),W=M*2+RW+CW*ds.length,H=TOP+HH+RH*rows.length+M+22;c.width=W;c.height=H;const g=c.getContext('2d');
   const fit=(t,w,f)=>{g.font=f;if(g.measureText(t).width<=w)return t;while(t.length>1&&g.measureText(t+'…').width>w)t=t.slice(0,-1);return t+'…'};
   const txt=(t,x,y,f,col,w)=>{g.font=f;g.fillStyle=col;g.fillText(fit(t,w,f),x,y)};
   g.fillStyle='#fff';g.fillRect(0,0,W,H);g.textBaseline='middle';g.textAlign='left';
-  txt(j.title||'운영 시간표',M,34,`bold 24px ${F}`,'#111',W-M*2);txt([co(j.coId).name,j.school,j.region].filter(Boolean).join(' · '),M,64,`15px ${F}`,'#555',W-M*2);
+  txt((j.title||'운영 시간표')+(X.day?` · ${md(X.day)}(${dowOf(X.day)})`:''),M,34,`bold 24px ${F}`,'#111',W-M*2);txt([co(j.coId).name,j.school,j.region].filter(Boolean).join(' · '),M,64,`15px ${F}`,'#555',W-M*2);
   g.textAlign='center';const box=(x,y,w,h,bg)=>{g.fillStyle=bg;g.fillRect(x,y,w,h);g.strokeStyle='#9AA4B2';g.lineWidth=1;g.strokeRect(x+.5,y+.5,w,h)};
-  box(M,TOP,RW,HH,'#DCE6F8');txt('반 · 시간',M+RW/2,TOP+HH/2,`bold 15px ${F}`,'#1E3A8A',RW-8);
-  ds.forEach((d,i)=>{const x=M+RW+CW*i;box(x,TOP,CW,HH,'#DCE6F8');txt(`${md(d)}(${dowOf(d)})`,x+CW/2,TOP+HH/2,`bold 15px ${F}`,'#1E3A8A',CW-8)});
-  rows.forEach((r,ri)=>{const y=TOP+HH+RH*ri,[cl,t,pr]=r.split('|');box(M,y,RW,RH,'#F1F5FB');
-    if(cl&&(t||pr)){txt(cl,M+RW/2,y+RH/2-9,`bold 15px ${F}`,'#111',RW-10);txt(t||pr,M+RW/2,y+RH/2+11,`13px ${F}`,'#555',RW-10)}else txt(cl||t||pr||'',M+RW/2,y+RH/2,`bold 15px ${F}`,'#111',RW-10);
-    ds.forEach((d,i)=>{const x=M+RW+CW*i,s2=P.find(z=>z.d===d&&rowKey(z)===r);if(!s2)return box(x,y,CW,RH,'#EEF0F3');const w=who(s2),L=[[w||'미정',`bold 16px ${F}`,w?'#111':'#C0392B']];
+  box(M,TOP,RW,HH,'#DCE6F8');txt(X.corner,M+RW/2,TOP+HH/2,`bold 15px ${F}`,'#1E3A8A',RW-8);
+  ds.forEach((d,i)=>{const x=M+RW+CW*i;box(x,TOP,CW,HH,'#DCE6F8');txt(X.cLab(d),x+CW/2,TOP+HH/2,`bold 15px ${F}`,'#1E3A8A',CW-8)});
+  rows.forEach((r,ri)=>{const y=TOP+HH+RH*ri,[a1,a2]=X.rLab(r);box(M,y,RW,RH,'#F1F5FB');
+    if(a2){txt(a1,M+RW/2,y+RH/2-9,`bold 15px ${F}`,'#111',RW-10);txt(a2,M+RW/2,y+RH/2+11,`13px ${F}`,'#555',RW-10)}else txt(a1,M+RW/2,y+RH/2,`bold 15px ${F}`,'#111',RW-10);
+    ds.forEach((d,i)=>{const x=M+RW+CW*i,s2=P.find(z=>X.cO(z)===d&&X.rO(z)===r);if(!s2)return box(x,y,CW,RH,'#EEF0F3');const w=who(s2),L=[[w||'미정',`bold 16px ${F}`,w?'#111':'#C0392B']];
       if(sub(s2))L.push(['보조 '+sub(s2),`13px ${F}`,'#444']);if(s2.memo){g.font=`12px ${F}`;let a='',m=s2.memo,k=0;while(k<m.length&&g.measureText(a+m[k]).width<=CW-12)a+=m[k++];L.push([a,`12px ${F}`,'#777']);if(k<m.length)L.push([m.slice(k),`12px ${F}`,'#777'])}box(x,y,CW,RH,w?'#fff':'#FDECE3');
       const lh=L.length>3?17:20,y0=y+RH/2-(L.length-1)*lh/2;L.forEach(([t,f,col],k)=>txt(t,x+CW/2,y0+k*lh,f,col,CW-10))})});
   g.textAlign='right';txt('강사로 · themore-junyong.github.io/kangsaro',W-M,H-16,`12px ${F}`,'#999',W);return c}
@@ -1094,7 +1099,7 @@ document.addEventListener('click',async ev=>{
   if(A==='brush'){ui.brush=ui.brush===D.v?'':D.v;render();return}
   if(A==='brushNew'){const n=(prompt('강사 이름 (앱을 안 쓰는 강사는 기록만 돼요)')||'').trim();if(n){ui.brush='nm:'+n;render();toast(`'${n}'을 골랐어요. 칸을 누르세요`)}return}
   if(A==='paint'){const j=job(D.j),B=ui.brush;if(!B)return toast('위에서 강사(또는 지우개)를 먼저 골라 주세요');
-    const L=D.s?j.plan.slots.filter(x=>x.id===D.s):D.d?j.plan.slots.filter(x=>x.d===D.d):j.plan.slots.filter(x=>rowKey(x)===D.r);
+    const X=opAxes(j.plan.slots),L=D.s?j.plan.slots.filter(x=>x.id===D.s):D.cv!=null?j.plan.slots.filter(x=>X.cO(x)===D.cv):j.plan.slots.filter(x=>X.rO(x)===D.rv);
     const v=x=>x.inst||(x.nm?'nm:'+x.nm:'');let c=0,n=0;
     for(const x of L){if(B==='__clear'||(D.s&&v(x)===B)){x.inst='';x.nm='';continue}if(!D.s&&v(x))continue;n++;c+=assignSlot(j,x,'inst',B)}
     planTouch(j);if(c)toast(`${inst(B).name} 강사를 확정했어요. 강사에게 알림이 갔어요`);else if(!D.s&&B!=='__clear')toast(n?`빈 칸 ${n}개에 넣었어요`:'빈 칸이 없어요');return}
