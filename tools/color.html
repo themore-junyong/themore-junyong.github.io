@@ -297,7 +297,7 @@ function stepbar(){
   var h='<div class="steps">';for(var i=0;i<7;i++)h+='<i class="'+(i<=S.step?'on':'')+'"></i>';
   return h+'</div><div class="stephead"><span class="no">'+(S.step+1)+' / 7 · '+STEPN[S.step]+'</span></div>';
 }
-function head(){return '<div class="top"><div class="brand"><small>THEMORE TOOLS</small></div><a href="./">← 도구 모음</a></div>'}
+function head(){return '<div class="top"><div class="brand"><small>위듀케이션</small></div><a href="./">← 도구 모음</a></div>'}
 function meter(lbl,l,r,v){return '<div class="meter"><div class="row"><span>'+l+'</span><b>'+lbl+'</b><span>'+r+'</span></div><div class="track"><span class="dot" style="left:'+Math.round(50-clamp(v,-1,1)*46)+'%"></span></div></div>'}
 function pct(v,a,b){var p=Math.round(50+Math.abs(clamp(v,-1,1))*50);return (v>=0?a:b)+' '+p+'%'}
 
@@ -306,7 +306,7 @@ function home(){
   if(res)h+='<div class="card"><h3>지난 진단: '+esc(res.type)+'</h3><div class="btns"><button class="btn" data-go="report">진단서 다시 보기</button></div></div>';
   h+='<div class="card"><div class="why"><b>어떻게 진단하나요?</b><br>① 얼굴 사진을 찍고 ② 볼 피부색을 측정한 뒤 ③ 얼굴 아래에 색 천을 바꿔 대며 <b>온도(웜/쿨) → 명도(밝음/깊음) → 채도(선명/부드러움)</b> 3단계로 비교해요. ④ 마지막으로 문진 10문항을 합쳐 8가지 타입 중 하나로 진단해요.</div>'+
    '<p class="note">🔒 사진은 이 휴대폰 화면에서만 쓰고 <b>어디에도 저장하거나 보내지 않아요.</b> 화면을 닫으면 사라져요.</p>'+
-   '<div class="f"><label for="nick">이름(별명)</label><input id="nick" maxlength="12" placeholder="예: 김더모어" value="'+esc(S.nick)+'"></div>'+
+   '<div class="f"><label for="nick">이름(별명)</label><input id="nick" maxlength="12" placeholder="예: 홍길동" value="'+esc(S.nick)+'"></div>'+
    '<div class="f"><label>복장 추천 기준</label><div class="seg">'+['남','여','둘 다'].map(function(s){return '<button data-sex="'+s+'" aria-pressed="'+(S.sex===s)+'">'+s+'</button>'}).join('')+'</div></div>'+
    '<button class="btn pri" data-go="start">진단 시작하기</button></div>';
   return h;

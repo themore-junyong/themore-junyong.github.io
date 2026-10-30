@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>중소기업 바로 알기</title>
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap">
+<style>
+/* 세 단계: ① 오해 깨기 OX → ② 좋은 회사 고르는 법(조사 미션 체크) → ③ 찾는 곳. 기록은 이 휴대폰에만 */
+:root{
+  --bg:#f6f6f6; --ink:#333; --soft:#6f7480; --card:#fff; --line:#e2e3e8; --field:#fbfbfc;
+  --blue:#4e6bf1; --blue-ink:#fff; --blue-soft:#e9edfe; --ok:#2e8b4c; --bad:#c8432f; --mid:#c98a00;
+  --f:"Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#16181d; --ink:#eceef2; --soft:#a3a8b5; --card:#1f2229; --line:#323642; --field:#1a1d23;
+  --blue:#7c93ff; --blue-ink:#10121a; --blue-soft:#262d4a; --ok:#5cc47c; --bad:#ff7a63; --mid:#f0b93a; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#16181d; --ink:#eceef2; --soft:#a3a8b5; --card:#1f2229; --line:#323642; --field:#1a1d23;
+  --blue:#7c93ff; --blue-ink:#10121a; --blue-soft:#262d4a; --ok:#5cc47c; --bad:#ff7a63; --mid:#f0b93a; color-scheme:dark}
+body{background:var(--bg);color:var(--ink);font-family:var(--f);font-size:16px;line-height:1.6;margin:0;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:760px;margin:0 auto;padding-block:20px 60px;display:flex;flex-direction:column;gap:16px}
+h1,h2,h3{margin:0;text-wrap:balance;line-height:1.3}
+h1{font-size:1.75rem;font-weight:900} h2{font-size:1.35rem;font-weight:900} h3{font-size:1.05rem;font-weight:700}
+p{margin:0} .soft{color:var(--soft)}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+.top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.top a{color:var(--blue);font-weight:700;text-decoration:none}
+.brand small{letter-spacing:.12em;font-weight:700;color:var(--blue);font-size:.78rem}
+.tabs{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.tabs button{border:0;background:var(--card);padding:10px 4px;font-weight:700;font-size:.92rem}
+.tabs button[aria-pressed="true"]{background:var(--blue);color:var(--blue-ink)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:18px;display:flex;flex-direction:column;gap:14px}
+.why{background:var(--blue-soft);border-radius:4px;padding:12px 14px;font-size:.95rem}
+.why b{color:var(--blue)}
+.note{font-size:.88rem;color:var(--soft)}
+.btn{border:1px solid var(--line);background:var(--card);border-radius:4px;padding:10px 16px;font-weight:700}
+.btn.pri{background:var(--blue);color:var(--blue-ink);border-color:var(--blue)}
+.ox{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.ox button{border:2px solid var(--line);background:var(--field);border-radius:6px;padding:18px 0;font-size:2rem;font-weight:900}
+.ox button.right{border-color:var(--ok);color:var(--ok)}
+.ox button.wrong{border-color:var(--bad);color:var(--bad)}
+.qno{color:var(--blue);font-weight:700;font-size:.9rem}
+.q{font-size:1.3rem;font-weight:900;line-height:1.45}
+.ans{border-left:4px solid var(--ok);padding:10px 12px;background:var(--field)}
+.ans.bad{border-color:var(--bad)}
+.big{font-size:2.4rem;font-weight:900;text-align:center}
+.chk{display:flex;flex-direction:column;gap:12px}
+.ci{display:flex;flex-direction:column;gap:6px;padding-bottom:12px;border-bottom:1px solid var(--line)}
+.ci:last-child{border-bottom:0}
+.ci b{font-size:1rem}
+.ci .how{font-size:.86rem;color:var(--soft)}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.seg button{border:1px solid var(--line);background:var(--field);border-radius:4px;padding:8px 2px;font-size:.88rem}
+.seg button[aria-pressed="true"][data-v="2"]{background:var(--ok);border-color:var(--ok);color:#fff;font-weight:700}
+.seg button[aria-pressed="true"][data-v="1"]{background:var(--mid);border-color:var(--mid);color:#fff;font-weight:700}
+.seg button[aria-pressed="true"][data-v="0"]{background:var(--bad);border-color:var(--bad);color:#fff;font-weight:700}
+.f{display:flex;flex-direction:column;gap:6px}
+.f label{font-weight:700}
+.f input{border:1px solid var(--line);background:var(--field);border-radius:4px;padding:10px 12px}
+.meter{height:16px;border-radius:8px;background:var(--line);overflow:hidden}
+.meter i{display:block;height:100%}
+.links{display:flex;flex-direction:column;gap:10px}
+.links a{display:flex;flex-direction:column;gap:2px;border:1px solid var(--line);border-left:6px solid var(--blue);border-radius:4px;padding:12px 14px;color:var(--ink);text-decoration:none;background:var(--card)}
+.links a b{font-size:1.02rem} .links a span{color:var(--soft);font-size:.88rem}
+.steps{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:6px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head><body>
+<div class="wrap" id="app"></div>
+<script>
+(function(){
+var OX=[
+ {q:'우리나라 기업 중 중소기업은 절반 정도다.',a:false,e:'아니에요. 우리나라 기업의 <b>99.9%</b>가 중소기업이에요. 대기업은 0.1%도 안 돼요.'},
+ {q:'일하는 사람 10명 중 8명 정도는 중소기업에서 일한다.',a:true,e:'맞아요. 기업에서 일하는 사람의 <b>약 80%</b>가 중소기업에서 일해요. 우리 주변 대부분의 직장이 중소기업이에요.'},
+ {q:'중소기업은 직원 수가 적은 작은 회사라는 뜻이다.',a:false,e:'아니에요. 중소기업은 직원 수가 아니라 <b>업종별 매출액(과 자산 규모)</b>으로 정해요. 직원이 수백 명인 중소기업도 있어요.'},
+ {q:'중소기업 중에도 세계 시장 1등 기술을 가진 회사가 있다.',a:true,e:'맞아요. 잘 알려지지 않았지만 한 분야에서 세계 최고 수준인 회사를 <b>"히든 챔피언"</b>이라고 불러요. 반도체 장비·부품 분야에 특히 많아요.'},
+ {q:'청년이 중소기업에 취업하면 받을 수 있는 정부 혜택은 없다.',a:false,e:'아니에요. 대표적으로 <b>중소기업 취업 청년 소득세 감면</b>(일정 기간 소득세를 크게 깎아 줌) 같은 제도가 있어요. 조건과 금액은 해마다 바뀌니 입사 후 회사 인사팀에 꼭 신청 여부를 물어보세요.'},
+ {q:'"청년친화강소기업"은 정부가 기준을 정해 골라 준 괜찮은 중소기업이다.',a:true,e:'맞아요. 고용노동부가 <b>임금·일과 생활의 균형·고용 안정</b> 등을 보고 해마다 선정해요. 고용24에서 명단을 볼 수 있어요.'},
+ {q:'중소기업은 다 비슷하니까 아무 데나 가도 된다.',a:false,e:'아니에요. 같은 중소기업이라도 <b>회사마다 차이가 아주 커요.</b> 그래서 "좋은 회사 고르는 눈"이 필요해요. 다음 탭에서 연습해요!'},
+ {q:'회사가 괜찮은지는 입사해 봐야만 알 수 있다.',a:false,e:'아니에요. 입사 전에도 <b>매출 추이, 직원 수 변화, 평균 연봉, 재직자 후기</b>를 인터넷으로 확인할 수 있어요. "찾는 곳" 탭을 보세요.'},
+ {q:'근로계약서는 회사가 보관하고, 나는 안 받아도 된다.',a:false,e:'아니에요. 회사는 근로계약서를 <b>근로자에게 한 부 줘야 할 의무</b>가 있어요. 꼭 받아서 보관하세요.'},
+ {q:'중소기업에서 쌓은 경력으로 나중에 더 큰 회사로 옮길 수 있다.',a:true,e:'맞아요. 중소기업은 여러 업무를 넓게 경험할 기회가 많아요. 실력과 자격증을 쌓아 <b>경력직으로 이직</b>하는 길도 열려 있어요.'}
+];
+var CK=[
+ {t:'회사 매출이 최근 3년 동안 늘거나 유지됐다',h:'DART 전자공시 또는 회사 소개·뉴스에서 확인'},
+ {t:'회사가 생긴 지 5년 이상 됐다 (업력)',h:'회사 홈페이지 "연혁", 채용 사이트 기업 정보'},
+ {t:'직원 수가 줄지 않고 늘거나 유지된다',h:'크레딧잡 등에서 국민연금 가입자 수 변화(입사자·퇴사자) 확인'},
+ {t:'평균 연봉·초봉이 같은 업종 비슷한 회사와 비슷하거나 높다',h:'채용 공고, 크레딧잡·잡플래닛 연봉 정보'},
+ {t:'정규직(또는 정규직 전환 조건이 분명함)이다',h:'채용 공고의 "고용 형태" 확인, 면접에서 질문'},
+ {t:'4대 보험 가입, 근로계약서 작성·교부를 지킨다',h:'공고·면접에서 확인 (안 지키면 바로 탈락!)'},
+ {t:'야근·주말근무가 지나치지 않다 / 교대 규칙이 분명하다',h:'재직자 후기, 면접에서 "하루 일과"를 질문'},
+ {t:'기숙사·식당·통근버스 등 생활 지원이 있다',h:'채용 공고 복리후생 칸'},
+ {t:'교육·자격증 지원 등 성장할 기회가 있다',h:'공고·홈페이지, 면접 질문 "신입 교육은 어떻게 하나요?"'},
+ {t:'재직자·퇴사자 후기 평점이 나쁘지 않다',h:'잡플래닛·블라인드 후기 (한두 개 말고 여러 개를 보기)'},
+ {t:'정부·기관 인증을 받았다 (청년친화강소기업, 벤처, 이노비즈 등)',h:'고용24 강소기업 검색, 회사 홈페이지 인증 현황'},
+ {t:'우리 집에서 출퇴근(또는 기숙사)이 현실적이다',h:'지도 앱으로 출근 시간 확인'}
+];
+var S={tab:0,i:0,picks:[],co:'',ck:{}};
+try{S=Object.assign(S,JSON.parse(localStorage.getItem('sme-v1')||'{}'))}catch(e){}
+function save(){try{localStorage.setItem('sme-v1',JSON.stringify(S))}catch(e){}}
+var app=document.getElementById('app');
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+
+function quiz(){
+  if(S.i>=OX.length){
+    var ok=S.picks.filter(function(p,i){return p===OX[i].a}).length;
+    return '<div class="card"><p class="soft" style="text-align:center">오해 깨기 결과</p><div class="big">'+ok+' / '+OX.length+'</div><p style="text-align:center">'+(ok>=9?'🏅 중소기업 박사!':ok>=6?'👍 꽤 잘 알고 있어요':'🌱 오늘 새로 알게 된 게 많네요')+'</p>'+
+      '<div class="why"><b>오늘의 한 줄:</b> 중소기업은 "작고 나쁜 회사"가 아니라 <b>우리나라 일자리의 대부분</b>이에요. 중요한 건 대기업이냐 아니냐가 아니라, <b>좋은 회사를 고르는 눈</b>이에요.</div>'+
+      '<button class="btn pri" data-tab="1">좋은 회사 고르는 법 →</button><button class="btn" data-a="re">퀴즈 다시 하기</button></div>';
+  }
+  var q=OX[S.i],p=S.picks[S.i],done=p!=null;
+  var h='<div class="card"><span class="qno">Q'+(S.i+1)+' / '+OX.length+' · O일까 X일까?</span><p class="q">'+esc(q.q)+'</p><div class="ox">'+
+    [true,false].map(function(v){var c=done?(v===q.a?'right':(v===p?'wrong':'')):'';return '<button data-ox="'+v+'" class="'+c+'"'+(done?' disabled':'')+'>'+(v?'⭕':'❌')+'</button>'}).join('')+'</div>';
+  if(done)h+='<div class="ans'+(p===q.a?'':' bad')+'"><b>'+(p===q.a?'정답!':'아쉬워요!')+'</b> '+q.e+'</div><button class="btn pri" data-a="nx">'+(S.i===OX.length-1?'결과 보기':'다음 문제 →')+'</button>';
+  return h+'</div><p class="note">숫자 출처: 중소벤처기업부 「중소기업 기본통계」(기업 수 99.9%, 종사자 약 81%). 제도 내용은 해마다 바뀔 수 있어요.</p>';
+}
+function check(){
+  var sc=0,n=0;CK.forEach(function(_,i){if(S.ck[i]!=null){sc+=S.ck[i];n++}});
+  var pct=n?Math.round(sc/(CK.length*2)*100):0,col=pct>=70?'var(--ok)':pct>=45?'var(--mid)':'var(--bad)';
+  var bad6=S.ck[5]===0;
+  var h='<div class="card"><h2>🔎 회사 조사 미션</h2><p class="soft">관심 있는 회사(또는 오늘 받은 채용 공고) 하나를 골라, 휴대폰으로 직접 찾아보며 체크해요. 모르면 "모름"으로 두고, 면접에서 물어볼 질문으로 쓰세요.</p>'+
+    '<div class="f"><label for="co">조사할 회사 이름</label><input id="co" maxlength="30" value="'+esc(S.co)+'" placeholder="예: (주)한빛정밀"></div></div>';
+  h+='<div class="card"><div class="chk">'+CK.map(function(c,i){var v=S.ck[i];
+    return '<div class="ci"><b>'+(i+1)+'. '+c.t+'</b><span class="how">🔍 '+c.h+'</span><div class="seg">'+
+      [[2,'⭕ 그렇다'],[1,'❔ 모름'],[0,'❌ 아니다']].map(function(o){return '<button data-ck="'+i+'" data-v="'+o[0]+'" aria-pressed="'+(v===o[0])+'">'+o[1]+'</button>'}).join('')+'</div></div>'}).join('')+'</div></div>';
+  h+='<div class="card"><h3>'+esc(S.co||'이 회사')+' 점수</h3><div class="meter"><i style="width:'+pct+'%;background:'+col+'"></i></div><p><b style="font-size:1.4rem">'+pct+'점</b> <span class="soft">('+n+' / '+CK.length+'개 확인)</span></p>'+
+    '<p>'+(bad6?'🚨 <b>4대 보험·근로계약서를 지키지 않는 회사는 점수와 상관없이 피하세요.</b>':pct>=70?'👍 꽤 괜찮은 회사예요. ❔로 남은 항목은 면접에서 물어보세요.':pct>=45?'🤔 장단점이 섞여 있어요. ❌인 항목이 나에게 중요한 것(직업가치관)인지 따져 보세요.':n<6?'아직 확인한 항목이 적어요. 더 찾아보세요!':'⚠️ 걱정되는 점이 많아요. 다른 회사와 꼭 비교해 보세요.')+'</p>'+
+    '<div class="why"><b>면접에서 물어볼 질문 만들기:</b> "❔ 모름"으로 남은 항목을 질문으로 바꿔 보세요. 예) "신입 사원 교육은 어떻게 진행되나요?" "하루 일과가 어떻게 되나요?"</div><button class="btn" data-a="ckre">새 회사로 다시 하기</button></div>';
+  return h;
+}
+function where(){
+  return '<div class="card"><h2>🗺️ 좋은 중소기업 찾는 곳</h2><div class="links">'+
+   '<a href="https://www.work24.go.kr" target="_blank" rel="noopener"><b>고용24 (고용노동부)</b><span>채용 공고 + "강소기업"·"청년친화강소기업" 검색. 정부가 고른 회사부터 보기</span></a>'+
+   '<a href="https://dart.fss.or.kr" target="_blank" rel="noopener"><b>DART 전자공시</b><span>회사 매출·이익 등 재무 정보 (규모가 일정 이상인 회사)</span></a>'+
+   '<a href="https://www.kreditjob.com" target="_blank" rel="noopener"><b>크레딧잡</b><span>국민연금 가입자 수로 본 직원 수·입사자·퇴사자, 추정 연봉</span></a>'+
+   '<a href="https://www.jobplanet.co.kr" target="_blank" rel="noopener"><b>잡플래닛</b><span>재직자·퇴사자 후기와 평점 (여러 개를 보고 판단)</span></a>'+
+   '<a href="https://www.saramin.co.kr" target="_blank" rel="noopener"><b>사람인 · 잡코리아</b><span>민간 채용 공고, 기업 정보</span></a></div></div>'+
+   '<div class="card"><h3>5분 조사 순서</h3><ol class="steps"><li>고용24에서 내 전공·지역 공고 3개 고르기</li><li>회사 이름으로 크레딧잡 검색 → 직원 수가 늘고 있나?</li><li>잡플래닛 후기 5개 읽기 → 공통으로 나오는 장점·단점 적기</li><li>회사 홈페이지·뉴스 → 무엇을 만드는 회사인지 한 줄로 정리</li><li>"회사 조사 미션" 탭에서 점수 매기기</li></ol>'+
+   '<div class="why"><b>자소서·면접에 바로 쓰기:</b> 조사한 내용은 지원동기의 재료예요. "귀사가 최근 3년간 매출이 꾸준히 늘었고, 청년친화강소기업으로 선정된 점에서 오래 성장할 수 있는 회사라고 생각했습니다."</div></div>';
+}
+function render(){
+  var h='<div class="top"><div class="brand"><small>위듀케이션 · 중소기업 바로 알기</small></div><a href="./">← 도구 모음</a></div><h1>중소기업 바로 알기</h1>'+
+    '<div class="tabs">'+['① 오해 깨기','② 회사 조사 미션','③ 찾는 곳'].map(function(t,i){return '<button data-tab="'+i+'" aria-pressed="'+(S.tab===i)+'">'+t+'</button>'}).join('')+'</div>';
+  h+=[quiz,check,where][S.tab]();
+  app.innerHTML=h;
+}
+app.addEventListener('click',function(e){
+  var b=e.target.closest('button');if(!b)return;var d=b.dataset;
+  if(d.tab!=null){S.tab=+d.tab;save();render();window.scrollTo(0,0);return}
+  if(d.ox!=null){S.picks[S.i]=d.ox==='true';save();render();return}
+  if(d.a==='nx'){S.i++;save();render();window.scrollTo(0,0);return}
+  if(d.a==='re'){S.i=0;S.picks=[];save();render();return}
+  if(d.ck!=null){S.ck[d.ck]=+d.v;save();var y=window.scrollY;render();window.scrollTo(0,y);return}
+  if(d.a==='ckre'){S.ck={};S.co='';save();render();window.scrollTo(0,0)}
+});
+app.addEventListener('input',function(e){if(e.target.id==='co'){S.co=e.target.value;save()}});
+render();
+})();
+</script>
+</body></html>

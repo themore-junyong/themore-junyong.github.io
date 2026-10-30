@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>건강 생활습관 점검</title>
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap">
+<style>
+/* 흐름: 시작(교대근무 여부) → 7개 영역 문항(영역마다 한 쪽) → 결과(레이더·영역 점수·약점 2곳 실천 카드) → 1주 실천 약속 체크표 */
+:root{
+  --bg:#f6f6f6; --ink:#333; --soft:#6f7480; --card:#fff; --line:#e2e3e8; --field:#fbfbfc;
+  --blue:#4e6bf1; --blue-ink:#fff; --blue-soft:#e9edfe; --ok:#2e8b4c; --bad:#c8432f; --mid:#c98a00;
+  --f:"Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#16181d; --ink:#eceef2; --soft:#a3a8b5; --card:#1f2229; --line:#323642; --field:#1a1d23;
+  --blue:#7c93ff; --blue-ink:#10121a; --blue-soft:#262d4a; --ok:#5cc47c; --bad:#ff7a63; --mid:#f0b93a; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#16181d; --ink:#eceef2; --soft:#a3a8b5; --card:#1f2229; --line:#323642; --field:#1a1d23;
+  --blue:#7c93ff; --blue-ink:#10121a; --blue-soft:#262d4a; --ok:#5cc47c; --bad:#ff7a63; --mid:#f0b93a; color-scheme:dark}
+body{background:var(--bg);color:var(--ink);font-family:var(--f);font-size:16px;line-height:1.6;margin:0;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:760px;margin:0 auto;padding-block:20px 120px;display:flex;flex-direction:column;gap:16px}
+h1,h2,h3{margin:0;text-wrap:balance;line-height:1.3}
+h1{font-size:1.75rem;font-weight:900} h2{font-size:1.35rem;font-weight:900} h3{font-size:1.05rem;font-weight:700}
+p{margin:0} .soft{color:var(--soft)}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+.top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.top a{color:var(--blue);font-weight:700;text-decoration:none}
+.brand small{letter-spacing:.12em;font-weight:700;color:var(--blue);font-size:.78rem}
+.card{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:18px;display:flex;flex-direction:column;gap:14px}
+.why{background:var(--blue-soft);border-radius:4px;padding:12px 14px;font-size:.95rem}
+.why b{color:var(--blue)}
+.warn{background:#fff4e0;color:#7a4300;border-radius:4px;padding:12px 14px;font-size:.95rem}
+.note{font-size:.88rem;color:var(--soft)}
+.btns{display:flex;flex-wrap:wrap;gap:8px}
+.btn{border:1px solid var(--line);background:var(--card);border-radius:4px;padding:10px 16px;font-weight:700}
+.btn.pri{background:var(--blue);color:var(--blue-ink);border-color:var(--blue)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.steps{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.steps i{height:6px;border-radius:3px;background:var(--line)}
+.steps i.on{background:var(--blue)}
+.item{display:flex;flex-direction:column;gap:8px;padding-bottom:14px;border-bottom:1px solid var(--line)}
+.item:last-child{border-bottom:0;padding-bottom:0}
+.item p{font-weight:700}
+.opts{display:flex;flex-direction:column;gap:6px}
+.opts button{border:1px solid var(--line);background:var(--field);border-radius:4px;padding:9px 12px;text-align:left}
+.opts button[aria-pressed="true"]{border-color:var(--blue);background:var(--blue-soft);font-weight:700}
+.seg{display:flex;border:1px solid var(--line);border-radius:4px;overflow:hidden}
+.seg button{flex:1;border:0;background:var(--field);padding:10px 4px}
+.seg button[aria-pressed="true"]{background:var(--blue);color:var(--blue-ink);font-weight:700}
+.total{font-size:2.6rem;font-weight:900;line-height:1}
+.radar{width:100%;max-width:360px;margin:0 auto;display:block}
+.radar text{font-size:11px;fill:var(--ink);font-family:var(--f)}
+.area{display:grid;grid-template-columns:8.6em 1fr 4.2em;gap:8px;align-items:center;font-size:.95rem}
+.area .tr{height:14px;background:var(--line);border-radius:7px;overflow:hidden}
+.area .fl{display:block;height:100%;border-radius:7px}
+.area .g{font-weight:700;text-align:right;font-size:.85rem}
+.act{display:flex;flex-direction:column;gap:8px}
+.act label{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--line);border-radius:4px;padding:10px 12px;background:var(--field)}
+.act input{width:20px;height:20px;margin-top:2px;flex:none}
+.fact{border-left:4px solid var(--blue);padding:8px 12px;background:var(--field);font-size:.92rem}
+table.wk{border-collapse:collapse;width:100%;font-size:.9rem}
+table.wk th,table.wk td{border:1px solid var(--line);padding:6px 4px;text-align:center}
+table.wk td:first-child{text-align:left;width:42%;font-size:.85rem;line-height:1.35}
+table.wk th:not(:first-child),table.wk td:not(:first-child){width:8%;padding:6px 0}
+table.wk button{border:0;background:none;font-size:1.2rem;width:100%}
+.barb{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--line);
+  padding:10px max(16px,env(safe-area-inset-right,0px)) calc(10px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));z-index:5}
+.barb .in{max-width:760px;margin:0 auto;display:flex;gap:8px;justify-content:space-between}
+.barb .btn{flex:1;max-width:220px;padding:12px}
+@media print{.barb,.noprint{display:none!important}body{background:#fff}}
+</style>
+</head><body>
+<div class="wrap" id="app"></div>
+<script>
+(function(){
+/* 영역: 문항 = [질문, [[보기, 점수0~3], ...]] */
+var A=[
+ {k:'sleep',n:'수면',e:'😴',items:[
+  ['평일에 보통 몇 시간 자나요?',[['5시간 미만',0],['5~6시간',1],['6~7시간',2],['7시간 이상',3]]],
+  ['누워서 잠들기까지 얼마나 걸리나요?',[['대부분 30분 넘게 걸린다',0],['가끔 오래 걸린다',1],['보통 10~20분',2],['거의 바로 잠든다',3]]],
+  ['잠들기 직전까지 휴대폰을 보나요?',[['매일',0],['자주',1],['가끔',2],['거의 안 본다',3]]],
+  ['일어나는 시간이 날마다 일정한가요? (주말 포함)',[['2시간 이상 들쭉날쭉',0],['1~2시간 차이',1],['1시간 이내',2],['거의 같다',3]]],
+  ['낮에 졸려서 집중하기 힘든 때가 있나요?',[['거의 매일',0],['일주일에 몇 번',1],['가끔',2],['거의 없다',3]]]]},
+ {k:'move',n:'신체활동',e:'🏃',items:[
+  ['숨이 찰 정도의 운동을 30분 이상 하는 날은 일주일에 며칠인가요?',[['0일',0],['1~2일',1],['3~4일',2],['5일 이상',3]]],
+  ['하루에 걷는 시간은 얼마나 되나요? (통학·이동 포함)',[['거의 안 걷는다',0],['30분 미만',1],['30분~1시간',2],['1시간 이상',3]]],
+  ['팔굽혀펴기·스쿼트 같은 근력 운동은 일주일에 몇 번 하나요?',[['안 한다',0],['1번',1],['2번',2],['3번 이상',3]]],
+  ['하루에 앉아 있는 시간은? (수업·게임·폰 포함)',[['10시간 이상',0],['7~10시간',1],['4~7시간',2],['4시간 미만',3]]],
+  ['스트레칭을 얼마나 자주 하나요?',[['거의 안 한다',0],['가끔',1],['일주일에 몇 번',2],['매일',3]]]]},
+ {k:'food',n:'식사',e:'🍚',items:[
+  ['아침밥을 일주일에 몇 번 먹나요?',[['0~1번',0],['2~3번',1],['4~5번',2],['6~7번',3]]],
+  ['채소나 과일은 얼마나 먹나요?',[['거의 안 먹는다',0],['하루 1번 정도',1],['하루 2번',2],['매 끼니 먹는다',3]]],
+  ['라면·패스트푸드·배달 음식은 일주일에 몇 번 먹나요?',[['5번 이상',0],['3~4번',1],['1~2번',2],['거의 안 먹는다',3]]],
+  ['탄산·단 음료·에너지 드링크는 얼마나 마시나요?',[['하루 2캔 이상',0],['하루 1캔',1],['일주일에 몇 번',2],['거의 안 마신다',3]]],
+  ['밤늦게 야식을 먹는 날은 일주일에 며칠인가요?',[['4일 이상',0],['2~3일',1],['1일',2],['거의 안 먹는다',3]]]]},
+ {k:'mind',n:'마음·스트레스',e:'🧠',items:[
+  ['최근 2주 동안 스트레스를 얼마나 받았나요?',[['아주 많이',0],['많이',1],['조금',2],['거의 없다',3]]],
+  ['최근 2주 동안 기분이 가라앉거나 아무것도 하기 싫은 날이 있었나요?',[['거의 매일',0],['일주일 넘게',1],['며칠',2],['전혀 없었다',3]]],
+  ['힘들 때 털어놓을 수 있는 사람이 있나요?',[['없다',0],['있지만 말하기 어렵다',1],['1명 있다',2],['2명 이상 있다',3]]],
+  ['나만의 스트레스 푸는 방법이 있나요?',[['없다',0],['있지만 잘 안 쓴다',1],['있고 가끔 쓴다',2],['있고 자주 쓴다',3]]],
+  ['하루에 나를 위한 쉬는 시간(취미·휴식)은?',[['거의 없다',0],['30분 미만',1],['30분~1시간',2],['1시간 이상',3]]]]},
+ {k:'phone',n:'스마트폰',e:'📱',items:[
+  ['공부·일 말고 하루에 폰을 몇 시간 쓰나요?',[['6시간 이상',0],['4~6시간',1],['2~4시간',2],['2시간 미만',3]]],
+  ['폰이 없으면 불안하거나 초조한가요?',[['매우 그렇다',0],['조금 그렇다',1],['별로',2],['전혀',3]]],
+  ['하려던 일을 미루고 폰을 볼 때가 있나요?',[['자주',0],['가끔',1],['드물게',2],['거의 없다',3]]],
+  ['걸으면서 폰을 보나요?',[['자주',0],['가끔',1],['드물게',2],['안 본다',3]]],
+  ['짧은 영상을 보다가 시간 가는 줄 모를 때가 있나요?',[['매일',0],['일주일에 몇 번',1],['가끔',2],['거의 없다',3]]]]},
+ {k:'body',n:'자세·몸 관리',e:'🦴',items:[
+  ['목이나 어깨가 뻐근한 날은?',[['매일',0],['일주일에 몇 번',1],['가끔',2],['거의 없다',3]]],
+  ['폰을 볼 때 고개를 푹 숙이나요?',[['대부분 그렇다',0],['자주 그렇다',1],['가끔',2],['의식해서 바르게 본다',3]]],
+  ['무거운 물건을 들 때 어떻게 드나요?',[['허리만 굽혀 든다',0],['생각 안 해 봤다',1],['가끔 무릎을 굽힌다',2],['항상 무릎을 굽히고 몸에 붙여 든다',3]]],
+  ['같은 자세로 1시간 넘게 있을 때 일어나 몸을 푸나요?',[['안 푼다',0],['가끔',1],['자주',2],['50분마다 꼭 푼다',3]]],
+  ['물은 하루에 몇 컵(200ml) 마시나요?',[['2컵 이하',0],['3~4컵',1],['5~6컵',2],['7컵 이상',3]]]]},
+ {k:'sub',n:'담배·술·카페인',e:'🚭',items:[
+  ['담배나 전자담배를 피우나요?',[['매일 피운다',0],['가끔 피운다',1],['끊었다',2],['안 피운다',3]]],
+  ['술은 얼마나 마시나요? (해당 없으면 맨 아래)',[['일주일에 2번 이상',0],['일주일에 1번',1],['한 달에 1~3번',2],['안 마신다 / 해당 없음',3]]],
+  ['커피·에너지 드링크 등 카페인 음료를 하루에 몇 잔 마시나요?',[['3잔 이상',0],['2잔',1],['1잔',2],['안 마신다',3]]]]}
+];
+var CARD={
+ sleep:{fact:'성인은 하루 <b>7시간 이상</b>, 청소년은 <b>8~10시간</b> 자는 것이 권장돼요(미국수면의학회 권고). 잠이 부족하면 집중력·면역력이 떨어지고, 현장에서는 사고 위험이 커져요.',
+  acts:['일어나는 시간을 주말에도 똑같이 고정하기','잠들기 1시간 전에 폰을 침대 밖에 두기','오후 3시 이후 카페인 음료 안 마시기','아침에 일어나면 햇빛 10분 보기']},
+ move:{fact:'세계보건기구(WHO)는 성인에게 <b>일주일에 중간 강도 운동 150~300분</b>과 <b>주 2회 이상 근력 운동</b>을, 청소년에게 <b>매일 60분</b> 활동을 권해요.',
+  acts:['하루 7천 보 이상 걷기 (엘리베이터 대신 계단)','자기 전 스쿼트 20개 + 팔굽혀펴기 10개','주 3번 30분 빠르게 걷기·뛰기','50분 앉아 있으면 일어나 2분 움직이기']},
+ food:{fact:'아침을 거르면 점심·저녁에 과식하기 쉬워요. 단 음료 한 캔에는 각설탕 여러 개만큼의 당이 들어 있어요. <b>현장 근무는 몸이 재산</b>이에요.',
+  acts:['아침에 우유·바나나·삶은 달걀 중 하나라도 먹기','단 음료 대신 물이나 보리차 마시기','하루 한 끼는 채소 반찬 꼭 먹기','밤 9시 이후 야식 끊기']},
+ mind:{fact:'스트레스는 없앨 수 없지만 <b>푸는 방법</b>은 연습할 수 있어요. 힘들 때 이야기할 사람이 한 명만 있어도 회복이 훨씬 빨라져요.',
+  acts:['자기 전 오늘 좋았던 일 3가지 적기','힘들 때 연락할 사람 1명 정해 두기','숨 4초 들이쉬고 6초 내쉬기 × 5번 (하루 2번)','하루 20분 나만의 쉬는 시간 지키기']},
+ phone:{fact:'폰을 오래 보면 수면·자세·집중력이 함께 나빠져요. <b>시간 제한 기능</b>을 쓰면 의지보다 훨씬 효과가 좋아요.',
+  acts:['폰 설정에서 SNS·영상 앱 하루 사용 시간 제한 걸기','공부·일할 때 폰을 다른 방(가방)에 두기','걸을 때는 폰 주머니에 넣기','잠자리에서 폰 금지, 알람은 시계로']},
+ body:{fact:'고개를 숙이면 목이 받는 무게가 몇 배로 늘어나요. 현장 근무자에게 가장 흔한 직업병이 <b>목·어깨·허리 근골격계 질환</b>이에요.',
+  acts:['폰은 눈높이로 올려서 보기','무거운 물건은 무릎 굽히고 몸에 붙여 들기','50분마다 목·어깨 스트레칭 1분','물 하루 6컵 이상 마시기 (물병 들고 다니기)']},
+ sub:{fact:'담배와 술은 일찍 시작할수록 끊기 어려워요. 에너지 드링크를 여러 캔 마시면 카페인 과다로 가슴 두근거림·불면이 생길 수 있어요.',
+  acts:['금연 상담 받아 보기 (보건소 금연클리닉, 금연상담전화 1544-9030)','카페인 음료 하루 1잔으로 줄이기','술자리에서는 물 한 잔씩 번갈아 마시기','에너지 드링크 대신 잠깐 걷기·찬물 세수']}
+};
+var SHIFT='<h3>🌙 교대근무자를 위한 수면 팁</h3><ul style="margin:0;padding-left:20px;display:flex;flex-direction:column;gap:4px"><li>야간 근무 후 퇴근길엔 선글라스로 햇빛 줄이기 → 집에 가서 바로 잠들기 쉬워요</li><li>낮에 잘 땐 암막 커튼·안대·귀마개로 "밤"을 만들기</li><li>야간 근무 전 20~30분 짧은 낮잠</li><li>잠들기 6시간 전부터 카페인 끊기</li><li>야간 근무 중엔 기름지고 무거운 음식보다 가볍게 나눠 먹기</li><li>쉬는 날에도 잠자는 시간을 크게 바꾸지 않기</li></ul>';
+var S={step:-1,shift:null,a:{},pick:[],wk:{}};
+try{S=Object.assign(S,JSON.parse(localStorage.getItem('health-v1')||'{}'))}catch(e){}
+function save(){try{localStorage.setItem('health-v1',JSON.stringify(S))}catch(e){}}
+var app=document.getElementById('app');
+function head(){return '<div class="top"><div class="brand"><small>위듀케이션 · 건강 생활습관 점검</small></div><a href="./">← 도구 모음</a></div>'}
+function score(){return A.map(function(ar){var s=0;ar.items.forEach(function(_,i){s+=S.a[ar.k+i]||0});return Math.round(s/(ar.items.length*3)*100)})}
+function grade(v){return v>=75?['좋음','var(--ok)']:v>=50?['보통','var(--mid)']:['주의','var(--bad)']}
+function radar(sc){
+  var c=180,r=120,n=sc.length,pt=function(i,v){var a=-Math.PI/2+i*2*Math.PI/n;return [c+Math.cos(a)*r*v,c+Math.sin(a)*r*v]};
+  var g='';[.25,.5,.75,1].forEach(function(f){g+='<polygon points="'+sc.map(function(_,i){return pt(i,f).join(',')}).join(' ')+'" fill="none" stroke="var(--line)"/>'});
+  sc.forEach(function(_,i){var p=pt(i,1);g+='<line x1="'+c+'" y1="'+c+'" x2="'+p[0]+'" y2="'+p[1]+'" stroke="var(--line)"/>';var t=pt(i,1.2);g+='<text x="'+t[0]+'" y="'+t[1]+'" text-anchor="middle" dominant-baseline="middle">'+A[i].e+' '+A[i].n+'</text>'});
+  g+='<polygon points="'+sc.map(function(v,i){return pt(i,Math.max(.04,v/100)).join(',')}).join(' ')+'" fill="color-mix(in srgb,var(--blue) 25%,transparent)" stroke="var(--blue)" stroke-width="2"/>';
+  return '<svg class="radar" viewBox="0 0 360 360" role="img" aria-label="영역별 건강 점수">'+g+'</svg>';
+}
+function start(){
+  return head()+'<div class="card"><div style="font-size:2.4rem">🩺</div><h1>건강 생활습관 점검</h1><p>수면·운동·식사·마음·스마트폰·자세·담배와 술, <b>7가지 영역 33문항</b>으로 내 생활습관을 점검해요. 결과로 내 약점 영역과 <b>이번 주 실천 약속</b>을 만들어요.</p>'+
+   '<div class="why"><b>약 5분</b> · 최근 2주 동안의 평소 모습으로 답하세요. 답은 이 휴대폰에만 저장돼요.</div>'+
+   '<div class="card" style="padding:12px"><b>교대근무(밤샘 근무)를 하거나 할 예정인가요?</b><div class="seg">'+[['예',true],['아니요',false]].map(function(o){return '<button data-shift="'+o[1]+'" aria-pressed="'+(S.shift===o[1])+'">'+o[0]+'</button>'}).join('')+'</div></div>'+
+   '<button class="btn pri" data-go="0"'+(S.shift==null?' disabled':'')+'>시작하기</button></div>';
+}
+function area(i){
+  var ar=A[i],h=head()+'<div class="steps">'+A.map(function(_,j){return '<i class="'+(j<=i?'on':'')+'"></i>'}).join('')+'</div><p class="soft">'+(i+1)+' / 7 영역</p><div class="card"><h2>'+ar.e+' '+ar.n+'</h2>';
+  ar.items.forEach(function(it,j){var v=S.a[ar.k+j];h+='<div class="item"><p>'+(j+1)+'. '+it[0]+'</p><div class="opts">'+it[1].map(function(o){return '<button data-q="'+ar.k+j+'" data-v="'+o[1]+'" aria-pressed="'+(v===o[1])+'">'+o[0]+'</button>'}).join('')+'</div></div>'});
+  return h+'</div>';
+}
+function result(){
+  var sc=score(),tot=Math.round(sc.reduce(function(a,b){return a+b},0)/sc.length),g=grade(tot);
+  var ord=sc.map(function(v,i){return i}).sort(function(a,b){return sc[a]-sc[b]}),weak=ord.slice(0,2);
+  var h=head()+'<div class="card"><span class="soft">나의 건강 생활습관 점수</span><div><span class="total" style="color:'+g[1]+'">'+tot+'</span><span class="soft"> / 100 · '+g[0]+'</span></div>'+radar(sc)+
+    '<div style="display:flex;flex-direction:column;gap:8px">'+A.map(function(ar,i){var gg=grade(sc[i]);return '<div class="area"><span>'+ar.e+' '+ar.n+'</span><span class="tr"><span class="fl" style="width:'+Math.max(3,sc[i])+'%;background:'+gg[1]+'"></span></span><span class="g" style="color:'+gg[1]+'">'+sc[i]+' '+gg[0]+'</span></div>'}).join('')+'</div></div>';
+  if(S.a.mind1===0||S.a.mind1===1)h+='<div class="warn"><b>💛 마음이 많이 지쳐 있는 것 같아요.</b> 기분이 가라앉는 날이 2주 넘게 이어지면 혼자 버티지 말고 이야기해 주세요. 선생님·보건실·가족, 또는 <b>청소년상담 1388</b>, <b>자살예방 상담전화 109</b>(24시간)로 연락할 수 있어요.</div>';
+  h+='<div class="card"><h2>🎯 먼저 바꿀 곳: '+weak.map(function(i){return A[i].e+' '+A[i].n}).join(', ')+'</h2><p class="soft">점수가 가장 낮은 두 영역이에요. 아래에서 이번 주에 해 볼 행동을 <b>최대 3개</b> 골라 약속해요.</p>';
+  weak.forEach(function(i){var c=CARD[A[i].k];h+='<h3>'+A[i].e+' '+A[i].n+' ('+sc[i]+'점)</h3><p class="fact">'+c.fact+'</p><div class="act">'+c.acts.map(function(t){return '<label><input type="checkbox" data-pick="'+t+'"'+(S.pick.indexOf(t)>=0?' checked':'')+'><span>'+t+'</span></label>'}).join('')+'</div>'});
+  h+='</div>';
+  if(S.shift)h+='<div class="card">'+SHIFT+'</div>';
+  if(S.pick.length){
+    var D=['월','화','수','목','금','토','일'];
+    h+='<div class="card"><h2>📅 이번 주 실천 약속</h2><p class="soft">지킨 날을 눌러 ✅로 바꾸세요. 7일 중 5일이면 성공!</p><table class="wk"><tr><th>약속</th>'+D.map(function(d){return '<th>'+d+'</th>'}).join('')+'</tr>'+
+      S.pick.map(function(t,i){return '<tr><td>'+t+'</td>'+D.map(function(_,j){var k=i+'_'+j;return '<td><button data-wk="'+k+'">'+(S.wk[k]?'✅':'⬜')+'</button></td>'}).join('')+'</tr>'}).join('')+'</table></div>';
+  }
+  h+='<details class="card"><summary><b>다른 영역 실천 방법도 보기</b></summary>'+ord.slice(2).map(function(i){var c=CARD[A[i].k];return '<h3>'+A[i].e+' '+A[i].n+' ('+sc[i]+'점)</h3><p class="fact">'+c.fact+'</p><ul style="margin:0;padding-left:20px">'+c.acts.map(function(t){return '<li>'+t+'</li>'}).join('')+'</ul>'}).join('')+'</details>';
+  h+='<p class="note">이 점검은 생활습관을 돌아보는 교육용 도구예요. 질병을 진단하지 않아요. 몸이나 마음이 계속 불편하면 병원·보건소·상담 기관을 찾아 주세요.</p>'+
+   '<div class="btns noprint"><button class="btn" data-go="again">다시 점검하기</button><button class="btn" data-go="print">인쇄·PDF</button></div>';
+  return h;
+}
+function render(){
+  app.innerHTML=S.step===-1?start():S.step==='res'?result():area(S.step);
+  var b=document.getElementById('barb');if(b)b.remove();
+  if(typeof S.step==='number'&&S.step>=0){
+    var ar=A[S.step],full=ar.items.every(function(_,j){return S.a[ar.k+j]!=null});
+    b=document.createElement('div');b.className='barb';b.id='barb';
+    b.innerHTML='<div class="in"><button class="btn" data-go="prev">이전</button><button class="btn pri" data-go="next"'+(full?'':' disabled')+'>'+(S.step===A.length-1?'결과 보기':'다음 영역')+'</button></div>';
+    document.body.appendChild(b);
+  }
+}
+document.addEventListener('click',function(e){
+  var b=e.target.closest('button');if(!b)return;var d=b.dataset;
+  if(d.shift!=null){S.shift=d.shift==='true';save();render();return}
+  if(d.go==='0'){S.step=0}
+  else if(d.go==='prev'){S.step=S.step===0?-1:S.step-1}
+  else if(d.go==='next'){S.step=S.step===A.length-1?'res':S.step+1}
+  else if(d.go==='again'){S={step:-1,shift:null,a:{},pick:[],wk:{}}}
+  else if(d.go==='print'){window.print();return}
+  else if(d.q){S.a[d.q]=+d.v;save();b.parentNode.querySelectorAll('button').forEach(function(x){x.setAttribute('aria-pressed',x===b)});
+    var ar=A[S.step],full=ar.items.every(function(_,j){return S.a[ar.k+j]!=null}),nx=document.querySelector('#barb [data-go="next"]');if(nx)nx.disabled=!full;return}
+  else if(d.wk){S.wk[d.wk]=!S.wk[d.wk];save();b.textContent=S.wk[d.wk]?'✅':'⬜';return}
+  else return;
+  save();render();window.scrollTo(0,0);
+});
+document.addEventListener('change',function(e){
+  var t=e.target.dataset.pick;if(t==null)return;
+  var i=S.pick.indexOf(t);
+  if(e.target.checked){if(S.pick.length>=3){e.target.checked=false;alert('약속은 3개까지만 골라요. 적을수록 잘 지켜요!');return}S.pick.push(t)}else if(i>=0){S.pick.splice(i,1);S.wk={}}
+  save();var y=window.scrollY;render();window.scrollTo(0,y);
+});
+render();
+})();
+</script>
+</body></html>

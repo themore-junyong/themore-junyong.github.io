@@ -1,8 +1,43 @@
 rules_version = '2';
-// 더모어 도구 보안 규칙. 화면은 DB를 직접 읽고 쓰지 않고, 서버 함수만 씀.
-// 초대코드(codes)는 준용이 Firebase 콘솔 → Firestore에서 직접 만들고 고침.
+// 도구 보안 규칙. 초대코드(codes)·사용량(use)은 서버 함수만 읽고 씀(준용이 콘솔에서 코드 관리).
+// 실시간 반응판(rooms)만 화면이 직접 씀:
+//  - 방 문서: 방 번호를 아는 사람은 읽기, 방을 만든 강사만 지금 질문(q) 바꾸기
+//  - 답(ans/{질문id}_{uid}): 학생은 열린 질문에 자기 답 1개만 쓰기·고치기, 읽기는 강사만
 service cloud.firestore {
   match /databases/{db}/documents {
     match /{doc=**} { allow read, write: if false; }
+
+    match /rooms/{pin} {
+      allow get: if request.auth != null;
+      allow update: if request.auth != null
+        && resource.data.owner == request.auth.uid
+        && resource.data.exp > request.time
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['q']);
+
+      // 이모지 반응: 학생마다 문서 1개(rx/{uid})를 누를 때마다 덮어씀. 강사 화면이 바뀐 것을 세어 띄움
+      match /rx/{uid} {
+        allow read: if request.auth != null && get(/databases/$(db)/documents/rooms/$(pin)).data.owner == request.auth.uid;
+        allow create, update: if request.auth != null && request.auth.uid == uid
+          && get(/databases/$(db)/documents/rooms/$(pin)).data.exp > request.time
+          && request.resource.data.keys().hasOnly(['e', 't'])
+          && request.resource.data.e in ['👍', '🤔', '🐢', '😂', '🔥']
+          && request.resource.data.t == request.time;
+      }
+
+      match /ans/{id} {
+        function room() { return get(/databases/$(db)/documents/rooms/$(pin)).data; }
+        allow read: if request.auth != null && room().owner == request.auth.uid;
+        allow create, update: if request.auth != null
+          && room().exp > request.time
+          && room().q.open == true
+          && id == room().q.id + '_' + request.auth.uid
+          && request.resource.data.keys().hasOnly(['q', 'v', 'nick', 't'])
+          && request.resource.data.q == room().q.id
+          && request.resource.data.nick is string && request.resource.data.nick.size() <= 12
+          && ((request.resource.data.v is int && request.resource.data.v >= 0 && request.resource.data.v < 6)
+              || (request.resource.data.v is string && request.resource.data.v.size() > 0 && request.resource.data.v.size() <= 80))
+          && request.resource.data.t == request.time;
+      }
+    }
   }
 }
