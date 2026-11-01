@@ -31,7 +31,7 @@ const fbApp = initializeApp(firebaseConfig || { apiKey: 'demo', authDomain: 'dem
 const auth = A.getAuth(fbApp);
 const db = F.getFirestore(fbApp);
 if (EMU) { A.connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true }); F.connectFirestoreEmulator(db, '127.0.0.1', 8080); }
-const { doc, collection, getDoc, getDocs, setDoc, updateDoc, deleteDoc, deleteField, query, where, limit, onSnapshot } = F;
+const { doc, collection, getDoc, getDocs, setDoc, updateDoc, deleteDoc, deleteField, query, where, limit, onSnapshot, orderBy } = F;
 
 /* ===== 문서 나누기 ===== */
 const PUB = { i: ['name', 'region', 'topics', 'intro', 'certs', 'career', 'photo', 'joined', 'beta', 'refBy'], c: ['name', 'contact', 'joined', 'approved', 'refBy', 'biz', 'blocked', 'logo', 'forms', 'items'] };
@@ -91,6 +91,44 @@ let me = null, role = '', uidMe = '', profileLoaded = false;
 let CO = '', staffMe = null, PEND = null;
 const NAV0 = { c: NAV.c.slice() };
 const isStaffView = () => role === 'c' && CO !== uidMe;
+/* ===== 강의 대화방 =====
+   rooms/{공고}: coId · members(확정 강사) · title · lastAt/lastBy/lastText. 메시지는 rooms/{공고}/msgs (최근 50개만, 방을 열었을 때만 실시간)
+   방 문서는 업체 앱이 확정 강사 목록에 맞춰 씀. 마감·지급·입금 확인이 다 끝나면 서버(chatDone)가 방을 지움 */
+const ROOMS = new Map(), MSGS = new Map();
+let chatUnsub = null, roomUnsub = null;
+const roomOf = j => ({ coId: j.coId, members: S.apps.filter(a => a.jobId === j.id && a.status === '확정').map(a => a.instId).sort(), title: `${j.school || ''} ${j.title || ''}`.trim() });
+const roomSame = (k, v) => { const r = ROOMS.get(k.slice(6)); return !!r && stable(pick(r, ['coId', 'members', 'title'])) === stable(v); };
+window.CHATX = {
+  msgs: jid => MSGS.get(jid) || [],
+  lastOf: jid => { const r = ROOMS.get(jid); return r && r.lastAt ? { at: r.lastAt, by: r.lastBy } : null; },
+  open(jid) {
+    this.close(); MSGS.set(jid, []);
+    chatUnsub = onSnapshot(query(collection(db, 'rooms', jid, 'msgs'), orderBy('at', 'desc'), limit(50)),
+      s => { MSGS.set(jid, s.docs.map(d => ({ id: d.id, ...d.data() })).reverse()); chatPaint(); },
+      e => { console.error(e); toast('대화방을 열지 못했어요. 잠시 뒤 다시 열어 주세요'); });
+  },
+  close() { if (chatUnsub) { chatUnsub(); chatUnsub = null; } },
+  async send(jid, m) {
+    try {
+      const j = job(jid);
+      if (role === 'c' && j) { const r = roomOf(j); await setDoc(doc(db, 'rooms', jid), r, { merge: true }); last.set(`rooms/${jid}`, stable(r)); }
+      await setDoc(doc(collection(db, 'rooms', jid, 'msgs')), clean({ ...m, by: uidMe }));
+      await updateDoc(doc(db, 'rooms', jid), { lastAt: m.at, lastBy: uidMe, lastText: String(m.text || '사진').slice(0, 60) });
+    } catch (e) { console.error(e); toast(e.code === 'permission-denied' ? '이 대화방에 쓸 수 없어요. 새로고침해 주세요' : '보내지 못했어요. 인터넷을 확인해 주세요'); }
+  },
+  async del(jid, id) { try { await deleteDoc(doc(db, 'rooms', jid, 'msgs', id)); } catch (e) { console.error(e); toast('지우지 못했어요'); } },
+};
+function roomsLive(q) {
+  if (roomUnsub) roomUnsub();
+  roomUnsub = onSnapshot(q, snap => {
+    for (const ch of snap.docChanges()) {
+      if (ch.type === 'removed') ROOMS.delete(ch.doc.id); else ROOMS.set(ch.doc.id, ch.doc.data());
+      const k = `rooms/${ch.doc.id}`, v = payloads().get(k); if (v && roomSame(k, v)) last.set(k, stable(v));
+    }
+    later();
+  }, e => console.error(e));
+  unsub.push(() => { if (roomUnsub) { roomUnsub(); roomUnsub = null; } });
+}
 const last = new Map();         // 경로 → 마지막으로 서버와 맞춘 내용
 const links = new Set();        // 업체: 확정한 강사 (서류 열람 허락)
 const unsub = [];
@@ -114,6 +152,8 @@ function payloads() {
     out.set(`jobs/${j.id}`, omit(j, ['notices', 'reports', 'plan']));
     // 운영 시간표(누가 어느 칸)는 업체·연결된 강사만 보는 하위 문서로
     if (j.plan) out.set(`jobs/${j.id}/plan/main`, { slots: j.plan.slots || [] });
+    // 강의 대화방: 확정 강사가 있고 아직 끝나지 않은 강의만
+    { const r = roomOf(j); if (r.members.length && !chatDone(j)) out.set(`rooms/${j.id}`, r); }
     for (const n of j.notices || []) out.set(`notices/${n.id}`, { ...n, jobId: j.id, coId: c });
   }
   for (const a of S.apps) {
@@ -135,7 +175,7 @@ function readMarks() {
 }
 function prime(keys) {
   const P = payloads(), R = readMarks();
-  for (const [k, v] of P) if (!keys || keys.has(k)) last.set(k, stable(v));
+  for (const [k, v] of P) if (!keys || keys.has(k)) { if (k.startsWith('rooms/') && !roomSame(k, v)) continue; last.set(k, stable(v)); }
   for (const [k, v] of R) if (!keys || keys.has(k.split('#')[0])) last.set(k, v);
 }
 
@@ -148,7 +188,7 @@ async function flush() {
   try {
     const P = payloads(), R = readMarks(), order = k => k.startsWith('users/') ? 0 : k.startsWith('jobs/') ? (k.includes('/plan/') ? 1.5 : 1) : k.startsWith('apps/') ? 2 : 3;
     const writes = [...P].filter(([k, v]) => last.get(k) !== stable(v)).sort((a, b) => order(a[0]) - order(b[0]));
-    for (const [k, v] of writes) { const nw = k.startsWith('jobs/') && !last.has(k); await setDoc(doc(db, k), v, k.startsWith('jobs/') ? { merge: true } : {}); last.set(k, stable(v)); if (nw && TD) TD.cnt = { ...(TD.cnt || {}), [ymNow()]: ((TD.cnt || {})[ymNow()] || 0) + 1 }; }
+    for (const [k, v] of writes) { const nw = k.startsWith('jobs/') && !last.has(k); await setDoc(doc(db, k), v, k.startsWith('jobs/') || k.startsWith('rooms/') ? { merge: true } : {}); last.set(k, stable(v)); if (nw && TD) TD.cnt = { ...(TD.cnt || {}), [ymNow()]: ((TD.cnt || {})[ymNow()] || 0) + 1 }; }
     for (const [k, v] of R) if (last.get(k) !== v) { const p = k.split('#')[0]; await updateDoc(doc(db, p), { ['reads.' + uidMe]: v }); last.set(k, v); }
     // 하위 문서(운영 시간표)를 먼저 지워야 보안 규칙이 공고를 찾을 수 있음
     for (const k of [...last.keys()].sort((a, b) => b.split('/').length - a.split('/').length)) if (!k.includes('#') && !P.has(k) && mayDelete(k)) { await deleteDoc(doc(db, k)); last.delete(k); }
@@ -226,7 +266,7 @@ function app(ch) {
 
 async function start(user, want) {
   uidMe = user.uid; window.KSR_UID = uidMe;
-  unsub.splice(0).forEach(f => f()); links.clear(); last.clear();
+  unsub.splice(0).forEach(f => f()); links.clear(); last.clear(); ROOMS.clear(); MSGS.clear(); if (window.CHATX) window.CHATX.close();
   Object.assign(S, { insts: [], cos: [], jobs: [], apps: [], evs: [], alerts: [] });
   me = await loadUser(uidMe, true);
   profileLoaded = true; PEND = null; CO = ''; staffMe = null; WHO = '';
@@ -276,6 +316,7 @@ async function start(user, want) {
     live(query(collection(db, 'jobs'), where('status', '==', '모집'), limit(300)), ch => { if (ch.type !== 'removed') putJob({ id: ch.doc.id, ...ch.doc.data() }); });
     live(query(collection(db, 'alerts'), where('instId', '==', uidMe)), ch => { const x = { id: ch.doc.id, ...ch.doc.data() }; if (ch.type === 'removed') S.alerts = S.alerts.filter(y => y.id !== x.id); else upsert(S.alerts, x); });
     live(query(collection(db, 'notices'), where('to', 'array-contains', uidMe)), notice);
+    roomsLive(query(collection(db, 'rooms'), where('members', 'array-contains', uidMe)));
   } else {
     S.cos = [mine]; S.me = 'c:' + CO;
     // 달력 날짜 메모는 로그인한 사람 것만 (직원은 자기 메모)
@@ -293,7 +334,10 @@ async function start(user, want) {
     // 주민번호는 30일이 지나면 업체가 안 봤어도 지움
     const old = Date.now() - 30 * 864e5;
     for (const a of S.apps) if (a.rrn && a.rrnAt && Date.parse(a.rrnAt) < old) { delete a.rrn; delete a.rrnAt; a.docs[RRN] = '기한 지나 지움'; }
+    const rm = await getDocs(query(collection(db, 'rooms'), where('coId', '==', CO))).catch(() => null);
+    if (rm) for (const d of rm.docs) ROOMS.set(d.id, d.data());
     prime();
+    roomsLive(query(collection(db, 'rooms'), where('coId', '==', CO)));
     live(query(collection(db, 'apps'), where('coId', '==', CO)), app);
     live(query(collection(db, 'notices'), where('coId', '==', CO)), notice);
     // 업체 공고도 실시간 (직원끼리 같이 고칠 때)

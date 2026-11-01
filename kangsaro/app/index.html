@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<meta name="build" content="261101-1442">
+<meta name="build" content="261101-1800">
 <title>강사로</title>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#2563EB">
@@ -56,6 +56,12 @@ label.f input,label.f select,label.f textarea,textarea.f{padding:9px 10px;border
 .dow span{text-align:center;font-size:11px;font-weight:600;color:var(--mu)}.dow span:first-child{color:var(--sun)}.dow span:last-child{color:var(--b2)}
 .day{height:62px;padding:3px;border:1px solid var(--ln);border-radius:8px;background:var(--sf);display:flex;flex-direction:column;gap:2px;overflow:hidden;text-align:left;cursor:pointer}
 .day.blank{background:transparent;border-color:transparent;cursor:default}.day.sel{border:2px solid var(--ac);background:var(--acs)}.day.clash{border:2px solid var(--r2)}
+.chat{display:flex;flex-direction:column;gap:8px;max-height:55vh;min-height:200px;overflow:auto;background:var(--sf);border:1px solid var(--ln);border-radius:12px;padding:10px}
+.msg{display:flex;flex-direction:column;gap:2px;align-items:flex-start;max-width:85%}.msg.me{align-self:flex-end;align-items:flex-end}
+.msg .bub{background:var(--bg);border:1px solid var(--ln);border-radius:12px;padding:6px 10px;word-break:break-word;line-height:1.5}.msg.me .bub{background:var(--acs);border-color:transparent}
+.msg img{max-width:220px;width:100%;border-radius:10px}.msg [data-act=chatDel]{cursor:pointer;text-decoration:underline}
+body.chatting .ksb-btn{display:none!important}
+.chatIn{display:flex;gap:6px;align-items:flex-end}.chatIn textarea{flex:1;min-height:40px;max-height:120px;resize:vertical;font:inherit;padding:8px;border:1px solid var(--ln);border-radius:10px;background:var(--bg);color:inherit}
 .day{position:relative}.day .mm{position:absolute;top:2px;right:4px;font-size:11px;line-height:1;color:var(--ac)}.memo textarea{min-height:52px}
 .day .n{font-size:11px;font-weight:500}.day .n.red{color:var(--sun)}.day .n.blue{color:var(--b2)}.day .n.today{background:var(--ac);color:var(--bg);border-radius:99px;width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;font-weight:700}
 .bar{display:block;font-size:10px;font-weight:600;line-height:1.3;padding:1px 3px;border-radius:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -440,6 +446,36 @@ function planUndo(j){const U=planSeen(j);if(!U.st.length)return toast('되돌릴
   for(const [id,st] of o.st){const a=S.apps.find(x=>x.id===id);if(a&&a.status!==st){if(a.status==='확정'&&st==='지원'){S.alerts.push({id:uid(),instId:a.instId,appId:a.id,text:`[확정 취소] ${co(j.coId).name} · ${j.school} ${j.title} 배정이 잘못 눌려 취소되었어요. 다시 확정되면 알려 드릴게요.`,at:new Date().toISOString(),read:false});un++}a.status=st}}
   U.last=planSnap(j);j.planAt=new Date().toISOString();save();render();toast(`되돌렸어요${un?` · 잘못 확정된 ${un}명에게 취소 알림을 보냈어요`:''}`)}
 
+/* ===== 강의 대화방: 업체(대표·직원)와 이 강의에 확정된 강사만 =====
+   체험판은 S.chats에 저장. 실제 앱은 real.js가 window.CHATX로 Firestore(rooms/{공고}/msgs)에 실시간 연결 */
+const myUid=()=>window.KSR_UID||meId();
+const chatMembers=j=>appsOf(j.id).filter(a=>a.status==='확정').map(a=>a.instId);
+const chatCan=j=>!!j&&chatMembers(j).length>0&&!chatDone(j)&&(meRole()==='c'?j.coId===meId():chatMembers(j).includes(meId()));
+// 마감 + 업체가 모두 지급 + 강사가 모두 입금 확인 → 대화방 끝 (서버가 메시지도 지움)
+const chatDone=j=>j.status==='마감'&&chatMembers(j).length>0&&appsOf(j.id).filter(a=>a.status==='확정').every(a=>a.paidAt&&a.recv==='ok');
+const CHL={msgs:jid=>(S.chats||[]).filter(m=>m.jobId===jid).sort((a,b)=>a.at<b.at?-1:1),
+  send:(jid,m)=>{(S.chats=S.chats||[]).push({id:uid(),jobId:jid,...m});save();chatPaint()},
+  del:(jid,id)=>{S.chats=(S.chats||[]).filter(x=>x.id!==id);save();chatPaint()},
+  lastOf:jid=>{const L=CHL.msgs(jid),m=L[L.length-1];return m?{at:m.at,by:m.by}:null},open(){},close(){}};
+const CHT=()=>window.CHATX||CHL;
+const chatKey=jid=>`kangsaro.chat.${myUid()}.${jid}`;
+const chatNew=jid=>{const l=CHT().lastOf(jid);if(!l||l.by===myUid())return false;let r='';try{r=localStorage.getItem(chatKey(jid))||''}catch(e){}return l.at>r};
+const chatBtn=j=>chatCan(j)?`<button class="btn sm${chatNew(j.id)?' pri':''}" style="align-self:flex-start" data-act="chatOpen" data-j="${j.id}">💬 강의 대화방${chatNew(j.id)?' · 새 메시지':''}</button>`:'';
+const chatWho=j=>meRole()==='c'?`${co(j.coId).name}${WHO?' '+WHO:''}`:`${inst(meId()).name} 강사`;
+const chatTime=at=>{const d=new Date(at);return isNaN(d)?'':`${d.getMonth()+1}/${d.getDate()} ${pad(d.getHours())}:${pad(d.getMinutes())}`};
+function chatOpen(jid){const j=job(jid);if(!chatCan(j))return toast('확정된 강사와 업체만 들어올 수 있어요');ui.chat=jid;CHT().open(jid);document.body.classList.add('chatting');
+  openSheet(`<div class="row"><h2 class="sp">💬 ${esc(j.school)} ${esc(j.title)}</h2><button class="btn sm" data-act="closeSheet">닫기</button></div>
+  <span class="mu sm">${esc(co(j.coId).name)}과(와) 이 강의에 확정된 강사 ${chatMembers(j).length}명만 보는 방이에요.</span>
+  <div id="chatList" class="chat" aria-live="polite"></div>
+  <span class="mu sm">모집 마감, 업체 지급, 강사 입금 확인이 모두 끝나면 대화방은 사라져요.</span>
+  ${`<div class="chatIn"><label class="btn sm" title="사진 보내기" aria-label="사진 보내기">📷<input type="file" accept="image/*" data-act="chatImg" hidden></label><textarea id="chatText" rows="1" maxlength="1000" placeholder="메시지 (Enter 보내기, Shift+Enter 줄바꿈)"></textarea><button class="btn sm pri" data-act="chatSend">보내기</button></div>`}`);
+  chatPaint()}
+function chatPaint(){const box=$('#chatList');if(!box||!ui.chat)return;const L=CHT().msgs(ui.chat),me=myUid();
+  box.innerHTML=L.map(m=>`<div class="msg${m.by===me?' me':''}">${m.by===me?'':`<b class="sm">${esc(m.who||'')}</b>`}${m.text?`<div class="bub">${esc(m.text).replace(/\n/g,'<br>')}</div>`:''}${m.img?`<img src="${m.img}" alt="보낸 사진">`:''}<span class="mu sm">${chatTime(m.at)}${m.by===me?` · <span role="button" tabindex="0" data-act="chatDel" data-id="${m.id}">지우기</span>`:''}</span></div>`).join('')||'<p class="mu sm">아직 대화가 없어요. 첫 인사를 남겨 보세요.</p>';
+  box.scrollTop=box.scrollHeight;
+  if(L.length)try{localStorage.setItem(chatKey(ui.chat),L[L.length-1].at)}catch(e){}}
+function chatSend(){const j=job(ui.chat),t=$('#chatText');if(!j||!t)return;const v=t.value.trim();if(!v)return;
+  CHT().send(j.id,{by:myUid(),who:chatWho(j),text:v.slice(0,1000),at:new Date().toISOString()});t.value='';t.focus()}
 /* ===== 달력 날짜 메모 (강사·업체 각자, 본인만 봄) ===== */
 const memoOwner=()=>window.KSR_UID||meId();
 const memoOf=(d,side)=>S.evs.find(e=>e.kind==='memo'&&e.side===side&&e.instId===memoOwner()&&e.d===d);
@@ -528,7 +564,7 @@ function printPdf(title,pages){const html=`<!doctype html><html lang="ko"><head>
   const f=document.createElement('iframe');f.style.cssText='position:fixed;width:0;height:0;border:0';document.body.appendChild(f);f.contentDocument.write(html);f.contentDocument.close();setTimeout(()=>{f.contentWindow.print();setTimeout(()=>f.remove(),2000)},400);toast("인쇄 창에서 'PDF로 저장'을 고르세요")}
 async function copy(text,what){try{await navigator.clipboard.writeText(text)}catch(e){const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();try{document.execCommand('copy')}catch(_){}ta.remove()}toast((what||'')+' 복사했어요')}
 function openSheet(html){$('#sheet').innerHTML=`<div class="sheet" data-act="closeSheetBg"><div class="in" role="dialog" aria-modal="true">${html}</div></div>`}
-function closeSheet(){$('#sheet').innerHTML=''}
+function closeSheet(){const ch=ui.chat;if(ch){ui.chat=null;CHT().close();document.body.classList.remove('chatting')}$('#sheet').innerHTML='';if(ch)render()}
 const chip=st=>`<span class="chip ${st}">${ST[st]}</span>`;
 
 /* ===== 강사: 달력 ===== */
@@ -607,10 +643,10 @@ function entryCard(e,clash){const tx=tax(e.fee),t=todayIso(),left=Math.round((dt
   const a=e.kind==='app'&&e.ref.status==='확정'&&e.d>=t?e.ref:null,j=e.job,un=e.kind==='app'?j.notices.filter(n=>(n.to||[]).includes(iid)&&!n.reads[iid]).length:0,miss=a?j.needs.filter(n=>n!=='프로필'&&n!==RRN&&!docOf(a,n)):[];
   const ctrl=e.kind==='ev'?`<div class="row">${[['applied','지원'],['confirmed','확정'],['done','미입금'],['paid','입금 완료'],['no','안 됨']].map(([k,l])=>`<button class="btn sm" data-act="evst" data-id="${e.ref.id}" data-st="${k}" ${e.ref.st===k||(k==='done'&&e.st==='done')?'style="border-color:var(--ac);color:var(--ac)"':''}>${l}</button>`).join('')}<button class="btn sm" data-act="evdel" data-id="${e.ref.id}">지우기</button></div>`
     :`<p class="mu sm">강사로 안에서 지원한 강의예요. 회사가 확정·지급하면 자동으로 바뀌어요.</p>${e.st==='applied'?`<button class="btn sm" data-act="cancelApp" data-a="${e.ref.id}">지원 취소</button>`:e.st==='confirmed'?`<button class="btn sm" data-act="cancelApp" data-a="${e.ref.id}">확정 강의 취소 (업체에 사유 전달)</button>`:''}`;
-  return `<div class="card" data-d="${e.d}" ${e.kind==='app'?`data-j="${j.id}"`:''}><div class="row">${chip(e.st)}${e.d>=t?`<span class="chip ${left<=1?'warn':'off'}">${left<=0?'오늘':'D-'+left}</span>`:''}${un?`<span class="chip warn">새 공지 ${un}</span>`:''}${miss.length?`<span class="chip warn">서류 ${miss.length}</span>`:''}</div><h3>${esc(e.title)}</h3>
+  return `<div class="card" data-d="${e.d}" ${e.kind==='app'?`data-j="${j.id}"`:''}><div class="row">${chip(e.st)}${e.d>=t?`<span class="chip ${left<=1?'warn':'off'}">${left<=0?'오늘':'D-'+left}</span>`:''}${un?`<span class="chip warn">새 공지 ${un}</span>`:''}${miss.length?`<span class="chip warn">서류 ${miss.length}</span>`:''}${e.kind==='app'&&chatNew(j.id)&&chatCan(j)?'<span class="chip warn">새 대화</span>':''}</div><h3>${esc(e.title)}</h3>
   <span class="mu">${md(e.d)}(${dowOf(e.d)}) · ${esc(e.time||'시간 미정')} · ${esc(e.org)}</span>
   ${clash?'<div class="alert">같은 날 일정이 두 개예요. 시간과 거리를 확인하세요.</div>':''}
-  ${e.kind==='app'?noticeBox(j,iid)+dayBox(e):''}
+  ${e.kind==='app'?noticeBox(j,iid)+chatBtn(j)+dayBox(e):''}
   ${a&&j.desc?`<details><summary>공고 내용 보기</summary><pre class="pf">${esc(j.desc)}</pre></details>`:''}
   ${a?`<div class="mu sm">낼 것: ${j.needs.map(n=>n==='프로필'?'프로필 ✓(자동)':docOf(a,n)?`${esc(n)} ✓${docOf(a,n).endsWith('(자동)')?'(자동)':''}`:`<b style="color:var(--r2)">${esc(n)} 빠짐</b>`).join(' · ')}</div>
     ${miss.map(n=>{const fm=(co(j.coId).forms||{})[n];return `${fm?`<div class="row"><span class="sm sp">${esc(n)}: 업체 양식이 있어요. 받아서 채운 뒤 올려 주세요.</span><button class="btn sm" data-act="getFile" data-p="users/${j.coId}/forms/${esc(n)}" data-nm="${esc(fm)}">양식 받기</button></div>`:''}<label class="f">${esc(n)} 올리기 <input type="file" data-act="doc" data-a="${a.id}" data-n="${esc(n)}"></label>`}).join('')}
@@ -865,7 +901,7 @@ function vCJobs(){if(ui.jobId&&job(ui.jobId))return vCJob(job(ui.jobId));const t
   const up=J.filter(j=>last(j.dates)>=t),past=J.filter(j=>last(j.dates)<t);
   const card=j=>{const s=jobStats(j);return `<button class="card" style="text-align:left;cursor:pointer" data-act="openJob" data-j="${j.id}"><div class="row">${jChip(j)}<h3 class="sp">${esc(j.region)} ${esc(j.school)} ${esc(j.title)}</h3>${jDelBtn(j)}</div>
     <span class="mu">${j.dates.map(d=>`${md(d)}(${dowOf(d)})`).join('·')} ${esc(j.time)} · ${feeLabel(j)}</span>
-    <div class="row">${s.ap?`<span class="chip applied">지원 ${s.ap}</span>`:''}${s.cf?`<span class="chip confirmed">확정 ${s.cf}</span>`:''}${s.miss?`<span class="chip warn">빠진 서류 ${s.miss}</span>`:''}${s.unread?`<span class="chip warn">공지 안 읽음 ${s.unread}</span>`:''}${s.cx?`<span class="chip warn">확정 강사 취소 ${s.cx}</span>`:''}${!s.cf&&j.status==='마감'?'<span class="chip warn">확정 강사 없음</span>':''}${isOp(j)?`<span class="chip off">운영 ${j.plan.slots.length}칸</span>`:''}${s.empty?`<span class="chip warn">빈 칸 ${s.empty}</span>`:''}</div></button>`};
+    <div class="row">${s.ap?`<span class="chip applied">지원 ${s.ap}</span>`:''}${s.cf?`<span class="chip confirmed">확정 ${s.cf}</span>`:''}${s.miss?`<span class="chip warn">빠진 서류 ${s.miss}</span>`:''}${s.unread?`<span class="chip warn">공지 안 읽음 ${s.unread}</span>`:''}${s.cx?`<span class="chip warn">확정 강사 취소 ${s.cx}</span>`:''}${!s.cf&&j.status==='마감'?'<span class="chip warn">확정 강사 없음</span>':''}${isOp(j)?`<span class="chip off">운영 ${j.plan.slots.length}칸</span>`:''}${s.empty?`<span class="chip warn">빈 칸 ${s.empty}</span>`:''}${chatNew(j.id)&&chatCan(j)?'<span class="chip warn">새 대화</span>':''}</div></button>`};
   const todo=up.filter(j=>{const s=jobStats(j);return s.miss||s.unread||s.cx||(!s.cf&&j.status==='마감')});
   return `<h2>${esc(co(meId()).name)} 강의 운영판</h2>${dayBoard(meId())}
   ${todo.length?`<div class="alert">챙길 강의 ${todo.length}건: 빠진 서류, 안 읽은 공지, 확정 강사 없음을 확인하세요.</div>`:'<div class="ok">다가오는 강의에 빠진 것이 없어요.</div>'}
@@ -893,7 +929,7 @@ function vCJob(j){const A=appsOf(j.id),s=jobStats(j);
     ${cf?`<div class="mu sm">받을 것: ${j.needs.map(n=>n==='프로필'?'프로필 ✓':n===RRN&&a.rrn?`${RRN} ✓ <button class="btn sm" data-act="rrnTake" data-a="${a.id}">복사하고 지우기</button>`:docOf(a,n)?`${esc(n)} ✓ <button class="btn sm" data-act="getFile" data-p="${esc(docPath(a,n))}" data-nm="${esc(docOf(a,n).replace(/ \(자동\)$/,''))}">받기</button>`:`<b style="color:var(--r2)">${esc(n)} 빠짐</b>`).join(' · ')}</div>`:''}
     ${a.status==='지원'?`<button class="btn pri" data-act="confirm" data-a="${a.id}">이 강사로 확정</button>`:cf&&!a.paidAt?`<button class="btn sm" data-act="unconfirm" data-a="${a.id}">확정 취소</button>`:''}</div>`};
   const missPeople=A.filter(a=>a.status==='확정'&&j.needs.some(n=>n!=='프로필'&&!docOf(a,n)));
-  return `<button class="btn sm" data-act="back">‹ 목록</button>
+  return `<div class="row"><button class="btn sm" data-act="back">‹ 목록</button>${chatBtn(j)}</div>
   ${j.hold?`<div class="alert"><b>확인 대기 · 강사에게 아직 안 보여요</b><br>${scamWhy(j)} 때문이에요. 표현을 고쳐 저장하면 바로 다시 검사해서 올라가요. 그대로 두면 운영자 확인 뒤 올라가요. 문의: tobadyclup@naver.com</div>`:''}${downByReports(j)?'<div class="alert"><b>강사 신고 3건으로 내려갔어요.</b> 운영자가 확인 중이에요. 문의: tobadyclup@naver.com</div>':''}
   <div class="card"><div class="row">${jChip(j)}<h2 class="sp">${esc(j.region)} ${esc(j.school)} ${esc(j.title)}</h2></div>
   <div class="grid2"><label class="f">강의 제목<input data-act="jedit" data-k="title" value="${esc(j.title||'')}"></label><label class="f">학교(기관)<input data-act="jedit" data-k="school" value="${esc(j.school||'')}"></label><label class="f">지역<input data-act="jedit" data-k="region" value="${esc(j.region||'')}"></label></div>
@@ -914,6 +950,7 @@ function vCJob(j){const A=appsOf(j.id),s=jobStats(j);
   <h3>지원자 ${A.filter(a=>a.status!=='미선정'&&a.status!=='취소').length}명${A.some(a=>a.status==='미선정')?` · 미선정 ${A.filter(a=>a.status==='미선정').length}명`:''}${A.some(a=>a.status==='취소')?` · 취소 ${A.filter(a=>a.status==='취소').length}명`:''}</h3>
   ${A.filter(a=>a.status!=='미선정'&&a.status!=='취소').map(prof).join('')||'<p class="mu">아직 지원자가 없어요.</p>'}${A.filter(a=>a.status==='취소').map(a=>`<div class="row mu sm">${esc(inst(a.instId).name)} · ${a.cxConfirmed?'확정 후 취소':'지원 취소'}</div>`).join('')}
   <h3>공지</h3>
+  ${chatCan(j)?'':(chatDone(j)?'<span class="mu sm">마감·지급·입금 확인이 모두 끝나 대화방이 닫혔어요.</span>':'<span class="mu sm">강사를 확정하면 이 강의 대화방이 열려요. 확정된 강사와 업체만 들어와요.</span>')}
   <div class="card"><label class="f">종류<select id="ntKind"><option>일반</option><option>시간표</option><option>집결 장소</option><option>주의사항</option><option>준비물</option></select></label><textarea class="f" id="ntText" rows="3" placeholder="도착 장소, 주차, 기자재, 인원, 준비물, 주의사항 등"></textarea><label class="f">사진·이미지 (시간표, 약도 등, 선택)<input type="file" id="ntImg" accept="image/*"></label><button class="btn pri" data-act="notice" data-j="${j.id}" ${s.cf?'':'disabled'}>확정 강사 ${s.cf}명에게 공지 보내기</button></div>
   ${j.notices.slice().reverse().map(n=>{const to=n.to||[],rd=to.filter(i=>n.reads[i]);return `<div class="card">${n.kind?`<b class="sm">[${esc(n.kind)}]</b>`:''}<pre class="pf">${esc(n.text)}</pre>${n.img?`<img src="${n.img}" alt="공지 이미지" style="width:100%;border-radius:8px">`:''}<span class="mu sm">${n.by?`작성 ${esc(n.by)} · `:''}읽음 ${rd.length}/${to.length}${to.length>rd.length?` · 안 읽음: ${to.filter(i=>!n.reads[i]).map(i=>esc(inst(i).name)).join(', ')}`:''}</span>
    ${to.filter(i=>!n.reads[i]).map(i=>{const p=inst(i);return `<div class="row"><b class="sm sp">${esc(p.name)} (안 읽음)</b>${contactBtns(p,`[${co(j.coId).name}] ${p.name} 강사님, ${j.school} ${j.title} 공지가 올라왔어요. 강사로 앱에서 확인 부탁드립니다.\n\n${n.text.slice(0,120)}`)}</div>`}).join('')}</div>`}).join('')}`}
@@ -1067,6 +1104,9 @@ document.addEventListener('click',async ev=>{
   const el=ev.target.closest('[data-act]');if(!el)return;const A=el.dataset.act,D=el.dataset;
   if(A==='closeSheetBg'){if(ev.target===el)closeSheet();return}
   if(A==='closeSheet')return closeSheet();
+  if(A==='chatOpen')return chatOpen(D.j);
+  if(A==='chatSend')return chatSend();
+  if(A==='chatDel'){if(!confirm('이 메시지를 지울까요?'))return;return CHT().del(ui.chat,D.id)}
   if(A==='reset'){if(el.dataset.sure){try{localStorage.removeItem(KEY)}catch(e){}S=seed();ui.jobId=null;delete el.dataset.sure;el.textContent='처음으로';render();toast('체험 데이터를 처음으로 되돌렸어요');}else{el.dataset.sure=1;el.textContent='한 번 더 누르면 초기화';setTimeout(()=>{delete el.dataset.sure;el.textContent='처음으로'},3000)}return}
   if(A==='sel'){ui.sel=D.d;render();return slideTo(D.d,true)}
   if(A==='mon'){const n=+D.n;if(!n){ui.month=todayIso().slice(0,7);ui.sel=todayIso()}else{const [y,m]=ui.month.split('-').map(Number);const d=new Date(y,m-1+n,1);ui.month=`${d.getFullYear()}-${pad(d.getMonth()+1)}`;ui.sel=ui.month===todayIso().slice(0,7)?todayIso():ui.month+'-01'}return render()}
@@ -1227,6 +1267,7 @@ document.addEventListener('change',ev=>{const el=ev.target,D=el.dataset||{};
   if(el.id==='who'){S.me=el.value;ui.jobId=null;ui.tab=NAV[meRole()][0][0];save();render();return toast(el.options[el.selectedIndex].text+'(으)로 보고 있어요')}
   if(el.id==='jcWe'){ui.jcal.we=el.checked;return}
   // 날짜 메모: 화면을 다시 그리지 않고 저장 (다른 날짜를 바로 누를 수 있게), 비우면 지움
+  if(D.act==='chatImg'&&el.files[0]){const j=job(ui.chat);if(!j)return;shrink(el.files[0],900).then(img=>{if(!img)return toast('사진을 읽지 못했어요');if(img.length>290000)return toast('사진이 너무 커요');CHT().send(j.id,{by:myUid(),who:chatWho(j),text:'',img,at:new Date().toISOString()})});el.value='';return}
   if(D.act==='memo'){const v=el.value.trim().slice(0,500),m=memoOf(D.d,D.side),at=new Date().toISOString();
     if(m){if(v){m.text=v;m.at=at}else S.evs=S.evs.filter(x=>x!==m)}else if(v)S.evs.push({id:uid(),instId:memoOwner(),kind:'memo',side:D.side,d:D.d,text:v,at});else return;
     save();const c=document.querySelector(`[data-act="${D.side==='c'?'csel':'sel'}"][data-d="${D.d}"]`);if(c){const k=c.querySelector('.mm');if(v&&!k)c.querySelector('.n').insertAdjacentHTML('afterend',memoMark(D.d,D.side));if(!v&&k)k.remove()}
@@ -1276,6 +1317,7 @@ if(!INST.standalone){
 if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw.js').catch(()=>{});
 // 붙여넣기만 하면 바로 읽기 ('공고 읽기' 버튼을 안 눌러도 됨)
 document.addEventListener('paste',ev=>{if(ev.target.id==='pRaw')setTimeout(()=>{const b=document.querySelector('[data-act="parse"]');if(b&&$('#pRaw').value.trim().length>20)b.click()},0)});
+document.addEventListener('keydown',ev=>{if(ev.target.id==='chatText'&&ev.key==='Enter'&&!ev.shiftKey&&!ev.isComposing){ev.preventDefault();chatSend()}});
 document.addEventListener('change',ev=>{const sp=ev.target.closest&&ev.target.closest('.tp');if(sp)tPickSync(sp)});
 // 새 공고: 시작~끝 시간을 고르면 jTime을 채우고, 차시(1시간 = 1차시, 반올림)를 자동으로 넣음. 차시를 직접 고치면 그 뒤로는 안 건드림
 // 시간 고르기: 오전/오후 · 시(1~12) · 분(10분 단위). 값은 숨은 칸에 24시간 HH:MM으로
@@ -1291,6 +1333,6 @@ document.addEventListener('input',ev=>{if(ev.target.matches&&ev.target.matches('
 render();
 </script>
 <script src="../bot.js" defer></script>
-<script type="module" src="real.js?v=261101-1442"></script>
+<script type="module" src="real.js?v=261101-1800"></script>
 </body>
 </html>
