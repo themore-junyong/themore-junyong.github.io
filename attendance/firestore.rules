@@ -1,7 +1,8 @@
 rules_version = '2';
 
 // 교회 출석앱 + 회비 관리 보안 규칙 (Firestore 규칙은 프로젝트에 하나라 둘을 함께 둠)
-// - config/admins 문서의 emails 배열에 있는 사람 = 관리자(준용). 모든 교회를 만들고 고칠 수 있음.
+// - config/admins 문서의 emails 배열에 있는 사람 = 관리자(준용). 교회를 만들고 이름·명단(이메일)을 정할 수 있음.
+//   관리자라도 그 교회 성도·출석·연락처·재정은 그 교회 명단에 자기 이메일이 있을 때만 봄 (2026-11-01)
 // - churches/{교회}.leaders 배열에 있는 사람 = 그 교회를 쓰는 사람. 출석 체크와 성도 정보 보기 (연락처·메모 제외).
 // - churches/{교회}.staff 배열에 있는 사람 = 교역자. 위에 더해 성도 추가·수정·삭제. (앱이 staff도 leaders에 넣어 저장함)
 // - churches/{교회}.pastors 배열 = 담임목사. 교역자 권한 + 재정 (앱이 pastors를 staff·leaders에도 넣어 저장함)
@@ -30,10 +31,10 @@ service cloud.firestore {
         && myEmail() in get(/databases/$(db)/documents/churches/$(cid)).data.get('staff', []);
     }
     function canEdit(cid) {
-      return isAdmin() || isStaff(cid);
+      return isStaff(cid);
     }
     function canUse(cid) {
-      return isAdmin() || isLeader(cid);
+      return isLeader(cid);
     }
     // 재정은 그 교회 담임목사(pastors)와 재정 담당(finance)만. 앱 관리자(준용)도 명단에 없으면 못 봄 (교회를 지울 때만 관리자가 지움)
     function isFinance(cid) {
@@ -67,7 +68,7 @@ service cloud.firestore {
           && (!('memo' in request.resource.data) || request.resource.data.memo == resource.data.get('memo', null));
         allow delete: if canEdit(cid);
       }
-      // 성도 연락처·메모: 담임목사·교역자·관리자만 (리더·재정 담당은 못 봄)
+      // 성도 연락처·메모: 담임목사·교역자만 (리더·재정 담당은 못 봄)
       match /contacts/{mid} {
         allow read, write: if canEdit(cid);
       }
@@ -77,45 +78,45 @@ service cloud.firestore {
         allow create, update: if canUse(cid)
           && request.resource.data.present is bool
           && request.resource.data.checkedBy == myEmail();
-        allow delete: if isAdmin();
+        allow delete: if isAdmin() && isStaff(cid);
       }
 
-      // ───────── 재정 (재정 담당·관리자만) ─────────
+      // ───────── 재정 (그 교회 담임목사·재정 담당만) ─────────
       match /offerings/{oid} {
         allow read: if isFinance(cid);
         allow create, update: if isFinance(cid)
           && request.resource.data.amount is number
           && request.resource.data.date is string
           && request.resource.data.method in ['현금', '계좌'];
-        allow delete: if isFinance(cid) || isAdmin();
+        allow delete: if isFinance(cid);
       }
       match /ledger/{lid} {
         allow read: if isFinance(cid);
         allow create, update: if isFinance(cid)
           && request.resource.data.amount is number
           && request.resource.data.kind in ['in', 'out', 'dep'];
-        allow delete: if isFinance(cid) || isAdmin();
+        allow delete: if isFinance(cid);
       }
       match /fin/{doc} {
         allow read, write: if isFinance(cid);
-        allow delete: if isAdmin();
+        allow delete: if isAdmin() && isFinance(cid);
       }
       match /days/{day} {
         allow read, write: if isFinance(cid);
-        allow delete: if isAdmin();
+        allow delete: if isAdmin() && isFinance(cid);
       }
       match /receipts/{rid} {
         allow read: if isFinance(cid);
         allow create, update: if isFinance(cid)
           && request.resource.data.img is string
           && request.resource.data.img.size() < 1000000;
-        allow delete: if isFinance(cid) || isAdmin();
+        allow delete: if isFinance(cid);
       }
       // 기부금 영수증 발급 대장 (5년 보관): 지울 수 없음
       match /issued/{iid} {
         allow read: if isFinance(cid);
         allow create, update: if isFinance(cid) && request.resource.data.by == myEmail();
-        allow delete: if isAdmin();
+        allow delete: if isAdmin() && isFinance(cid);
       }
       // 재정 수정 기록: 쓴 사람·시각을 속일 수 없고 고칠 수 없음 (교회를 통째로 지울 때만 관리자가 지움)
       match /finlog/{lid} {
@@ -124,7 +125,7 @@ service cloud.firestore {
           && request.resource.data.by == myEmail()
           && request.resource.data.at == request.time;
         allow update: if false;
-        allow delete: if isAdmin();
+        allow delete: if isAdmin() && isFinance(cid);
       }
     }
 

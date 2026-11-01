@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<meta name="build" content="2026-10-30.1">
+<meta name="build" content="2026-11-01.1">
 <title>교회 출석 · THE MORE</title>
 <meta name="theme-color" content="#1F6F78">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -320,48 +320,49 @@ textarea.memo{min-height:60px;border:1px solid var(--line);background:var(--bg);
         <label>재정 담당 이메일 (한 줄에 하나) · 재정만 (출석·성도 명단 화면은 안 보임). 담임목사와 재정 담당 말고는 아무도 재정을 못 봐요<textarea id="aFinance" placeholder="finance@gmail.com"></textarea></label>
         <div class="row"><button class="btn" id="aSave">저장</button><button class="btn line" id="aNew">새 교회</button><span id="aMsg" class="ok"></span></div>
       </section>
-      <section>
+      <p class="hint hidden" id="aOutside" style="background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;margin:0">🔒 이 교회 성도·출석·연락처는 볼 수 없어요. 관리자라도 그 교회 명단에 들어가 있을 때만 보여요. 들어가려면 위 담임목사나 교역자 칸에 내 이메일을 넣고 저장하세요. (교회 사람들도 명단에서 내 이메일을 볼 수 있어요)</p>
+      <section class="needIn">
         <h2>성도 가져오기</h2>
         <p class="hint">구글 시트 '성도' 탭에서 제목 줄까지 모두 선택해 복사(Ctrl+C)한 뒤 아래에 붙여 넣으세요. 성도ID가 같으면 덮어써요.</p>
         <textarea id="aImport" placeholder="성도ID	이름	직분	분류	…"></textarea>
         <div class="row"><button class="btn" id="aImportBtn">가져오기</button><span id="aImportMsg" class="ok"></span></div>
       </section>
-      <section>
+      <section class="needIn">
         <h2>사진 가져오기</h2>
         <p class="hint">앱시트 사진 폴더(구글 드라이브 '성도_Images' 등)를 PC로 내려받아 압축을 푼 뒤, 아래에서 사진들을 한꺼번에 고르세요. 시트의 '사진' 칸 파일 이름, 성도ID, 이름 순으로 짝을 찾아요. 사진은 작게 줄여서 저장해요.</p>
         <div class="row"><label class="btn line" style="cursor:pointer">사진 고르기<input type="file" id="aPhotos" accept="image/*" multiple hidden></label><label class="btn line" style="cursor:pointer">폴더째 고르기<input type="file" id="aPhotoDir" webkitdirectory multiple hidden></label></div>
         <span id="aPhotoMsg" class="ok"></span>
       </section>
-      <section>
+      <section class="needIn">
         <h2>가족 세대주 정리</h2>
         <p class="hint">같은 세대ID로 묶인 가족마다 아빠를 세대주로, 엄마를 배우자로 맞춰요. 아빠가 없으면 엄마가 세대주예요. 먼저 바뀔 내용을 보여 드리고, 확인을 눌러야 저장돼요.</p>
         <div class="row"><button class="btn line" id="aHeadCheck">바뀔 내용 보기</button><button class="btn hidden" id="aHeadApply">이대로 저장</button></div>
         <div id="aHeadMsg" class="ok" style="white-space:pre-line;font-size:14px"></div>
       </section>
-      <section>
+      <section class="needIn">
         <h2>같은 이름 정리</h2>
         <p class="hint">이름이 같은 성도를 찾아 보여 드려요. 같은 사람이 두 번 들어간 경우만 골라 합치세요. 번호가 작은 쪽으로 합치고, 빈 칸은 다른 쪽 내용으로 채우고, 출석 기록도 옮겨요. 진짜 동명이인은 고르지 마세요.</p>
         <div class="row"><button class="btn line" id="aTwinCheck">같은 이름 찾기</button><button class="btn line hidden" id="aTwinAll">모두 고르기</button><button class="btn hidden" id="aTwinApply">고른 것 합치기</button></div>
         <div id="aTwinList" style="font-size:14px;display:flex;flex-direction:column;gap:8px"></div>
         <div id="aTwinMsg" class="ok" style="white-space:pre-line;font-size:14px"></div>
       </section>
-      <details class="tools" id="aTools">
+      <details class="tools needIn" id="aTools">
         <summary>처음 옮길 때 쓰는 도구 5가지 (눌러서 펼치기)</summary>
         <p class="hint">출석 기록 가져오기, 구역(셀)·교회 등록일·장결자 한꺼번에 넣기, 성도 번호 정리예요. 새 교회는 보통 쓸 일이 없어요.</p>
-        <section>
+        <section class="needIn">
           <h2>출석 기록 가져오기</h2>
           <p class="hint">구글 시트 '출석' 탭에서 Ctrl+A로 전체 선택해 복사한 뒤 붙여 넣으세요. 성도를 먼저 가져온 뒤 하세요. 같은 날짜·예배·성도는 덮어써서, 여러 번 가져와도 겹치지 않아요.</p>
           <textarea id="aAttImport" placeholder="출석ID	날짜	예배종류	성도ID	이름	출석	체크한사람	메모"></textarea>
           <div class="row"><button class="btn" id="aAttImportBtn">가져오기</button><span id="aAttImportMsg" class="ok"></span></div>
         </section>
-        <section>
+        <section class="needIn">
           <h2>구역(셀) 한꺼번에 넣기</h2>
           <p class="hint">한 줄에 한 구역씩 "구역이름: 이름 이름 이름"처럼 붙여 넣으세요. 이름으로 성도를 찾아 구역 칸을 채워요. 여기 없는 성도의 구역은 그대로 둬요.</p>
           <textarea id="aDist" placeholder="은혜: 홍길동 김영희 이철수&#10;다윗: 최준호 강하늘"></textarea>
           <div class="row"><button class="btn line" id="aDistCheck">바뀔 내용 보기</button><button class="btn hidden" id="aDistApply">이대로 저장</button></div>
           <div id="aDistMsg" class="ok" style="white-space:pre-line;font-size:14px"></div>
         </section>
-        <section>
+        <section class="needIn">
           <h2>교회 등록일 한꺼번에 넣기</h2>
           <p class="hint">"이름 2005년 3월"처럼 한 줄에 한 사람씩 붙여 넣으세요. 셀 이름 줄이 있어도 괜찮아요. 같은 이름이 여럿이면 그 셀(구역) 사람으로 찾아요. 일까지 모르면 "2005-03", 연도만 알면 "2005"로 넣어요. 날짜가 없는 줄은 건너뛰어요.</p>
           <textarea id="aReg" placeholder="은혜셀&#10;홍길동 2008년 2월&#10;김영희 15년 8월&#10;이철수 2012"></textarea>
@@ -369,7 +370,7 @@ textarea.memo{min-height:60px;border:1px solid var(--line);background:var(--bg);
           <div class="row"><button class="btn line" id="aRegCheck">바뀔 내용 보기</button><button class="btn hidden" id="aRegApply">이대로 저장</button></div>
           <div id="aRegMsg" class="ok" style="white-space:pre-line;font-size:14px"></div>
         </section>
-        <section>
+        <section class="needIn">
           <h2>장결자·기타 출석 한꺼번에 지정</h2>
           <p class="hint">이름을 띄어쓰기나 줄바꿈으로 붙여 넣으세요. "이름(010-…)"처럼 번호가 붙어 있으면 같은 이름이 여럿일 때 번호로 가려요. 명단에 없는 이름은 기타 출석으로 새로 추가할 수 있어요. 지정된 분들은 평소 명단에서 빠지고 그 탭에서만 보여요.</p>
           <div class="row"><select id="aMarkKind"><option value="extra">기타 출석으로</option><option value="longAbsent">장결자로</option></select></div>
@@ -378,14 +379,14 @@ textarea.memo{min-height:60px;border:1px solid var(--line);background:var(--bg);
           <div class="row"><button class="btn line" id="aMarkCheck">바뀔 내용 보기</button><button class="btn hidden" id="aMarkApply">이대로 저장</button></div>
           <div id="aMarkMsg" class="ok" style="white-space:pre-line;font-size:14px"></div>
         </section>
-        <section>
+        <section class="needIn">
           <h2>성도 번호 정리</h2>
           <p class="hint">P001처럼 생기지 않은 성도 번호(앱에서 새로 넣은 사람 등)를 다음 P번호로 바꿔요. 출석 기록도 함께 옮겨요. 구글 시트를 쓰면 바꾼 뒤 시트에서 '① 앱에서 성도 불러오기'를 한 번 눌러 주세요.</p>
           <div class="row"><button class="btn line" id="aIdCheck">바뀔 내용 보기</button><button class="btn hidden" id="aIdApply">이대로 저장</button></div>
           <div id="aIdMsg" class="ok" style="white-space:pre-line;font-size:14px"></div>
         </section>
       </details>
-      <section>
+      <section class="needIn">
         <h2>내보내기</h2>
         <p class="hint">엑셀에서 바로 열리는 CSV 파일로 받아요. 교회가 데이터를 원하면 이 파일을 드리면 돼요.</p>
         <div class="row"><button class="btn line" id="aExpMembers">성도 명단</button><button class="btn line" id="aExpAtt">출석 기록 전체</button></div>
@@ -522,7 +523,7 @@ function nextPids(ids, n = 1) {
 // ───────────── 저장소: 미리보기(가짜 데이터) ─────────────
 function demoStore() {
   const email = "demo@example.com";
-  const church = { id: "demo", name: "미리보기교회", services: ["주일낮","주일저녁","수요","금요"], leaders: [email], finance: [email] };
+  const church = { id: "demo", name: "미리보기교회", services: ["주일낮","주일저녁","수요","금요"], leaders: [email], staff: [email], pastors: [email], finance: [email] };
   const raw = [
     ["P001","홍길동","담임목사","교역자","남성","010-0000-0001","H001","세대주",false],
     ["P002","김영희","사모","교역자","여성","010-0000-0002","H001","배우자",false],
@@ -779,6 +780,10 @@ async function firebaseStore() {
 }
 
 // ───────────── 상태 ─────────────
+const myMail = () => (S.email || "").toLowerCase();
+const isInside = (c) => !!c && (c.leaders || []).includes(myMail());
+const isInsideStaff = (c) => !!c && (c.staff || []).includes(myMail());
+function myChurches() { return (S.allChurches || []).filter(isInside); }
 const S = { store: null, email: null, admin: false, churches: [], church: null, members: [], att: new Map(),
   date: localToday(), service: null, q: "", chip: "전체", unMembers: null, unAtt: null, showDone: false };
 
@@ -802,7 +807,9 @@ async function boot() {
     if (!u) { stopWatch(); return show("sLogin"); }
     S.email = u.email;
     S.admin = await S.store.isAdmin();
-    S.churches = await S.store.churches(S.admin).catch(() => []);
+    // 관리자도 성도·출석은 그 교회 명단(리더·교역자·담임목사)에 내 이메일이 있을 때만 봄. 관리 화면에는 모든 교회 이름·명단만 보임
+    S.allChurches = await S.store.churches(S.admin).catch(() => []);
+    S.churches = myChurches();
     if (!S.churches.length && !S.admin) { $("#noAccessEmail").textContent = u.email; return show("sNoAccess"); }
     if (!S.churches.length && S.admin) return openAdmin();
     const last = safeGet("church");
@@ -837,7 +844,7 @@ function pickChurch(c) {
   const me = (S.email || "").toLowerCase();
   $("#toFinance").classList.toggle("hidden", !(c.finance || []).includes(me) && !(c.pastors || []).includes(me));
   if (S.store.demo) $("#toFinance").href = "./finance.html?demo";
-  S.canEdit = S.admin || (c.staff || []).includes((S.email || "").toLowerCase());
+  S.canEdit = isInsideStaff(c);
   $("#addBtn").classList.toggle("hidden", !S.canEdit);
   $("#toSms").classList.toggle("hidden", !S.canEdit);
   $("#editMode").textContent = S.canEdit ? "✎ 정보" : "정보 보기";
@@ -1291,12 +1298,13 @@ $("#statsBack").onclick = () => show("sMain");
 
 // ───────────── 관리자 ─────────────
 let adminCid = null;
+function openAdminKeep(id) { openAdmin(); $("#aChurch").value = id; fillAdmin((S.allChurches || []).find(c => c.id === id) || null); }
 function openAdmin() {
   show("sAdmin");
   const sel = $("#aChurch");
-  sel.innerHTML = S.churches.map(c => `<option value="${esc(c.id)}">${esc(c.name)}</option>`).join("") || `<option value="">(교회 없음)</option>`;
+  sel.innerHTML = (S.allChurches || []).map(c => `<option value="${esc(c.id)}">${esc(c.name)}</option>`).join("") || `<option value="">(교회 없음)</option>`;
   if (S.church) sel.value = S.church.id;
-  fillAdmin(S.churches.find(c => c.id === sel.value) || null);
+  fillAdmin((S.allChurches || []).find(c => c.id === sel.value) || null);
 }
 function fillAdmin(c) {
   adminCid = c?.id || null;
@@ -1310,6 +1318,10 @@ function fillAdmin(c) {
   $("#aFinance").value = (c?.finance || []).join("\n");
   $("#aMsg").textContent = ""; $("#aImportMsg").textContent = "";
   countLeaders();
+  // 성도 정보를 다루는 칸은 이 교회 교역자·담임목사 명단에 내 이메일이 있을 때만 보임 (관리자라도 마찬가지)
+  const inside = !c || isInsideStaff(c);
+  $("#aOutside").classList.toggle("hidden", inside);
+  document.querySelectorAll("#sAdmin .panel > section.needIn, #sAdmin .panel > details.needIn").forEach(el => el.classList.toggle("hidden", !inside));
 }
 const emailList = (el) => [...new Set(el.value.split(/[\s,;]+/).map(s => s.trim().toLowerCase()).filter(s => s.includes("@")))];
 // leaders = 이 교회를 쓰는 모든 사람(교역자 포함), staff = 그중 성도 정보를 고칠 수 있는 사람
@@ -1319,19 +1331,27 @@ function leaderList() { return [...new Set([...staffList(), ...emailList($("#aLe
 function countLeaders() { $("#aLeaderCount").textContent = `(담임 ${emailList($("#aPastors")).length}명 · 교역자 ${emailList($("#aStaff")).length}명 · 출석 쓰는 사람 전체 ${leaderList().length}명)`; }
 $("#aLeaders").oninput = $("#aStaff").oninput = $("#aPastors").oninput = countLeaders;
 $("#toAdmin").onclick = openAdmin;
-$("#backMain").onclick = () => S.church ? pickChurch(S.churches.find(c => c.id === S.church.id) || S.churches[0]) : (S.churches[0] && pickChurch(S.churches[0]));
-$("#aChurch").onchange = (e) => fillAdmin(S.churches.find(c => c.id === e.target.value));
+$("#backMain").onclick = () => {
+  if (!S.churches.length) return ($("#aMsg").textContent = "내 이메일이 들어 있는 교회가 없어요. 교회 명단에 내 이메일을 넣고 저장하면 출석 화면으로 갈 수 있어요.");
+  pickChurch(S.churches.find(c => c.id === S.church?.id) || S.churches[0]);
+};
+$("#aChurch").onchange = (e) => fillAdmin((S.allChurches || []).find(c => c.id === e.target.value));
 $("#aNew").onclick = () => { fillAdmin(null); $("#aName").focus(); };
 $("#aDel").onclick = async () => {
-  const c = S.churches.find(x => x.id === adminCid), msg = $("#aDelMsg");
+  const c = (S.allChurches || []).find(x => x.id === adminCid), msg = $("#aDelMsg");
   if (!c) return (msg.textContent = "지울 교회를 먼저 골라 주세요.");
   const typed = prompt(`'${c.name}'의 성도·출석 기록이 모두 지워지고 되돌릴 수 없어요.\n지우려면 교회 이름을 똑같이 입력하세요.`);
   if (typed === null) return;
   if (typed.trim() !== c.name) return (msg.textContent = "이름이 달라서 지우지 않았어요.");
   try {
     msg.textContent = "지우는 중…";
+    // 지우려면 기록을 읽어야 해서, 명단에 없으면 잠깐 내 이메일을 넣은 뒤 지움 (교회 문서까지 함께 지워짐)
+    if (!isInsideStaff(c) || !(c.pastors || []).includes(myMail())) {
+      const add = (k) => [...new Set([...(c[k] || []), myMail()])];
+      await S.store.saveChurch(c.id, { leaders: add("leaders"), staff: add("staff"), pastors: add("pastors") });
+    }
     await S.store.deleteChurch(c.id, (n) => (msg.textContent = `${n}건 지우는 중…`));
-    S.churches = S.churches.filter(x => x.id !== c.id);
+    S.allChurches = (S.allChurches || []).filter(x => x.id !== c.id); S.churches = myChurches();
     if (S.church?.id === c.id) { stopWatch(); S.church = S.churches[0] || null; }
     openAdmin(); $("#aDelMsg").textContent = `${c.name}을(를) 지웠어요.`;
   } catch (e) { msg.textContent = "삭제 실패: " + e.message; }
@@ -1341,9 +1361,12 @@ $("#aSave").onclick = async () => {
   if (!data.name) return ($("#aMsg").textContent = "교회 이름을 넣어 주세요.");
   try {
     const id = await S.store.saveChurch(adminCid, data);
-    const c = { id, ...(S.churches.find(x => x.id === id) || {}), ...data };
-    S.churches = [...S.churches.filter(x => x.id !== id), c].sort((a, b) => a.name.localeCompare(b.name, "ko"));
-    S.church = c; openAdmin(); $("#aMsg").textContent = "저장했어요.";
+    const c = { id, ...((S.allChurches || []).find(x => x.id === id) || {}), ...data };
+    S.allChurches = [...(S.allChurches || []).filter(x => x.id !== id), c].sort((a, b) => a.name.localeCompare(b.name, "ko"));
+    S.churches = myChurches();
+    if (isInside(c)) S.church = c;
+    else if (S.church?.id === id) { stopWatch(); S.church = S.churches[0] || null; }
+    adminCid = id; openAdminKeep(id); $("#aMsg").textContent = "저장했어요.";
   } catch (e) { $("#aMsg").textContent = "저장 실패: " + e.message; }
 };
 
