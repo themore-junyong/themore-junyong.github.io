@@ -99,6 +99,33 @@ exports.pushCancel = onDocumentUpdated({ ...trig, document: 'apps/{id}' }, async
   const [who, j] = await Promise.all([nameOf(a.instId, 'i'), db.doc(`jobs/${a.jobId}`).get().then(d => d.data() || {})]);
   await pushTo(await coPeople(a.coId), '강사로 · 확정 취소', `${who || '강사'} 님이 ${[j.school, j.title].filter(Boolean).join(' ')} 확정을 취소했어요${a.cxWhy ? ` (사유: ${a.cxWhy})` : ''}`, 'cx-' + e.params.id);
 });
+// 강의 대화방 새 메시지 → 방 사람들(보낸 사람 빼고). 같은 방 알림은 하나로 묶임
+exports.pushChat = onDocumentCreated({ ...trig, document: 'rooms/{j}/msgs/{m}' }, async e => {
+  const m = e.data && e.data.data(); if (!m) return;
+  const r = (await db.doc(`rooms/${e.params.j}`).get()).data(); if (!r) return;
+  const to = [...(r.members || []), ...(await coPeople(r.coId))].filter(u => u && u !== m.by);
+  await pushTo(to, `강사로 · ${clip(r.title || '강의 대화방', 30)}`, `${m.who || ''}: ${m.text || '사진을 보냈어요'}`, 'ch-' + e.params.j);
+});
+// 마감 + 확정 강사 모두 지급 완료 + 모두 입금 확인 → 대화방과 메시지를 지움
+async function chatDoneCheck(jobId) {
+  if (!jobId) return;
+  const [j, room] = await Promise.all([db.doc(`jobs/${jobId}`).get(), db.doc(`rooms/${jobId}`).get()]);
+  if (!room.exists || !j.exists || j.data().status !== '마감') return;
+  const cf = (await db.collection('apps').where('jobId', '==', jobId).get()).docs.map(d => d.data()).filter(a => a.status === '확정');
+  if (!cf.length || !cf.every(a => a.paidAt && a.recv === 'ok')) return;
+  await db.recursiveDelete(room.ref);
+  console.log('chatDone', jobId);
+}
+exports.chatDoneApp = onDocumentUpdated({ ...trig, document: 'apps/{id}' }, async e => {
+  const b = e.data.before.data() || {}, a = e.data.after.data() || {};
+  if (b.recv === a.recv && b.paidAt === a.paidAt && b.status === a.status) return;
+  await chatDoneCheck(a.jobId);
+});
+exports.chatDoneJob = onDocumentUpdated({ ...trig, document: 'jobs/{id}' }, async e => {
+  const b = e.data.before.data() || {}, a = e.data.after.data() || {};
+  if (b.status === a.status || a.status !== '마감') return;
+  await chatDoneCheck(e.params.id);
+});
 
 /* ===== 이용 기간·요금제 =====
    terms/{uid}: free(무료 끝 날짜) · paid(운영자가 늘린 끝 날짜) · end(둘 중 늦은 날, 마지막 날) · until(end 다음 날 0시 KST, 보안 규칙이 봄)

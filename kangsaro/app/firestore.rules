@@ -198,6 +198,26 @@ service cloud.firestore {
       allow create, update: if signed() && request.resource.data.instId == me() && active(me());
     }
 
+    // 강의 대화방: 업체(대표·직원)와 그 강의에 확정된 강사(members)만. members는 업체 앱이 맞춤
+    // 마감·지급·입금 확인이 다 끝나면 서버(chatDone)가 방과 메시지를 지움
+    match /rooms/{j} {
+      allow read: if signed() && (mine(resource.data.coId) || me() in resource.data.members);
+      allow create: if mine(request.resource.data.coId) && request.resource.data.members is list
+        && get(/databases/$(db)/documents/jobs/$(j)).data.coId == request.resource.data.coId;
+      allow update: if signed() && ((mine(resource.data.coId) && request.resource.data.coId == resource.data.coId && request.resource.data.members is list)
+        || (me() in resource.data.members && changed().hasOnly(['lastAt', 'lastBy', 'lastText']) && request.resource.data.lastBy == me()));
+      allow delete: if mine(resource.data.coId);
+      match /msgs/{m} {
+        function rm() { return get(/databases/$(db)/documents/rooms/$(j)).data; }
+        allow read: if signed() && (mine(rm().coId) || me() in rm().members);
+        allow create: if signed() && request.resource.data.by == me() && (mine(rm().coId) || me() in rm().members)
+          && request.resource.data.text is string && request.resource.data.text.size() <= 1000
+          && (!('img' in request.resource.data) || (request.resource.data.img is string && request.resource.data.img.size() < 300000));
+        allow update: if false;
+        allow delete: if signed() && resource.data.by == me();
+      }
+    }
+
     // 알림: 보낸 사람(by)과 받는 강사(instId)만
     match /alerts/{x} {
       allow read: if signed() && (resource.data.instId == me() || mine(resource.data.by));
