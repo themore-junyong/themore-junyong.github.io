@@ -225,7 +225,7 @@ function app(ch) {
 }
 
 async function start(user, want) {
-  uidMe = user.uid;
+  uidMe = user.uid; window.KSR_UID = uidMe;
   unsub.splice(0).forEach(f => f()); links.clear(); last.clear();
   Object.assign(S, { insts: [], cos: [], jobs: [], apps: [], evs: [], alerts: [] });
   me = await loadUser(uidMe, true);
@@ -278,6 +278,9 @@ async function start(user, want) {
     live(query(collection(db, 'notices'), where('to', 'array-contains', uidMe)), notice);
   } else {
     S.cos = [mine]; S.me = 'c:' + CO;
+    // 달력 날짜 메모는 로그인한 사람 것만 (직원은 자기 메모)
+    const ev = await getDocs(query(collection(db, 'evs'), where('instId', '==', uidMe)));
+    S.evs = ev.docs.map(d => ({ id: d.id, ...d.data() }));
     const jb = await getDocs(query(collection(db, 'jobs'), where('coId', '==', CO)));
     S.jobs = jb.docs.map(d => ({ id: d.id, ...d.data(), notices: [] }));
     const nt = await getDocs(query(collection(db, 'notices'), where('coId', '==', CO)));

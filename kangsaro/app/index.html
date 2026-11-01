@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<meta name="build" content="261030-0742">
+<meta name="build" content="261101-1442">
 <title>강사로</title>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#2563EB">
@@ -56,6 +56,7 @@ label.f input,label.f select,label.f textarea,textarea.f{padding:9px 10px;border
 .dow span{text-align:center;font-size:11px;font-weight:600;color:var(--mu)}.dow span:first-child{color:var(--sun)}.dow span:last-child{color:var(--b2)}
 .day{height:62px;padding:3px;border:1px solid var(--ln);border-radius:8px;background:var(--sf);display:flex;flex-direction:column;gap:2px;overflow:hidden;text-align:left;cursor:pointer}
 .day.blank{background:transparent;border-color:transparent;cursor:default}.day.sel{border:2px solid var(--ac);background:var(--acs)}.day.clash{border:2px solid var(--r2)}
+.day{position:relative}.day .mm{position:absolute;top:2px;right:4px;font-size:11px;line-height:1;color:var(--ac)}.memo textarea{min-height:52px}
 .day .n{font-size:11px;font-weight:500}.day .n.red{color:var(--sun)}.day .n.blue{color:var(--b2)}.day .n.today{background:var(--ac);color:var(--bg);border-radius:99px;width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;font-weight:700}
 .bar{display:block;font-size:10px;font-weight:600;line-height:1.3;padding:1px 3px;border-radius:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 /* 달력 막대는 진한 색 + 흰 글씨: 배경과 확 구분되게 */
@@ -439,10 +440,15 @@ function planUndo(j){const U=planSeen(j);if(!U.st.length)return toast('되돌릴
   for(const [id,st] of o.st){const a=S.apps.find(x=>x.id===id);if(a&&a.status!==st){if(a.status==='확정'&&st==='지원'){S.alerts.push({id:uid(),instId:a.instId,appId:a.id,text:`[확정 취소] ${co(j.coId).name} · ${j.school} ${j.title} 배정이 잘못 눌려 취소되었어요. 다시 확정되면 알려 드릴게요.`,at:new Date().toISOString(),read:false});un++}a.status=st}}
   U.last=planSnap(j);j.planAt=new Date().toISOString();save();render();toast(`되돌렸어요${un?` · 잘못 확정된 ${un}명에게 취소 알림을 보냈어요`:''}`)}
 
+/* ===== 달력 날짜 메모 (강사·업체 각자, 본인만 봄) ===== */
+const memoOwner=()=>window.KSR_UID||meId();
+const memoOf=(d,side)=>S.evs.find(e=>e.kind==='memo'&&e.side===side&&e.instId===memoOwner()&&e.d===d);
+const memoMark=(d,side)=>memoOf(d,side)?'<span class="mm" title="메모 있음">✎</span>':'';
+const memoBox=(d,side)=>{const m=memoOf(d,side);return `<label class="f memo"><span class="sm"><b>📝 ${mdK(d)}(${dowOf(d)}) 메모</b> <span class="mu">나만 봐요</span></span><textarea data-act="memo" data-d="${d}" data-side="${side}" rows="2" maxlength="500" placeholder="예) 교재 챙기기, 주차는 후문, 담당 선생님 연락하기">${esc(m?m.text:'')}</textarea></label>`};
 /* ===== 강사: 달력 항목 모으기 ===== */
 function travel(x,who){const p=who||inst(meId());return Math.round((+x.km||0)/(+p.kmpl||15)*(+p.fuel||1650))+(+x.toll||0)}
 function entries(iid){const t=todayIso(),me=inst(iid),out=[];
-  for(const e of S.evs){if(e.instId!==iid||e.st==='no')continue;
+  for(const e of S.evs){if(e.kind==='memo'||e.instId!==iid||e.st==='no')continue;
     const st=e.st==='confirmed'&&isOver(e.dates,e.time)?'done':e.st;
     for(const d of e.dates)out.push({kind:'ev',ref:e,d,st,title:e.title,org:e.org,time:e.time,fee:+e.fee||0,trv:travel(e,me)})}
   for(const a of S.apps){if(a.instId!==iid||a.status==='미선정'||a.status==='취소')continue;const j=job(a.jobId);if(!j)continue;
@@ -532,7 +538,7 @@ function vCal(){const iid=meId(),E=entries(iid),t=todayIso();const [Y,M]=ui.mont
   for(let n=1;n<=days;n++){const iso=isoOf(Y,M,n),es=E.filter(e=>e.d===iso),dw=dt(iso).getDay();
     const cls=['day',iso===ui.sel?'sel':'',es.length>1?'clash':''].join(' ');
     const nc=iso===t?'today':(dw===0||HOL[iso])?'red':dw===6?'blue':'';
-    cells.push(`<button class="${cls}" data-act="sel" data-d="${iso}" aria-label="${M}월 ${n}일 일정 ${es.length}개"><span class="n ${nc}">${n}</span>${es.slice(0,2).map(e=>`<span class="bar ${e.st}">${esc(e.title.split(' ')[0])}</span>`).join('')}</button>`)}
+    cells.push(`<button class="${cls}" data-act="sel" data-d="${iso}" aria-label="${M}월 ${n}일 일정 ${es.length}개${memoOf(iso,'i')?' · 메모 있음':''}"><span class="n ${nc}">${n}</span>${memoMark(iso,'i')}${es.slice(0,2).map(e=>`<span class="bar ${e.st}">${esc(e.title.split(' ')[0])}</span>`).join('')}</button>`)}
   const ME=E.filter(e=>ym(e.d)===ui.month);
   const paid=ME.filter(e=>e.st==='paid').reduce((a,e)=>a+tax(e.fee).net,0),unpaid=ME.filter(e=>e.st==='done').reduce((a,e)=>a+tax(e.fee).net,0),net=ME.filter(e=>e.st!=='applied').reduce((a,e)=>a+netOf(e),0);
   const late=E.filter(e=>e.st==='done'&&addDays(e.d,30)<t);
@@ -548,6 +554,7 @@ function vSlide(E){const iid=meId(),ME=E,has=ME.some(e=>e.d===ui.sel);
   setTimeout(()=>{let c=0;for(const e of E)if(e.d===ui.sel&&e.kind==='app')c+=markRead(e.job,iid);if(c){const un=unreadCount(),nb=$('[data-tab="cal"]');if(nb)nb.innerHTML='홈'+(un?`<span class="dot">${un}</span>`:'')}},1500);
   return `<div class="row" id="slideTop"><h2 class="sp">내 일정</h2>${ME.length>1?'<span class="mu sm swhint">옆으로 넘기면 달력도 따라가요 ›</span><span class="slnav"><button class="btn sm" data-act="slNav" data-n="-1" aria-label="이전 일정">‹</button><button class="btn sm" data-act="slNav" data-n="1" aria-label="다음 일정">›</button></span>':''}</div>
   ${ym(ui.sel)===ui.month&&!has?`<p class="mu sm">${mdK(ui.sel)}(${dowOf(ui.sel)})${HOL[ui.sel]?' · '+HOL[ui.sel]:''}은 일정이 없어요. 아래 + 로 공고를 붙여 넣거나 직접 넣을 수 있어요.</p>`:''}
+  ${ui.sel&&ym(ui.sel)===ui.month?memoBox(ui.sel,'i'):''}
   ${ME.length?'<div class="swipe" id="slide">'+ME.map(e=>entryCard(e,ME.filter(x=>x.d===e.d).length>1)).join('')+'</div>':'<p class="mu">아직 일정이 없어요.</p>'}`}
 // 슬라이드를 고른 날짜(없으면 그 뒤 가장 가까운 날)의 카드로 넘김
 function slideTo(d,page){const sw=$('#slide');if(!sw)return;ui._prog=Date.now();const cs=[...sw.children],c=cs.find(x=>x.dataset.d===d)||cs.find(x=>x.dataset.d>=d)||cs[cs.length-1];if(!c)return;
@@ -842,12 +849,12 @@ function jobStats(j){const A=appsOf(j.id),cf=A.filter(a=>a.status==='확정');
 function coCal(J){const [Y,M]=(ui.cmonth||todayIso().slice(0,7)).split('-').map(Number),first=new Date(Y,M-1,1).getDay(),days=new Date(Y,M,0).getDate(),t=todayIso();const cells=[];
   for(let i=0;i<first;i++)cells.push('<div class="day blank"></div>');
   for(let n=1;n<=days;n++){const iso=isoOf(Y,M,n),js=J.filter(j=>j.dates.includes(iso)),warn=js.some(j=>{const s=jobStats(j);return s.miss||s.unread||!s.cf});
-    cells.push(`<button class="day ${iso===ui.csel?'sel':''}" data-act="csel" data-d="${iso}" aria-label="${M}월 ${n}일 강의 ${js.length}개"><span class="n ${iso===t?'today':''}">${n}</span>${js.length?`<span class="bar ${warn?'done':'confirmed'}">${js.length}건</span>`:''}</button>`)}
+    cells.push(`<button class="day ${iso===ui.csel?'sel':''}" data-act="csel" data-d="${iso}" aria-label="${M}월 ${n}일 강의 ${js.length}개${memoOf(iso,'c')?' · 메모 있음':''}"><span class="n ${iso===t?'today':''}">${n}</span>${memoMark(iso,'c')}${js.length?`<span class="bar ${warn?'done':'confirmed'}">${js.length}건</span>`:''}</button>`)}
   const SJ=ui.csel?J.filter(j=>j.dates.includes(ui.csel)):[];
   return `<div class="row"><h3 class="sp">${Y}년 ${M}월 강의 달력</h3><button class="btn sm" data-act="cmon" data-n="-1" aria-label="이전 달">‹</button><button class="btn sm" data-act="cmon" data-n="0">오늘</button><button class="btn sm" data-act="cmon" data-n="1" aria-label="다음 달">›</button></div>
   <span class="mu sm">초록 = 준비 끝, 보라 = 확정 강사 없음·서류·공지 확인 필요</span>
   <div class="dow">${[...DOW].map(x=>`<span>${x}</span>`).join('')}</div><div class="cal">${cells.join('')}</div>
-  ${ui.csel?`<h3>${mdK(ui.csel)} (${dowOf(ui.csel)}) 강의 ${SJ.length}건</h3>${SJ.map(j=>`<button class="card" style="text-align:left" data-act="openJob" data-j="${j.id}"><div class="row"><b class="sp">${esc(j.region)} ${esc(j.school)} ${esc(j.title)}</b>${jDelBtn(j)}</div><span class="mu sm">${esc(j.time)} · 확정 ${jobStats(j).cf}명 · 지원 ${jobStats(j).ap}명</span></button>`).join('')||'<p class="mu">이날은 강의가 없어요.</p>'}`:''}`}
+  ${ui.csel?`<h3>${mdK(ui.csel)} (${dowOf(ui.csel)}) 강의 ${SJ.length}건</h3>${memoBox(ui.csel,'c')}${SJ.map(j=>`<button class="card" style="text-align:left" data-act="openJob" data-j="${j.id}"><div class="row"><b class="sp">${esc(j.region)} ${esc(j.school)} ${esc(j.title)}</b>${jDelBtn(j)}</div><span class="mu sm">${esc(j.time)} · 확정 ${jobStats(j).cf}명 · 지원 ${jobStats(j).ap}명</span></button>`).join('')||'<p class="mu">이날은 강의가 없어요.</p>'}`:''}`}
 // 카드 오른쪽 지우기 (지원자가 없을 때만)
 // 공고 상태: 모집(공개) · 초대(링크 받은 강사만) · 마감
 const jOpen=j=>j.status==='모집'||j.status==='초대',jChip=j=>`<span class="chip ${j.status==='마감'?'confirmed':j.status==='초대'?'off':'applied'}">${j.status==='마감'?'마감':j.status==='초대'?'초대 전용':'모집 중'}</span>`;
@@ -1219,6 +1226,11 @@ document.addEventListener('toggle',ev=>{const el=ev.target;if(el.dataset&&el.dat
 document.addEventListener('change',ev=>{const el=ev.target,D=el.dataset||{};
   if(el.id==='who'){S.me=el.value;ui.jobId=null;ui.tab=NAV[meRole()][0][0];save();render();return toast(el.options[el.selectedIndex].text+'(으)로 보고 있어요')}
   if(el.id==='jcWe'){ui.jcal.we=el.checked;return}
+  // 날짜 메모: 화면을 다시 그리지 않고 저장 (다른 날짜를 바로 누를 수 있게), 비우면 지움
+  if(D.act==='memo'){const v=el.value.trim().slice(0,500),m=memoOf(D.d,D.side),at=new Date().toISOString();
+    if(m){if(v){m.text=v;m.at=at}else S.evs=S.evs.filter(x=>x!==m)}else if(v)S.evs.push({id:uid(),instId:memoOwner(),kind:'memo',side:D.side,d:D.d,text:v,at});else return;
+    save();const c=document.querySelector(`[data-act="${D.side==='c'?'csel':'sel'}"][data-d="${D.d}"]`);if(c){const k=c.querySelector('.mm');if(v&&!k)c.querySelector('.n').insertAdjacentHTML('afterend',memoMark(D.d,D.side));if(!v&&k)k.remove()}
+    return toast(v?'메모를 저장했어요':'메모를 지웠어요')}
   if(D.act==='jpick'&&el.value){const ds=[...new Set([...$('#jDates').value.split(/[,\s]+/).filter(Boolean),el.value])].sort();$('#jDates').value=ds.join(', ');$('#jDateList').innerHTML=jDateChips(ds);el.value='';jWarn();return}
   if(D.chg==='opFee'){const j=job(D.j);j.feeMode=el.value;planTouch(j);return}
   if(D.chg==='opAmt'){const j=job(D.j),v=+el.value||0;j.plan.slots.forEach(x=>{if(x.fa){x.fee='';delete x.fa}});if(j.feeMode==='per'){j.feePer=v;const ns=j.plan.slots.map(x=>+x.n||perN(x.per)).sort((a,b)=>a-b);j.fee=v*(ns[ns.length>>1]||1)}else j.fee=v;holdFix(j);planTouch(j);return}
@@ -1279,6 +1291,6 @@ document.addEventListener('input',ev=>{if(ev.target.matches&&ev.target.matches('
 render();
 </script>
 <script src="../bot.js" defer></script>
-<script type="module" src="real.js?v=261030-0742"></script>
+<script type="module" src="real.js?v=261101-1442"></script>
 </body>
 </html>
