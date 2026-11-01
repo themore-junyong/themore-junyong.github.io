@@ -188,7 +188,9 @@ async function flush() {
   try {
     const P = payloads(), R = readMarks(), order = k => k.startsWith('users/') ? 0 : k.startsWith('jobs/') ? (k.includes('/plan/') ? 1.5 : 1) : k.startsWith('apps/') ? 2 : 3;
     const writes = [...P].filter(([k, v]) => last.get(k) !== stable(v)).sort((a, b) => order(a[0]) - order(b[0]));
-    for (const [k, v] of writes) { const nw = k.startsWith('jobs/') && !last.has(k); await setDoc(doc(db, k), v, k.startsWith('jobs/') || k.startsWith('rooms/') ? { merge: true } : {}); last.set(k, stable(v)); if (nw && TD) TD.cnt = { ...(TD.cnt || {}), [ymNow()]: ((TD.cnt || {})[ymNow()] || 0) + 1 }; }
+    for (const [k, v] of writes.filter(([k]) => !k.startsWith('rooms/'))) { const nw = k.startsWith('jobs/') && !last.has(k); await setDoc(doc(db, k), v, k.startsWith('jobs/') ? { merge: true } : {}); last.set(k, stable(v)); if (nw && TD) TD.cnt = { ...(TD.cnt || {}), [ymNow()]: ((TD.cnt || {})[ymNow()] || 0) + 1 }; }
+    // 대화방 문서는 따로 (보안 규칙이 아직 안 올라갔거나 실패해도 다른 저장을 막지 않게)
+    for (const [k, v] of writes) if (k.startsWith('rooms/')) { try { await setDoc(doc(db, k), v, { merge: true }); last.set(k, stable(v)); } catch (e) { console.warn('room', k, e.code); } }
     for (const [k, v] of R) if (last.get(k) !== v) { const p = k.split('#')[0]; await updateDoc(doc(db, p), { ['reads.' + uidMe]: v }); last.set(k, v); }
     // 하위 문서(운영 시간표)를 먼저 지워야 보안 규칙이 공고를 찾을 수 있음
     for (const k of [...last.keys()].sort((a, b) => b.split('/').length - a.split('/').length)) if (!k.includes('#') && !P.has(k) && mayDelete(k)) { await deleteDoc(doc(db, k)); last.delete(k); }
