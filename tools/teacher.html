@@ -106,6 +106,7 @@ async function boot(){
   call=(name,data)=>Fn.httpsCallable(Fn.getFunctions(fa,'asia-northeast3'),name,{timeout:20000})(data).then(r=>r.data);
 }
 const msg=e=>(e&&e.message&&!/^(internal|INTERNAL)$/.test(e.message))?e.message:'연결이 끊겼어요. 다시 눌러 주세요';
+/* 학생 AI 초대코드: 방을 만든 강사 코드(ak)를 방 문서에 둠 → 방에 들어온 학생은 코드 입력 없이 AI 도구를 씀 (room.js) */
 /* 방 = 실시간 마인드맵과 같은 rooms/{번호}. 이 노트북에 기억(live-host)해서 마인드맵 강사 화면도 같은 방을 씀 */
 /* 조: 강사가 방을 만들 때 조 개수·이름을 정함 → 방 문서 teams. 학생은 들어올 때 그중에서 고름 */
 const dflT=n=>Array.from({length:n},(_,i)=>(i+1)+'조');
@@ -206,7 +207,7 @@ async function make(){
   if(!S.code){S.note='초대코드를 넣어 주세요';return render()}
   S.busy=true;render();
   try{const r=await call('liveRoom',{code:S.code});S.pin=r.pin;S.exp=Date.now()+8*3600e3;
-    lsSet('tm-teams',TM);S.teams=TM.slice();if(TM.length)await F.updateDoc(F.doc(db,'rooms',S.pin),{teams:TM}).catch(()=>{S.note='조 이름을 저장하지 못했어요. 아래 [조 바꾸기]에서 다시 저장해 주세요'});
+    lsSet('tm-teams',TM);S.teams=TM.slice();await F.updateDoc(F.doc(db,'rooms',S.pin),Object.assign({ak:S.code},TM.length?{teams:TM}:{})).catch(()=>{S.note='조 이름을 저장하지 못했어요. 아래 [조 바꾸기]에서 다시 저장해 주세요'});
     lsSet('live-host',{pin:S.pin});lsSet('tm-teacher',S.name);lsSet('tm-room',{pin:S.pin,exp:S.exp});
     const c=lsGet('tm-code',{})||{};if(c.code!==S.code)lsSet('tm-code',{code:S.code});live()}
   catch(e){S.note=msg(e)}
@@ -215,7 +216,8 @@ async function make(){
 async function resume(){ // 이 노트북에서 만든 방이 아직 살아 있으면 그대로
   const pin=(lsGet('tm-room',{})||{}).pin||(lsGet('live-host',{})||{}).pin;if(!pin)return;
   try{const d=await F.getDoc(F.doc(db,'rooms',pin));const r=d.exists()?d.data():null;
-    if(r&&r.owner===me&&!r.closed&&r.exp.toMillis()>Date.now()){S.pin=pin;S.exp=r.exp.toMillis();S.teams=Array.isArray(r.teams)?r.teams:[];lsSet('live-host',{pin});live()}}catch(e){}
+    if(r&&r.owner===me&&!r.closed&&r.exp.toMillis()>Date.now()){S.pin=pin;S.exp=r.exp.toMillis();S.teams=Array.isArray(r.teams)?r.teams:[];lsSet('live-host',{pin});live();
+      const k=S.code||'';if(k&&r.ak!==k)F.updateDoc(F.doc(db,'rooms',pin),{ak:k}).catch(()=>{})}}catch(e){}
 }
 /* 학생 화면 바꾸기: 방 문서 go={to,t}. 학생 room.js가 보고 그 활동으로 넘어감 */
 /* 강사도 학생이 보는 화면을 같이 봄: 탭 하나('tm-view')를 계속 재사용. 미리보기라 결과는 안 보냄 */

@@ -32,7 +32,7 @@
     boot().then(function(b){if(aId!==id)return;var F=b.F;
       aUnsub=F.onSnapshot(F.query(F.collection(b.db,'rooms',pin,'ans'),F.where('q','==',id)),function(s){var A=[];s.docs.forEach(function(d){A.push(d.data())});cb(id,A)},function(){});
     }).catch(function(){})}
-  window.TM_SYNC={on:on,ask:ask,onAns:onAns,teams:function(cb){if(on)boot().then(function(b){cb(b.teams)}).catch(function(){})},pub:function(kind,view){
+  window.TM_SYNC={on:on,ask:ask,onAns:onAns,teams:function(cb){if(on)boot().then(function(b){return b.F.getDoc(b.ref)}).then(function(d){var r=d.data()||{};cb(Array.isArray(r.teams)?r.teams:[])}).catch(function(){})},pub:function(kind,view){
     if(!on||dead)return;var s;try{s=JSON.stringify(view).slice(0,7900)}catch(e){return}
     if(s===last)return;last=s;want={k:String(kind).slice(0,20),s:s};if(!timer)timer=setTimeout(flush,400);
   }};

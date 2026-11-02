@@ -112,7 +112,7 @@ input[type=number]{width:80px}
 <div class="wrap" id="app"></div>
 <div id="sov" hidden><div class="kin2" id="sbox"></div></div>
 <div id="kov" hidden><div class="kin"><h2>📱 선생님 휴대폰으로 찍으세요</h2><p>문제 번호 순서대로 정답이 휴대폰에만 보여요. 학생들은 찍지 않게 잠깐만 띄웠다가 닫으세요.</p><div id="kbox"></div><b id="kU"></b><button class="btn pri big" id="kX">닫기</button></div></div>
-<script src="sync.js?v=191"></script>
+<script src="sync.js?v=193"></script>
 <script>
 (function(){
 var app=document.getElementById('app');
@@ -506,8 +506,9 @@ document.getElementById('sov').addEventListener('click',function(e){var t=e.targ
 document.getElementById('kX').addEventListener('click',function(){document.getElementById('kov').hidden=true});
 if(HOST)hostInit();else render();
 /* 강사가 방을 만들 때 정한 조 이름이 있으면 점수판·학생 폰 조를 그 이름으로 (방 연결된 노트북) */
-if(!HOST&&window.TM_SYNC&&TM_SYNC.teams)TM_SYNC.teams(function(T){if(!T||T.length<2)return;var n=Math.min(8,T.length),ch=st.teams!==n;
- for(var i=0;i<n;i++){if(st.tname[i]!==T[i])ch=true;st.tname[i]=String(T[i]).slice(0,12)}st.teams=n;if(st.sel>=n)st.sel=0;if(ch){st.score=[0,0,0,0,0,0,0,0]}save();render()});
+function roomTeams(){if(!HOST&&window.TM_SYNC&&TM_SYNC.teams)TM_SYNC.teams(function(T){if(!T||T.length<2)return;var n=Math.min(8,T.length),ch=st.teams!==n;
+ for(var i=0;i<n;i++){if(st.tname[i]!==T[i])ch=true;st.tname[i]=String(T[i]).slice(0,12)}st.teams=n;if(st.sel>=n)st.sel=0;if(ch){st.score=[0,0,0,0,0,0,0,0];save();render()}})}
+roomTeams();setInterval(roomTeams,20000); /* 강사가 수업 중 조 이름을 바꿔도 따라감 */
 })();
 </script>
 </body></html>
