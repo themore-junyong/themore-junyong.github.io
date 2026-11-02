@@ -98,6 +98,7 @@ input[type=number]{width:80px}
 </head><body>
 <div class="wrap" id="app"></div>
 <div id="kov" hidden><div class="kin"><h2>📱 선생님 휴대폰으로 찍으세요</h2><p>문제 번호 순서대로 정답이 휴대폰에만 보여요. 학생들은 찍지 않게 잠깐만 띄웠다가 닫으세요.</p><div id="kbox"></div><b id="kU"></b><button class="btn pri big" id="kX">닫기</button></div></div>
+<script src="sync.js?v=188"></script>
 <script>
 (function(){
 var app=document.getElementById('app');
@@ -346,7 +347,16 @@ function snap(){
  if(G[V]&&G[V].deck){var g=G[V],q=g.deck[g.i];o.num=g.i+1;o.tot=g.deck.length;o.show=!!g.show;o.qcat=q.cat;
   if(V==='chosung'){o.q=cho(q.x);o.ans=q.x}else if(V==='emoji'){o.q=q.x[0];o.ans=q.x[1]}else if(V==='balance'){o.q=q.x[0]+'  VS  '+q.x[1]}else if(V==='body'){o.ans=q.x}}
  o.T={run:T.run,end:T.end,left:T.left,sec:T.sec};o.B={run:B.run,end:B.end,ok:B.ok,pass:B.pass,over:B.over};o.bodySec=st.bodySec;return o}
-function pub(){if(BC&&!HOST)try{BC.postMessage({s:snap()})}catch(e){}}
+/* 학생 폰(play.html)에도 같은 문제·점수 (정답은 공개했을 때만, 몸으로 말해요 제시어는 안 보냄) */
+function stuPub(){if(!window.TM_SYNC||!TM_SYNC.on||HOST||V.indexOf('ans/')===0||!G[V]||!G[V].deck)return;var s=snap(),
+ m={game:'🎲 아이스브레이킹 · '+({balance:'밸런스 게임',chosung:'초성 퀴즈',emoji:'이모지 퀴즈',body:'몸으로 말해요'}[s.V]||''),num:s.num+' / '+s.tot,cat:s.qcat||'',
+  score:s.tname.map(function(n,i){return {n:n,v:s.score[i],c:COLORS[i]}})};
+ if(s.V==='balance'){var ab=String(s.q).split('  VS  ');m.big='둘 중 하나만 고른다면?';m.opts=[{t:'🅰 '+ab[0]},{t:'🅱 '+(ab[1]||'')}];m.score=null}
+ else if(s.V==='chosung'||s.V==='emoji'){m.big=s.q;m.huge=s.V==='chosung';if(s.show)m.reveal='정답: '+s.ans;if(s.T.run)m.end=s.T.end;else if(s.T.left!=null&&s.T.left<s.T.sec)m.clockText=Math.ceil(s.T.left)+'초'}
+ else if(s.V==='body'){var tn=s.tname[s.sel];m.turn={n:tn+' 차례',c:COLORS[s.sel]};m.num='';m.cat='';
+  if(s.B.run){m.big='🙆 몸으로 설명 중!';m.sub=tn+'이 맞혀요 · 지금 '+s.B.ok+'개';m.end=s.B.end}else if(s.B.over)m.big=tn+' '+s.B.ok+'개 맞힘!';else m.big=tn+' 준비 중'}
+ TM_SYNC.pub('ice',m)}
+function pub(){stuPub();if(BC&&!HOST)try{BC.postMessage({s:snap()})}catch(e){}}
 if(BC)BC.onmessage=function(e){var m=e.data||{};
  if(HOST){if(m.s){HS=m.s;HS.at=Date.now();hostRender()}return}
  if(m.hello)return pub();if(m.d){act(m.d);pub()}};

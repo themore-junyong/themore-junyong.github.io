@@ -1,0 +1,32 @@
+/* 게임 화면 → 학생 폰 실시간 연동 (강사 노트북에서만 동작)
+   - 강사가 teacher.html에서 방을 만든 노트북(localStorage live-host)이면, 게임 화면(빔)의 지금 상태를 방 문서 g={k,s,t}에 씀
+   - 학생 폰(play.html)은 그 방 문서를 보고 같은 문제·보기·점수·타이머를 보여 줌 (정답은 강사가 공개했을 때만 넣음)
+   - TM_SYNC.pub(종류, 화면모델) : 같은 내용이면 다시 안 씀, 0.4초 모아서 씀 */
+(function(){
+  var V='10.12.2', G='https://www.gstatic.com/firebasejs/'+V;
+  function lsGet(k){try{return JSON.parse(localStorage.getItem(k)||'null')}catch(e){return null}}
+  var host=lsGet('live-host'), pin=host&&host.pin, on=!!pin&&!/[?&](r|teach)=/.test(location.search)&&!/#host/.test(location.hash);
+  var fb=null, last='', timer=null, want=null, dead=false;
+  function boot(){
+    if(fb)return fb;
+    fb=Promise.all([import('./firebase-config.js'),import(G+'/firebase-app.js'),import(G+'/firebase-auth.js'),import(G+'/firebase-firestore.js')]).then(function(m){
+      var app=m[1].getApps().length?m[1].getApp():m[1].initializeApp(m[0].firebaseConfig),auth=m[2].getAuth(app);
+      return auth.authStateReady().then(function(){return auth.currentUser||m[2].signInAnonymously(auth)}).then(function(){
+        var F=m[3],db=F.getFirestore(app),ref=F.doc(db,'rooms',pin);
+        return F.getDoc(ref).then(function(d){var r=d.exists()?d.data():null;
+          if(!r||r.owner!==auth.currentUser.uid||r.closed||!r.exp||r.exp.toMillis()<Date.now())throw new Error('no room');
+          return {F:F,ref:ref}});
+      });
+    });
+    fb.catch(function(){dead=true});
+    return fb;
+  }
+  function flush(){timer=null;if(!want||dead)return;var w=want;want=null;
+    boot().then(function(b){return b.F.updateDoc(b.ref,{g:{k:w.k,s:w.s,t:b.F.serverTimestamp()}})}).catch(function(){});
+  }
+  window.TM_SYNC={on:on,pub:function(kind,view){
+    if(!on||dead)return;var s;try{s=JSON.stringify(view).slice(0,7900)}catch(e){return}
+    if(s===last)return;last=s;want={k:String(kind).slice(0,20),s:s};if(!timer)timer=setTimeout(flush,400);
+  }};
+  if(on)boot();
+})();

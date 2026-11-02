@@ -61,6 +61,7 @@ button:focus-visible{outline:3px solid var(--hazard);outline-offset:3px}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
 <div class="wrap" id="app"></div>
+<script src="sync.js?v=188"></script>
 <script>
 (()=>{
 /* 문제: 천안공고 4교시 PPT(위험요인 찾기·통제 5단계·표지 색·하인리히·지적확인·작업중지권·PPE·비상)에서만 출제 */
@@ -136,7 +137,11 @@ function win(){
 }
 /* 진행자 화면(PPT 발표자 보기처럼): 같은 컴퓨터·같은 브라우저의 두 창을 BroadcastChannel로 연결 */
 const HOST=location.hash==='#host';let BC=null;try{BC=new BroadcastChannel('safety-v1')}catch(e){}
-function pub(){if(!BC||HOST)return;const Q=QS[order[qi%order.length]];BC.postMessage({s:{q:Q.q,o:Q.o,a:Q.a,e:Q.e,answered,turn:S.turn,pos:S.pos,num:qi+1}})}
+function stuPub(){if(!window.TM_SYNC||!TM_SYNC.on||HOST)return;const Q=QS[order[qi%order.length]],tx=t=>String(t).replace(/<[^>]+>/g,'');
+  TM_SYNC.pub('safety',{game:'🦺 안전 징검다리',num:(qi+1)+'번째 문제',turn:{n:T[S.turn].n+' 차례',c:['#e5522f','#2f62d6'][S.turn]},q:tx(Q.q),
+    opts:Q.o.map((o,i)=>({t:['①','②','③','④'][i]+' '+tx(o),ok:answered!==null&&i===Q.a,bad:answered!==null&&answered===i&&i!==Q.a})),
+    reveal:answered!==null?tx(Q.e):null,score:[0,1].map(i=>({n:T[i].n,v:Math.min(S.pos[i],N+1)+'칸',c:['#e5522f','#2f62d6'][i]}))})}
+function pub(){stuPub();if(!BC||HOST)return;const Q=QS[order[qi%order.length]];BC.postMessage({s:{q:Q.q,o:Q.o,a:Q.a,e:Q.e,answered,turn:S.turn,pos:S.pos,num:qi+1}})}
 function act(d){const ov=document.querySelector('.over');
   if(d.pick!=null)pick(+d.pick);else if(d.a==='next'){if(ov){ov.remove();reset()}else if(answered!==null)next()}
   else if(d.a==='skip'){qi++;answered=null;draw()}else if(d.a==='reset'){if(ov)ov.remove();reset()}}

@@ -107,7 +107,7 @@ const msg=e=>(e&&e.message&&!/^(internal|INTERNAL)$/.test(e.message))?e.message:
 /* 방 = 실시간 마인드맵과 같은 rooms/{번호}. 이 노트북에 기억(live-host)해서 마인드맵 강사 화면도 같은 방을 씀 */
 const S={name:lsGet('tm-teacher',''),code:(lsGet('tm-code',{})||{}).code||'',pin:'',exp:0,note:'',busy:false};
 /* 수업 활동 목록(학생 첫 화면과 같은 묶음). 누르면 방에 들어온 학생 화면이 따라오고, 강사 노트북엔 같은 화면이 새 탭으로 열림
-   q: 학생 도구(학생 화면 전환 + 강사 미리보기 탭) · live: 마인드맵(진행 화면 새 탭 + 학생은 답하기 화면) · b: 빔으로 하는 게임(진행 화면 새 탭 + 학생은 '앞 화면을 보세요') · pick: 검사 고르기 */
+   q: 학생 도구(학생 화면 전환 + 강사 미리보기 탭) · live: 마인드맵(진행 화면 새 탭 + 학생은 답하기 화면) · b: 빔으로 하는 게임(게임 화면 새 탭 + 학생 폰은 play.html로 같은 문제·점수를 실시간으로) · pick: 검사 고르기 */
 const GROUPS=[
  ['자소서 · 면접 준비',[
   ['q','#jaso','📝 AI 자소서 만들기','8단계 질문 → AI 초안 · 완성본이 학생 결과로'],
@@ -116,10 +116,10 @@ const GROUPS=[
   ['q','intro.html','🗣 1분 자기소개 꼬꼬무','질문에 답하면 1분 멘트 완성']]],
  ['수업 게임 · 참여',[
   ['live','live.html?host','📊 실시간 마인드맵 · 투표','진행 화면이 새 탭으로 · 학생은 휴대폰으로 답하기'],
-  ['b','icebreak.html','🎲 아이스브레이킹','밸런스 · 초성 · 이모지 · 몸으로 말해요'],
-  ['b','safety.html','🦺 안전 징검다리','현장 안전 팀 대결'],
-  ['b','river.html','🚣 문제해결 강건너기','3단계 퍼즐 (진행자 화면에 풀이)'],
-  ['b','class.html','👥 교실 도구','팀 나누기 · 한 명 뽑기 · 큰 타이머']]],
+  ['b','icebreak.html','🎲 아이스브레이킹','밸런스 · 초성 · 이모지 · 몸으로 말해요 · 학생 폰에도 같은 문제'],
+  ['b','safety.html','🦺 안전 징검다리','현장 안전 팀 대결 · 학생 폰에도 같은 문제'],
+  ['b','river.html','🚣 문제해결 강건너기','3단계 퍼즐 · 학생 폰에도 같은 상황'],
+  ['b','class.html','👥 교실 도구','팀 나누기 · 한 명 뽑기 · 타이머 · 학생 폰에도 같이']]],
  ['나를 알아보는 검사',[
   ['pick','','🧭 자가진단 검사 10종','누르면 검사를 골라요 · 결과가 학생 결과로']]],
  ['일과 건강',[
@@ -220,7 +220,7 @@ app.addEventListener('click',e=>{const t=e.target.closest('[data-a],[data-w],[da
   if(t.dataset.pick){S.pick=!S.pick;render();if(S.pick)document.getElementById('pick').scrollIntoView({behavior:'smooth',block:'center'});return}
   if(t.dataset.live){ // 새 탭(진행 화면)은 링크 그대로 열리고, 학생 화면도 따라감: 마인드맵은 답하기 화면, 게임·교실 도구는 '앞 화면을 보세요'
     const l=t.dataset.live;if(S.mode==='qr'){if(l==='live.html?host')qr('live.html',t.dataset.qn);return}
-    push(l==='live.html?host'?'live.html':'index.html?v='+l.replace('.html',''),t.dataset.qn);return}
+    push(l==='live.html?host'?'live.html':'play.html',t.dataset.qn);return}
   if(t.dataset.q){if(S.mode==='qr'&&t.dataset.q!=='home')qr(t.dataset.q,t.dataset.qn);else{if(t.dataset.q.indexOf('test.html')===0)S.pick=false;push(t.dataset.q,t.dataset.qn);view(t.dataset.q)}return}
   if(t.dataset.w){openW[t.dataset.w]=!openW[t.dataset.w];render();return}
   const a=t.dataset.a;
