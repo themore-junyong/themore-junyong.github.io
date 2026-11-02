@@ -101,7 +101,7 @@ function draw(){
   const keys=['①','②','③','④'];
   app.innerHTML=`
   <div class="top"><h1><span class="tape" aria-hidden="true"></span>안전 징검다리</h1>
-    <div class="small"><button class="btn" id="skip">문제 넘기기</button><button class="btn" id="rs">처음부터</button></div></div>
+    <div class="small"><button class="btn" id="host">🖥 진행자 화면</button><button class="btn" id="skip">문제 넘기기</button><button class="btn" id="rs">처음부터</button></div></div>
   <div class="river">${lane(0)}${lane(1)}</div>
   <div class="qcard">
     <div class="qmeta"><span class="turnTag" style="background:${T[S.turn].c}">${T[S.turn].n} 차례</span><span>맞히면 한 칸 앞으로 · 틀리면 "아차!" 한 칸 뒤로</span></div>
@@ -113,6 +113,8 @@ function draw(){
   app.querySelectorAll('.opt').forEach(b=>b.onclick=()=>pick(+b.dataset.i));
   const nx=document.getElementById('nx'); if(nx){nx.onclick=next;nx.focus();}
   document.getElementById('rs').onclick=reset;
+  document.getElementById('host').onclick=()=>window.open(location.href.split('#')[0]+'#host','safety-host','width=980,height=760');
+  pub();
   document.getElementById('skip').onclick=()=>{qi++;answered=null;draw()};
 }
 function pick(i){
@@ -132,7 +134,30 @@ function win(){
    <button class="next" id="again">한 판 더</button></div>`;
   document.body.appendChild(o);o.querySelector('#again').onclick=()=>{o.remove();reset()};
 }
-reset();
+/* 진행자 화면(PPT 발표자 보기처럼): 같은 컴퓨터·같은 브라우저의 두 창을 BroadcastChannel로 연결 */
+const HOST=location.hash==='#host';let BC=null;try{BC=new BroadcastChannel('safety-v1')}catch(e){}
+function pub(){if(!BC||HOST)return;const Q=QS[order[qi%order.length]];BC.postMessage({s:{q:Q.q,o:Q.o,a:Q.a,e:Q.e,answered,turn:S.turn,pos:S.pos,num:qi+1}})}
+function act(d){const ov=document.querySelector('.over');
+  if(d.pick!=null)pick(+d.pick);else if(d.a==='next'){if(ov){ov.remove();reset()}else if(answered!==null)next()}
+  else if(d.a==='skip'){qi++;answered=null;draw()}else if(d.a==='reset'){if(ov)ov.remove();reset()}}
+let HS=null;
+function hostDraw(){
+  const keys=['①','②','③','④'],s=HS;
+  if(!s){app.innerHTML='<div class="qcard"><h2>진행자 화면</h2><p>빔 창을 찾는 중… 안전 징검다리 창이 열려 있어야 해요. 원래 창은 빔(2번 모니터)에 전체 화면으로, 이 창은 노트북 화면에 두세요.</p></div>';return}
+  app.innerHTML=`<div class="top"><h1>🖥 진행자 화면 · 안전 징검다리</h1><div class="small"><span style="color:#666">✔ 빔 창과 연결됨 · ${s.num}번째 문제</span></div></div>
+  <div class="qcard"><div class="qmeta"><span class="turnTag" style="background:${T[s.turn].c}">${T[s.turn].n} 차례</span><span>A팀 ${Math.min(s.pos[0],N+1)}칸 · B팀 ${Math.min(s.pos[1],N+1)}칸</span></div>
+   <p class="q">${s.q}</p>
+   <div class="opts">${s.o.map((o,i)=>`<button class="opt ${i===s.a?'right':''}" data-hp="${i}" ${s.answered!==null?'disabled':''}><span class="k">${keys[i]}</span><span>${o}${i===s.a?' ✔ 정답':''}</span></button>`).join('')}</div>
+   <p class="exp">${s.answered!==null?(s.answered===s.a?'<b class="ok">빔: 정답 처리됨</b> ':'<b class="bad">빔: 오답 처리됨</b> '):'<b>팀이 외친 답을 누르면 빔에 바로 채점돼요.</b> '}${s.e}</p>
+   <div class="small" style="display:flex;gap:8px;flex-wrap:wrap"><button class="next" data-ha="next">다음 팀 ▶</button><button class="btn" data-ha="skip">문제 넘기기</button><button class="btn" data-ha="reset">처음부터</button></div></div>
+  <p class="foot">이 창은 학생에게 보이지 않는 노트북 화면에 두세요. 키보드 1·2·3 = 답 고르기, → = 다음 팀.</p>`;
+}
+if(BC)BC.onmessage=e=>{const m=e.data||{};if(HOST){if(m.s){HS=m.s;hostDraw()}return}if(m.hello)return pub();if(m.d)act(m.d)};
+if(HOST){
+  document.title='진행자 화면 · 안전 징검다리';hostDraw();const hi=()=>BC&&BC.postMessage({hello:1});hi();setInterval(hi,3000);
+  app.addEventListener('click',e=>{const t=e.target.closest('[data-hp],[data-ha]');if(!t||!BC)return;BC.postMessage({d:t.dataset.hp!=null?{pick:t.dataset.hp}:{a:t.dataset.ha}})});
+  document.addEventListener('keydown',e=>{if(!BC)return;if(/^[1-4]$/.test(e.key))BC.postMessage({d:{pick:+e.key-1}});else if(e.key==='ArrowRight')BC.postMessage({d:{a:'next'}})});
+}else reset();
 })();
 </script>
 
