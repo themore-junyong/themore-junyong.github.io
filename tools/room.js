@@ -80,7 +80,10 @@
     a.style.cssText='position:fixed;top:max(8px,env(safe-area-inset-top,0px));right:max(8px,env(safe-area-inset-right,0px));z-index:40;background:#4e6bf1;color:#fff;font:700 13px system-ui;padding:6px 12px;border-radius:999px;text-decoration:none;opacity:.92';
     document.body.appendChild(a);
   }
-  window.TM_ROOM={get:get,join:join,check:check,send:send,leave:function(){put(null)},watch:watch,teach:TEACH};
+  function onRoom(cb){ // 방 문서 실시간(play.html: 강사 게임 화면 따라 보기)
+    var r=get();if(!r)return;boot().then(function(b){b.F.onSnapshot(b.F.doc(b.db,'rooms',r.pin),function(d){cb(d.exists()?d.data():null)},function(){})}).catch(function(){});
+  }
+  window.TM_ROOM={get:get,join:join,check:check,send:send,leave:function(){put(null)},watch:watch,teach:TEACH,onRoom:onRoom};
   if(TEACH){
     var tb=function(){var a=document.createElement('div');a.textContent='👀 선생님 미리보기 (학생이 보는 화면 · 결과는 안 보냄)';
       a.style.cssText='position:fixed;top:max(8px,env(safe-area-inset-top,0px));right:max(8px,env(safe-area-inset-right,0px));z-index:40;background:#2e2e2e;color:#fff;font:700 13px system-ui;padding:6px 12px;border-radius:999px;opacity:.92';document.body.appendChild(a)};

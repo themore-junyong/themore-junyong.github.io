@@ -67,6 +67,7 @@ input[type=number]{width:80px}
 </style>
 </head><body>
 <div class="wrap" id="app"></div>
+<script src="sync.js?v=188"></script>
 <script>
 (function(){
 var app=document.getElementById('app');
@@ -132,8 +133,13 @@ function tgo(){
   render()}
 function treset(){clearInterval(T.iv);T={left:null,run:false,end:0,iv:null,beeped:false};render()}
 
+function stuPub(){if(!window.TM_SYNC||!TM_SYNC.on)return;var m;
+  if(V==='pick')m={game:'🎯 뽑기',big:st.pick&&st.pick.one||'?',huge:true,list:st.pick&&st.pick.order||null};
+  else if(V==='timer'){var l=T.left==null?st.tm.set:T.left;m={game:'⏱ '+(st.tm.label||'타이머'),clock:'mmss',end:T.run?T.end:null,clockText:T.run?null:fmt(l)}}
+  else m=st.teams?{game:'👥 팀 나누기',groups:st.teams.map(function(t,i){return {n:TNAMES[st.tnames][i]||((i+1)+'팀'),c:COLORS[i%COLORS.length],m:t}})}:{game:'👥 팀 나누기',big:'팀을 나누는 중…'};
+  TM_SYNC.pub('class',m)}
 function render(){
-  var f={team:team,pick:pick,timer:timer}[V]||team;app.innerHTML=f();
+  var f={team:team,pick:pick,timer:timer}[V]||team;app.innerHTML=f();stuPub();
   var nb=document.getElementById('names');if(nb)nb.addEventListener('input',function(){st.names=nb.value;save();document.getElementById('cnt').textContent=names().length+'명'});
   var tl=document.getElementById('tlabel');if(tl)tl.addEventListener('input',function(){st.tm.label=tl.value;save()});
 }

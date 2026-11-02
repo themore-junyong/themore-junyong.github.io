@@ -4,6 +4,7 @@ rules_version = '2';
 //  - 방 문서: 방 번호를 아는 사람은 읽기, 방을 만든 강사만 지금 질문(q) 바꾸기
 //  - 답(ans/{질문id}_{uid}): 학생은 열린 질문에 자기 답 1개만 쓰기·고치기, 읽기는 강사만
 //  - 방 문서 go{to,t}(강사가 '학생 화면 바꾸기'): 강사만. 들어와 있는 학생 화면이 그 활동으로 넘어감
+//  - 방 문서 g{k,s,t}(강사 노트북의 게임 화면 상태): 강사만. 학생 폰 play.html이 같은 문제·점수를 보여 줌
 //  - 방 문서 hb(강사 화면이 1분마다 찍는 시각)·closed(방 종료): 강사만. 학생 화면은 hb가 3분 넘게 멈추거나 closed면 끊음
 //  - 결과(work/{uid}_{도구}): 방에 들어온 학생이 자소서·검사 등 결과를 도구마다 1개 쓰기·고치기, 읽기는 강사만
 service cloud.firestore {
@@ -15,13 +16,18 @@ service cloud.firestore {
       allow update: if request.auth != null
         && resource.data.owner == request.auth.uid
         && resource.data.exp > request.time
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['q', 'hb', 'closed', 'go'])
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['q', 'hb', 'closed', 'go', 'g'])
         && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['go'])
             || request.resource.data.get('go', null) == null
             || (request.resource.data.go.keys().hasOnly(['to', 't'])
                 && request.resource.data.go.to is string
                 && request.resource.data.go.to.matches('^(home|#jaso|[a-z]+[.]html([?][a-z0-9=&_-]{0,40})?)$')
-                && request.resource.data.go.t == request.time));
+                && request.resource.data.go.t == request.time))
+        && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['g'])
+            || (request.resource.data.g.keys().hasOnly(['k', 's', 't'])
+                && request.resource.data.g.k is string && request.resource.data.g.k.size() <= 20
+                && request.resource.data.g.s is string && request.resource.data.g.s.size() <= 8000
+                && request.resource.data.g.t == request.time));
 
       // 이모지 반응: 학생마다 문서 1개(rx/{uid})를 누를 때마다 덮어씀. 강사 화면이 바뀐 것을 세어 띄움
       match /rx/{uid} {
