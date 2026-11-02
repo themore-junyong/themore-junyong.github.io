@@ -94,12 +94,15 @@ pre.out{white-space:pre-wrap;word-break:keep-all;overflow-wrap:anywhere;backgrou
 .room .pin{font-size:2.2rem;font-weight:900;letter-spacing:.1em;color:var(--blue)}
 .room input{font-size:1.4rem;width:120px;text-align:center;letter-spacing:.2em}
 .hero .qrb{align-self:flex-start;background:var(--blue-ink);color:var(--blue);font-weight:900;border-radius:4px;padding:8px 16px;border:0;font:inherit;font-weight:900;cursor:pointer}
+.tpick{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px}
+.tpick button{border:2px solid var(--line);background:var(--card);color:var(--ink);border-radius:8px;padding:12px 6px;font:inherit;font-weight:900;font-size:1.05rem;cursor:pointer}
+.tpick button[aria-pressed="true"]{border-color:var(--blue);background:var(--blue);color:#fff}
 </style>
 </head><body>
 <div class="wrap" id="app"></div>
 <div class="bar" id="bar" hidden><div class="in"><button class="btn" id="prev">← 이전</button><button class="btn pri" id="next">다음 →</button></div></div>
 
-<script src="room.js?v=191"></script>
+<script src="room.js?v=192"></script>
 <script>
 (function(){
 var h=(location.hash||'').slice(1), m={safety:'safety.html',river:'river.html',intro:'intro.html',color:'color.html'};
@@ -190,22 +193,31 @@ function goNext(){if(!GO)return false;location.replace(GO.charAt(0)==='#'?locati
 function joined(){return window.TM_ROOM&&TM_ROOM.get()}
 function lastNick(){try{return (JSON.parse(localStorage.getItem('tm-room-s-last')||'null')||{}).nick||''}catch(e){return ''}}
 function roomCard(){var r=joined();
-  return '<div class="room"><span class="soft">들어온 수업 방</span><span class="pin">'+r.pin+'</span><span>'+esc(r.nick)+' 님, 반가워요. 여기서 하는 자소서·검사·면접 결과는 <b>이 방 선생님 화면</b>으로 보낼 수 있어요.</span>'+
+  return '<div class="room"><span class="soft">들어온 수업 방</span><span class="pin">'+r.pin+'</span><span>'+(r.team?'<b>'+esc(r.team)+'</b> ':'')+esc(r.nick)+' 님, 반가워요. 여기서 하는 자소서·검사·면접 결과는 <b>이 방 선생님 화면</b>으로 보낼 수 있어요.</span>'+
    '<a class="btn pri" style="text-align:center;text-decoration:none" href="live.html?r='+r.pin+'">📊 선생님 실시간 활동 참여하기 →</a><a href="#" id="roomOut" class="note">다른 방으로 들어가기</a></div>'}
+/* 강사가 방을 만들 때 정한 조 이름(rooms.teams) → 학생은 들어올 때 "나는 몇 조?"를 먼저 고름 */
+var TEAMS=[],TSEL='',TPIN='';
+function teamHtml(){return TEAMS.length?'<label class="soft">나는 몇 조인가요?</label><div class="tpick">'+TEAMS.map(function(n){return '<button type="button" data-tm="'+esc(n)+'" aria-pressed="'+(n===TSEL)+'">'+esc(n)+'</button>'}).join('')+'</div>':''}
+function loadTeams(pin){pin=String(pin||'').replace(/\D/g,'');if(pin.length!==4||pin===TPIN||!window.TM_ROOM||!TM_ROOM.info)return;TPIN=pin;
+  TM_ROOM.info(pin).then(function(x){if(pin!==TPIN)return;TEAMS=x.teams||[];if(TEAMS.indexOf(TSEL)<0)TSEL='';var a=document.getElementById('teamArea');if(a)a.innerHTML=teamHtml()},function(){TPIN=''})}
 function gate(){
   step=-1; bar.hidden=true;
   app.innerHTML='<header class="brand"><small>위듀케이션</small><h1>위듀케이션 취업 연구소</h1><p class="soft">자소서 · 면접 · 나를 알아보는 검사 · 수업 도구</p></header>'+
    '<div class="hero"><b>반가워요! 👋</b><span>선생님이 연 <strong>수업 방</strong>에 들어오면 오늘 수업 도구를 쓸 수 있어요.</span></div>'+
    '<div class="room"><b>수업 방 들어가기</b><span class="soft">선생님 화면의 QR을 찍었다면 방 번호가 이미 들어가 있어요.</span>'+
    '<label class="soft" for="roomIn">방 번호 4자리</label><input id="roomIn" inputmode="numeric" maxlength="4" placeholder="0000" value="'+esc(QPIN)+'">'+
+   '<div id="teamArea" style="display:flex;flex-direction:column;gap:8px">'+teamHtml()+'</div>'+
    '<label class="soft" for="roomNick">이름 (또는 번호)</label><input id="roomNick" maxlength="12" placeholder="예: 3번 홍길동" value="'+esc(lastNick())+'" style="width:100%;letter-spacing:0;text-align:left;font-size:1.1rem">'+
    '<button class="btn pri" id="roomGo"'+(RBUSY?' disabled':'')+'>'+(RBUSY?'확인 중…':'들어가기')+'</button>'+(RNOTE?'<p class="note" style="color:#c8432f">'+esc(RNOTE)+'</p>':'')+'</div>'+
    '<a href="teacher.html" class="note">👩‍🏫 선생님이세요? 수업 방 만들기 →</a>';
+  loadTeams(document.getElementById('roomIn').value);
 }
+document.addEventListener('input',function(e){if(e.target.id==='roomIn')loadTeams(e.target.value)});
 document.addEventListener('click',function(e){
+  var tb=e.target.closest('[data-tm]');if(tb){TSEL=tb.dataset.tm;document.getElementById('teamArea').innerHTML=teamHtml();return}
   if(e.target.closest('#roomGo')){RNOTE='';RBUSY=true;var pin=document.getElementById('roomIn').value,nick=document.getElementById('roomNick').value;gate();
     document.getElementById('roomIn').value=pin;document.getElementById('roomNick').value=nick;
-    TM_ROOM.join(pin,nick).then(function(r){RBUSY=false;try{localStorage.setItem('tm-room-s-last',JSON.stringify({nick:r.nick}))}catch(x){}if(goNext())return;TM_ROOM.watch();home()},
+    TM_ROOM.join(pin,nick,TSEL).then(function(r){RBUSY=false;try{localStorage.setItem('tm-room-s-last',JSON.stringify({nick:r.nick}))}catch(x){}if(goNext())return;TM_ROOM.watch();home()},
       function(err){RBUSY=false;RNOTE=err.message||'연결이 안 돼요. 다시 눌러 주세요';gate();document.getElementById('roomIn').value=pin;document.getElementById('roomNick').value=nick})}
   else if(e.target.closest('#roomOut')){e.preventDefault();TM_ROOM.leave();QPIN='';home()}
 });

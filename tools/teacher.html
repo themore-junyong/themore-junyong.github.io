@@ -81,6 +81,8 @@ input.w{width:100%}
 #qrov .p{font-size:clamp(2rem,6vw,4rem);font-weight:900;color:#4e6bf1;letter-spacing:.1em}
 #qrbox{width:min(58vh,86vw);height:min(58vh,86vw)}#qrbox img,#qrbox canvas{width:100%!important;height:100%!important}
 #qrov .x{position:absolute;top:12px;right:16px;font-size:2rem;background:none;border:0;cursor:pointer;color:#222}
+.tnames{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px}
+.tnames input{border:1px solid var(--line);background:var(--field);color:var(--ink);border-radius:4px;padding:8px 10px;font:inherit;font-weight:700;min-width:0}
 </style>
 </head><body>
 <div class="wrap" id="app"><p class="soft">불러오는 중…</p></div>
@@ -105,6 +107,16 @@ async function boot(){
 }
 const msg=e=>(e&&e.message&&!/^(internal|INTERNAL)$/.test(e.message))?e.message:'연결이 끊겼어요. 다시 눌러 주세요';
 /* 방 = 실시간 마인드맵과 같은 rooms/{번호}. 이 노트북에 기억(live-host)해서 마인드맵 강사 화면도 같은 방을 씀 */
+/* 조: 강사가 방을 만들 때 조 개수·이름을 정함 → 방 문서 teams. 학생은 들어올 때 그중에서 고름 */
+const dflT=n=>Array.from({length:n},(_,i)=>(i+1)+'조');
+let TM=(()=>{const t=lsGet('tm-teams',null);return Array.isArray(t)&&t.length>=2&&t.length<=8?t:dflT(4)})();
+function teamsForm(){
+  return '<div class="f"><b>조 나누기</b><span class="note">학생이 들어올 때 "나는 몇 조?"를 골라요. 결과·게임 통계가 조별로 모여요.</span>'+
+   '<div class="chips" role="group" aria-label="조 개수"><span class="note" style="align-self:center">조 개수</span>'+[0,2,3,4,5,6,7,8].map(n=>'<button data-tn="'+n+'" aria-pressed="'+(n===TM.length)+'">'+(n?n+'개':'조 없음')+'</button>').join('')+'</div>'+
+   (TM.length?'<div class="tnames">'+TM.map((n,i)=>'<input data-ti="'+i+'" value="'+esc(n)+'" maxlength="12" aria-label="'+(i+1)+'번째 조 이름">').join('')+'</div><span class="note">칸을 눌러 조 이름을 바꿀 수 있어요. 예: 열정조, 1모둠</span>':'')+'</div>'}
+function readTM(){document.querySelectorAll('[data-ti]').forEach(x=>{const v=x.value.trim().slice(0,12);TM[+x.dataset.ti]=v||((+x.dataset.ti+1)+'조')});
+  const seen={};TM=TM.map((n,i)=>seen[n]?n+'-'+(i+1):(seen[n]=1,n))}
+function saveTeams(){readTM();lsSet('tm-teams',TM);return F.updateDoc(F.doc(db,'rooms',S.pin),{teams:TM})}
 const S={name:lsGet('tm-teacher',''),code:(lsGet('tm-code',{})||{}).code||'',pin:'',exp:0,note:'',busy:false};
 /* 수업 활동 목록(학생 첫 화면과 같은 묶음). 누르면 방에 들어온 학생 화면이 따라오고, 강사 노트북엔 같은 화면이 새 탭으로 열림
    q: 학생 도구(학생 화면 전환 + 강사 미리보기 탭) · live: 마인드맵(진행 화면 새 탭 + 학생은 답하기 화면) · b: 빔으로 하는 게임(게임 화면 새 탭 + 학생 폰은 play.html로 같은 문제·점수를 실시간으로) · pick: 검사 고르기 */
@@ -117,7 +129,6 @@ const GROUPS=[
  ['수업 게임 · 참여',[
   ['live','live.html?host','📊 실시간 마인드맵 · 투표','진행 화면이 새 탭으로 · 학생은 휴대폰으로 답하기'],
   ['b','icebreak.html','🎲 아이스브레이킹','밸런스 · 초성 · 이모지 · 몸으로 말해요 · 학생 폰에도 같은 문제'],
-  ['b','safety.html','🦺 안전 징검다리','현장 안전 팀 대결 · 학생 폰에도 같은 문제'],
   ['b','river.html','🚣 문제해결 강건너기','3단계 퍼즐 · 학생 폰에도 같은 상황'],
   ['b','class.html','👥 교실 도구','팀 나누기 · 한 명 뽑기 · 타이머 · 학생 폰에도 같이']]],
  ['나를 알아보는 검사',[
@@ -141,6 +152,7 @@ function render(){
     h+='<div class="card"><h1>오늘 수업 방 만들기</h1><p class="soft">여러 반이 동시에 써도 섞이지 않도록 <b>수업마다 방을 먼저 만들어요.</b> 학생은 빔에 띄운 QR(방 번호가 들어 있어요)로 들어와요. 방은 8시간 뒤 자동으로 닫혀요.</p>'+
      '<div class="f"><label for="who"><b>강사 이름</b></label><input id="who" class="w" placeholder="예: 김준용" value="'+esc(S.name)+'" maxlength="12"></div>'+
      '<div class="f"><label for="code"><b>초대코드</b> <span class="note">(위듀케이션에서 받은 코드. 맞아야 방이 열려요)</span></label><input id="code" class="w" value="'+esc(S.code)+'" placeholder="예: WEDU-0000" autocomplete="off"></div>'+
+     teamsForm()+
      '<button class="btn pri big" data-a="make"'+(S.busy?' disabled':'')+'>'+(S.busy?'만드는 중…':'🏠 방 만들기')+'</button>'+(S.note?'<p class="bad">'+esc(S.note)+'</p>':'')+'</div>';
   }else{
     const left=Math.max(0,Math.round((S.exp-Date.now())/60000));
@@ -148,6 +160,8 @@ function render(){
      '<span class="soft">학생 입장 주소: '+esc(SITE.replace('https://',''))+'?r='+S.pin+' · '+Math.floor(left/60)+'시간 '+(left%60)+'분 남음</span>'+
      '<div class="row" style="justify-content:center"><button class="btn pri big" data-a="qr">📱 빔에 학생 QR 크게 띄우기</button><button class="btn" data-a="new">⏹ 방 종료</button></div>'+
      '<span class="note">이 탭을 켜 두는 동안 방이 열려 있어요. 방 종료를 누르거나 이 탭을 닫으면 3분 안에 학생 화면도 "수업이 끝났어요"로 끊겨요.</span></div>'+
+     '<div class="card"><div class="row" style="justify-content:space-between"><h3>조 ('+(S.teams&&S.teams.length?S.teams.map(esc).join(' · '):'조 없음')+')</h3><button class="btn" data-a="tedit">'+(S.tedit?'닫기':'✏️ 조 바꾸기')+'</button></div>'+
+       (S.tedit?teamsForm()+'<button class="btn pri" data-a="tsave">조 저장하기</button><span class="note">이미 들어온 학생은 오른쪽 위 방 표시를 눌러 조를 다시 고를 수 있어요.</span>':'')+'</div>'+
      '<div class="card"><h3>수업 활동</h3>'+
      '<p class="soft">처음 한 번만 위의 <b>학생 QR</b>로 들어오게 하세요. 그다음부터는 아래 활동을 누르면 <b>학생 화면이 자동으로 따라오고</b>, 선생님 노트북에도 같은 화면이 새 탭으로 열려요.</p>'+
      '<div class="chips" role="group" aria-label="누르면"><button data-mode="push" aria-pressed="'+(S.mode!=='qr')+'">📲 학생 화면 바로 바꾸기</button><button data-mode="qr" aria-pressed="'+(S.mode==='qr')+'">🔳 활동 QR 띄우기 (늦게 온 학생)</button>'+
@@ -165,9 +179,12 @@ const TOOL={jaso:'📝 자소서',interview:'🎤 모의면접',color:'🎨 퍼�
 const toolName=t=>TOOL[t]||(t.indexOf('test-')===0?'🧭 검사':t);
 let W=[],wUnsub=null,hbT=null,openW={};
 function works(){
-  const by={};W.forEach(w=>{(by[w.nick]=by[w.nick]||[]).push(w)});const names=Object.keys(by).sort((a,b)=>a.localeCompare(b,'ko',{numeric:true}));
+  const by={},tOf={};W.forEach(w=>{(by[w.nick]=by[w.nick]||[]).push(w);if(w.team)tOf[w.nick]=w.team});
+  const T=(S.teams||[]),ti=n=>{const i=T.indexOf(tOf[n]);return i<0?(tOf[n]?T.length:T.length+1):i};
+  const names=Object.keys(by).sort((a,b)=>ti(a)-ti(b)||String(tOf[a]||'').localeCompare(String(tOf[b]||''),'ko')||a.localeCompare(b,'ko',{numeric:true}));
+  let lastT=null;const head=n=>{const t=tOf[n]||'조 없음';if(!T.length&&!tOf[n])return '';if(t===lastT)return '';lastT=t;const c=names.filter(x=>(tOf[x]||'조 없음')===t).length;return '<h4 style="margin:10px 0 0;color:var(--blue)">'+esc(t)+' <span class="note">'+c+'명</span></h4>'};
   return '<div class="card"><div class="row" style="justify-content:space-between"><h3>학생 결과 ('+names.length+'명 · '+W.length+'개)</h3><span class="note">학생이 마치면 여기 바로 쌓여요. 이 방 강사만 볼 수 있어요.</span></div>'+
-   (names.length?names.map(n=>'<div style="border-top:1px solid var(--line);padding-top:8px"><b>'+esc(n)+'</b><div style="display:flex;flex-direction:column;gap:4px;margin-top:4px">'+by[n].map(w=>{const k=w.id,o=openW[k];
+   (names.length?names.map(n=>head(n)+'<div style="border-top:1px solid var(--line);padding-top:8px"><b>'+esc(n)+'</b><div style="display:flex;flex-direction:column;gap:4px;margin-top:4px">'+by[n].map(w=>{const k=w.id,o=openW[k];
      return '<div><button class="btn" data-w="'+esc(k)+'" style="padding:4px 10px;text-align:left;width:100%">'+toolName(w.tool)+' · '+esc(w.title)+' <span class="note">'+(w.t?new Date(w.t.toMillis()).toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'}):'')+'</span> '+(o?'▲':'▼')+'</button>'+
       (o?'<pre style="white-space:pre-wrap;font:inherit;background:var(--field);border:1px solid var(--line);border-radius:4px;padding:10px;margin:4px 0 0">'+esc(w.body)+'</pre>':'')+'</div>'}).join('')+'</div></div>').join('')
     :'<p class="soft">아직 없어요. 학생이 방에 들어와 자소서 초안·검사·면접·퍼스널컬러를 마치면 자동으로 들어와요.</p>')+
@@ -179,16 +196,17 @@ function live(){ // 방이 정해지면: hb(살아 있음) 1분마다 찍기 + �
   beat();hbT=setInterval(beat,60e3);
   wUnsub=F.onSnapshot(F.collection(db,'rooms',S.pin,'work'),q=>{W=q.docs.map(d=>Object.assign({id:d.id},d.data())).sort((a,b)=>(a.t?a.t.toMillis():0)-(b.t?b.t.toMillis():0));render()},()=>{});
 }
-function csv(){const rows=[['이름','도구','제목','시각','내용']].concat(W.map(w=>[w.nick,toolName(w.tool).replace(/^\S+ /,''),w.title,w.t?new Date(w.t.toMillis()).toLocaleString('ko-KR'):'',w.body]));
+function csv(){const rows=[['조','이름','도구','제목','시각','내용']].concat(W.map(w=>[w.team||'',w.nick,toolName(w.tool).replace(/^\S+ /,''),w.title,w.t?new Date(w.t.toMillis()).toLocaleString('ko-KR'):'',w.body]));
   const t='\ufeff'+rows.map(r=>r.map(x=>'"'+String(x==null?'':x).replace(/"/g,'""')+'"').join(',')).join('\r\n');
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([t],{type:'text/csv'}));a.download='방'+S.pin+'_학생결과.csv';a.click()}
 async function make(){
-  S.name=document.getElementById('who').value.trim();
+  readTM();S.name=document.getElementById('who').value.trim();
   S.code=document.getElementById('code').value.trim().toUpperCase();S.note='';
   if(!S.name){S.note='강사 이름을 넣어 주세요';return render()}
   if(!S.code){S.note='초대코드를 넣어 주세요';return render()}
   S.busy=true;render();
   try{const r=await call('liveRoom',{code:S.code});S.pin=r.pin;S.exp=Date.now()+8*3600e3;
+    lsSet('tm-teams',TM);S.teams=TM.slice();if(TM.length)await F.updateDoc(F.doc(db,'rooms',S.pin),{teams:TM}).catch(()=>{S.note='조 이름을 저장하지 못했어요. 아래 [조 바꾸기]에서 다시 저장해 주세요'});
     lsSet('live-host',{pin:S.pin});lsSet('tm-teacher',S.name);lsSet('tm-room',{pin:S.pin,exp:S.exp});
     const c=lsGet('tm-code',{})||{};if(c.code!==S.code)lsSet('tm-code',{code:S.code});live()}
   catch(e){S.note=msg(e)}
@@ -197,7 +215,7 @@ async function make(){
 async function resume(){ // 이 노트북에서 만든 방이 아직 살아 있으면 그대로
   const pin=(lsGet('tm-room',{})||{}).pin||(lsGet('live-host',{})||{}).pin;if(!pin)return;
   try{const d=await F.getDoc(F.doc(db,'rooms',pin));const r=d.exists()?d.data():null;
-    if(r&&r.owner===me&&!r.closed&&r.exp.toMillis()>Date.now()){S.pin=pin;S.exp=r.exp.toMillis();lsSet('live-host',{pin});live()}}catch(e){}
+    if(r&&r.owner===me&&!r.closed&&r.exp.toMillis()>Date.now()){S.pin=pin;S.exp=r.exp.toMillis();S.teams=Array.isArray(r.teams)?r.teams:[];lsSet('live-host',{pin});live()}}catch(e){}
 }
 /* 학생 화면 바꾸기: 방 문서 go={to,t}. 학생 room.js가 보고 그 활동으로 넘어감 */
 /* 강사도 학생이 보는 화면을 같이 봄: 탭 하나('tm-view')를 계속 재사용. 미리보기라 결과는 안 보냄 */
@@ -215,8 +233,9 @@ function qr(to,name){const o=document.getElementById('qrov'),u=to?(to.charAt(0)=
   document.getElementById('qrH').textContent=to?name+' · 찍고 바로 시작해요':'📱 휴대폰 카메라로 찍고 들어오세요';
   document.getElementById('qrP').textContent='방 번호 '+S.pin;document.getElementById('qrU').textContent=u.replace('https://','');b.innerHTML='';
   if(window.QRCode)new QRCode(b,{text:u,width:600,height:600,correctLevel:QRCode.CorrectLevel.M});else b.textContent='QR을 불러오지 못했어요. 위 주소를 칠판에 적어 주세요.'}
-app.addEventListener('click',e=>{const t=e.target.closest('[data-a],[data-w],[data-q],[data-mode],[data-pick],[data-live]');if(!t)return;
+app.addEventListener('click',e=>{const t=e.target.closest('[data-a],[data-w],[data-q],[data-mode],[data-pick],[data-live],[data-tn]');if(!t)return;
   if(t.dataset.mode){S.mode=t.dataset.mode;render();return}
+  if(t.dataset.tn!=null){const w=document.getElementById('who'),c=document.getElementById('code');if(w)S.name=w.value;if(c)S.code=c.value;readTM();const n=+t.dataset.tn;TM=n?Array.from({length:n},(_,i)=>TM[i]||(i+1)+'조'):[];render();return}
   if(t.dataset.pick){S.pick=!S.pick;render();if(S.pick)document.getElementById('pick').scrollIntoView({behavior:'smooth',block:'center'});return}
   if(t.dataset.live){ // 새 탭(진행 화면)은 링크 그대로 열리고, 학생 화면도 따라감: 마인드맵은 답하기 화면, 게임·교실 도구는 '앞 화면을 보세요'
     const l=t.dataset.live;if(S.mode==='qr'){if(l==='live.html?host')qr('live.html',t.dataset.qn);return}
@@ -224,6 +243,8 @@ app.addEventListener('click',e=>{const t=e.target.closest('[data-a],[data-w],[da
   if(t.dataset.q){if(S.mode==='qr'&&t.dataset.q!=='home')qr(t.dataset.q,t.dataset.qn);else{if(t.dataset.q.indexOf('test.html')===0)S.pick=false;push(t.dataset.q,t.dataset.qn);view(t.dataset.q)}return}
   if(t.dataset.w){openW[t.dataset.w]=!openW[t.dataset.w];render();return}
   const a=t.dataset.a;
+  if(a==='tedit'){S.tedit=!S.tedit;if(S.tedit)TM=(S.teams&&S.teams.length?S.teams:TM).slice();render();return}
+  if(a==='tsave'){saveTeams().then(()=>{S.teams=TM.slice();S.tedit=false;render();flash('✔ 조를 저장했어요. 새로 들어오는 학생은 이 조에서 골라요')},e=>flash('저장하지 못했어요: '+msg(e),true));return}
   if(a==='make')make();else if(a==='qr')qr();else if(a==='csv')csv();
   else if(a==='new'){if(!confirm('방을 종료할까요? 들어와 있던 학생 화면도 "수업이 끝났어요"로 끊겨요. (받은 결과는 먼저 CSV로 받아 두세요)'))return;
     F.updateDoc(F.doc(db,'rooms',S.pin),{closed:true,q:null}).catch(()=>{});clearInterval(hbT);if(wUnsub)wUnsub();W=[];S.pin='';lsSet('live-host',{});lsSet('tm-room',{});render()}});
