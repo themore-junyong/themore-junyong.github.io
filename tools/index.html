@@ -198,7 +198,7 @@ function gate(){
    '<label class="soft" for="roomIn">방 번호 4자리</label><input id="roomIn" inputmode="numeric" maxlength="4" placeholder="0000" value="'+esc(QPIN)+'">'+
    '<label class="soft" for="roomNick">이름 (또는 번호)</label><input id="roomNick" maxlength="12" placeholder="예: 3번 홍길동" value="'+esc(lastNick())+'" style="width:100%;letter-spacing:0;text-align:left;font-size:1.1rem">'+
    '<button class="btn pri" id="roomGo"'+(RBUSY?' disabled':'')+'>'+(RBUSY?'확인 중…':'들어가기')+'</button>'+(RNOTE?'<p class="note" style="color:#c8432f">'+esc(RNOTE)+'</p>':'')+'</div>'+
-   '<a href="teacher.html" class="note">👩‍🏫 선생님이세요? 강사 입구(방 만들기) →</a>';
+   '<a href="teacher.html" class="note">👩‍🏫 선생님이세요? 수업 방 만들기 →</a>';
 }
 document.addEventListener('click',function(e){
   if(e.target.closest('#roomGo')){RNOTE='';RBUSY=true;var pin=document.getElementById('roomIn').value,nick=document.getElementById('roomNick').value;gate();
