@@ -239,10 +239,10 @@ function cur(v){var g=G[v];if(!g||!g.deck)deal(v);g=G[v];return g.deck[g.i]}
 function next(v){var g=G[v];g.i++;g.show=false;g.pick=null;if(g.i>=g.deck.length){deal(v);G[v].done=1}}
 
 var V=(location.hash||'').slice(1)||'balance';
-window.addEventListener('hashchange',function(){V=(location.hash||'').slice(1)||'balance';stopT();render()});
+window.addEventListener('hashchange',function(){if(HOST)return;V=(location.hash||'').slice(1)||'balance';stopT();render()});
 var TABS=[['balance','⚖️ 밸런스 게임'],['chosung','🔤 초성 퀴즈'],['emoji','😀 이모지 퀴즈'],['body','🙆 몸으로 말해요']];
 
-function head(){return '<div class="top"><div class="brand"><small>위듀케이션 · 아이스브레이킹</small></div><div class="row"><button class="btn" data-a="fs">⛶ 전체 화면</button><a href="./">← 도구 모음</a></div></div>'+
+function head(){return '<div class="top"><div class="brand"><small>위듀케이션 · 아이스브레이킹</small></div><div class="row"><button class="btn" data-a="host">🖥 진행자 화면</button><button class="btn" data-a="fs">⛶ 전체 화면</button><a href="./">← 도구 모음</a></div></div>'+
  '<div class="tabs">'+TABS.map(function(x){return '<a href="#'+x[0]+'"'+(V===x[0]?' aria-current="page"':'')+'>'+x[1]+'</a>'}).join('')+'</div>'}
 function cats(v){return '<div class="chips">'+['전체'].concat(Object.keys(BANK[v])).map(function(k){var on=st.cat[v]===k;return '<button data-cat="'+esc(k)+'" style="'+(on?'background:var(--blue);color:var(--blue-ink)':'')+'">'+esc(k)+'</button>'}).join('')+'</div>'}
 function count(v){var g=G[v];return '<span class="note">'+(v==='chosung'||v==='emoji'?'<b style="font-size:1.4rem;color:var(--ink)">'+(g.i+1)+'번</b> / '+g.deck.length+' · 정답지 '+g.seed:(g.i+1)+' / '+g.deck.length)+(g.done?' · 한 바퀴 돌아서 다시 섞었어요':'')+'</span>'}
@@ -339,10 +339,60 @@ function keyOpen(v){var o=document.getElementById('kov');o.hidden=false;var u=ke
  function draw(){bx.innerHTML='';new QRCode(bx,{text:u,width:500,height:500,correctLevel:QRCode.CorrectLevel.M})}
  if(window.QRCode)return draw();var sc=document.createElement('script');sc.src='https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';sc.onload=draw;
  sc.onerror=function(){bx.textContent='QR을 불러오지 못했어요. 휴대폰에서 이 주소를 여세요: '+u};document.head.appendChild(sc)}
-function render(){if(V.indexOf('ans/')===0){app.innerHTML=answers();return}var f={balance:balance,chosung:chosung,emoji:emoji,body:body}[V];if(!f){V='balance';f=balance}app.innerHTML=f()}
+/* ───── 진행자 화면 (PPT 발표자 보기처럼): 같은 컴퓨터의 두 창을 BroadcastChannel로 연결 ───── */
+var HOST=V==='host', BC=null;try{BC=new BroadcastChannel('ice-v1')}catch(e){}
+function snap(){
+ var o={V:V,teams:st.teams,tname:st.tname.slice(0,st.teams),score:st.score.slice(0,st.teams),sel:st.sel,cat:st.cat[V]};
+ if(G[V]&&G[V].deck){var g=G[V],q=g.deck[g.i];o.num=g.i+1;o.tot=g.deck.length;o.show=!!g.show;o.qcat=q.cat;
+  if(V==='chosung'){o.q=cho(q.x);o.ans=q.x}else if(V==='emoji'){o.q=q.x[0];o.ans=q.x[1]}else if(V==='balance'){o.q=q.x[0]+'  VS  '+q.x[1]}else if(V==='body'){o.ans=q.x}}
+ o.T={run:T.run,end:T.end,left:T.left,sec:T.sec};o.B={run:B.run,end:B.end,ok:B.ok,pass:B.pass,over:B.over};o.bodySec=st.bodySec;return o}
+function pub(){if(BC&&!HOST)try{BC.postMessage({s:snap()})}catch(e){}}
+if(BC)BC.onmessage=function(e){var m=e.data||{};
+ if(HOST){if(m.s){HS=m.s;HS.at=Date.now();hostRender()}return}
+ if(m.hello)return pub();if(m.d){act(m.d);pub()}};
+var HS=null,HIV=null;
+function send(d){if(BC)BC.postMessage({d:d})}
+function hostRender(){
+ var s=HS,h='<div class="top"><div class="brand"><small>위듀케이션 · 아이스브레이킹 · 진행자 화면</small></div><span class="note">'+(s?'✔ 빔 창과 연결됨':'빔 창을 찾는 중… 아이스브레이킹 창이 열려 있어야 해요')+'</span></div>';
+ h+='<div class="tabs">'+TABS.map(function(x){return '<a href="#" data-hgo="'+x[0]+'"'+(s&&s.V===x[0]?' aria-current="page"':'')+'>'+x[1]+'</a>'}).join('')+'</div>';
+ if(!s){app.innerHTML=h+'<div class="card"><p>이 창은 노트북 화면에 두고, 원래 창(문제 화면)을 빔(2번 모니터)으로 옮겨 전체 화면으로 띄우세요.</p></div>';return}
+ h+='<div class="card">';
+ var tm='';if(s.V==='chosung'||s.V==='emoji'){var l=s.T.run?Math.max(0,Math.ceil((s.T.end-Date.now())/1000)):(s.T.left==null?s.T.sec:Math.ceil(s.T.left));tm='<span class="mini" id="htm">'+l+'초</span>'}
+ if(s.V==='chosung'||s.V==='emoji'){
+  h+='<div class="row" style="justify-content:space-between"><span class="cat">'+esc(s.qcat)+'</span><b style="font-size:1.6rem">'+s.num+'번 / '+s.tot+'</b></div>'+
+   '<div style="text-align:center;font-size:2.4rem;font-weight:900">'+esc(s.q)+'</div>'+
+   '<div class="ans" style="font-size:3rem">'+esc(s.ans)+'</div><p class="note" style="text-align:center">'+(s.show?'빔에 정답이 보이는 중':'빔에는 아직 정답이 안 보여요')+'</p>'+
+   '<div class="row" style="justify-content:center">'+tm+'<button class="btn" data-h="qt">'+(s.T.run?'⏸ 타이머 멈춤':'⏱ 타이머')+'</button><button class="btn big" data-h="show">'+(s.show?'정답 가리기':'빔에 정답 공개')+'</button><button class="btn pri big" data-h="next">다음 문제 →</button></div>'+
+   '<div class="hit">'+s.tname.map(function(n,i){return '<button data-hh="'+i+'" style="--c:'+COLORS[i]+'">'+esc(n)+' 정답 +1 → 다음</button>'}).join('')+'</div>';
+ }else if(s.V==='balance'){
+  h+='<div style="text-align:center"><span class="cat">'+esc(s.qcat)+'</span> <b>'+s.num+' / '+s.tot+'</b></div><div style="text-align:center;font-size:1.8rem;font-weight:900">'+esc(s.q)+'</div><div class="row" style="justify-content:center"><button class="btn pri big" data-h="next">다음 질문 →</button></div>';
+ }else if(s.V==='body'){
+  var bl=s.B.run?Math.max(0,Math.ceil((s.B.end-Date.now())/1000)):s.bodySec;
+  h+='<p class="note">이번 차례: <b style="color:'+COLORS[s.sel]+'">'+esc(s.tname[s.sel])+'</b></p>';
+  if(s.B.run)h+='<div class="mini" id="hbt">'+bl+'초</div><div class="big" style="font-size:4rem;letter-spacing:0">'+esc(s.ans)+'</div><div class="row" style="justify-content:center"><button class="btn pri big" data-h="bok">⭕ 맞혔다 ('+s.B.ok+')</button><button class="btn big" data-h="bpass">패스 ('+s.B.pass+')</button><button class="btn" data-h="bhide">빔에서 단어 가리기/보이기</button><button class="btn" data-h="bstop">끝내기</button></div>';
+  else if(s.B.over)h+='<div class="stage">'+s.B.ok+'개 맞힘</div><div class="row" style="justify-content:center"><button class="btn pri big" data-h="bnext">다음 팀 준비 →</button></div>';
+  else h+='<div class="chips">'+s.tname.map(function(n,i){return '<button data-hsel="'+i+'" style="'+(s.sel===i?'background:'+COLORS[i]+';color:#fff':'')+'">'+esc(n)+'</button>'}).join('')+'</div><div class="row" style="justify-content:center"><button class="btn pri big" data-h="bgo">▶ '+esc(s.tname[s.sel])+' 시작 ('+s.bodySec+'초)</button></div>';
+ }
+ h+='</div><div class="card"><h3>팀 점수</h3><div class="score">'+s.tname.map(function(n,i){return '<div class="sc" style="--c:'+COLORS[i]+'"><b>'+esc(n)+'</b><div class="n">'+s.score[i]+'</div><div class="row"><button class="btn" data-hsc="'+i+'" data-d="-1">−</button><button class="btn" data-hsc="'+i+'" data-d="1">+</button></div></div>'}).join('')+'</div></div>'+
+  '<p class="note">키보드: → 다음 · 스페이스 정답 공개. 이 창은 학생에게 보이지 않는 노트북 화면에 두세요.</p>';
+ app.innerHTML=h;
+}
+function hostInit(){document.title='진행자 화면 · 아이스브레이킹';hostRender();if(BC)BC.postMessage({hello:1});
+ HIV=setInterval(function(){if(!HS)return;var a=document.getElementById('htm'),b=document.getElementById('hbt');
+  if(a&&HS.T.run)a.textContent=Math.max(0,Math.ceil((HS.T.end-Date.now())/1000))+'초';if(b&&HS.B.run)b.textContent=Math.max(0,Math.ceil((HS.B.end-Date.now())/1000))+'초'},250);
+ setInterval(function(){if(BC)BC.postMessage({hello:1})},3000);
+ app.addEventListener('click',function(e){var t=e.target.closest('[data-h],[data-hh],[data-hsc],[data-hsel],[data-hgo]');if(!t)return;e.preventDefault();var d=t.dataset;
+  if(d.h)send({a:d.h});else if(d.hh!=null)send({hit:d.hh});else if(d.hsc!=null)send({sc:d.hsc,d:d.d});else if(d.hsel!=null)send({sel:d.hsel});else if(d.hgo)send({go:d.hgo})});
+ document.addEventListener('keydown',function(e){if(!HS)return;if(e.key==='ArrowRight'){e.preventDefault();send({a:HS.V==='body'?'bok':'next'})}else if(e.key===' '&&(HS.V==='chosung'||HS.V==='emoji')){e.preventDefault();send({a:'show'})}});
+}
+function render(){if(HOST)return;if(V.indexOf('ans/')===0){app.innerHTML=answers();return}var f={balance:balance,chosung:chosung,emoji:emoji,body:body}[V];if(!f){V='balance';f=balance}app.innerHTML=f();pub()}
 
 app.addEventListener('click',function(e){
- var t=e.target.closest('button,[data-side],[data-ren]');if(!t)return;var d=t.dataset;
+ if(HOST)return;var t=e.target.closest('button,[data-side],[data-ren]');if(!t)return;act(t.dataset);
+});
+function act(d){
+ if(d.go){location.hash=d.go;return}
+ if(d.a==='host'){window.open(location.href.split('#')[0]+'#host','ice-host','width=1000,height=760');return}
  if(d.cat){st.cat[V]=d.cat;save();deal(V);resetQ();return render()}
  if(d.side!=null){var g=G.balance;g.pick=g.pick===+d.side?null:+d.side;return render()}
  if(d.ren!=null){var n=prompt('팀 이름',st.tname[+d.ren]);if(n&&n.trim()){st.tname[+d.ren]=n.trim().slice(0,12);save();render()}return}
@@ -365,9 +415,9 @@ app.addEventListener('click',function(e){
   case 'bstop':clearInterval(B.iv);B.run=false;B.over=true;render();break;
   case 'bnext':B.over=false;st.sel=(st.sel+1)%st.teams;save();render();break;
  }
-});
+}
 document.addEventListener('keydown',function(e){
- if(e.target.closest('input,textarea'))return;
+ if(HOST||e.target.closest('input,textarea'))return;
  if(e.key==='Escape'){document.getElementById('kov').hidden=true;return}
  if(V.indexOf('ans/')===0)return;
  if(V==='body'){if(B.run&&e.key==='ArrowRight'){e.preventDefault();app.querySelector('[data-a="bok"]').click()}return}
@@ -375,7 +425,7 @@ document.addEventListener('keydown',function(e){
  else if(e.key===' '&&V!=='balance'){e.preventDefault();G[V].show=!G[V].show;render()}
 });
 document.getElementById('kX').addEventListener('click',function(){document.getElementById('kov').hidden=true});
-render();
+if(HOST)hostInit();else render();
 })();
 </script>
 </body></html>
