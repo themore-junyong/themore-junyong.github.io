@@ -261,8 +261,10 @@ function home(){
       <div class="row"><span class="stars">${'★'.repeat(L.no)}${'☆'.repeat(3-L.no)}</span><span class="tag">${L.mode==='bridge'?`최단 ${L.best}분`:`최소 ${L.best}번 이동`}</span></div>
     </button>`).join('')}
   </section>
+  <p class="tip"><button class="btn" id="hostBtn">🖥 진행자 화면 (정답 풀이 보기)</button></p>
   <p class="tip"><b>진행 팁</b> · 빔프로젝터에 띄우고 팀마다 돌아가며 "다음 수"를 외치게 하세요. 틀리면 <b>한 수 되돌리기</b>로 다시. 성공하면 나오는 <b>교훈</b>과 <b>자소서 STAR 문장</b>으로 정리하고 다음 단계로 넘어가면 됩니다. 휴대폰에서도 돼요.</p>`;
   app.querySelectorAll('.lv').forEach(b=>b.onclick=()=>{sfx.pick();start(+b.dataset.lv)});
+  document.getElementById('hostBtn').onclick=()=>window.open(location.href.split('#')[0]+'#host','river-host','width=980,height=760');
 }
 
 function start(li){
@@ -437,7 +439,30 @@ document.addEventListener('keydown',e=>{
   if((e.key==='z'||e.key==='Backspace')&&!document.getElementById('over')) undo();
 });
 
-home();
+/* 진행자 화면(PPT 발표자 보기처럼): 같은 컴퓨터·같은 브라우저의 두 창을 BroadcastChannel로 연결. 지금 상태에서 끝까지 최단 풀이를 보여 줌 */
+const HOST=location.hash==='#host';let BC=null;try{BC=new BroadcastChannel('river-v1')}catch(e){}
+function path(L,pos,boat){const out=[];let p=pos.slice(),b=boat;
+  for(let k=0;k<40;k++){if(p.every(v=>v===1))break;const s=solve(L,p,b);if(!s||!s.first)return null;
+    out.push({names:s.first.map(x=>x.e+' '+x.name).join(' + '),dir:b===0?'건너감 →':'← 돌아옴',t:L.mode==='bridge'?Math.max(...s.first.map(x=>x.t)):0});
+    s.first.forEach(x=>p[x.i]=1-b);b=1-b}
+  return out}
+function pub(){if(!BC||HOST)return;
+  if(!G){BC.postMessage({s:{home:1}});return}
+  const L=G.L,pa=path(L,G.pos,G.boat);
+  BC.postMessage({s:{title:L.title,no:L.no,mode:L.mode,limit:L.limit,best:L.best,moves:G.moves,time:G.time,over:G.over,path:pa,late:L.mode==='bridge'&&pa&&G.time+pa.reduce((a,x)=>a+x.t,0)>L.limit}})}
+{const d0=draw,h0=home;draw=function(){d0.apply(this,arguments);pub()};home=function(){h0.apply(this,arguments);pub()}}
+let HS=null;
+function hostDraw(){const s=HS;
+  let h='<header class="hero"><h1>🖥 진행자 화면 <em>강건너기</em></h1><p>'+(s?'✔ 빔 창과 연결됨':'빔 창을 찾는 중… 강건너기 창이 열려 있어야 해요')+' · 이 창은 학생에게 보이지 않는 노트북 화면에 두세요.</p></header>';
+  if(!s||s.home){app.innerHTML=h+'<p class="tip">빔 창에서 단계를 고르면 여기에 정답 풀이가 나와요.</p>';return}
+  h+='<section class="tip"><h3>단계 '+s.no+' · '+esc(s.title)+'</h3><p>지금 '+(s.mode==='bridge'?s.time+'분 사용 (제한 '+s.limit+'분)':s.moves+'번 이동')+' · 최단 '+(s.mode==='bridge'?s.best+'분':s.best+'번')+'</p>';
+  if(s.over)h+='<p><b>성공! 빔 화면에서 교훈을 함께 읽어 주세요.</b></p>';
+  else if(!s.path||s.late)h+='<p><b style="color:#c8432f">지금 상태로는 성공이 어려워요.</b> 빔 창에서 ↩ 되돌리기를 하게 하세요.</p>';
+  else h+='<p><b>지금 상태에서 남은 정답 풀이</b> (가장 짧은 길 하나예요. 학생이 다른 수를 외쳐도 규칙만 맞으면 괜찮아요)</p><ol style="font-size:1.2rem;line-height:1.8">'+s.path.map(x=>'<li>'+esc(x.names)+' <b>'+x.dir+'</b>'+(x.t?' ('+x.t+'분)':'')+'</li>').join('')+'</ol>';
+  app.innerHTML=h+'</section>'}
+if(BC)BC.onmessage=e=>{const m=e.data||{};if(HOST){if(m.s){HS=m.s;hostDraw()}return}if(m.hello)pub()};
+if(HOST){document.title='진행자 화면 · 강건너기';hostDraw();const hi=()=>BC&&BC.postMessage({hello:1});hi();setInterval(hi,3000)}
+else home();
 })();
 </script>
 
