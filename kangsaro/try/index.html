@@ -1417,6 +1417,17 @@ else if(firstVisit)openSheet(`<h2>어느 쪽으로 써 볼까요?</h2><p class="
   <button class="btn pri" data-act="role" data-r="inst">강사로 써 보기</button><span class="mu sm">내 강의 달력, 공고 지원, 강사료·결산</span>
   <button class="btn nv" data-act="role" data-r="co">강의 업체로 써 보기</button><span class="mu sm">강의 운영판, 강사 확정, 공지·서류, 강사비 지급</span>`);
 document.addEventListener('click',e=>{const b=e.target.closest('[data-act=role]');if(b)pickRole(b.dataset.r)});
+// 휴대폰: 맨 위에서 아래로 끌어당기면 새로고침 (설치한 앱에서도)
+(()=>{let y0=null,x0=0,dy=0;const T=140,el=document.createElement('div');
+  el.id='ptr';el.setAttribute('aria-hidden','true');el.style.cssText='position:fixed;left:50%;top:0;transform:translate(-50%,-60px);z-index:99;background:var(--sf,#fff);color:var(--b2,#2563eb);border:1px solid var(--ln,#ddd);border-radius:999px;padding:6px 14px;font-size:13px;font-weight:700;box-shadow:0 2px 8px rgba(0,0,0,.15);transition:transform .15s;pointer-events:none';
+  document.body.appendChild(el);document.documentElement.style.overscrollBehaviorY='contain';
+  const busy=()=>document.body.classList.contains('chatting')||($('#sheet')&&$('#sheet').innerHTML.trim());
+  const hide=()=>{el.style.transition='transform .15s';el.style.transform='translate(-50%,-60px)';y0=null;dy=0};
+  addEventListener('touchstart',e=>{if(e.touches.length!==1||scrollY>0||busy()){y0=null;return}y0=e.touches[0].clientY;x0=e.touches[0].clientX;dy=0},{passive:true});
+  addEventListener('touchmove',e=>{if(y0==null)return;const t=e.touches[0],d=t.clientY-y0,dx=Math.abs(t.clientX-x0);
+    if(scrollY>0||d<=0||dx>d){if(dy)hide();y0=d<=0||scrollY>0?y0:null;return}dy=d;el.style.transition='none';el.style.transform=`translate(-50%,${Math.min(d/2,90)-10}px)`;el.textContent=d>T?'↻ 놓으면 새로고침':'↓ 당겨서 새로고침'},{passive:true});
+  addEventListener('touchend',()=>{if(y0==null)return;if(dy>T){el.textContent='↻ 새로고침 중…';setTimeout(()=>location.reload(),150)}else hide()},{passive:true});
+  addEventListener('touchcancel',hide,{passive:true})})();
 </script>
 <script src="../bot.js" defer></script>
 </body>
