@@ -560,12 +560,18 @@ function render(){runReminders();const sw0=$('#slide'),keep=sw0?sw0.scrollLeft:0
   const r=meRole();if(!NAV[r].some(n=>n[0]===ui.tab))ui.tab=NAV[r][0][0];
   const un=r==='i'?unreadCount():0;
   $('#nav').innerHTML=NAV[r].map(([k,l])=>k==='plus'||k==='cnew'?`<button class="plus" data-act="${k}" aria-label="${r==='i'?'일정 넣기':'강의 등록'}">+</button>`:`<button data-tab="${k}" class="${ui.tab===k?'on':''}">${l}${k==='cal'&&un?`<span class="dot">${un}</span>`:''}</button>`).join('');
-  const al=r==='i'&&ui.tab==='cal'?S.alerts.filter(a=>a.instId===meId()&&!a.read):[];
-  $('#main').innerHTML=(al.length?`<div class="card" style="border-color:var(--b2);background:var(--b1)" role="status"><div class="row"><b class="sp" style="color:var(--b2)">알림 ${al.length}개</b></div>${(al.sort((x,y)=>alertDay(x).localeCompare(alertDay(y))),(ui.alMore?al:al.slice(0,3)).map(alertHtml).join(''))}${al.length>3?`<button class="btn sm" data-act="alMore" style="width:100%">${ui.alMore?'접기':`알림 ${al.length-3}개 더 보기`}</button>`:''}</div>`:'')+(VIEWS[ui.tab]||(()=>''))();;
+  const al=r==='i'&&ui.tab==='cal'?S.alerts.filter(a=>a.instId===meId()&&!a.read):[],NJ=r==='i'&&ui.tab==='cal'?ntJobs():[];
+  $('#main').innerHTML=(al.length||NJ.length?`<div class="card" style="border-color:var(--b2);background:var(--b1)" role="status"><div class="row"><b class="sp" style="color:var(--b2)">알림 ${al.length+NJ.length}개</b></div>${NJ.map(ntAlertHtml).join('')}${(al.sort((x,y)=>alertDay(x).localeCompare(alertDay(y))),(ui.alMore?al:al.slice(0,3)).map(alertHtml).join(''))}${al.length>3?`<button class="btn sm" data-act="alMore" style="width:100%">${ui.alMore?'접기':`알림 ${al.length-3}개 더 보기`}</button>`:''}</div>`:'')+(VIEWS[ui.tab]||(()=>''))();;
   // 슬라이드: 날짜·달이 바뀌면 그 날짜 카드로, 아니면 보던 자리 그대로
   if(ui.tab==='cal'){const key=ui.sel+ui.month;if(ui._sk!==key||!sw0){ui._sk=key;slideTo(ui.sel)}else if($('#slide')){ui._prog=Date.now();$('#slide').scrollLeft=keep}
     const sw=$('#slide');if(sw)sw.onscroll=()=>{if(Date.now()-(ui._prog||0)<400)return;clearTimeout(ui._st);ui._st=setTimeout(slideMonth,180)}}
 }
+// 안 읽은 회사 공지도 맨 위 알림에 (강의 날짜가 멀어도 바로 보이게)
+const ntJobs=()=>{const id=meId();const t=todayIso();return S.jobs.filter(j=>j.dates.some(d=>d>=t)&&(j.notices||[]).some(n=>(n.to||[]).includes(id)&&!(n.reads||{})[id])).sort((a,b)=>String(a.dates[0]).localeCompare(String(b.dates[0])))};
+function ntAlertHtml(j){const id=meId(),L=j.notices.filter(n=>(n.to||[]).includes(id)&&!(n.reads||{})[id]).slice().reverse();
+  return `<div style="border-top:1px solid var(--ln);padding-top:8px;display:flex;gap:8px;align-items:flex-start"><span class="chip warn" style="margin-top:2px">공지</span><div class="sp" style="display:flex;flex-direction:column;gap:4px;min-width:0"><b>${esc(j.region)} ${esc(j.school)} ${esc(j.title)}</b><span class="sm mu">🏢 ${esc(co(j.coId).name)} · 📅 ${j.dates.map(d=>`${md(d)}(${dowOf(d)})`).join('·')}</span>
+    ${L.map(n=>`<div class="sm" style="background:var(--sf);border-radius:8px;padding:6px 8px">${n.kind?`<b>[${esc(n.kind)}]</b> `:''}${esc(n.text||'').replace(/\n/g,'<br>')}${n.img?`<img src="${n.img}" alt="공지 이미지" style="display:block;width:100%;max-width:320px;border-radius:8px;margin-top:6px">`:''}<div class="mu sm">${String(n.at||'').slice(5,10).replace('-','/')} ${String(n.at||'').slice(11,16)}${n.by?` · ${esc(n.by)}`:''}</div></div>`).join('')}
+    <div class="row"><button class="btn sm pri" data-act="ntOk" data-j="${j.id}">확인했어요</button><button class="btn sm" data-act="ntGo" data-j="${j.id}">강의 일정 보기</button></div></div></div>`}
 // 알림을 줄글 대신 강의별로: [꼬리표] 강의 이름 / 날짜·시간 / 업체 / 할 일
 const alertJob=a=>{const ap=a.appId&&S.apps.find(x=>x.id===a.appId);return ap&&job(ap.jobId)};
 const alertDay=a=>{const j=alertJob(a);return j?j.dates[0]:'9'+(a.at||'')};
@@ -1171,6 +1177,8 @@ document.addEventListener('click',async ev=>{
   if(A==='recv'){const al=S.alerts.find(x=>x.id===D.id),a=S.apps.find(x=>x.id===al.appId);al.read=true;if(a)a.recv=D.v;save();render();return toast(D.v==='ok'?'입금 확인을 업체에 알렸어요':'아직 안 들어왔다고 업체에 알렸어요')}
   if(A==='alMore'){ui.alMore=!ui.alMore;return render()}
   // 알림 '보기': 읽음 처리하고 그 강의 카드(공지·서류)로 바로 이동
+  if(A==='ntOk'||A==='ntGo'){const j=job(D.j);if(!j)return;markRead(j,meId());if(A==='ntOk'){render();return toast('공지를 읽음으로 표시했어요. 업체에도 읽음으로 보여요')}
+    ui.tab='cal';ui.jobId=null;const d=j.dates.find(x=>x>=todayIso())||j.dates[0];if(d){ui.sel=d;ui.month=ym(d)}render();return}
   if(A==='alertGo'){const a=S.alerts.find(x=>x.id===D.id),j=a&&alertJob(a);if(a)a.read=true;save();ui.tab='cal';ui.jobId=null;const d=j&&(j.dates.find(x=>x>=todayIso())||j.dates[0]);if(d){ui.sel=d;ui.month=ym(d)}render();
     if(d){slideTo(d,true);const c=$(`#slide [data-d="${d}"][data-j="${j.id}"]`);if(c){const nb=c.querySelector('details');if(nb)nb.open=true}}return}
   if(A==='alertOk'){const a=S.alerts.find(x=>x.id===D.id);if(a)a.read=true;save();return render()}
