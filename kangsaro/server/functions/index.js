@@ -106,15 +106,18 @@ exports.pushChat = onDocumentCreated({ ...trig, document: 'rooms/{j}/msgs/{m}' }
   const to = [...(r.members || []), ...(await coPeople(r.coId))].filter(u => u && u !== m.by);
   await pushTo(to, `강사로 · ${clip(r.title || '강의 대화방', 30)}`, `${m.who || ''}: ${m.text || '사진을 보냈어요'}`, 'ch-' + e.params.j);
 });
-// 확정 강사 모두 지급 완료 + 모두 입금 확인 → 대화방과 메시지를 지움 (마감 안 눌러도)
+// 확정 강사 모두 지급 완료 + 모두 입금 확인 → 대화방에 끝난 시각(doneAt)만 표시 (마감 안 눌러도)
+// 화면 목록에서는 바로 빠지고, 서버 기록은 분쟁 대비로 30일 두었다가 chatPurge가 방·메시지를 지움
+// 끝난 뒤 강사를 새로 확정하는 등 다시 '진행 중'이 되면 표시를 지움
+const CHAT_KEEP_DAYS = 30;
 async function chatDoneCheck(jobId) {
   if (!jobId) return;
   const [j, room] = await Promise.all([db.doc(`jobs/${jobId}`).get(), db.doc(`rooms/${jobId}`).get()]);
   if (!room.exists || !j.exists) return;
   const cf = (await db.collection('apps').where('jobId', '==', jobId).get()).docs.map(d => d.data()).filter(a => a.status === '확정');
-  if (!cf.length || !cf.every(a => a.paidAt && a.recv === 'ok')) return;
-  await db.recursiveDelete(room.ref);
-  console.log('chatDone', jobId);
+  const done = cf.length > 0 && cf.every(a => a.paidAt && a.recv === 'ok'), was = !!(room.data() || {}).doneAt;
+  if (done && !was) { await room.ref.update({ doneAt: new Date().toISOString() }); console.log('chatDone', jobId); }
+  else if (!done && was) await room.ref.update({ doneAt: FieldValue.delete() });
 }
 exports.chatDoneApp = onDocumentUpdated({ ...trig, document: 'apps/{id}' }, async e => {
   const b = e.data.before.data() || {}, a = e.data.after.data() || {};
@@ -172,6 +175,12 @@ exports.termSync = onCall({ region: 'asia-northeast3', maxInstances: 5, timeoutS
   return { end: t ? t.end : '' };
 });
 // 매일 새벽 3시: 모든 계정 기간 다시 계산
+// 끝난 지 30일 지난 대화방은 메시지까지 지움 (매일 새벽 4시)
+exports.chatPurge = onSchedule({ schedule: 'every day 04:00', timeZone: 'Asia/Seoul', region: 'asia-northeast3', timeoutSeconds: 540 }, async () => {
+  const cut = new Date(Date.now() - CHAT_KEEP_DAYS * 864e5).toISOString();
+  const old = await db.collection('rooms').where('doneAt', '<=', cut).get();
+  for (const d of old.docs) { await db.recursiveDelete(d.ref); console.log('chatPurge', d.id); }
+});
 exports.termDaily = onSchedule({ schedule: 'every day 03:00', timeZone: 'Asia/Seoul', region: 'asia-northeast3', timeoutSeconds: 540 }, async () => {
   const ids = (await db.collection('users').select().get()).docs.map(d => d.id);
   for (const id of ids) await syncTerm(id).catch(e => console.error('term', id, e.message));
