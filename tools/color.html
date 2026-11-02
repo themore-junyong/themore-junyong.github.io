@@ -186,11 +186,39 @@ var T={
    worst:[['피치','#ffc3a0'],['버터 옐로','#fbe6a2'],['카멜','#c19a6b'],['라이트 코랄','#ff9e8a']],
    suit:'차콜, 네이비, 블랙. 무게감 있는 짙은 정장이 가장 신뢰감 있어 보입니다.',shirt:'흰색, 아이시 그레이',tie:'버건디·딥 네이비·딥 퍼플',blouse:'흰색·아이시 그레이 블라우스',lip:'버건디 레드, 플럼',metal:'실버, 화이트 골드',hair:'흑발, 다크 애쉬'}
 };
-var N2=R2.w.length,N3=R3.w.length,NCLOTH=(R1.length+N2+N3)*2;
-var STEPN=['준비','촬영','피부 측정','온도 진단','명도 진단','채도 진단','문진'];
+/* ---------- 립 버전: 옷 대신 사진 속 입술 색을 바꿔 비교 ---------- */
+function P(a,an,b,bn){return {a:[a,an],b:[b,bn]}}
+var LK1=['얼굴 전체가 <b>환하고 생기</b> 있어 보이는 쪽은?','입술만 <b>둥둥 떠 보이지 않는</b> 쪽은?','피부가 <b>노랗거나 칙칙해 보이지 않는</b> 쪽은?','<b>치아·눈 흰자</b>가 깨끗해 보이는 쪽은?','<b>다크서클·그늘</b>이 옅어 보이는 쪽은?','얼굴과 입술이 <b>한 톤으로 어울리는</b> 쪽은?','<b>피부 결</b>이 매끈해 보이는 쪽은?','<b>인상이 건강해</b> 보이는 쪽은?'];
+var LP={
+ R1:[P('코랄','#ff6f5e','로즈 핑크','#e0607e'),P('오렌지 레드','#e8432a','블루 레드','#c8102e'),P('피치','#f39a7f','베이비 핑크','#f2a0b5'),P('브릭','#a8452f','버건디','#7d1f3a'),
+     P('살몬','#f08070','푸시아','#d6247a'),P('테라코타','#b85a3c','플럼','#7a2950'),P('누드 베이지','#c98b74','누드 핑크','#c98a95'),P('오렌지 브라운','#a0522d','모브','#9c5a78')].map(function(x,i){x.look=LK1[i];return x}),
+ R2:{w:[P('라이트 피치','#f7a58c','딥 브릭','#8a3324'),P('라이트 코랄','#ff8a78','브라운 레드','#7a2e22'),P('살구','#f5a37a','칠리','#9b2d1f'),P('누드 코랄','#e39a86','초콜릿','#5c2c22'),P('피치 핑크','#f6a29a','와인 브라운','#6b2a2a'),P('오렌지','#ff7f50','테라코타','#9e4a32')],
+     c:[P('베이비 핑크','#f4a6bd','버건디','#6d1a36'),P('라벤더 핑크','#e7a1c4','플럼','#5e2348'),P('쿨 핑크','#ee7fa4','딥 베리','#7a1f4a'),P('로즈','#e07a95','와인','#722f37'),P('라이트 모브','#d8a0b8','다크 체리','#6a0f2a'),P('핑크','#f58fb0','딥 레드','#8b0a2a')]},
+ R2L:['얼굴이 <b>가볍고 맑아</b> 보이는 쪽은? 입술만 무거워 보이는 쪽은?','<b>이목구비</b>가 또렷하면서 자연스러운 쪽은?','입술 색이 <b>얼굴 밝기와 어울리는</b> 쪽은?','멀리서 봤을 때 <b>입술만 보이지 않는</b> 쪽은?','<b>표정</b>이 편안해 보이는 쪽은?','면접관이 봤을 때 <b>단정해</b> 보이는 쪽은?'],
+ R3:{w:[P('비비드 코랄','#ff5a4e','베이지 코랄','#c98a78'),P('오렌지 레드','#f2552c','브릭','#b5735e'),P('클리어 피치','#ff8a6a','말린 살구','#c48e78'),P('토마토','#e2492f','로즈 브라운','#a46a5e'),P('선명한 오렌지','#ff6a1a','카멜 누드','#b98a6e'),P('레드 코랄','#ff4f40','테라코타','#b86a52')],
+     c:[P('푸시아','#e0218a','더스티 로즈','#b97a86'),P('체리 레드','#d0103a','로즈우드','#9b5c68'),P('핫 핑크','#ff3d9a','모브','#a07c95'),P('트루 레드','#c8102e','MLBB 로즈','#b06a78'),P('베리','#b0185a','말린 장미','#a8697a'),P('클리어 핑크','#ff5c9a','그레이시 핑크','#b88a98')]},
+ R3L:['입술 색이 <b>나보다 먼저 보이지 않는</b> 쪽은?','얼굴이 <b>생기 있어</b> 보이는 쪽은?','<b>잡티·붉은 기</b>가 덜 도드라지는 쪽은?','<b>사진 찍듯</b> 보았을 때 더 세련된 쪽은?','<b>눈빛</b>이 또렷해 보이는 쪽은?','얼굴과 입술이 <b>한 덩어리로 어울리는</b> 쪽은?']
+};
+var LIPS={ // 타입별 베스트 립 4 · 피할 립 2
+ '봄 웜 라이트':[[['피치','#f39a7f'],['라이트 코랄','#ff8a78'],['살구','#f5a37a'],['누드 코랄','#e39a86']],[['버건디','#6d1a36'],['딥 플럼','#5e2348']]],
+ '봄 웜 브라이트':[[['코랄 레드','#ff4f40'],['오렌지 레드','#f2552c'],['비비드 코랄','#ff5a4e'],['클리어 피치','#ff8a6a']],[['모브','#a07c95'],['말린 장미','#a8697a']]],
+ '여름 쿨 라이트':[[['베이비 핑크','#f4a6bd'],['로즈 핑크','#e0607e'],['라벤더 핑크','#e7a1c4'],['쿨 핑크','#ee7fa4']],[['오렌지','#ff7f50'],['브릭','#a8452f']]],
+ '여름 쿨 뮤트':[[['MLBB 로즈','#b06a78'],['모브 핑크','#b9788f'],['말린 장미','#a8697a'],['더스티 로즈','#b97a86']],[['비비드 오렌지','#f2552c'],['코랄 레드','#ff4f40']]],
+ '가을 웜 뮤트':[[['베이지 코랄','#c98a78'],['브릭','#b5735e'],['로즈 브라운','#a46a5e'],['테라코타','#b86a52']],[['푸시아','#e0218a'],['핫 핑크','#ff3d9a']]],
+ '가을 웜 딥':[[['브릭 레드','#8a3324'],['브라운 레드','#7a2e22'],['딥 코랄','#c4553f'],['칠리','#9b2d1f']],[['베이비 핑크','#f4a6bd'],['라벤더 핑크','#e7a1c4']]],
+ '겨울 쿨 브라이트':[[['트루 레드','#c8102e'],['푸시아','#e0218a'],['체리 레드','#d0103a'],['핫 핑크','#ff3d9a']],[['누드 코랄','#e39a86'],['베이지 코랄','#c98a78']]],
+ '겨울 쿨 딥':[[['버건디','#6d1a36'],['플럼','#5e2348'],['와인','#722f37'],['딥 베리','#7a1f4a']],[['피치','#f39a7f'],['살구','#f5a37a']]]
+};
+var CL={R1:R1,R2:R2,R2L:R2L,R3:R3,R3L:R3L};
+var MODE='cloth',N2,N3,NCLOTH,STEPN;
+function useMode(m){MODE=m==='lip'?'lip':'cloth';var z=MODE==='lip'?LP:CL;R1=z.R1;R2=z.R2;R2L=z.R2L;R3=z.R3;R3L=z.R3L;N2=R2.w.length;N3=R3.w.length;NCLOTH=(R1.length+N2+N3)*2;
+ STEPN=['준비','촬영',MODE==='lip'?'입술 맞추기':'피부 측정','온도 진단','명도 진단','채도 진단','문진']}
+function U(){return MODE==='lip'?'립':'천'}
+useMode((location.hash||'').slice(1));
 
 /* ---------- 상태 (사진은 메모리에만) ---------- */
 var S={step:-1,nick:'',sex:'',ready:[],r1:[],r2:[],r3:[],qa:[],skin:null,cam:false};
+var PICKED=/^#(lip|cloth)$/.test(location.hash||''), LIP=null, LM=null;
 var PH=null, stream=null, cur='a', flick=null, res=null, note='', SW=Math.random()<.5, WP=null, wpMode=false;
 try{var old=JSON.parse(localStorage.getItem('color-v1')||'null');if(old&&old.type)res=old}catch(e){}
 var app=document.getElementById('app');
@@ -211,7 +239,7 @@ function shoot(){
   var W=600,H=800,c=document.createElement('canvas');c.width=W;c.height=H;var x=c.getContext('2d');
   var vw=v.videoWidth,vh=v.videoHeight,r=Math.max(W/vw,H/vh),dw=vw*r,dh=vh*r;
   x.translate(W,0);x.scale(-1,1);x.drawImage(v,(W-dw)/2,(H-dh)/2,dw,dh);
-  PH=c;camOff();WP=null;wpMode=false;PTS=[[W*.37,H*.46],[W*.63,H*.46]];measure();S.step=2;render();
+  PH=c;camOff();WP=null;wpMode=false;PTS=[[W*.37,H*.46],[W*.63,H*.46]];LIP={x:W*.5,y:H*.565,s:1};LM=null;measure();S.step=2;render();
 }
 /* 얼굴 가이드: 가로 중앙, 세로 40% 지점, 턱 = 66% */
 var GUIDE='<svg viewBox="0 0 300 400" preserveAspectRatio="none"><defs><mask id="m"><rect width="300" height="400" fill="#fff"/><ellipse cx="150" cy="160" rx="78" ry="104" fill="#000"/></mask></defs><rect width="300" height="400" fill="rgba(0,0,0,.45)" mask="url(#m)"/><ellipse cx="150" cy="160" rx="78" ry="104" fill="none" stroke="#fff" stroke-width="2" stroke-dasharray="6 5"/><line x1="40" y1="292" x2="260" y2="292" stroke="#fff" stroke-width="1.5" stroke-dasharray="4 4"/><text x="150" y="312" fill="#fff" font-size="12" text-anchor="middle">어깨선</text></svg>';
@@ -238,10 +266,35 @@ function drape(col,size){
   if(size){var o=document.createElement('canvas');o.width=size;o.height=size*4/3;o.getContext('2d').drawImage(c,0,0,o.width,o.height);return o}
   return c;
 }
+/* 립: 입술 영역(타원) 안에서 볼보다 붉은 픽셀만 골라 밝기는 살리고 색만 바꿈 */
+function lipMask(){
+  if(LM&&LM.k===LIP.x+','+LIP.y+','+LIP.s)return LM;
+  var W=PH.width,rx=W*.085*LIP.s,ry=W*.042*LIP.s,x0=Math.max(0,Math.floor(LIP.x-rx)),y0=Math.max(0,Math.floor(LIP.y-ry)),w=Math.min(W,Math.ceil(LIP.x+rx))-x0,h=Math.min(PH.height,Math.ceil(LIP.y+ry))-y0;
+  var d=PH.getContext('2d').getImageData(x0,y0,w,h).data,m=new Float32Array(w*h),Y=new Float32Array(w*h);
+  var ck=PTS?[sample(PTS[0][0],PTS[0][1]),sample(PTS[1][0],PTS[1][1])].filter(Boolean):[],sa=ck.length?sum(ck.map(function(c){return lab(c[0],c[1],c[2]).a}))/ck.length:12;
+  var tot=0,hit=0,ys=0,yn=0;
+  for(var j=0;j<h;j++)for(var i=0;i<w;i++){var k=j*w+i,dx=(x0+i-LIP.x)/rx,dy=(y0+j-LIP.y)/ry,e=dx*dx+dy*dy;if(e>=1)continue;
+    var ew=e<.6?1:(1-e)/.4,p=k*4,L=lab(d[p],d[p+1],d[p+2]),lip=clamp((L.a-sa-2)/7,0,1)*clamp((L.L-12)/12,0,1);
+    m[k]=ew*lip;Y[k]=(.2126*d[p]+.7152*d[p+1]+.0722*d[p+2])/255;tot+=ew;hit+=m[k];if(lip>.5){ys+=Y[k];yn++}}
+  if(tot&&hit/tot<.12)for(var q=0;q<m.length;q++){var jj=Math.floor(q/w),ii=q%w,ddx=(x0+ii-LIP.x)/rx,ddy=(y0+jj-LIP.y)/ry,ee=ddx*ddx+ddy*ddy;m[q]=ee<1?(ee<.6?.7:(1-ee)/.4*.7):0}
+  LM={k:LIP.x+','+LIP.y+','+LIP.s,x0:x0,y0:y0,w:w,h:h,m:m,Y:Y,ym:yn?ys/yn:.45,rx:rx,ry:ry};return LM;
+}
+function hex(c){c=c.replace('#','');return [parseInt(c.slice(0,2),16),parseInt(c.slice(2,4),16),parseInt(c.slice(4,6),16)]}
+function lipify(col,size,ring){
+  var W=PH.width,H=PH.height,c=document.createElement('canvas');c.width=W;c.height=H;var x=c.getContext('2d');x.drawImage(PH,0,0);
+  var M=lipMask(),im=x.getImageData(M.x0,M.y0,M.w,M.h),d=im.data,t=hex(col);
+  for(var k=0;k<M.m.length;k++){var a=M.m[k]*.85;if(a<=0)continue;var f=Math.pow(M.Y[k]/M.ym,.85),p=k*4;
+    for(var ch=0;ch<3;ch++)d[p+ch]=d[p+ch]*(1-a)+clamp(t[ch]*f,0,255)*a}
+  x.putImageData(im,M.x0,M.y0);
+  if(ring){x.setLineDash([8,6]);x.lineWidth=2;x.strokeStyle='#fff';x.beginPath();x.ellipse(LIP.x,LIP.y,M.rx,M.ry,0,0,7);x.stroke()}
+  if(size){var o=document.createElement('canvas');o.width=size;o.height=size*4/3;o.getContext('2d').drawImage(c,0,0,o.width,o.height);return o}
+  return c;
+}
+function look(col,size){return MODE==='lip'?lipify(col,size):drape(col,size)}
 function paint(){
   var cv=document.getElementById('cv'),R=disp();if(!cv||!R||!PH)return;
-  var d=drape(R[cur][1]);cv.width=d.width;cv.height=d.height;cv.getContext('2d').drawImage(d,0,0);
-  var t=document.getElementById('tg');if(t)t.textContent='천 '+cur.toUpperCase();
+  var d=look(R[cur][1]);cv.width=d.width;cv.height=d.height;cv.getContext('2d').drawImage(d,0,0);
+  var t=document.getElementById('tg');if(t)t.textContent=U()+' '+cur.toUpperCase();
   document.querySelectorAll('[data-ab]').forEach(function(b){b.setAttribute('aria-pressed',b.dataset.ab===cur)});
 }
 
@@ -270,7 +323,9 @@ function measure(){
 }
 function drawSkin(){
   var cv=document.getElementById('cv');if(!cv||!PH)return;
-  cv.width=PH.width;cv.height=PH.height;var x=cv.getContext('2d');x.drawImage(PH,0,0);
+  cv.width=PH.width;cv.height=PH.height;var x=cv.getContext('2d');
+  if(MODE==='lip'){x.drawImage(lipify('#c8102e',0,true),0,0);return}
+  x.drawImage(PH,0,0);
   PTS.forEach(function(p,i){x.lineWidth=4;x.strokeStyle='#fff';x.beginPath();x.arc(p[0],p[1],PH.width*.035,0,7);x.stroke();
     x.fillStyle='#fff';x.font='bold 22px sans-serif';x.fillText(i?'오른쪽 볼':'왼쪽 볼',p[0]-40,p[1]-PH.width*.05)});
 }
@@ -302,7 +357,7 @@ function result(){
   var d=new Date();
   var log=[];function L(rs,arr){arr.forEach(function(v,i){var R=rs[i];log.push(v>0?R.a[0]+' 〉 '+R.b[0]:v<0?R.b[0]+' 〉 '+R.a[0]:R.a[0]+' = '+R.b[0])})}
   var tk=Tv>=0?'w':'c';L(R1,S.r1);L(R2[tk],S.r2);L(R3[tk],S.r3);
-  return {log:log,type:name,T:Tv,V:V,C:C,conf:conf,skin:S.skin,nick:S.nick,sex:S.sex,date:d.getFullYear()+'. '+(d.getMonth()+1)+'. '+d.getDate()+'.'};
+  return {mode:MODE,log:log,type:name,T:Tv,V:V,C:C,conf:conf,skin:S.skin,nick:S.nick,sex:S.sex,date:d.getFullYear()+'. '+(d.getMonth()+1)+'. '+d.getDate()+'.'};
 }
 
 /* ---------- 화면 ---------- */
@@ -315,9 +370,13 @@ function meter(lbl,l,r,v){return '<div class="meter"><div class="row"><span>'+l+
 function pct(v,a,b){var p=Math.round(50+Math.abs(clamp(v,-1,1))*50);return (v>=0?a:b)+' '+p+'%'}
 
 function home(){
-  var h=head()+'<div class="brand"><h1>퍼스널컬러 진단</h1><p class="soft">전문 진단처럼 색 천 '+NCLOTH+'장 비교 · 피부 측정 · 문진 10문항으로 내 색을 찾고, 면접 복장까지 추천받아요.</p></div>';
+  if(!PICKED){var hh=head()+'<div class="brand"><h1>퍼스널컬러 진단</h1><p class="soft">어떤 방법으로 비교할까요?</p></div>';
+    if(res)hh+='<div class="card"><h3>지난 진단: '+esc(res.type)+'</h3><div class="btns"><button class="btn" data-go="report">진단서 다시 보기</button></div></div>';
+    return hh+'<div class="card"><h2>👔 옷 색으로 진단</h2><p class="soft">얼굴 아래에 색 천을 바꿔 대며 비교해요. 면접 복장 색을 고를 때 좋아요.</p><button class="btn pri" data-go="m-cloth">옷 색으로 시작</button></div>'+
+     '<div class="card"><h2>💄 립 색으로 진단</h2><p class="soft">사진 속 내 입술 색을 립스틱 색으로 바꿔 가며 비교해요. 어울리는 립 색까지 알려 줘요.</p><button class="btn pri" data-go="m-lip">립 색으로 시작</button></div>'}
+  var h=head()+'<div class="brand"><h1>퍼스널컬러 진단 · '+(MODE==='lip'?'💄 립 색':'👔 옷 색')+'</h1><p class="soft">'+(MODE==='lip'?'립 색 '+NCLOTH+'가지를 내 입술에 발라 보며 비교 · 피부 측정 · 문진 10문항으로 내 색을 찾고, 어울리는 립과 면접 복장까지 추천받아요.':'전문 진단처럼 색 천 '+NCLOTH+'장 비교 · 피부 측정 · 문진 10문항으로 내 색을 찾고, 면접 복장까지 추천받아요.')+' <button class="btn" data-go="m-pick" style="padding:2px 10px">다른 방법</button></p></div>';
   if(res)h+='<div class="card"><h3>지난 진단: '+esc(res.type)+'</h3><div class="btns"><button class="btn" data-go="report">진단서 다시 보기</button></div></div>';
-  h+='<div class="card"><div class="why"><b>어떻게 진단하나요?</b><br>① 얼굴 사진을 찍고 ② 볼 피부색을 측정한 뒤 ③ 얼굴 아래에 색 천을 바꿔 대며 <b>온도(웜/쿨) → 명도(밝음/깊음) → 채도(선명/부드러움)</b> 3단계로 비교해요. ④ 마지막으로 문진 10문항을 합쳐 8가지 타입 중 하나로 진단해요.</div>'+
+  h+='<div class="card"><div class="why"><b>어떻게 진단하나요?</b><br>① 얼굴 사진을 찍고 ② 볼 피부색을 측정한 뒤 '+(MODE==='lip'?'③ 사진 속 입술 색을 바꿔 가며 <b>':'③ 얼굴 아래에 색 천을 바꿔 대며 <b>')+'온도(웜/쿨) → 명도(밝음/깊음) → 채도(선명/부드러움)</b> 3단계로 비교해요. ④ 마지막으로 문진 10문항을 합쳐 8가지 타입 중 하나로 진단해요.</div>'+
    '<p class="note">🔒 사진은 이 휴대폰 화면에서만 쓰고 <b>어디에도 저장하거나 보내지 않아요.</b> 화면을 닫으면 사라져요.</p>'+
    '<div class="f"><label for="nick">이름(별명)</label><input id="nick" maxlength="12" placeholder="예: 홍길동" value="'+esc(S.nick)+'"></div>'+
    '<div class="f"><label>복장 추천 기준</label><div class="seg">'+['남','여','둘 다'].map(function(s){return '<button data-sex="'+s+'" aria-pressed="'+(S.sex===s)+'">'+s+'</button>'}).join('')+'</div></div>'+
@@ -337,6 +396,7 @@ function step1(){
   return h+'<p class="note">카메라를 못 쓰면 <button class="btn" data-go="nocam" style="padding:4px 10px">문진만으로 진단</button> (정확도가 낮아져요)</p></div>';
 }
 function step2(){
+  if(MODE==='lip')return lipStep();
   var h=stepbar()+'<div class="card"><h2>피부 측정</h2><p class="soft">두 원이 <b>양쪽 볼의 가장 환한 곳</b>에 있는지 보세요. 아니면 사진에서 볼을 눌러 원을 옮겨요(왼쪽 → 오른쪽 순서).</p><div class="stage"><canvas id="cv"></canvas></div>';
   if(S.skin){
     var s=S.skin, warm=s.h>=58;
@@ -347,6 +407,12 @@ function step2(){
   if(note)h+='<p class="note bad">'+esc(note)+'</p>';
   return h+'<div class="btns"><button class="btn" data-go="wp"'+(wpMode?' style="border-color:var(--blue);color:var(--blue)"':'')+'>'+(wpMode?'사진 속 흰 종이를 누르세요':'📄 흰 종이 찍기')+'</button><button class="btn" data-go="retake">다시 찍기</button></div></div>';
 }
+function lipStep(){
+  var h=stepbar()+'<div class="card"><h2>입술 맞추기</h2><p class="soft">사진의 입술이 <b>빨간 립</b>으로 바뀌었는지 보세요. 어긋났으면 <b>사진에서 입술 가운데를 눌러</b> 옮기고, 크기를 맞춰 주세요.</p><div class="stage"><canvas id="cv"></canvas></div>'+
+   '<div class="btns" style="justify-content:center"><button class="btn" data-go="lip-">➖ 작게</button><button class="btn" data-go="lip+">➕ 크게</button></div>';
+  if(note)h+='<p class="note bad">'+esc(note)+'</p>';
+  return h+'<p class="note">입을 다문 무표정 사진이 가장 잘 돼요. 볼 피부색은 자동으로 재요.</p><div class="btns"><button class="btn" data-go="retake">다시 찍기</button></div></div>';
+}
 function drapeStep(){
   var R=disp(),n=S.step===3?S.r1.length:S.step===4?S.r2.length:S.r3.length,tot=S.step===3?R1.length:S.step===4?N2:N3;
   var title=['','','','온도 진단 · 웜 vs 쿨','명도 진단 · 밝음 vs 깊음','채도 진단 · 선명 vs 부드러움'][S.step];
@@ -355,12 +421,12 @@ function drapeStep(){
   if(PH){
     h+='<div class="stage"><canvas id="cv"></canvas><span class="tag" id="tg"></span></div>'+
      '<div class="ab">'+['a','b'].map(function(k){var c=R[k][1],bg=c===GOLD?'linear-gradient(135deg,#8a6a1f,#fff1b0,#c9a13a)':c===SILVER?'linear-gradient(135deg,#6f747c,#fff,#b0b6be)':c;
-       return '<button data-ab="'+k+'" aria-pressed="'+(cur===k)+'"><span class="sw" style="background:'+bg+'"></span><span><b>천 '+k.toUpperCase()+'</b></span></button>'}).join('')+'</div>'+
+       return '<button data-ab="'+k+'" aria-pressed="'+(cur===k)+'"><span class="sw" style="background:'+bg+'"></span><span><b>'+U()+' '+k.toUpperCase()+'</b></span></button>'}).join('')+'</div>'+
      '<div class="btns"><button class="btn" data-go="flick">'+(flick?'⏸ 멈추기':'▶ 번갈아 보기')+'</button></div>';
   }else{
-    h+='<div class="ab">'+['a','b'].map(function(k){var c=R[k][1];return '<div style="height:120px;border-radius:6px;border:1px solid var(--line);background:'+(c===GOLD?'linear-gradient(135deg,#8a6a1f,#fff1b0,#c9a13a)':c===SILVER?'linear-gradient(135deg,#6f747c,#fff,#b0b6be)':c)+';display:flex;align-items:flex-end;padding:8px;font-weight:700;color:#333;text-shadow:0 0 4px #fff">천 '+k.toUpperCase()+'</div>'}).join('')+'</div><p class="note">거울 앞에서 두 색 옷이나 종이를 얼굴 아래에 대 보고 골라 주세요.</p>';
+    h+='<div class="ab">'+['a','b'].map(function(k){var c=R[k][1];return '<div style="height:120px;border-radius:6px;border:1px solid var(--line);background:'+(c===GOLD?'linear-gradient(135deg,#8a6a1f,#fff1b0,#c9a13a)':c===SILVER?'linear-gradient(135deg,#6f747c,#fff,#b0b6be)':c)+';display:flex;align-items:flex-end;padding:8px;font-weight:700;color:#333;text-shadow:0 0 4px #fff">'+U()+' '+k.toUpperCase()+'</div>'}).join('')+'</div><p class="note">거울 앞에서 두 색 옷이나 종이를 얼굴 아래에 대 보고 골라 주세요.</p>';
   }
-  h+='<div class="look">👀 <b>볼 곳</b> · '+look+'<br><span class="soft">천 이름은 선입견이 생기지 않게 숨겨 두었어요. 결과지에서 공개돼요.</span></div><div class="pick"><button data-pick="1">A가 낫다</button><button data-pick="0">비슷하다</button><button data-pick="-1">B가 낫다</button></div>';
+  h+='<div class="look">👀 <b>볼 곳</b> · '+look+'<br><span class="soft">'+U()+' 이름은 선입견이 생기지 않게 숨겨 두었어요. 결과지에서 공개돼요.</span></div><div class="pick"><button data-pick="1">A가 낫다</button><button data-pick="0">비슷하다</button><button data-pick="-1">B가 낫다</button></div>';
   return h+'</div>';
 }
 function step6(){
@@ -376,9 +442,12 @@ function report(){
    '<div><span class="soft">진단 결과</span><div class="type">'+r.type+'</div><p><b>'+t.k+'</b> · 진단 일치도 '+r.conf+'%</p></div><p>'+t.d+'</p>'+
    '<div style="display:flex;flex-direction:column;gap:10px">'+meter(pct(r.T,'웜','쿨'),'웜(노란 기)','쿨(붉은·푸른 기)',r.T)+meter(pct(r.V,'라이트','딥'),'라이트(밝음)','딥(깊음)',r.V)+meter(pct(r.C,'브라이트','뮤트'),'브라이트(선명)','뮤트(부드러움)',r.C)+'</div>';
   if(r.skin)h+='<div class="skin"><i style="background:rgb('+r.skin.rgb.join(',')+')"></i><div><b>측정 피부색</b><br><span class="soft">밝기 L* '+r.skin.L+' · 색상각 '+r.skin.h+'°</span></div></div>';
-  if(PH)h+='<div class="thumbs"><figure><img id="best" alt="베스트 컬러를 댄 얼굴"><span style="color:var(--ok)">✔ 베스트 · '+t.best[0][0]+'</span></figure><figure><img id="worst" alt="워스트 컬러를 댄 얼굴"><span style="color:var(--bad)">✘ 워스트 · '+t.worst[0][0]+'</span></figure></div>';
-  if(r.log&&r.log.length)h+='<details><summary><b>내가 고른 천 (진단 근거)</b></summary><ul style="margin:8px 0 0;padding-left:20px">'+r.log.map(function(l){return '<li>'+esc(l)+'</li>'}).join('')+'</ul></details>';
-  h+='<div><h3>베스트 컬러</h3></div><div class="pal">'+t.best.map(function(c){return '<div><i style="background:'+c[1]+'"></i>'+c[0]+'</div>'}).join('')+'</div>'+
+  var lp=r.mode==='lip'?LIPS[r.type]:null,bb=lp?lp[0][0]:t.best[0],ww=lp?lp[1][0]:t.worst[0];
+  if(PH)h+='<div class="thumbs"><figure><img id="best" alt="베스트 컬러를 댄 얼굴"><span style="color:var(--ok)">✔ 베스트 · '+bb[0]+'</span></figure><figure><img id="worst" alt="워스트 컬러를 댄 얼굴"><span style="color:var(--bad)">✘ 워스트 · '+ww[0]+'</span></figure></div>';
+  if(r.log&&r.log.length)h+='<details><summary><b>내가 고른 '+(r.mode==='lip'?'립':'천')+' (진단 근거)</b></summary><ul style="margin:8px 0 0;padding-left:20px">'+r.log.map(function(l){return '<li>'+esc(l)+'</li>'}).join('')+'</ul></details>';
+  if(lp)h+='<div><h3>💄 베스트 립 컬러</h3></div><div class="pal">'+lp[0].map(function(c){return '<div><i style="background:'+c[1]+'"></i>'+c[0]+'</div>'}).join('')+'</div>'+
+   '<div><h3>피하면 좋은 립</h3></div><div class="pal bad">'+lp[1].map(function(c){return '<div><i style="background:'+c[1]+'"></i>'+c[0]+'</div>'}).join('')+'</div>';
+  h+='<div><h3>'+(lp?'베스트 옷 컬러':'베스트 컬러')+'</h3></div><div class="pal">'+t.best.map(function(c){return '<div><i style="background:'+c[1]+'"></i>'+c[0]+'</div>'}).join('')+'</div>'+
    '<div><h3>피하면 좋은 색</h3></div><div class="pal bad">'+t.worst.map(function(c){return '<div><i style="background:'+c[1]+'"></i>'+c[0]+'</div>'}).join('')+'</div>'+
    '<div><h3>면접 복장 추천</h3></div><dl class="dress"><dt>정장</dt><dd>'+t.suit+'</dd><dt>셔츠</dt><dd>'+t.shirt+'</dd>'+
    (r.sex!=='여'?'<dt>넥타이</dt><dd>'+t.tie+'</dd>':'')+(r.sex!=='남'?'<dt>블라우스</dt><dd>'+t.blouse+'</dd><dt>립</dt><dd>'+t.lip+'</dd>':'')+
@@ -408,11 +477,14 @@ function render(){
   if(S.step===1&&S.cam&&stream){var v=document.getElementById('vid');v.srcObject=stream;v.play&&v.play().catch(function(){})}
   if(S.step===2&&PH)drawSkin();
   if(S.step>=3&&S.step<=5)paint();
-  if(S.step==='report'&&PH){var t=T[res.type];document.getElementById('best').src=drape(t.best[0][1],300).toDataURL('image/jpeg',.85);document.getElementById('worst').src=drape(t.worst[0][1],300).toDataURL('image/jpeg',.85)}
+  if(S.step==='report'&&PH){var t=T[res.type],lp=res.mode==='lip'?LIPS[res.type]:null,f=lp?lipify:drape;document.getElementById('best').src=f((lp?lp[0][0]:t.best[0])[1],300).toDataURL('image/jpeg',.85);document.getElementById('worst').src=f((lp?lp[1][0]:t.worst[0])[1],300).toDataURL('image/jpeg',.85)}
   window.scrollTo(0,0);
 }
 function go(k){
-  if(k==='start'){S.nick=(document.getElementById('nick')||{}).value||S.nick;S.step=0;S.ready=[];S.r1=[];S.r2=[];S.r3=[];S.qa=[];S.skin=null;PH=null}
+  if(k==='m-lip'||k==='m-cloth'){PICKED=true;useMode(k.slice(2));setHash(MODE)}
+  else if(k==='m-pick'){PICKED=false;setHash('')}
+  else if(k==='lip+'||k==='lip-'){LIP.s=clamp(LIP.s*(k==='lip+'?1.12:1/1.12),.5,2.2);LM=null}
+  else   if(k==='start'){S.nick=(document.getElementById('nick')||{}).value||S.nick;S.step=0;S.ready=[];S.r1=[];S.r2=[];S.r3=[];S.qa=[];S.skin=null;PH=null}
   else if(k==='report'){S.step='report'}
   else if(k==='cam')camOn();
   else if(k==='shoot'){shoot();return}
@@ -424,7 +496,7 @@ function go(k){
   else if(k==='next'){
     if(S.step===0){S.step=1;camOn()}
     else if(S.step===2)S.step=3;
-    else if(S.step===6){res=result();try{localStorage.setItem('color-v1',JSON.stringify(res))}catch(e){}S.step='report';if(window.TM_ROOM)TM_ROOM.send('color','퍼스널컬러 · '+res.type+' ('+res.conf+'%)','진단: '+res.type+'\n일치도 '+res.conf+'%\n베스트: '+T[res.type].best.map(function(c){return c[0]}).join(', ')+'\n고른 천:\n'+res.log.join('\n'))}
+    else if(S.step===6){res=result();try{localStorage.setItem('color-v1',JSON.stringify(res))}catch(e){}S.step='report';if(window.TM_ROOM)TM_ROOM.send('color','퍼스널컬러'+(MODE==='lip'?'(립)':'')+' · '+res.type+' ('+res.conf+'%)','진단: '+res.type+'\n일치도 '+res.conf+'%\n베스트: '+T[res.type].best.map(function(c){return c[0]}).join(', ')+'\n고른 천:\n'+res.log.join('\n')+(MODE==='lip'?'\n베스트 립: '+LIPS[res.type][0].map(function(c){return c[0]}).join(', '):''))}
   }
   else if(k==='again'){res=null;try{localStorage.removeItem('color-v1')}catch(e){}S.step=-1;PH=null}
   else if(k==='print'){window.print();return}
@@ -446,6 +518,7 @@ app.addEventListener('click',function(e){
   if(e.target.id==='cv'&&S.step===2&&PH){
     var cv=e.target,rc=cv.getBoundingClientRect(),px=(e.clientX-rc.left)/rc.width*PH.width,py=(e.clientY-rc.top)/rc.height*PH.height;
     if(wpMode){var w=sample(px,py);if(w&&w[0]+w[1]+w[2]>360){WP=w;note=''}else note='흰 종이가 아니거나 너무 어두워요. 종이 한가운데를 눌러 주세요.';wpMode=false}
+    else if(MODE==='lip'){LIP.x=px;LIP.y=py;LM=null}
     else PTS[px<PH.width/2?0:1]=[px,py];
     measure();render();
   }
@@ -454,6 +527,10 @@ app.addEventListener('change',function(e){
   if(e.target.dataset.ready!=null){var i=+e.target.dataset.ready,k=S.ready.indexOf(i);if(e.target.checked&&k<0)S.ready.push(i);if(!e.target.checked&&k>=0)S.ready.splice(k,1);render()}
 });
 document.body.addEventListener('click',function(e){var b=e.target.closest('.bar button');if(b)go(b.dataset.go)});
+function setHash(h){try{history.replaceState(null,'',location.pathname+location.search+(h?'#'+h:''));window.dispatchEvent(new HashChangeEvent('hashchange'))}catch(e){location.hash=h}}
+/* 강사가 #lip / #cloth 를 고르면 학생도 따라감 (진단 중이 아닐 때만 바뀜) */
+window.addEventListener('hashchange',function(){var m=(location.hash||'').slice(1);if(!(S.step<0||S.step==='report'))return;
+  if(m==='lip'||m==='cloth'){if(PICKED&&m===MODE)return;PICKED=true;useMode(m);S.step=-1;render()}else if(PICKED&&!m){PICKED=false;S.step=-1;render()}});
 render();
 })();
 </script>
