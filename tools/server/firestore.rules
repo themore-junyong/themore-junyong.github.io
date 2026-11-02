@@ -22,7 +22,7 @@ service cloud.firestore {
             || (request.resource.data.go.keys().hasOnly(['to', 't'])
                 && request.resource.data.go.to is string
                 && request.resource.data.go.to.matches('^(home|#jaso|[a-z]+[.]html([?][a-z0-9=&_-]{0,40})?)$')
-                && request.resource.data.go.t == request.time));
+                && request.resource.data.go.t == request.time))
         && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['g'])
             || (request.resource.data.g.keys().hasOnly(['k', 's', 't'])
                 && request.resource.data.g.k is string && request.resource.data.g.k.size() <= 20
