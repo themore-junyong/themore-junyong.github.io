@@ -2,6 +2,8 @@
 <html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <style>:root{color-scheme:light}body{margin:0;font-family:system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>문제해결 강건너기</title>
+<script>/* 학생 폰(?stu=1): 수업 방에 들어온 학생만 직접 풀기. 강사 노트북(빔)은 방 확인 없이 그대로 */
+if(/[?&]stu=1/.test(location.search))document.write('<script src="room.js?v=193" data-guard><\/script>');if(/[?&]stu=1/.test(location.search))document.write('<style>a[href="index.html"]{display:none!important}</style>')</script>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Gowun+Dodum&family=Noto+Sans+KR:wght@400;700;900&display=swap">
 <style>
@@ -88,6 +90,13 @@ button:focus-visible,.token:focus-visible{outline:3px solid var(--accent);outlin
 @keyframes pulse{50%{transform:scale(1.08);box-shadow:0 0 0 6px color-mix(in srgb,var(--accent) 35%,transparent)}}
 
 .controls{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
+/* 학생 폰 기록(빔) */
+.stur{background:var(--card);border:2px solid var(--line);border-radius:14px;padding:14px 16px;display:flex;flex-direction:column;gap:8px;color:var(--ink)}
+.stur h4{margin:0;font-size:1.1rem;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}.stur h4 span{color:var(--ink-soft);font-weight:700}
+.stur .tr{display:grid;grid-template-columns:110px 70px 1fr;gap:10px;align-items:center;border-top:1px dashed var(--line);padding-top:6px}
+.stur .tn{font-weight:900;color:var(--water)}.stur .n{font-weight:900;font-size:1.2rem;font-variant-numeric:tabular-nums}.stur .who{font-size:.92rem;color:var(--ink-soft)}
+.stur .who b{color:var(--ok)}
+.stubar{background:var(--water);color:#fff;border-radius:12px;padding:10px 14px;font-weight:700;text-align:center}
 .btn{border:2px solid var(--line);background:var(--card);color:var(--ink);border-radius:12px;padding:12px 18px;font-weight:700;font-size:1.05rem}
 .btn.go{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-size:1.25rem;padding:12px 30px;font-family:var(--f-display);font-weight:400}
 .btn:disabled{opacity:.4;cursor:not-allowed}
@@ -242,11 +251,15 @@ function saveClear(id,score){try{ if(!cleared[id]||score<cleared[id]) cleared[id
 
 /* ───── 화면 ───── */
 const app=document.getElementById('app');
+/* 학생 폰 모드: 강사가 빔에서 고른 단계(lv)를 각자 풀고, 성공하면 기록을 선생님 화면으로 보냄(q = 이번 판 번호) */
+const QS=new URLSearchParams(location.search), STU=QS.get('stu')==='1', SLV=+QS.get('lv')||0, SQ=QS.get('q')||'';
+let sent=null;
 let G=null, timer=null;
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
 function home(){
   clearInterval(timer); G=null;
+  if(STU){app.innerHTML='<div class="stubar">👀 선생님이 단계를 고르면 여기서 바로 풀 수 있어요</div>';return}
   app.innerHTML=`
   <header class="hero">
     <h1>문제해결 <em>강건너기</em></h1>
@@ -313,12 +326,14 @@ function draw(){
     <div class="bank right"><h4>도착</h4>${G.boat===1?lamp:''}<div class="slots">${onBank(1).map(p=>tokenHTML(p,'bank')).join('')}</div></div>
   </div>
   <p class="msg" id="msg" role="status">${G.boat===0?'👉 출발 쪽 인물을 눌러 태우세요':'👈 도착 쪽 인물을 눌러 태우세요'}</p>
+  ${STU?`<p class="stubar">📱 내 폰으로 직접 풀어요 · 성공하면 기록이 선생님 화면에 조별로 올라가요${sent?` · 보낸 기록: ${sent}`:''}</p>`:''}
+  ${!STU&&window.TM_SYNC&&TM_SYNC.on?'<div class="stur" id="stuR">'+stuR()+'</div>':''}
   <div class="controls">
     <button class="btn go" id="go" ${G.sel.length&&!G.busy?'':'disabled'}>${bridge?'🔦 건너기':'⛵ 출발!'}</button>
     <button class="btn" id="undo" ${G.hist.length&&!G.busy?'':'disabled'}>↩ 한 수 되돌리기</button>
     <button class="btn" id="hint">💡 힌트</button>
     <button class="btn" id="reset">처음부터</button>
-    <button class="btn" id="home">단계 고르기</button>
+    ${STU?'':'<button class="btn" id="home">단계 고르기</button>'}
     <button class="btn" id="snd" aria-pressed="${sound}">${sound?'🔊':'🔇'}</button>
   </div>`;
   app.querySelectorAll('.token.can').forEach(b=>b.onclick=()=>toggle(+b.dataset.p));
@@ -326,7 +341,7 @@ function draw(){
   document.getElementById('undo').onclick=undo;
   document.getElementById('hint').onclick=hint;
   document.getElementById('reset').onclick=()=>start(G.li);
-  document.getElementById('home').onclick=home;
+  if(!STU)document.getElementById('home').onclick=home;
   document.getElementById('snd').onclick=()=>{sound=!sound;draw()};
 }
 const say=t=>{const m=document.getElementById('msg'); if(m) m.textContent=t;};
@@ -392,13 +407,13 @@ function fail(reason){
     <p>${esc(reason)}</p>
     <p class="q">실패는 정보예요. 어떤 수가 문제였는지 찾았다면, 이미 한 걸음 나아간 거예요.</p>
     <div class="actions">
-      <button class="btn" id="o-home">단계 고르기</button>
+      ${STU?'':'<button class="btn" id="o-home">단계 고르기</button>'}
       <button class="btn" id="o-reset">처음부터</button>
       <button class="btn go" id="o-undo">↩ 한 수 되돌리기</button>
     </div>`);
   o.querySelector('#o-undo').onclick=()=>{undo(); restartClock();};
   o.querySelector('#o-reset').onclick=()=>{closeOver();start(G.li)};
-  o.querySelector('#o-home').onclick=()=>{closeOver();home()};
+  if(!STU)o.querySelector('#o-home').onclick=()=>{closeOver();home()};
   o.querySelector('#o-undo').focus();
 }
 function restartClock(){clearInterval(timer);timer=setInterval(()=>{const el=document.getElementById('clock'); if(el&&G&&!G.over) el.textContent=fmt((Date.now()-G.t0)/1000)},500);}
@@ -407,6 +422,8 @@ function win(){
   const L=G.L; G.over=true; clearInterval(timer); sfx.win();
   const score = L.mode==='bridge'?G.time:G.moves;
   saveClear(L.id,score);
+  if(STU&&SQ&&window.TM_ROOM&&TM_ROOM.answer){const secs=Math.round((Date.now()-G.t0)/1000),rec=L.mode==='bridge'?G.time+'분':G.moves+'번';
+    TM_ROOM.answer(SQ,'ok|'+score+'|'+secs).then(ok=>{if(ok){sent=rec+' · '+fmt(secs);const t=document.getElementById('sentNote');if(t)t.textContent='✔ 선생님 화면에 기록을 보냈어요 ('+sent+')'}})}
   const perfect = score===L.best;
   const S=['S 상황','T 과제','A 행동','R 결과'];
   const next=LEVELS[G.li+1];
@@ -424,13 +441,13 @@ function win(){
       ${L.lesson.star.map((t,i)=>`<b>${S[i].split(' ')[0]}</b><span>${esc(t)}</span>`).join('')}
     </div>
     <div class="actions">
-      <button class="btn" id="o-home">단계 고르기</button>
+      ${STU?'<p id="sentNote" style="flex-basis:100%;margin:0;color:var(--ok);font-weight:700">기록 보내는 중…</p>':'<button class="btn" id="o-home">단계 고르기</button>'}
       <button class="btn" id="o-again">다시 하기</button>
-      ${next?`<button class="btn go" id="o-next">다음 단계 ▶</button>`:''}
+      ${next&&!STU?`<button class="btn go" id="o-next">다음 단계 ▶</button>`:''}
     </div>`);
-  o.querySelector('#o-home').onclick=()=>{closeOver();home()};
+  if(!STU)o.querySelector('#o-home').onclick=()=>{closeOver();home()};
   o.querySelector('#o-again').onclick=()=>{closeOver();start(G.li)};
-  if(next){o.querySelector('#o-next').onclick=()=>{closeOver();start(G.li+1)}; o.querySelector('#o-next').focus();}
+  if(next&&!STU){o.querySelector('#o-next').onclick=()=>{closeOver();start(G.li+1)}; o.querySelector('#o-next').focus();}
 }
 
 document.addEventListener('keydown',e=>{
@@ -447,8 +464,25 @@ function path(L,pos,boat){const out=[];let p=pos.slice(),b=boat;
     out.push({names:s.first.map(x=>x.e+' '+x.name).join(' + '),dir:b===0?'건너감 →':'← 돌아옴',t:L.mode==='bridge'?Math.max(...s.first.map(x=>x.t)):0});
     s.first.forEach(x=>p[x.i]=1-b);b=1-b}
   return out}
-function stuPub(){if(!window.TM_SYNC||!TM_SYNC.on||HOST)return;
-  if(!G){TM_SYNC.pub('river',{game:'🚣 문제해결 강건너기',big:'단계를 고르는 중…',sub:'앞 화면(빔)을 보세요'});return}
+/* 빔(강사 노트북): 단계를 고르면 이번 판 번호(RQ)로 방 q를 열고, 학생 폰은 river.html?stu=1 로 같은 단계를 직접 풂 → 성공 기록(ans)을 조별로 */
+let RQ='',RA=[],RT=[];
+function rq(){if(!G)return '';if(!RQ||RQ.indexOf('river-'+G.L.id+'-')!==0)RQ='river-'+G.L.id+'-'+Date.now().toString(36);return RQ}
+function stuR(){const L=G&&G.L;if(!L)return '';const unit=L.mode==='bridge'?'분':'번';
+  const A=RA.map(a=>{const p=String(a.v||'').split('|');return {nick:a.nick||'',team:a.team||'',score:+p[1],secs:+p[2]}}).filter(a=>a.score>0).sort((a,b)=>a.score-b.score||a.secs-b.secs);
+  const teams=RT.length?RT.slice():[];A.forEach(a=>{const t=a.team||'조 없음';if(teams.indexOf(t)<0)teams.push(t)});
+  let h='<h4>📱 학생 폰 기록 <span>성공 '+A.length+'명'+(A.length?' · 1등 '+esc(A[0].nick)+' '+A[0].score+unit:'')+'</span></h4>';
+  if(!A.length&&!teams.length)return h+'<p class="who">학생 폰에 같은 단계가 떴어요. 성공하면 여기에 조별로 올라와요.</p>';
+  return h+teams.map(t=>{const M=A.filter(a=>(a.team||'조 없음')===t);
+    return '<div class="tr"><span class="tn">'+esc(t)+'</span><span class="n">'+M.length+'명</span><span class="who">'+(M.length?'최고 '+M[0].score+unit+' ('+esc(M[0].nick)+') · '+M.map(a=>(a.score===L.best?'<b>'+esc(a.nick)+'★</b>':esc(a.nick))).join(', '):'아직')+'</span></div>'}).join('')+
+   '<p class="who">★ = 최단 기록('+L.best+unit+') · 같은 사람이 다시 성공하면 새 기록으로 바뀌어요.</p>'}
+function askRiver(){if(!window.TM_SYNC||!TM_SYNC.on||HOST)return;const id=rq();
+  if(!id){TM_SYNC.ask(null);TM_SYNC.onAns('',null);return}
+  TM_SYNC.ask({id:id,open:true,type:'river'});
+  TM_SYNC.onAns(id,(id2,A)=>{if(id2!==RQ)return;RA=A;const b=document.getElementById('stuR');if(b)b.innerHTML=stuR()})}
+if(window.TM_SYNC&&TM_SYNC.on&&TM_SYNC.teams&&!HOST){const rt=()=>TM_SYNC.teams(T=>{RT=T||[];const b=document.getElementById('stuR');if(b)b.innerHTML=stuR()});rt();setInterval(rt,20000)}
+function stuPub(){if(!window.TM_SYNC||!TM_SYNC.on||HOST)return;askRiver();
+  if(!G){RA=[];TM_SYNC.pub('river',{game:'🚣 문제해결 강건너기',big:'단계를 고르는 중…',sub:'선생님이 단계를 고르면 내 폰으로 직접 풀어요'});return}
+  TM_SYNC.pub('river',{game:'🚣 문제해결 강건너기',num:G.L.no+'단계',q:G.L.title,play:'river.html?stu=1&lv='+G.li+'&q='+rq()});return;
   const L=G.L,side=k=>L.people.filter(p=>G.pos[p.i]===k).map(p=>p.e+' '+p.name);
   TM_SYNC.pub('river',{game:'🚣 문제해결 강건너기',num:L.no+'단계',q:L.title,sub:L.short,
     groups:[{n:'🏝 출발쪽'+(G.boat===0?' ⛵':''),c:'#8e4ec6',m:side(0)},{n:'🏁 도착쪽'+(G.boat===1?' ⛵':''),c:'#2e9e5b',m:side(1)}],
@@ -468,7 +502,12 @@ function hostDraw(){const s=HS;
   else h+='<p><b>지금 상태에서 남은 정답 풀이</b> (가장 짧은 길 하나예요. 학생이 다른 수를 외쳐도 규칙만 맞으면 괜찮아요)</p><ol style="font-size:1.2rem;line-height:1.8">'+s.path.map(x=>'<li>'+esc(x.names)+' <b>'+x.dir+'</b>'+(x.t?' ('+x.t+'분)':'')+'</li>').join('')+'</ol>';
   app.innerHTML=h+'</section>'}
 if(BC)BC.onmessage=e=>{const m=e.data||{};if(HOST){if(m.s){HS=m.s;hostDraw()}return}if(m.hello)pub()};
-if(HOST){document.title='진행자 화면 · 강건너기';hostDraw();const hi=()=>BC&&BC.postMessage({hello:1});hi();setInterval(hi,3000)}
+if(STU){ // 학생 폰: 강사가 단계를 바꾸면 새 단계로, 게임을 끝내면 대기 화면(play.html)으로
+  if(window.TM_ROOM&&TM_ROOM.onRoom)TM_ROOM.onRoom(r=>{const g=r&&r.g;let m=null;try{m=g&&g.s?JSON.parse(g.s):null}catch(e){}
+    const want=m&&m.play?m.play:'';if(want===('river.html?stu=1&lv='+SLV+'&q='+SQ))return;
+    location.replace(want||'play.html')});
+  if(LEVELS[SLV])start(SLV);else home();
+}else if(HOST){document.title='진행자 화면 · 강건너기';hostDraw();const hi=()=>BC&&BC.postMessage({hello:1});hi();setInterval(hi,3000)}
 else home();
 })();
 </script>

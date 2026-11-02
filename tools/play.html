@@ -118,6 +118,7 @@ if(window.TM_ROOM&&TM_ROOM.onRoom)TM_ROOM.onRoom(function(r){
   RT=r&&Array.isArray(r.teams)?r.teams:[];var g=r&&r.g,s=g&&g.s&&g.t&&g.t.toMillis&&Date.now()-g.t.toMillis()<6*3600e3?g.s:null;
   var rk=JSON.stringify(RT);if(s===lastS&&rk===app.dataset.rt&&app.dataset.r)return;app.dataset.rt=rk;lastS=s;app.dataset.r=1;  /* 강사 화면 1분 신호(hb)마다 다시 그리지 않음(답 쓰는 중 끊김 방지) */
   var pid=M&&M.ask&&M.ask.id;M=null;if(s){try{M=JSON.parse(s)}catch(e){M=null}}
+  if(M&&M.play&&/^[a-z]+\.html\?[\w=&.-]+$/.test(M.play)){location.replace(M.play);return} /* 학생이 직접 하는 게임(강건너기): 그 화면으로 */
   if((M&&M.ask&&M.ask.id)!==pid)draft='';
   keep();
 });
