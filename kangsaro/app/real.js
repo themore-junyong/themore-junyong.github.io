@@ -100,7 +100,13 @@ const roomOf = j => ({ coId: j.coId, members: S.apps.filter(a => a.jobId === j.i
 const roomSame = (k, v) => { const r = ROOMS.get(k.slice(6)); return !!r && stable(pick(r, ['coId', 'members', 'title'])) === stable(v); };
 window.CHATX = {
   msgs: jid => MSGS.get(jid) || [],
-  lastOf: jid => { const r = ROOMS.get(jid); return r && r.lastAt ? { at: r.lastAt, by: r.lastBy, text: r.lastText || '' } : null; },
+  lastOf: jid => {
+    const r = ROOMS.get(jid); if (!r || !r.lastAt) return null;
+    // 보낸 사람: 확정 강사면 강사 이름, 아니면 업체(대표·직원) 이름
+    const j = job(jid), ins = (r.members || []).includes(r.lastBy) ? S.insts.find(x => x.id === r.lastBy) : null;
+    const who = ins ? `${ins.name || '강사'} 강사` : j ? (co(j.coId) || {}).name || '업체' : '';
+    return { at: r.lastAt, by: r.lastBy, text: r.lastText || '', who };
+  },
   open(jid) {
     this.close(); MSGS.set(jid, []);
     chatUnsub = onSnapshot(query(collection(db, 'rooms', jid, 'msgs'), orderBy('at', 'desc'), limit(50)),

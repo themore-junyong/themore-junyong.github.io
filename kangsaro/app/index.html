@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<meta name="build" content="261102-1351">
+<meta name="build" content="261102-1404">
 <title>강사로</title>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#2563EB">
@@ -507,7 +507,7 @@ function vChat(){const R=chatRooms();
   return `<h2>강의 대화방</h2><p class="mu sm">확정된 강사와 업체만 들어오는 방이에요. 강의마다 하나씩 열리고, 업체가 '보냈어요', 강사가 '입금 확인했어요'까지 모두 누르면 자동으로 사라져요.</p>
   ${R.map(({j,l,nw})=>`<button class="card" data-act="chatOpen" data-j="${j.id}" style="text-align:left;cursor:pointer;width:100%"><div class="row">${nw?'<span class="chip warn">새 대화</span>':''}<span class="chip off">${j.dates.length?md(j.dates[0])+(j.dates.length>1?'~'+md(last(j.dates)):''):''}</span><span class="mu sm">${meRole()==='c'?`확정 강사 ${chatMembers(j).length}명`:esc(co(j.coId).name)}</span></div>
     <h3>💬 ${esc(j.region||'')} ${esc(j.school)} ${esc(j.title)}</h3>
-    <span class="mu sm">${l?`${l.text?esc((l.who&&l.by!==myUid()?l.who+': ':'')+String(l.text).slice(0,40)):'새 메시지'} · ${chatTime(l.at)}`:'아직 대화가 없어요'}</span></button>`).join('')||`<div class="card"><p class="mu">열린 대화방이 없어요.</p><p class="mu sm">${meRole()==='c'?'강의에 강사를 확정하면 그 강의 대화방이 여기에 생겨요.':'업체가 나를 강사로 확정하면 그 강의 대화방이 여기에 생겨요.'}</p></div>`}`}
+    <span class="mu sm">${l?`<b>${l.by===myUid()?'나':esc(l.who||'')}</b>: ${l.text?esc(String(l.text).slice(0,40)):'새 메시지'} · ${chatTime(l.at)}`:'아직 대화가 없어요'}</span></button>`).join('')||`<div class="card"><p class="mu">열린 대화방이 없어요.</p><p class="mu sm">${meRole()==='c'?'강의에 강사를 확정하면 그 강의 대화방이 여기에 생겨요.':'업체가 나를 강사로 확정하면 그 강의 대화방이 여기에 생겨요.'}</p></div>`}`}
 const chatWho=j=>meRole()==='c'?`${co(j.coId).name}${WHO?' '+WHO:''}`:`${inst(meId()).name} 강사`;
 const chatTime=at=>{const d=new Date(at);return isNaN(d)?'':`${d.getMonth()+1}/${d.getDate()} ${pad(d.getHours())}:${pad(d.getMinutes())}`};
 function chatOpen(jid){const j=job(jid);if(!chatCan(j))return toast('확정된 강사와 업체만 들어올 수 있어요');ui.chat=jid;CHT().open(jid);document.body.classList.add('chatting');
@@ -1429,6 +1429,6 @@ function jTimeSync(){const R=jRanges(),t=$('#jTime'),pe=$('#jPer');if(!t)return;
 document.addEventListener('input',ev=>{if(ev.target.matches&&ev.target.matches('.trvV')){const c=$$('.trvC').find(x=>x.dataset.a===ev.target.dataset.a);if(c)c.checked=!!+ev.target.value}if(ev.target.matches&&ev.target.matches('.jTa,.jTb'))jTimeSync();if(ev.target.id==='jPer')ev.target.dataset.man=ev.target.value?'1':'';if(['pDates','pRaw'].includes(ev.target.id))pWarn();if(['pDates','pFee','pKm','pToll'].includes(ev.target.id))pNet()});
 render();
 </script>
-<script type="module" src="real.js?v=261102-1351"></script>
+<script type="module" src="real.js?v=261102-1404"></script>
 </body>
 </html>
