@@ -93,14 +93,14 @@ const NAV0 = { c: NAV.c.slice() };
 const isStaffView = () => role === 'c' && CO !== uidMe;
 /* ===== 강의 대화방 =====
    rooms/{공고}: coId · members(확정 강사) · title · lastAt/lastBy/lastText. 메시지는 rooms/{공고}/msgs (최근 50개만, 방을 열었을 때만 실시간)
-   방 문서는 업체 앱이 확정 강사 목록에 맞춰 씀. 마감·지급·입금 확인이 다 끝나면 서버(chatDone)가 방을 지움 */
+   방 문서는 업체 앱이 확정 강사 목록에 맞춰 씀. 확정 강사 모두 지급·입금 확인이 끝나면 서버(chatDone)가 방을 지움 */
 const ROOMS = new Map(), MSGS = new Map();
 let chatUnsub = null, roomUnsub = null;
 const roomOf = j => ({ coId: j.coId, members: S.apps.filter(a => a.jobId === j.id && a.status === '확정').map(a => a.instId).sort(), title: `${j.school || ''} ${j.title || ''}`.trim() });
 const roomSame = (k, v) => { const r = ROOMS.get(k.slice(6)); return !!r && stable(pick(r, ['coId', 'members', 'title'])) === stable(v); };
 window.CHATX = {
   msgs: jid => MSGS.get(jid) || [],
-  lastOf: jid => { const r = ROOMS.get(jid); return r && r.lastAt ? { at: r.lastAt, by: r.lastBy } : null; },
+  lastOf: jid => { const r = ROOMS.get(jid); return r && r.lastAt ? { at: r.lastAt, by: r.lastBy, text: r.lastText || '' } : null; },
   open(jid) {
     this.close(); MSGS.set(jid, []);
     chatUnsub = onSnapshot(query(collection(db, 'rooms', jid, 'msgs'), orderBy('at', 'desc'), limit(50)),
