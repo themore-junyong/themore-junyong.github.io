@@ -49,6 +49,13 @@
       return b.F.setDoc(b.F.doc(b.db,'rooms',r.pin,'work',b.uid+'_'+tool),{tool:tool,nick:r.nick,title:String(title||'').slice(0,80),body:String(body||'').slice(0,6000),t:b.F.serverTimestamp()});
     }).then(function(){toast('✔ 선생님께 보냈어요');return true},function(){toast('선생님께 보내지 못했어요 (방이 끝났을 수 있어요)',true);return false});
   }
+  /* 게임 응답(아이스브레이킹 밸런스 선택·퀴즈 답): 방 문서 q가 열려 있을 때 ans/{q.id}_{uid} 1개(다시 보내면 덮어씀). 강사 노트북만 읽음 */
+  function answer(qid,v){
+    var r=get();if(!r||TEACH)return Promise.resolve(false);
+    return boot().then(function(b){
+      return b.F.setDoc(b.F.doc(b.db,'rooms',r.pin,'ans',qid+'_'+b.uid),{q:String(qid),v:String(v).slice(0,80),nick:r.nick,t:b.F.serverTimestamp()});
+    }).then(function(){return true},function(){toast('보내지 못했어요 (마감됐을 수 있어요)',true);return false});
+  }
   function ended(why){
     put(null);
     var o=document.createElement('div');
@@ -86,7 +93,7 @@
   function onRoom(cb){ // 방 문서 실시간(play.html: 강사 게임 화면 따라 보기)
     var r=get();if(!r)return;boot().then(function(b){b.F.onSnapshot(b.F.doc(b.db,'rooms',r.pin),function(d){cb(d.exists()?d.data():null)},function(){})}).catch(function(){});
   }
-  window.TM_ROOM={get:get,join:join,check:check,send:send,leave:function(){put(null)},watch:watch,teach:TEACH,onRoom:onRoom};
+  window.TM_ROOM={get:get,join:join,check:check,send:send,answer:answer,leave:function(){put(null)},watch:watch,teach:TEACH,onRoom:onRoom};
   /* 강사 미리보기 탭에서 도구 안 화면을 바꾸면(#해시) 학생도 같은 화면으로: 강사 노트북의 기본 Firebase 앱(방 주인)으로 go를 씀 */
   function teachGo(){
     var host=null;try{host=JSON.parse(localStorage.getItem('live-host')||'null')}catch(e){}if(!host||!host.pin)return;
