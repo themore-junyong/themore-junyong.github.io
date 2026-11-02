@@ -46,25 +46,50 @@ ol.list{margin:0;padding-left:1.4em;font-size:1.1rem;font-weight:700}
 .wait b{font-size:1.3rem}
 .note{color:var(--soft);font-size:.9rem;text-align:center}
 .home{color:var(--soft);font-size:.85rem;text-align:center}
+/* 조 고르기 · 선택 · 답 쓰기 */
+.teamp{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.teamp button{border:3px solid var(--c);background:color-mix(in srgb,var(--c) 10%,var(--card));color:var(--ink);border-radius:10px;padding:18px 8px;font:900 1.3rem var(--f)}
+.myteam{display:flex;justify-content:space-between;align-items:center;gap:8px;font-weight:700}
+.myteam b{color:#fff;background:var(--c);border-radius:999px;padding:3px 12px}
+.myteam button{border:0;background:none;color:var(--blue);font:700 .9rem var(--f);text-decoration:underline}
+button.opt{width:100%;text-align:left;background:var(--card);color:var(--ink);font-family:var(--f);cursor:pointer}
+button.opt[aria-pressed="true"]{border-color:var(--blue);background:var(--blue);color:var(--blue-ink)}
+button.opt:disabled{cursor:default}
+.f{display:flex;gap:8px}.f input{flex:1;min-width:0;border:2px solid var(--line);border-radius:8px;padding:12px;font:700 1.1rem var(--f);background:var(--card);color:var(--ink)}
+.f button{border:0;border-radius:8px;padding:0 18px;background:var(--blue);color:var(--blue-ink);font:900 1rem var(--f)}
+.mine{text-align:center;font-weight:700}.mine.ok{color:var(--ok)}.mine.no{color:var(--bad)}
 </style></head><body>
-<script src="room.js?v=189" data-guard></script>
+<script src="room.js?v=191" data-guard></script>
 <main class="wrap" id="app"><div class="wait"><span style="font-size:2.4rem" aria-hidden="true">👀</span><b>선생님 화면과 연결하는 중…</b></div></main>
 <script>
 (function(){
-var app=document.getElementById('app'),M=null,tick=null;
+var app=document.getElementById('app'),M=null,tick=null,lastS=null,draft='';
+function rm(){try{return (JSON.parse(localStorage.getItem('tm-room-s')||'null')||{}).pin||''}catch(e){return ''}}
+function lg(k,d){try{var v=JSON.parse(localStorage.getItem(k)||'null');return v==null?d:v}catch(e){return d}}
+function ls(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+var PIN=rm(),TEAM=lg('tm-team-'+PIN,null),MINE=lg('tm-ans-'+PIN,{}),SENT={};
+function norm(x){return String(x||'').replace(/[\s.,!?~·'"()\-]/g,'').toLowerCase()}
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
 function left(){return M&&M.end?Math.max(0,(M.end-Date.now())/1000):null}
 function fmt(s){if(M.clock==='mmss'){s=Math.ceil(s);return Math.floor(s/60)+':'+String(s%60).padStart(2,'0')}return Math.ceil(s)+'초'}
 function render(){
   if(!M){app.innerHTML='<div class="wait"><span style="font-size:2.4rem" aria-hidden="true">👀</span><b>지금은 앞 화면(빔)을 보세요</b><span>선생님이 게임을 시작하면 여기에도 똑같이 보여요.</span></div>';return}
-  var h='<div class="card"><div class="game">'+esc(M.game)+(M.num?'<span>'+esc(M.num)+'</span>':'')+'</div>';
+  var A=M.ask&&M.teams&&M.teams.length?M.ask:null;
+  if(A&&(TEAM==null||TEAM>=M.teams.length)){app.innerHTML='<div class="card"><div class="game">'+esc(M.game)+'</div><p class="q">우리 조는 몇 조인가요?</p><p class="sub">고르면 폰으로 선택하고 답할 수 있어요. 조별로 모아서 앞 화면에 보여 줘요.</p><div class="teamp">'+M.teams.map(function(t,i){return '<button data-team="'+i+'" style="--c:'+esc(t.c)+'">'+esc(t.n)+'</button>'}).join('')+'</div></div>';return}
+  var h=(A?'<div class="myteam" style="--c:'+esc(M.teams[TEAM].c)+'"><span>우리 조 <b>'+esc(M.teams[TEAM].n)+'</b></span><button data-team="x">조 바꾸기</button></div>':'')+'<div class="card"><div class="game">'+esc(M.game)+(M.num?'<span>'+esc(M.num)+'</span>':'')+'</div>';
   if(M.turn)h+='<span class="turn" style="background:'+esc(M.turn.c)+'">'+esc(M.turn.n)+'</span>';
   if(M.cat)h+='<span class="sub">'+esc(M.cat)+'</span>';
   if(M.q)h+='<p class="q">'+esc(M.q)+'</p>';
   if(M.big!=null)h+='<div class="big'+(M.huge?' huge':'')+'">'+esc(M.big)+'</div>';
   if(M.sub)h+='<p class="sub">'+esc(M.sub)+'</p>';
   if(M.end||M.clockText)h+='<div class="clock" id="clk">'+(M.end?fmt(left()):esc(M.clockText))+'</div>';
-  if(M.opts)h+='<div class="opts">'+M.opts.map(function(o){return '<div class="opt'+(o.ok?' ok':o.bad?' bad':'')+'">'+esc(o.t)+(o.ok?' ✔':'')+'</div>'}).join('')+'</div>';
+  var my=A?MINE[A.id]:null;
+  if(M.opts&&A&&A.kind==='ab')h+='<div class="opts">'+M.opts.map(function(o,i){return '<button class="opt" data-ab="'+i+'" aria-pressed="'+(my===String(i))+'"'+(A.open?'':' disabled')+'>'+esc(o.t)+'</button>'}).join('')+'</div>'+(my!=null?'<p class="mine">보냈어요! 바꾸고 싶으면 다른 쪽을 누르세요.</p>':'<p class="sub">하나를 눌러서 골라요.</p>');
+  else if(M.opts)h+='<div class="opts">'+M.opts.map(function(o){return '<div class="opt'+(o.ok?' ok':o.bad?' bad':'')+'">'+esc(o.t)+(o.ok?' ✔':'')+'</div>'}).join('')+'</div>';
+  if(A&&A.kind==='text'){
+    if(A.open)h+='<div class="f"><input id="txt" maxlength="30" placeholder="정답을 써 보세요" value="'+esc(draft)+'" autocomplete="off"><button data-a="send">'+(my!=null?'고쳐 보내기':'보내기')+'</button></div>'+(my!=null?'<p class="mine">보낸 답: '+esc(my)+'</p>':'');
+    else if(A.ans)h+='<p class="mine '+(my!=null&&norm(my)===norm(A.ans)?'ok':'no')+'">'+(my==null?'이번 문제는 답을 안 보냈어요':norm(my)===norm(A.ans)?'정답! 🎉 내 답: '+esc(my):'아쉬워요 😅 내 답: '+esc(my))+'</p>';
+  }
   if(M.reveal)h+='<div class="reveal">'+esc(M.reveal)+'</div>';
   if(M.list)h+='<ol class="list">'+M.list.map(function(x){return '<li>'+esc(x)+'</li>'}).join('')+'</ol>';
   h+='</div>';
@@ -74,10 +99,24 @@ function render(){
   app.innerHTML=h;
 }
 setInterval(function(){var c=document.getElementById('clk');if(c&&M&&M.end){var l=left();c.textContent=fmt(l);c.className='clock'+(l<=10?' warn':'')}},250);
+function keep(){var t=document.getElementById('txt'),f=t&&document.activeElement===t,p=f?t.selectionStart:0;if(t)draft=t.value;render();
+  var n=document.getElementById('txt');if(n&&f){n.focus();try{n.setSelectionRange(p,p)}catch(e){}}}
+app.addEventListener('input',function(e){if(e.target.id==='txt')draft=e.target.value});
+app.addEventListener('keydown',function(e){if(e.target.id==='txt'&&e.key==='Enter'){e.preventDefault();sendTxt()}});
+function put(v){var A=M&&M.ask;if(!A||!A.open||TEAM==null||!window.TM_ROOM||!TM_ROOM.answer)return;var id=A.id;
+  TM_ROOM.answer(id,TEAM+'|'+v).then(function(ok){if(ok){MINE[id]=v;var k=Object.keys(MINE);if(k.length>60)delete MINE[k[0]];ls('tm-ans-'+PIN,MINE);if(id===(M&&M.ask&&M.ask.id))keep()}})}
+function sendTxt(){var t=document.getElementById('txt');var v=(t?t.value:'').replace(/[|\n]/g,' ').trim().slice(0,30);if(!v)return;draft='';put(v)}
+app.addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;
+  if(b.dataset.team!=null){TEAM=b.dataset.team==='x'?null:+b.dataset.team;ls('tm-team-'+PIN,TEAM);render();return}
+  if(b.dataset.ab!=null){put(b.dataset.ab);return}
+  if(b.dataset.a==='send')sendTxt();
+});
 if(window.TM_ROOM&&TM_ROOM.onRoom)TM_ROOM.onRoom(function(r){
-  var g=r&&r.g;M=null;
-  if(g&&g.s&&g.t&&g.t.toMillis&&Date.now()-g.t.toMillis()<6*3600e3){try{M=JSON.parse(g.s)}catch(e){M=null}}
-  render();
+  var g=r&&r.g,s=g&&g.s&&g.t&&g.t.toMillis&&Date.now()-g.t.toMillis()<6*3600e3?g.s:null;
+  if(s===lastS&&lastS!==undefined&&app.dataset.r)return;lastS=s;app.dataset.r=1;  /* 강사 화면 1분 신호(hb)마다 다시 그리지 않음(답 쓰는 중 끊김 방지) */
+  var pid=M&&M.ask&&M.ask.id;M=null;if(s){try{M=JSON.parse(s)}catch(e){M=null}}
+  if((M&&M.ask&&M.ask.id)!==pid)draft='';
+  keep();
 });
 })();
 </script>

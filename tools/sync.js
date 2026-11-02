@@ -15,7 +15,7 @@
         var F=m[3],db=F.getFirestore(app),ref=F.doc(db,'rooms',pin);
         return F.getDoc(ref).then(function(d){var r=d.exists()?d.data():null;
           if(!r||r.owner!==auth.currentUser.uid||r.closed||!r.exp||r.exp.toMillis()<Date.now())throw new Error('no room');
-          return {F:F,ref:ref}});
+          return {F:F,ref:ref,db:db}});
       });
     });
     fb.catch(function(){dead=true});
@@ -24,7 +24,15 @@
   function flush(){timer=null;if(!want||dead)return;var w=want;want=null;
     boot().then(function(b){return b.F.updateDoc(b.ref,{g:{k:w.k,s:w.s,t:b.F.serverTimestamp()}})}).catch(function(){});
   }
-  window.TM_SYNC={on:on,pub:function(kind,view){
+  /* 학생 응답 받기: 방 문서 q={id,open,type:'ice'}를 열고, ans(q==id)를 실시간으로 받음 (강사만 읽기 가능) */
+  var lastQ='', aUnsub=null, aId='';
+  function ask(q){if(!on||dead)return;var k=JSON.stringify(q||null);if(k===lastQ)return;lastQ=k;
+    boot().then(function(b){return b.F.updateDoc(b.ref,{q:q||null})}).catch(function(){})}
+  function onAns(id,cb){if(!on||dead)return;if(id===aId)return;aId=id;if(aUnsub){aUnsub();aUnsub=null}if(!id)return;
+    boot().then(function(b){if(aId!==id)return;var F=b.F;
+      aUnsub=F.onSnapshot(F.query(F.collection(b.db,'rooms',pin,'ans'),F.where('q','==',id)),function(s){var A=[];s.docs.forEach(function(d){A.push(d.data())});cb(id,A)},function(){});
+    }).catch(function(){})}
+  window.TM_SYNC={on:on,ask:ask,onAns:onAns,pub:function(kind,view){
     if(!on||dead)return;var s;try{s=JSON.stringify(view).slice(0,7900)}catch(e){return}
     if(s===last)return;last=s;want={k:String(kind).slice(0,20),s:s};if(!timer)timer=setTimeout(flush,400);
   }};

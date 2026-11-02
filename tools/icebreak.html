@@ -90,6 +90,19 @@ input[type=number]{width:80px}
 .keyl{margin:0;padding-left:2.2em;font-size:1.25rem;line-height:1.5}
 .keyl li{padding:6px 0;border-bottom:1px solid var(--line)}.keyl li::marker{font-weight:900;color:var(--blue)}
 .kq{color:var(--soft);margin-right:10px;font-size:.95rem}
+/* 학생 폰 응답 · 조별 통계 */
+.stu{border-top:1px dashed var(--line);padding-top:12px;display:flex;flex-direction:column;gap:10px}
+.stu h4{margin:0;font-size:1.05rem;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}.stu h4 span{color:var(--soft);font-weight:700}
+.tbar{display:grid;grid-template-columns:90px 1fr 70px;gap:10px;align-items:center;font-weight:700}
+.tbar .tn{color:var(--c);font-weight:900;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tbar .tr{display:flex;height:30px;border-radius:6px;overflow:hidden;background:var(--line)}
+.tbar .tr i{display:flex;align-items:center;justify-content:center;color:#fff;font-style:normal;font-weight:900;font-size:.9rem;min-width:0;transition:width .3s}
+.tbar .num{text-align:right;font-variant-numeric:tabular-nums}
+.who{font-size:.9rem;color:var(--soft)}.who b{color:var(--ok)}
+#sov{position:fixed;inset:0;z-index:80;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:16px}
+#sov[hidden]{display:none}
+#sov .kin2{background:var(--card);color:var(--ink);border-radius:12px;padding:20px;width:min(900px,100%);max-height:90vh;overflow:auto;display:flex;flex-direction:column;gap:12px}
+.st{width:100%;border-collapse:collapse;font-size:1.05rem}.st th,.st td{border-bottom:1px solid var(--line);padding:8px;text-align:center}.st th:first-child,.st td:first-child{text-align:left}
 #kov{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:16px}
 #kov[hidden]{display:none}
 #kov .kin{background:#fff;color:#222;border-radius:12px;padding:20px;display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;max-width:520px}
@@ -97,8 +110,9 @@ input[type=number]{width:80px}
 </style>
 </head><body>
 <div class="wrap" id="app"></div>
+<div id="sov" hidden><div class="kin2" id="sbox"></div></div>
 <div id="kov" hidden><div class="kin"><h2>📱 선생님 휴대폰으로 찍으세요</h2><p>문제 번호 순서대로 정답이 휴대폰에만 보여요. 학생들은 찍지 않게 잠깐만 띄웠다가 닫으세요.</p><div id="kbox"></div><b id="kU"></b><button class="btn pri big" id="kX">닫기</button></div></div>
-<script src="sync.js?v=188"></script>
+<script src="sync.js?v=191"></script>
 <script>
 (function(){
 var app=document.getElementById('app');
@@ -243,7 +257,7 @@ var V=(location.hash||'').slice(1)||'balance';
 window.addEventListener('hashchange',function(){if(HOST)return;V=(location.hash||'').slice(1)||'balance';stopT();render()});
 var TABS=[['balance','⚖️ 밸런스 게임'],['chosung','🔤 초성 퀴즈'],['emoji','😀 이모지 퀴즈'],['body','🙆 몸으로 말해요']];
 
-function head(){return '<div class="top"><div class="brand"><small>위듀케이션 · 아이스브레이킹</small></div><div class="row"><button class="btn" data-a="host">🖥 진행자 화면</button><button class="btn" data-a="fs">⛶ 전체 화면</button><a href="./">← 도구 모음</a></div></div>'+
+function head(){return '<div class="top"><div class="brand"><small>위듀케이션 · 아이스브레이킹</small></div><div class="row">'+(SYNC()?'<button class="btn" data-a="stat">📊 조별 통계</button>':'')+'<button class="btn" data-a="host">🖥 진행자 화면</button><button class="btn" data-a="fs">⛶ 전체 화면</button><a href="./">← 도구 모음</a></div></div>'+
  '<div class="tabs">'+TABS.map(function(x){return '<a href="#'+x[0]+'"'+(V===x[0]?' aria-current="page"':'')+'>'+x[1]+'</a>'}).join('')+'</div>'}
 function cats(v){return '<div class="chips">'+['전체'].concat(Object.keys(BANK[v])).map(function(k){var on=st.cat[v]===k;return '<button data-cat="'+esc(k)+'" style="'+(on?'background:var(--blue);color:var(--blue-ink)':'')+'">'+esc(k)+'</button>'}).join('')+'</div>'}
 function count(v){var g=G[v];return '<span class="note">'+(v==='chosung'||v==='emoji'?'<b style="font-size:1.4rem;color:var(--ink)">'+(g.i+1)+'번</b> / '+g.deck.length+' · 정답지 '+g.seed:(g.i+1)+' / '+g.deck.length)+(g.done?' · 한 바퀴 돌아서 다시 섞었어요':'')+'</span>'}
@@ -261,7 +275,7 @@ function balance(){
   '<div style="text-align:center"><span class="cat">'+esc(q.cat)+'</span></div>'+
   '<div class="vs"><div class="side'+(g.pick===0?' on':'')+'" data-side="0" style="--c:#e5484d">'+esc(p[0])+'</div><div class="mid">VS</div><div class="side'+(g.pick===1?' on':'')+'" data-side="1" style="--c:#2f80ed">'+esc(p[1])+'</div></div>'+
   '<div class="rule">진행: 셋 세면 동시에 손으로 고르기(왼손 = 왼쪽, 오른손 = 오른쪽) → 적은 쪽에서 한 명이 이유 한마디 → 많은 쪽에서 한 명이 반박 한마디. 화면의 칸을 누르면 많이 고른 쪽이 표시돼요.</div>'+
-  '<div class="row" style="justify-content:center"><button class="btn pri big" data-a="next">다음 질문 →</button></div></div>'+board();
+  '<div class="row" style="justify-content:center"><button class="btn pri big" data-a="next">다음 질문 →</button></div>'+stuBox()+'</div>'+board();
 }
 /* ───── 초성 퀴즈 ───── */
 function chosung(){
@@ -271,7 +285,7 @@ function chosung(){
   '<div class="big">'+esc(cho(w))+'</div>'+
   '<div class="ans'+(g.show?'':' hide')+'">'+esc(w)+'</div>'+timerBox(30)+
   '<div class="row" style="justify-content:center"><button class="btn big" data-a="show">'+(g.show?'정답 가리기':'정답 보기')+'</button><button class="btn pri big" data-a="next">다음 문제 →</button><button class="btn" data-a="key">📱 선생님 정답지</button></div>'+
-  (g.show?hit():'')+'<p class="note" style="text-align:center">손 먼저 든 팀이 답해요. 틀리면 다른 팀에게 기회가 넘어가요. 키보드: 스페이스 = 정답 보기, → = 다음</p></div>'+board();
+  (g.show?hit():'')+'<p class="note" style="text-align:center">손 먼저 든 팀이 답해요. 틀리면 다른 팀에게 기회가 넘어가요. 키보드: 스페이스 = 정답 보기, → = 다음</p>'+stuBox()+'</div>'+board();
 }
 /* ───── 이모지 퀴즈 ───── */
 function emoji(){
@@ -281,7 +295,7 @@ function emoji(){
   '<div class="emo">'+esc(q.x[0])+'</div>'+
   '<div class="ans'+(g.show?'':' hide')+'">'+esc(q.x[1])+'</div>'+timerBox(30)+
   '<div class="row" style="justify-content:center"><button class="btn big" data-a="show">'+(g.show?'정답 가리기':'정답 보기')+'</button><button class="btn pri big" data-a="next">다음 문제 →</button><button class="btn" data-a="key">📱 선생님 정답지</button></div>'+
-  (g.show?hit():'')+'<p class="note" style="text-align:center">이모지만 보고 맞히기. 비슷하게 말해도 강사가 인정하면 정답이에요.</p></div>'+board();
+  (g.show?hit():'')+'<p class="note" style="text-align:center">이모지만 보고 맞히기. 비슷하게 말해도 강사가 인정하면 정답이에요.</p>'+stuBox()+'</div>'+board();
 }
 /* ───── 몸으로 말해요 ───── */
 var B={run:false,end:0,iv:null,ok:0,pass:0,hide:false,over:false};
@@ -347,16 +361,66 @@ function snap(){
  if(G[V]&&G[V].deck){var g=G[V],q=g.deck[g.i];o.num=g.i+1;o.tot=g.deck.length;o.show=!!g.show;o.qcat=q.cat;
   if(V==='chosung'){o.q=cho(q.x);o.ans=q.x}else if(V==='emoji'){o.q=q.x[0];o.ans=q.x[1]}else if(V==='balance'){o.q=q.x[0]+'  VS  '+q.x[1]}else if(V==='body'){o.ans=q.x}}
  o.T={run:T.run,end:T.end,left:T.left,sec:T.sec};o.B={run:B.run,end:B.end,ok:B.ok,pass:B.pass,over:B.over};o.bodySec=st.bodySec;return o}
+/* ───── 학생 폰 응답 (방 연결된 강사 노트북일 때만) : 학생이 조를 고르고 → 밸런스는 A/B, 초성·이모지는 답을 씀 → 조별로 모아 통계 ───── */
+function SYNC(){return !!(window.TM_SYNC&&TM_SYNC.on&&!HOST)}
+var R={};try{R=JSON.parse(localStorage.getItem('ice-R')||'{}')||{}}catch(e){R={}}
+function rSave(){try{var k=Object.keys(R);if(k.length>150)k.sort(function(a,b){return R[a].at-R[b].at}).slice(0,k.length-150).forEach(function(x){delete R[x]});localStorage.setItem('ice-R',JSON.stringify(R))}catch(e){}}
+function qid(){var g=G[V];return g&&g.deck?V+'-'+g.seed+'-'+g.i:''}
+function norm(x){return String(x||'').replace(/[\s.,!?~·'"()\-]/g,'').toLowerCase()}
+function parse(a){var v=String(a.v||''),i=v.indexOf('|');return {t:+v.slice(0,i),x:v.slice(i+1),nick:a.nick||''}}
+function curRec(){var id=qid();if(!id||!(V==='balance'||V==='chosung'||V==='emoji'))return null;
+ var g=G[V],q=g.deck[g.i];if(!R[id])R[id]={v:V,q:V==='balance'?q.x[0]+' VS '+q.x[1]:V==='chosung'?cho(q.x)+' ('+q.x+')':q.x[0]+' ('+q.x[1]+')',ans:V==='chosung'?q.x:V==='emoji'?q.x[1]:'',opts:V==='balance'?q.x:null,A:[],at:Date.now()};return R[id]}
+function askNow(){if(!SYNC()||V.indexOf('ans/')===0)return;var r=curRec();
+ if(!r){TM_SYNC.ask(null);TM_SYNC.onAns('',null);return}
+ var id=qid(),open=V==='balance'?true:!G[V].show;TM_SYNC.ask({id:id,open:open,type:'ice',g:V});
+ TM_SYNC.onAns(id,function(id2,A){if(!R[id2])return;R[id2].A=A.map(function(a){return {v:a.v,nick:a.nick}});rSave();var b=document.getElementById('stu');if(b&&id2===qid())b.innerHTML=stuHtml();
+  var o=document.getElementById('sov');if(o&&!o.hidden)statOpen()})}
+function stuBox(){return SYNC()?'<div class="stu" id="stu">'+stuHtml()+'</div>':''}
+function bar(i,parts,num){return '<div class="tbar"><span class="tn" style="--c:'+COLORS[i]+'">'+esc(st.tname[i])+'</span><span class="tr">'+parts+'</span><span class="num">'+num+'</span></div>'}
+function seg(n,tot,c,lab){return n?'<i style="width:'+(n/tot*100)+'%;background:'+c+'">'+lab+'</i>':''}
+function stuHtml(){var r=curRec();if(!r)return '';var L=r.A.map(parse).filter(function(a){return a.t>=0&&a.t<st.teams});
+ var h='<h4>📱 학생 폰 응답 <span>'+L.length+'명</span></h4>';
+ if(!L.length)return h+'<p class="note">학생 폰에서 조를 고르고 '+(r.v==='balance'?'A·B를 누르면':'답을 보내면')+' 여기에 조별로 모여요.</p>';
+ if(r.v==='balance'){var a=0,b=0;
+  for(var i=0;i<st.teams;i++){var T=L.filter(function(x){return x.t===i}),na=T.filter(function(x){return x.x==='0'}).length,nb=T.filter(function(x){return x.x==='1'}).length;a+=na;b+=nb;
+   h+=bar(i,(na+nb)?seg(na,na+nb,'#e5484d','A '+na)+seg(nb,na+nb,'#2f80ed','B '+nb):'',(na+nb)+'명')}
+  h+='<p class="note" style="text-align:center;font-size:1.05rem"><b style="color:#e5484d">A '+a+'명 ('+Math.round(a/Math.max(1,a+b)*100)+'%)</b> · <b style="color:#2f80ed">B '+b+'명 ('+Math.round(b/Math.max(1,a+b)*100)+'%)</b></p>';
+ }else{var show=G[V].show;
+  for(var j=0;j<st.teams;j++){var U=L.filter(function(x){return x.t===j}),ok=U.filter(function(x){return norm(x.x)===norm(r.ans)});
+   h+=show?bar(j,U.length?seg(ok.length,U.length,'#2e9e5b','⭕ '+ok.length)+seg(U.length-ok.length,U.length,'#9aa0ab','✕ '+(U.length-ok.length)):'',ok.length+' / '+U.length):bar(j,U.length?'<i style="width:100%;background:'+COLORS[j]+'">'+U.length+'명 보냄</i>':'',U.length+'명')}
+  if(show){var win=L.filter(function(x){return norm(x.x)===norm(r.ans)});h+='<p class="who">'+(win.length?'맞힌 사람: '+win.map(function(x){return '<b>'+esc(x.nick)+'</b>('+esc(st.tname[x.t])+')'}).join(', '):'아직 맞힌 사람이 없어요.')+'</p>'}
+  else h+='<p class="note">정답을 공개하면 조별로 맞힌 수가 보여요. 공개하면 학생 답 받기는 마감돼요.</p>';
+ }
+ return h}
+function statOpen(){var o=document.getElementById('sov'),ids=Object.keys(R).sort(function(a,b){return R[a].at-R[b].at});
+ var t=[],i;for(i=0;i<st.teams;i++)t.push({who:{},bal:0,quiz:0,ok:0});
+ var balRows='';
+ ids.forEach(function(id){var r=R[id],L=r.A.map(parse).filter(function(a){return a.t>=0&&a.t<st.teams});
+  L.forEach(function(a){var T=t[a.t];T.who[a.nick]=1;if(r.v==='balance')T.bal++;else{T.quiz++;if(norm(a.x)===norm(r.ans))T.ok++}});
+  if(r.v==='balance'&&L.length){var cells='';for(var k=0;k<st.teams;k++){var M=L.filter(function(x){return x.t===k}),na=M.filter(function(x){return x.x==='0'}).length;cells+='<td>'+(M.length?na+' : '+(M.length-na):'-')+'</td>'}
+   balRows+='<tr><td>'+esc(r.q)+'</td>'+cells+'</tr>'}});
+ var th='<tr><th></th>'+t.map(function(_,k){return '<th style="color:'+COLORS[k]+'">'+esc(st.tname[k])+'</th>'}).join('')+'</tr>';
+ var h='<div class="row" style="justify-content:space-between"><h2 style="margin:0">📊 조별 통계</h2><div class="row"><button class="btn" data-a="sreset">기록 지우기</button><button class="btn pri" data-a="sclose">닫기</button></div></div>'+
+  '<table class="st">'+th+
+  '<tr><td>참여한 학생</td>'+t.map(function(x){return '<td><b>'+Object.keys(x.who).length+'</b>명</td>'}).join('')+'</tr>'+
+  '<tr><td>밸런스 선택 수</td>'+t.map(function(x){return '<td>'+x.bal+'</td>'}).join('')+'</tr>'+
+  '<tr><td>퀴즈 답 보낸 수</td>'+t.map(function(x){return '<td>'+x.quiz+'</td>'}).join('')+'</tr>'+
+  '<tr><td>퀴즈 맞힌 수</td>'+t.map(function(x){return '<td><b style="font-size:1.3rem">'+x.ok+'</b></td>'}).join('')+'</tr>'+
+  '<tr><td>정답률</td>'+t.map(function(x){return '<td>'+(x.quiz?Math.round(x.ok/x.quiz*100)+'%':'-')+'</td>'}).join('')+'</tr></table>'+
+  (balRows?'<h3 style="margin:8px 0 0">⚖️ 밸런스 게임 조별 선택 (A : B)</h3><table class="st">'+th+balRows+'</table>':'')+
+  '<p class="note">학생 폰 응답만 모은 통계예요. 팀 점수판(+1)과는 따로예요. 기록은 이 노트북에만 남아요.</p>';
+ document.getElementById('sbox').innerHTML=h;o.hidden=false}
 /* 학생 폰(play.html)에도 같은 문제·점수 (정답은 공개했을 때만, 몸으로 말해요 제시어는 안 보냄) */
 function stuPub(){if(!window.TM_SYNC||!TM_SYNC.on||HOST||V.indexOf('ans/')===0||!G[V]||!G[V].deck)return;var s=snap(),
  m={game:'🎲 아이스브레이킹 · '+({balance:'밸런스 게임',chosung:'초성 퀴즈',emoji:'이모지 퀴즈',body:'몸으로 말해요'}[s.V]||''),num:s.num+' / '+s.tot,cat:s.qcat||'',
-  score:s.tname.map(function(n,i){return {n:n,v:s.score[i],c:COLORS[i]}})};
+  score:s.tname.map(function(n,i){return {n:n,v:s.score[i],c:COLORS[i]}}),teams:s.tname.map(function(n,i){return {n:n,c:COLORS[i]}})};
+ if(s.V==='balance'||s.V==='chosung'||s.V==='emoji')m.ask={id:qid(),kind:s.V==='balance'?'ab':'text',open:s.V==='balance'||!s.show,ans:s.show?s.ans:''};
  if(s.V==='balance'){var ab=String(s.q).split('  VS  ');m.big='둘 중 하나만 고른다면?';m.opts=[{t:'🅰 '+ab[0]},{t:'🅱 '+(ab[1]||'')}];m.score=null}
  else if(s.V==='chosung'||s.V==='emoji'){m.big=s.q;m.huge=s.V==='chosung';if(s.show)m.reveal='정답: '+s.ans;if(s.T.run)m.end=s.T.end;else if(s.T.left!=null&&s.T.left<s.T.sec)m.clockText=Math.ceil(s.T.left)+'초'}
  else if(s.V==='body'){var tn=s.tname[s.sel];m.turn={n:tn+' 차례',c:COLORS[s.sel]};m.num='';m.cat='';
   if(s.B.run){m.big='🙆 몸으로 설명 중!';m.sub=tn+'이 맞혀요 · 지금 '+s.B.ok+'개';m.end=s.B.end}else if(s.B.over)m.big=tn+' '+s.B.ok+'개 맞힘!';else m.big=tn+' 준비 중'}
  TM_SYNC.pub('ice',m)}
-function pub(){stuPub();if(BC&&!HOST)try{BC.postMessage({s:snap()})}catch(e){}}
+function pub(){askNow();stuPub();if(BC&&!HOST)try{BC.postMessage({s:snap()})}catch(e){}}
 if(BC)BC.onmessage=function(e){var m=e.data||{};
  if(HOST){if(m.s){HS=m.s;HS.at=Date.now();hostRender()}return}
  if(m.hello)return pub();if(m.d){act(m.d);pub()}};
@@ -416,6 +480,9 @@ function act(d){
   case 'zero':if(confirm('모든 팀 점수를 0점으로 할까요?')){st.score=[0,0,0,0,0,0];save();render()}break;
   case 'next':next(V);resetQ();render();break;
   case 'key':keyOpen(V);break;
+  case 'stat':statOpen();break;
+  case 'sclose':document.getElementById('sov').hidden=true;break;
+  case 'sreset':if(confirm('학생 응답 기록(조별 통계)을 모두 지울까요?')){R={};rSave();statOpen();render()}break;
   case 'show':G[V].show=!G[V].show;if(G[V].show){clearInterval(T.iv);T.run=false}render();break;
   case 'qt':unlock();if(T.run){clearInterval(T.iv);T.run=false}else{var l=T.left==null||T.left<=0?T.sec:T.left;T.end=Date.now()+l*1000;T.left=l;T.run=true;T.iv=setInterval(qtick,200)}render();break;
   case 'bgo':unlock();B={run:true,end:Date.now()+st.bodySec*1000,ok:0,pass:0,hide:false,over:false};next('body');B.iv=setInterval(btick,200);render();break;
@@ -434,6 +501,7 @@ document.addEventListener('keydown',function(e){
  if(e.key==='ArrowRight'){e.preventDefault();next(V);resetQ();render()}
  else if(e.key===' '&&V!=='balance'){e.preventDefault();G[V].show=!G[V].show;render()}
 });
+document.getElementById('sov').addEventListener('click',function(e){var t=e.target.closest('button');if(t)act(t.dataset);else if(e.target.id==='sov')e.currentTarget.hidden=true});
 document.getElementById('kX').addEventListener('click',function(){document.getElementById('kov').hidden=true});
 if(HOST)hostInit();else render();
 })();
