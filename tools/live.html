@@ -87,6 +87,7 @@ button{cursor:pointer}
 .qlist div{display:grid;grid-template-columns:1fr auto;gap:6px;align-items:center;border:1px solid var(--line);border-radius:4px;padding:8px 10px;font-size:.92rem;background:var(--field)}
 .qlist div.on{border-color:var(--blue);background:var(--blue-soft)}
 .qlist small{color:var(--soft)}
+.qlist .mv{padding:1px 7px;font-size:.7rem;min-height:0;line-height:1.3}
 .emo{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
 .emo button{border:1px solid var(--line);background:var(--card);border-radius:6px;padding:8px 0;font-size:1.6rem;line-height:1.2;display:flex;flex-direction:column;align-items:center}
 .emo small{font-size:.7rem;color:var(--soft)}
@@ -220,7 +221,16 @@ const SAMPLE=[
 const RX={n:{},log:[]}; // 반응 수, 최근 반응 시각(헷갈림 알림용)
 const H={code:(lsGet('tm-code',{})||{}).code||'',pin:lsGet('live-host',{}).pin||'',qs:lsGet('live-qs',SAMPLE),cur:-1,ans:[],unsub:null,room:null,note:'',score:{},hide:{},view:'q',edit:null};
 Object.assign(H.score,lsGet('live-score-'+H.pin,{}));
-const saveQs=()=>lsSet('live-qs',H.qs);
+/* 내 수업함(teachers/{초대코드}.sets): 질문 묶음 여러 개를 이름 붙여 저장. 같은 초대코드면 어느 컴퓨터에서나 그대로, 다른 강사와는 따로.
+   서버에 못 닿으면 이 컴퓨터(localStorage)에만 저장 */
+H.sets=(()=>{const s=lsGet('live-sets',null);return Array.isArray(s)&&s.length?s:[{n:'내 질문',qs:H.qs}]})();
+H.si=Math.max(0,Math.min(+lsGet('live-si',0)||0,H.sets.length-1));H.qs=H.sets[H.si].qs;H.my=false;
+let myT=null;
+function mySave(){if(!H.my||!F||!H.code)return;clearTimeout(myT);myT=setTimeout(()=>{F.setDoc(F.doc(db,'teachers',H.code),{sets:H.sets,t:F.serverTimestamp()},{merge:true}).catch(()=>{})},600)}
+const saveQs=()=>{H.sets[H.si].qs=H.qs;lsSet('live-qs',H.qs);lsSet('live-sets',H.sets);lsSet('live-si',H.si);mySave()};
+async function myLoad(){if(!H.code||!F)return;try{const d=await F.getDoc(F.doc(db,'teachers',H.code)),x=d.exists()?d.data():{};
+  if(Array.isArray(x.sets)&&x.sets.length){H.sets=x.sets.map(s=>({n:String(s.n||'묶음'),qs:Array.isArray(s.qs)?s.qs:[]}));H.si=Math.min(H.si,H.sets.length-1);H.qs=H.sets[H.si].qs;H.cur=-1;H.setDone=0}
+  H.my=true;applySet();saveQs()}catch(e){H.my=false}}
 /* 수업별 질문 묶음: live.html?host&set=이름 → 목록에 없는 질문만 뒤에 추가 */
 const SETS={
   ulsan1103:[
@@ -243,9 +253,9 @@ const SETS={
 };
 /* 묶음 질문은 목록 끝에 묶음 순서대로(= 수업 순서). 이미 있던 같은 질문·옛 문구는 빼고 다시 넣음 */
 const OLDQ={ulsan1103:['요즘 내 머릿속을 차지한 한 단어']};
-if(HOST&&SETS[P.get('set')]){const k=P.get('set'),set=SETS[k],same=(x,y)=>x.type===y.type&&x.text===y.text,before=H.qs.length;
+function applySet(){if(HOST&&SETS[P.get('set')]&&!H.setDone){H.setDone=1;const k=P.get('set'),set=SETS[k],same=(x,y)=>x.type===y.type&&x.text===y.text,before=H.qs.length;
   const tail=H.qs.slice(-set.length);if(!(tail.length===set.length&&tail.every((y,i)=>same(set[i],y)))){
-    H.qs=H.qs.filter(y=>!set.some(x=>same(x,y))&&(OLDQ[k]||[]).indexOf(y.text)<0).concat(set.map(x=>JSON.parse(JSON.stringify(x))));saveQs();H.note='✔ 수업 질문 '+set.length+'개를 목록 끝에 수업 순서대로 넣었어요'}}
+    H.qs=H.qs.filter(y=>!set.some(x=>same(x,y))&&(OLDQ[k]||[]).indexOf(y.text)<0).concat(set.map(x=>JSON.parse(JSON.stringify(x))));saveQs();H.note='✔ 수업 질문 '+set.length+'개를 목록 끝에 수업 순서대로 넣었어요'}}}
 function hostRender(){
   document.body.classList.add('host');
   let h='<div class="top"><div class="brand"><small>위듀케이션 · 실시간 마인드맵 (강사 화면)</small></div><a href="./">← 도구 모음</a></div>';
@@ -262,7 +272,7 @@ function hostRender(){
   else if(!q)h+='<p class="qtext">휴대폰으로 QR을 찍고 들어오세요 📱</p><p class="count">오른쪽 목록에서 질문을 골라 "띄우기"를 누르면 시작돼요.</p>';
   else h+='<span class="soft">'+TYPES[q.type]+'</span><p class="qtext">'+esc(q.text)+'</p><p class="count">응답 <b>'+H.ans.length+'</b>명 · '+(live&&live.open?'🟢 받는 중':'⏸ 마감')+'</p>'+resultHtml(q,live);
   h+='</div><div style="display:flex;flex-direction:column;gap:16px"><div class="card join"><span class="soft">방 번호</span><div class="num">'+H.pin+'</div><div id="qr"></div><span class="soft" style="font-size:.85rem;word-break:break-all">'+esc(url.replace(/^https?:\/\//,''))+'</span></div>';
-  h+='<div class="card"><h3>수업 반응</h3><div id="rxbox">'+rxHtml()+'</div><button class="btn sm" data-a="rx0" style="align-self:flex-start">0으로</button></div><div class="card"><div class="top"><h3>질문 목록</h3><button class="btn sm" data-a="new">+ 추가</button></div><div class="qlist">'+H.qs.map((x,i)=>'<div class="'+(i===H.cur?'on':'')+'"><span><small>'+TYPES[x.type]+'</small><br>'+esc(x.text)+'</span><span class="row"><button class="btn sm" data-show="'+i+'">띄우기</button><button class="btn sm" data-ed="'+i+'">✎</button></span></div>').join('')+'</div></div></div></div>';
+  h+='<div class="card"><h3>수업 반응</h3><div id="rxbox">'+rxHtml()+'</div><button class="btn sm" data-a="rx0" style="align-self:flex-start">0으로</button></div><div class="card"><div class="top"><h3>질문 목록</h3><button class="btn sm" data-a="new">+ 추가</button></div>'+'<div class="row" style="gap:6px;flex-wrap:wrap;align-items:center"><label for="setsel" class="soft" style="font-size:.85rem">묶음</label><select id="setsel" style="flex:1;min-width:8em">'+H.sets.map((s,i)=>'<option value="'+i+'"'+(i===H.si?' selected':'')+'>'+esc(s.n)+' ('+s.qs.length+')</option>').join('')+'</select><button class="btn sm" data-a="snew">+ 새 묶음</button><button class="btn sm" data-a="sren">이름</button><button class="btn sm" data-a="sdel">삭제</button></div>'+'<span class="note" style="font-size:.8rem">'+(H.my?'☁️ 내 수업함에 저장돼요 · 같은 초대코드면 다른 컴퓨터에서도 그대로':'💻 이 컴퓨터에만 저장돼요 · 초대코드로 방을 만들면 내 수업함에 저장돼요')+'</span>'+'<div class="qlist">'+H.qs.map((x,i)=>'<div class="'+(i===H.cur?'on':'')+'"><span><small>'+(i+1)+'. '+TYPES[x.type]+'</small><br>'+esc(x.text)+'</span><span class="row" style="gap:4px"><span style="display:flex;flex-direction:column;gap:2px"><button class="btn sm mv" data-up="'+i+'" aria-label="위로"'+(i?'':' disabled')+'>▲</button><button class="btn sm mv" data-dn="'+i+'" aria-label="아래로"'+(i<H.qs.length-1?'':' disabled')+'>▼</button></span><button class="btn sm" data-show="'+i+'">띄우기</button><button class="btn sm" data-ed="'+i+'">✎</button></span></div>').join('')+(H.qs.length?'':'<p class="note">이 묶음엔 아직 질문이 없어요. + 추가를 눌러요.</p>')+'</div></div></div></div>';
   if(q&&H.view==='q'){
     h+='<div class="ctrl row">'+(live&&live.open?'<button class="btn pri" data-a="close">⏸ 마감</button>':'<button class="btn" data-a="open">▶ 다시 받기</button>')+
       (q.type==='quiz'&&!(live&&live.reveal)?'<button class="btn pri" data-a="reveal">정답 공개</button>':'')+
@@ -338,7 +348,7 @@ function readEdit(){
 async function mk(){
   H.code=(document.getElementById('code').value||'').trim().toUpperCase();H.note='';
   try{const r=await call('liveRoom',{code:H.code});H.pin=r.pin;H.score={};lsSet('live-host',{pin:H.pin});
-    const c=lsGet('tm-code',{})||{};if(c.code!==H.code)lsSet('tm-code',{code:H.code});watchRoom()}
+    const c=lsGet('tm-code',{})||{};if(c.code!==H.code)lsSet('tm-code',{code:H.code});watchRoom();await myLoad()}
   catch(e){H.note=msg(e)}
   hostRender();
 }
@@ -396,10 +406,14 @@ function hostClick(e){
   const b=e.target.closest('button,[data-hw]');if(!b)return;const d=b.dataset;
   if(d.a==='mk')return mk();
   if(d.show!=null)return show(+d.show);
+  if(d.up!=null||d.dn!=null){const i=+(d.up!=null?d.up:d.dn),j=d.up!=null?i-1:i+1;if(j<0||j>=H.qs.length)return;const t=H.qs[i];H.qs[i]=H.qs[j];H.qs[j]=t;if(H.cur===i)H.cur=j;else if(H.cur===j)H.cur=i;saveQs();return hostRender()}
   if(d.ed!=null){H.edit=Object.assign({i:+d.ed},JSON.parse(JSON.stringify(H.qs[+d.ed])));H.view='edit';return hostRender()}
   if(d.hw){H.hide[d.hw]=1;return hostRender()}
   if(d.ht){H.hide[d.ht]=1;return hostRender()}
   const a=d.a;
+  if(a==='snew'){const n=(prompt('새 묶음 이름 (예: 울산 건강관리, 자소서 특강)','')||'').trim().slice(0,30);if(!n)return;if(H.sets.length>=30){H.note='묶음은 30개까지예요';return hostRender()}H.sets.push({n,qs:[]});H.si=H.sets.length-1;H.qs=H.sets[H.si].qs;H.cur=-1;saveQs();return hostRender()}
+  if(a==='sren'){const n=(prompt('묶음 이름',H.sets[H.si].n)||'').trim().slice(0,30);if(!n)return;H.sets[H.si].n=n;saveQs();return hostRender()}
+  if(a==='sdel'){if(H.sets.length<2){H.note='묶음이 하나뿐이라 지울 수 없어요';return hostRender()}if(!confirm('「'+H.sets[H.si].n+'」 묶음(질문 '+H.qs.length+'개)을 지울까요?'))return;H.sets.splice(H.si,1);H.si=0;H.qs=H.sets[0].qs;H.cur=-1;saveQs();return hostRender()}
   if(a==='new'){H.edit={i:-1,type:'poll',text:'',opts:['',''],correct:0};H.view='edit'}
   else if(a==='save'){readEdit();const e=H.edit,ok=e.text&&((e.type!=='poll'&&e.type!=='quiz'&&e.type!=='map')||e.opts.length>=2);
     if(!ok){H.note='질문과 보기(2개 이상)를 넣어 주세요';return hostRender()}
@@ -418,7 +432,8 @@ function hostClick(e){
   else if(a==='end'){if(!confirm('방을 닫을까요? 학생 화면도 끝나요.'))return;F.updateDoc(F.doc(db,'rooms',H.pin),{q:null,closed:true}).catch(()=>{});H.pin='';H.cur=-1;lsSet('live-host',{});if(H.unsub)H.unsub();if(rxUnsub){rxUnsub();rxUnsub=null}}
   hostRender();
 }
-app.addEventListener('change',e=>{if(e.target.id==='et'&&H.edit){readEdit();H.edit.type=e.target.value;if((H.edit.type==='poll'||H.edit.type==='quiz'||H.edit.type==='map')&&!(H.edit.opts||[]).length)H.edit.opts=['',''];hostRender()}});
+app.addEventListener('change',e=>{if(e.target.id==='setsel'){H.si=+e.target.value;H.qs=H.sets[H.si].qs;H.cur=-1;H.view='q';saveQs();return hostRender()}
+  if(e.target.id==='et'&&H.edit){readEdit();H.edit.type=e.target.value;if((H.edit.type==='poll'||H.edit.type==='quiz'||H.edit.type==='map')&&!(H.edit.opts||[]).length)H.edit.opts=['',''];hostRender()}});
 
 /* ================= 시작 ================= */
 app.addEventListener('click',e=>{
@@ -435,7 +450,7 @@ app.addEventListener('click',e=>{
 app.addEventListener('input',e=>{if(e.target.id==='txt')ST.draft=e.target.value});
 app.addEventListener('keydown',e=>{if(!HOST&&e.target.id==='txt'&&e.key==='Enter'){const q=ST.room&&ST.room.q;if(q&&q.type==='map')mapAdd();else{const t=e.target.value.trim();if(t){ST.draft=t;send(t)}}}});
 boot().then(()=>{
-  if(HOST){if(H.pin)watchRoom();hostRender()}
+  if(HOST){if(H.pin)watchRoom();applySet();hostRender();myLoad().then(hostRender)}
   else{ // 수업 방에 들어와 있는 학생(강사가 화면을 넘겨줌)은 번호·이름 다시 안 넣고 바로 참여
     const rs=window.TM_ROOM&&TM_ROOM.get();
     if(rs&&(!ST.pin||ST.pin===rs.pin)){ST.pin=rs.pin;ST.nick=rs.nick;join()}else stuRender()}

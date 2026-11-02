@@ -117,8 +117,16 @@ function teamsForm(){
    (TM.length?'<div class="tnames">'+TM.map((n,i)=>'<input data-ti="'+i+'" value="'+esc(n)+'" maxlength="12" aria-label="'+(i+1)+'번째 조 이름">').join('')+'</div><span class="note">칸을 눌러 조 이름을 바꿀 수 있어요. 예: 열정조, 1모둠</span>':'')+'</div>'}
 function readTM(){document.querySelectorAll('[data-ti]').forEach(x=>{const v=x.value.trim().slice(0,12);TM[+x.dataset.ti]=v||((+x.dataset.ti+1)+'조')});
   const seen={};TM=TM.map((n,i)=>seen[n]?n+'-'+(i+1):(seen[n]=1,n))}
-function saveTeams(){readTM();lsSet('tm-teams',TM);return F.updateDoc(F.doc(db,'rooms',S.pin),{teams:TM})}
+function saveTeams(){readTM();lsSet('tm-teams',TM);mySave({teams:TM});return F.updateDoc(F.doc(db,'rooms',S.pin),{teams:TM})}
 const S={name:lsGet('tm-teacher',''),code:(lsGet('tm-code',{})||{}).code||'',pin:'',exp:0,note:'',busy:false};
+/* 내 수업함(teachers/{초대코드}): 강사마다 자기 초대코드로 저장 → 같은 코드면 어느 컴퓨터에서나 그대로, 다른 강사(다른 코드)와는 섞이지 않음.
+   여기엔 ⭐ 자주 쓰는 활동·조 이름, 실시간 마인드맵(live.html)엔 질문 묶음을 저장 */
+let MY=null;
+async function myLoad(){if(!S.code||!F)return;try{const d=await F.getDoc(F.doc(db,'teachers',S.code));MY=d.exists()?d.data():{};
+  if(Array.isArray(MY.teams)&&!S.pin&&(MY.teams.length===0||MY.teams.length>=2))TM=MY.teams.slice(0,8);
+  if(!S.name&&MY.name)S.name=MY.name;render()}catch(e){MY=null}}
+function mySave(p){if(!MY||!S.code||!F)return;Object.assign(MY,p);F.setDoc(F.doc(db,'teachers',S.code),Object.assign({},p,{t:F.serverTimestamp()}),{merge:true}).catch(()=>{})}
+const FAV=()=>(MY&&Array.isArray(MY.fav))?MY.fav:[];
 /* 수업 활동 목록(학생 첫 화면과 같은 묶음). 누르면 방에 들어온 학생 화면이 따라오고, 강사 노트북엔 같은 화면이 새 탭으로 열림
    q: 학생 도구(학생 화면 전환 + 강사 미리보기 탭) · live: 마인드맵(진행 화면 새 탭 + 학생은 답하기 화면) · b: 빔으로 하는 게임(게임 화면 새 탭 + 학생 폰은 play.html로 같은 문제·점수를 실시간으로) · pick: 검사 고르기 */
 const GROUPS=[
@@ -141,7 +149,9 @@ const GROUPS=[
   ['q','ai.html','🤖 AI 수업 도구 5종','프롬프트 연습장 · AI 거짓말 찾기 등']]]
 ];
 function item(a){
-  const [k,to,t,d]=a,in_='<b>'+t+'</b><span>'+d+'</span>',st=' style="text-align:left;font:inherit"';
+  const [k,to,t,d]=a,st=' style="text-align:left;font:inherit"';
+  if(S.favEdit){const key=to||'pick',on=FAV().indexOf(key)>=0;return '<button class="g" data-fv="'+esc(key)+'" aria-pressed="'+on+'"'+st+(on?' data-on="1"':'')+'><b>'+(on?'⭐ ':'☆ ')+t+'</b><span>'+(on?'자주 쓰는 것에 들어 있어요 · 누르면 빼요':'누르면 자주 쓰는 것에 넣어요')+'</span></button>'}
+  const in_='<b>'+t+'</b><span>'+d+'</span>';
   if(k==='q')return '<button class="g" data-q="'+to+'" data-qn="'+esc(t)+'"'+st+'>'+in_+'</button>';
   if(k==='pick')return '<button class="g" data-pick="1" aria-expanded="'+!!S.pick+'"'+st+(S.pick?' data-on="1"':'')+'><b>'+t+(S.pick?' ▲':' ▼')+'</b><span>'+d+'</span></button>';
   return '<a class="g" href="'+to+'" target="_blank" rel="noopener" data-live="'+to+'" data-qn="'+esc(t)+'">'+in_+'</a>';
@@ -168,6 +178,8 @@ function render(){
      '<div class="chips" role="group" aria-label="누르면"><button data-mode="push" aria-pressed="'+(S.mode!=='qr')+'">📲 학생 화면 바로 바꾸기</button><button data-mode="qr" aria-pressed="'+(S.mode==='qr')+'">🔳 활동 QR 띄우기 (늦게 온 학생)</button>'+
      '<button data-q="home" data-qn="🏠 첫 화면">🏠 학생 화면 첫 화면으로</button></div>'+
      (S.goName?'<p class="note">지금 학생 화면: <b>'+esc(S.goName)+'</b></p>':'')+
+     (MY?'<div class="row" style="justify-content:space-between;align-items:center"><span class="note">☁️ <b>'+esc(S.name||'')+' 선생님의 수업함</b> · 초대코드에 저장돼요(다른 컴퓨터에서도 그대로)</span><button class="btn" data-a="fav">'+(S.favEdit?'✔ 다 골랐어요':'⭐ 자주 쓰는 것 고르기')+'</button></div>':'')+
+     (!S.favEdit&&FAV().length?(()=>{const all=[].concat.apply([],GROUPS.map(g=>g[1])),L=FAV().map(k=>all.filter(a=>(a[1]||'pick')===k)[0]).filter(Boolean);return L.length?'<span class="glabel">⭐ 자주 쓰는 것</span><div class="list">'+L.map(item).join('')+'</div>':''})():'')+
      GROUPS.map(g=>'<span class="glabel">'+g[0]+'</span><div class="list">'+g[1].map(item).join('')+'</div>'+
        (g[1][0][0]==='pick'&&S.pick?'<div id="pick" style="border:2px solid var(--blue);border-radius:6px;padding:14px;display:flex;flex-direction:column;gap:10px"><b>🧭 어떤 검사를 할까요?</b><div class="grid">'+TST.map(t=>'<button class="g" data-q="test.html?t='+t[0]+'" data-qn="🧭 '+t[1]+' 검사" style="text-align:left;font:inherit"><b>'+t[1]+'</b></button>').join('')+
        '</div><button class="btn" data-q="test.html" data-qn="🧭 검사 목록(학생이 고르기)">학생이 직접 고르게 하기 (검사 목록)</button></div>':'')).join('')+
@@ -212,7 +224,8 @@ async function make(){
   try{const r=await call('liveRoom',{code:S.code});S.pin=r.pin;S.exp=Date.now()+8*3600e3;
     lsSet('tm-teams',TM);S.teams=TM.slice();await F.updateDoc(F.doc(db,'rooms',S.pin),Object.assign({ak:S.code},TM.length?{teams:TM}:{})).catch(()=>{S.note='조 이름을 저장하지 못했어요. 아래 [조 바꾸기]에서 다시 저장해 주세요'});
     lsSet('live-host',{pin:S.pin});lsSet('tm-teacher',S.name);lsSet('tm-room',{pin:S.pin,exp:S.exp});
-    const c=lsGet('tm-code',{})||{};if(c.code!==S.code)lsSet('tm-code',{code:S.code});live()}
+    const c=lsGet('tm-code',{})||{};if(c.code!==S.code)lsSet('tm-code',{code:S.code});live();
+    await myLoad();mySave({teams:TM,name:S.name})}
   catch(e){S.note=msg(e)}
   S.busy=false;render();
 }
@@ -238,7 +251,8 @@ function qr(to,name){const o=document.getElementById('qrov'),u=to?(to.charAt(0)=
   document.getElementById('qrH').textContent=to?name+' · 찍고 바로 시작해요':'📱 휴대폰 카메라로 찍고 들어오세요';
   document.getElementById('qrP').textContent='방 번호 '+S.pin;document.getElementById('qrU').textContent=u.replace('https://','');b.innerHTML='';
   if(window.QRCode)new QRCode(b,{text:u,width:600,height:600,correctLevel:QRCode.CorrectLevel.M});else b.textContent='QR을 불러오지 못했어요. 위 주소를 칠판에 적어 주세요.'}
-app.addEventListener('click',e=>{const t=e.target.closest('[data-a],[data-w],[data-q],[data-mode],[data-pick],[data-live],[data-tn]');if(!t)return;
+app.addEventListener('click',e=>{const t=e.target.closest('[data-fv],[data-a],[data-w],[data-q],[data-mode],[data-pick],[data-live],[data-tn]');if(!t)return;
+  if(t.dataset.fv!=null){e.preventDefault();const k=t.dataset.fv,f=FAV().slice(),i=f.indexOf(k);if(i>=0)f.splice(i,1);else f.push(k);mySave({fav:f});render();return}
   if(t.dataset.mode){S.mode=t.dataset.mode;render();return}
   if(t.dataset.tn!=null){const w=document.getElementById('who'),c=document.getElementById('code');if(w)S.name=w.value;if(c)S.code=c.value;readTM();const n=+t.dataset.tn;TM=n?Array.from({length:n},(_,i)=>TM[i]||(i+1)+'조'):[];render();return}
   if(t.dataset.pick){S.pick=!S.pick;render();if(S.pick)document.getElementById('pick').scrollIntoView({behavior:'smooth',block:'center'});return}
@@ -248,6 +262,7 @@ app.addEventListener('click',e=>{const t=e.target.closest('[data-a],[data-w],[da
   if(t.dataset.q){if(S.mode==='qr'&&t.dataset.q!=='home')qr(t.dataset.q,t.dataset.qn);else{if(t.dataset.q.indexOf('test.html')===0)S.pick=false;push(t.dataset.q,t.dataset.qn);view(t.dataset.q)}return}
   if(t.dataset.w){openW[t.dataset.w]=!openW[t.dataset.w];render();return}
   const a=t.dataset.a;
+  if(a==='fav'){S.favEdit=!S.favEdit;render();return}
   if(a==='tedit'){S.tedit=!S.tedit;if(S.tedit)TM=(S.teams&&S.teams.length?S.teams:TM).slice();render();return}
   if(a==='tsave'){saveTeams().then(()=>{S.teams=TM.slice();S.tedit=false;render();flash('✔ 조를 저장했어요. 새로 들어오는 학생은 이 조에서 골라요')},e=>flash('저장하지 못했어요: '+msg(e),true));return}
   if(a==='make')make();else if(a==='qr')qr();else if(a==='csv')csv();
@@ -255,6 +270,6 @@ app.addEventListener('click',e=>{const t=e.target.closest('[data-a],[data-w],[da
     F.updateDoc(F.doc(db,'rooms',S.pin),{closed:true,q:null}).catch(()=>{});clearInterval(hbT);if(wUnsub)wUnsub();W=[];S.pin='';lsSet('live-host',{});lsSet('tm-room',{});render()}});
 document.getElementById('qrX').onclick=()=>document.getElementById('qrov').hidden=true;
 document.addEventListener('keydown',e=>{if(e.key==='Escape')document.getElementById('qrov').hidden=true});
-boot().then(resume).then(render).catch(e=>{app.innerHTML='<p class="bad">연결이 안 돼요. 새로 고침해 주세요. ('+esc(e.message)+')</p>'});
+boot().then(resume).then(myLoad).then(render).catch(e=>{app.innerHTML='<p class="bad">연결이 안 돼요. 새로 고침해 주세요. ('+esc(e.message)+')</p>'});
 </script>
 </body></html>
