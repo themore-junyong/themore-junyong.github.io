@@ -174,7 +174,8 @@ function react(e){
   const f=document.createElement('span');f.className='float';f.textContent=e;f.style.left=(20+Math.random()*60)+'%';document.body.appendChild(f);setTimeout(()=>f.remove(),2700);
 }
 async function join(){
-  ST.pin=(document.getElementById('pin').value||'').replace(/\D/g,'');ST.nick=(document.getElementById('nick').value||'').trim().slice(0,12);
+  const pi=document.getElementById('pin'),ni=document.getElementById('nick');
+  if(pi)ST.pin=(pi.value||'').replace(/\D/g,'');if(ni)ST.nick=(ni.value||'').trim().slice(0,12);
   lsSet('live-nick',ST.nick);ST.note='';
   if(ST.pin.length!==4){ST.note='방 번호 4자리를 넣어 주세요';return stuRender()}
   try{
@@ -403,7 +404,9 @@ app.addEventListener('input',e=>{if(e.target.id==='txt')ST.draft=e.target.value}
 app.addEventListener('keydown',e=>{if(!HOST&&e.target.id==='txt'&&e.key==='Enter'){const q=ST.room&&ST.room.q;if(q&&q.type==='map')mapAdd();else{const t=e.target.value.trim();if(t){ST.draft=t;send(t)}}}});
 boot().then(()=>{
   if(HOST){if(H.pin)watchRoom();hostRender()}
-  else{if(ST.pin&&ST.nick!==undefined&&P.get('r'))stuRender();stuRender()}
+  else{ // 수업 방에 들어와 있는 학생(강사가 화면을 넘겨줌)은 번호·이름 다시 안 넣고 바로 참여
+    const rs=window.TM_ROOM&&TM_ROOM.get();
+    if(rs&&(!ST.pin||ST.pin===rs.pin)){ST.pin=rs.pin;ST.nick=rs.nick;join()}else stuRender()}
 }).catch(e=>{app.innerHTML='<p class="note bad">연결이 안 돼요. 새로 고침해 주세요. ('+esc(e.message)+')</p>'});
 </script>
 </body></html>

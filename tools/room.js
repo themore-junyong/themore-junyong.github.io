@@ -55,7 +55,8 @@
   /* 강사가 '학생 화면 바꾸기'를 누르면 방 문서 go={to,t}가 바뀜 → 들어와 있는 학생 화면이 그 활동으로 넘어감(같은 지시는 한 번만) */
   function here(){var f=location.pathname.split('/').pop()||'';if(f==='index.html')f='';
     var q=location.search.replace(/([?&])(r|need|go)=[^&]*/g,'$1').replace(/[?&]+$/,'').replace(/\?&+/,'?');
-    return f===''?(location.hash==='#jaso'?'#jaso':'home'):f+q}
+    if(f===''){var v=new URLSearchParams(location.search).get('v');return location.hash==='#jaso'?'#jaso':v?'index.html?v='+v:'home'}
+    return f+q}
   function follow(r,room){
     var g=room&&room.go;if(!g||!g.to||!g.t||!g.t.toMillis)return;
     var key=r.pin+':'+g.t.toMillis(),seen='';try{seen=localStorage.getItem('tm-room-go')||''}catch(e){}
