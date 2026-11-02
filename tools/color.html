@@ -101,6 +101,7 @@ dl.dress dd{margin:0}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head><body>
+<script src="room.js" data-guard></script>
 <div class="wrap" id="app"></div>
 <script>
 (function(){
@@ -423,7 +424,7 @@ function go(k){
   else if(k==='next'){
     if(S.step===0){S.step=1;camOn()}
     else if(S.step===2)S.step=3;
-    else if(S.step===6){res=result();try{localStorage.setItem('color-v1',JSON.stringify(res))}catch(e){}S.step='report'}
+    else if(S.step===6){res=result();try{localStorage.setItem('color-v1',JSON.stringify(res))}catch(e){}S.step='report';if(window.TM_ROOM)TM_ROOM.send('color','퍼스널컬러 · '+res.type+' ('+res.conf+'%)','진단: '+res.type+'\n일치도 '+res.conf+'%\n베스트: '+T[res.type].best.map(function(c){return c[0]}).join(', ')+'\n고른 천:\n'+res.log.join('\n'))}
   }
   else if(k==='again'){res=null;try{localStorage.removeItem('color-v1')}catch(e){}S.step=-1;PH=null}
   else if(k==='print'){window.print();return}

@@ -57,6 +57,7 @@ details summary{cursor:pointer;font-weight:700}
 @media print{.btns,.top a{display:none}}
 </style>
 </head><body>
+<script src="room.js" data-guard></script>
 <div class="wrap" id="app"></div>
 <script type="module" src="ai.js"></script>
 <script>
@@ -130,7 +131,7 @@ function parse(t){var q=/질문\s*[:：]\s*([\s\S]+)/.exec(t),f=/피드백\s*[:�
 function call(mode){busy=true;note='';render();
   return AI.lab({code:CODE.code,mode:mode,job:S.job,company:S.company,kind:S.kind,memo:S.memo,hist:S.hist.map(function(x){return{q:x.q,a:x.a||''}})}).finally(function(){busy=false})}
 function finish(){S.hist=S.hist.filter(function(x){return (x.a||'').trim()});if(!S.hist.length){note='답을 하나 이상 해 주세요';render();return}
-  call('ivend').then(function(r){S.end=r.text;S.stage='end';save()},function(e){note=e.message}).then(function(){render();window.scrollTo(0,0)})}
+  call('ivend').then(function(r){S.end=r.text;S.stage='end';save();if(window.TM_ROOM)TM_ROOM.send('interview','AI 모의면접 · '+S.job+(S.company?' · '+S.company:''),S.end+'\n\n'+S.hist.map(function(x,i){return (i+1)+'. '+x.q+'\n→ '+(x.a||'')}).join('\n'))},function(e){note=e.message}).then(function(){render();window.scrollTo(0,0)})}
 function mic(){
   if(talking&&rec){rec.stop();return}
   var a=document.getElementById('ans'),base=a.value?a.value.replace(/\s*$/,' '):'';

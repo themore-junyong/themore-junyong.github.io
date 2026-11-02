@@ -90,20 +90,16 @@ pre.out{white-space:pre-wrap;word-break:keep-all;overflow-wrap:anywhere;backgrou
 .bar .in{max-width:760px;margin:0 auto;display:flex;gap:8px;justify-content:space-between}
 .bar .btn{flex:1;max-width:220px;padding:12px}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+.room{border:2px solid var(--blue);border-radius:6px;padding:16px;display:flex;flex-direction:column;gap:10px;background:var(--card)}
+.room .pin{font-size:2.2rem;font-weight:900;letter-spacing:.1em;color:var(--blue)}
+.room input{font-size:1.4rem;width:120px;text-align:center;letter-spacing:.2em}
 .hero .qrb{align-self:flex-start;background:var(--blue-ink);color:var(--blue);font-weight:900;border-radius:4px;padding:8px 16px;border:0;font:inherit;font-weight:900;cursor:pointer}
-#qrov{position:fixed;inset:0;z-index:50;background:#fff;color:#222;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:16px;text-align:center}
-#qrov[hidden]{display:none}
-#qrov h2{margin:0;font-size:clamp(1.4rem,4vw,2.6rem);font-weight:900}
-#qrbox{width:min(70vh,88vw);height:min(70vh,88vw)}#qrbox img,#qrbox canvas{width:100%!important;height:100%!important;image-rendering:pixelated}
-#qrov .u{font-size:clamp(1rem,2.6vw,1.6rem);font-weight:700;word-break:break-all}
-#qrov .x{position:absolute;top:12px;right:16px;font-size:2rem;background:none;border:0;cursor:pointer;color:#222}
-#qrov label{font-size:.95rem;color:#555}
 </style>
 </head><body>
 <div class="wrap" id="app"></div>
-<div id="qrov" hidden role="dialog" aria-label="입장 QR"><button class="x" id="qrX" aria-label="닫기">✕</button><h2>📱 휴대폰 카메라로 찍고 들어오세요</h2><div id="qrbox"></div><div class="u" id="qrU"></div><label id="qrL" hidden><input type="checkbox" id="qrC"> 초대코드도 같이 넣기 (찍으면 코드가 자동 입력돼요)</label></div>
 <div class="bar" id="bar" hidden><div class="in"><button class="btn" id="prev">← 이전</button><button class="btn pri" id="next">다음 →</button></div></div>
 
+<script src="room.js"></script>
 <script>
 (function(){
 var h=(location.hash||'').slice(1), m={safety:'safety.html',river:'river.html',intro:'intro.html',color:'color.html'};
@@ -184,11 +180,36 @@ var STEPS=[
  {t:'AI 초안 만들기',why:'',body:function(){return resultView()}}
 ];
 
+/* 수업 방: 강사가 teacher.html에서 방을 만들어야 학생이 쓸 수 있음. 선생님 QR(?r=번호)이면 번호가 미리 채워짐 (공통 스크립트 room.js) */
+var QPIN=(new URLSearchParams(location.search).get('r')||'').replace(/\D/g,'').slice(0,4), RNOTE='', RBUSY=false;
+function joined(){return window.TM_ROOM&&TM_ROOM.get()}
+function lastNick(){try{return (JSON.parse(localStorage.getItem('tm-room-s-last')||'null')||{}).nick||''}catch(e){return ''}}
+function roomCard(){var r=joined();
+  return '<div class="room"><span class="soft">들어온 수업 방</span><span class="pin">'+r.pin+'</span><span>'+esc(r.nick)+' 님, 반가워요. 여기서 하는 자소서·검사·면접 결과는 <b>이 방 선생님 화면</b>으로 보낼 수 있어요.</span>'+
+   '<a class="btn pri" style="text-align:center;text-decoration:none" href="live.html?r='+r.pin+'">📊 선생님 실시간 활동 참여하기 →</a><a href="#" id="roomOut" class="note">다른 방으로 들어가기</a></div>'}
+function gate(){
+  step=-1; bar.hidden=true;
+  app.innerHTML='<header class="brand"><small>위듀케이션</small><h1>위듀케이션 취업 연구소</h1><p class="soft">자소서 · 면접 · 나를 알아보는 검사 · 수업 도구</p></header>'+
+   '<div class="hero"><b>반가워요! 👋</b><span>선생님이 연 <strong>수업 방</strong>에 들어오면 오늘 수업 도구를 쓸 수 있어요.</span></div>'+
+   '<div class="room"><b>수업 방 들어가기</b><span class="soft">선생님 화면의 QR을 찍었다면 방 번호가 이미 들어가 있어요.</span>'+
+   '<label class="soft" for="roomIn">방 번호 4자리</label><input id="roomIn" inputmode="numeric" maxlength="4" placeholder="0000" value="'+esc(QPIN)+'">'+
+   '<label class="soft" for="roomNick">이름 (또는 번호)</label><input id="roomNick" maxlength="12" placeholder="예: 3번 홍길동" value="'+esc(lastNick())+'" style="width:100%;letter-spacing:0;text-align:left;font-size:1.1rem">'+
+   '<button class="btn pri" id="roomGo"'+(RBUSY?' disabled':'')+'>'+(RBUSY?'확인 중…':'들어가기')+'</button>'+(RNOTE?'<p class="note" style="color:#c8432f">'+esc(RNOTE)+'</p>':'')+'</div>'+
+   '<a href="teacher.html" class="note">👩‍🏫 선생님이세요? 강사 입구(방 만들기) →</a>';
+}
+document.addEventListener('click',function(e){
+  if(e.target.closest('#roomGo')){RNOTE='';RBUSY=true;var pin=document.getElementById('roomIn').value,nick=document.getElementById('roomNick').value;gate();
+    document.getElementById('roomIn').value=pin;document.getElementById('roomNick').value=nick;
+    TM_ROOM.join(pin,nick).then(function(r){RBUSY=false;try{localStorage.setItem('tm-room-s-last',JSON.stringify({nick:r.nick}))}catch(x){}TM_ROOM.watch();home()},
+      function(err){RBUSY=false;RNOTE=err.message||'연결이 안 돼요. 다시 눌러 주세요';gate();document.getElementById('roomIn').value=pin;document.getElementById('roomNick').value=nick})}
+  else if(e.target.closest('#roomOut')){e.preventDefault();TM_ROOM.leave();QPIN='';home()}
+});
 function home(){
+  if(!joined()){gate();return}
   step=-1; bar.hidden=true;
   var started=D.company||D.job||D.exps[0].title;
   app.innerHTML='<header class="brand"><small>위듀케이션</small><h1>위듀케이션 취업 연구소</h1><p class="soft">자소서 · 면접 · 나를 알아보는 검사 · 수업 도구</p></header>'+
-   '<div class="hero"><b>반가워요! 👋</b><span>위듀케이션 취업 연구소는 선생님과 함께 <strong>나를 알고, 서류를 쓰고, 면접을 연습하는</strong> 곳이에요. 아래에서 오늘 수업에 쓰는 도구를 골라 시작하세요.</span><span style="font-size:.88rem">AI 도구는 선생님이 알려 준 초대코드가 필요해요. 내가 쓴 내용은 이 휴대폰에만 저장돼요.</span><button class="qrb" id="qrOpen" type="button">📱 선생님용 · 빔에 QR 크게 띄우기</button></div>'+
+   '<div class="hero"><b>반가워요! 👋</b><span>위듀케이션 취업 연구소는 선생님과 함께 <strong>나를 알고, 서류를 쓰고, 면접을 연습하는</strong> 곳이에요. 아래에서 오늘 수업에 쓰는 도구를 골라 시작하세요.</span><span style="font-size:.88rem">AI 도구는 선생님이 알려 준 초대코드가 필요해요. 내가 쓴 내용은 이 휴대폰에만 저장돼요.</span></div>'+roomCard()+
    '<span class="label">자소서 · 면접 준비</span><div class="list">'+
    '<a class="g" href="#jaso" id="startJaso"><b>내 자소서 만들기 '+(started?'<small style="color:var(--blue)">· 이어서 쓰기</small>':'')+'</b><span>8단계 질문에 답하면 성장과정 · 장단점 · 직무경험 · 지원동기 초안이 나와요 (AI 초안을 만들 때만 서버를 거치고, 서버에 남지 않아요)</span></a>'+
    '<a class="g" href="interview.html" id="g-iv"><b>AI 모의면접</b><span>AI 면접관이 질문 → 피드백 → 꼬리질문 · 말로 답하기 · 끝나면 100점 채점표와 고쳐 말하기 예시</span></a>'+
@@ -296,7 +317,7 @@ function resultView(){
    '<pre class="out" id="promptBox" hidden></pre></div>'+
    '<div class="f"><span class="lb">AI 초안</span><span class="hint">방법 ②로 받은 답도 여기에 붙여넣어 두면 이 휴대폰에 저장돼요.</span>'+
    '<textarea id="draft" data-k="draft" style="min-height:260px" placeholder="여기에 초안이 나와요">'+esc(D.draft)+'</textarea><span class="count" data-c="draft">'+(D.draft||'').length+'자</span>'+
-   '<p class="note" id="genNote" role="status"></p><div class="btns"><button class="btn" id="copyDraft">초안 복사</button></div></div>'+
+   '<p class="note" id="genNote" role="status"></p><div class="btns"><button class="btn" id="copyDraft">초안 복사</button><button class="btn" id="sendDraft">📤 선생님께 보내기</button></div></div>'+
    '<div class="f"><span class="lb">고쳐 쓰기 체크 (제출 전 꼭!)</span><ul class="checks">'+
    ['내 말투로 바꿨다 (소리 내 읽어서 어색한 문장 고치기)','[추가 필요] 칸을 모두 채웠다','숫자·자격증·활동이 전부 사실이다','실제 회사 문항과 글자 수에 맞게 골라 다시 짰다','맞춤법 검사를 했다 (네이버 맞춤법 검사기 등)']
     .map(function(t,i){return '<li><label><input type="checkbox" id="ck'+i+'"> '+t+'</label></li>'}).join('')+'</ul></div>';
@@ -321,6 +342,7 @@ function copy(text,btn){
 function bindResult(){
   document.getElementById('copyPrompt').onclick=function(){copy(buildPrompt(),this)};
   document.getElementById('showPrompt').onclick=function(){var pb=document.getElementById('promptBox');pb.hidden=!pb.hidden;pb.textContent=buildPrompt()};
+  document.getElementById('sendDraft').onclick=function(){var t=(document.getElementById('draft')||{}).value||D.draft;if(!t){alert('먼저 초안을 만들거나 써 주세요');return}D.draft=t;save();if(window.TM_ROOM)TM_ROOM.send('jaso','자소서 초안'+(D.company?' · '+D.company:'')+(D.job?' · '+D.job:''),t)};
   document.getElementById('copyDraft').onclick=function(){var t=D.draft;if(!t)return;var b=this;
     try{navigator.clipboard.writeText(t).then(function(){b.textContent='✔ 복사됐어요';setTimeout(function(){b.textContent='초안 복사'},1600)},function(){document.getElementById('draft').select()})}catch(e){document.getElementById('draft').select()}};
   var note=document.getElementById('genNote'), out=document.getElementById('draft');
@@ -334,31 +356,19 @@ function bindResult(){
     if(D.draft&&!confirm('지금 초안을 새 초안으로 바꿀까요? (오늘 횟수 1번을 써요)'))return;
     busy=true;gen.disabled=true;note.className='note';note.textContent='AI가 쓰는 중… (1분쯤 걸려요. 화면을 끄거나 새로고침하지 마세요)';
     AI.draft(CODE.code,payload())
-     .then(function(r){var tx=String(r.text||"").replace(/\*\*/g,"");out.value=tx;D.draft=tx;save();CODE.left=r.left;saveCode();note.className='note ok';
+     .then(function(r){var tx=String(r.text||"").replace(/\*\*/g,"");out.value=tx;D.draft=tx;save();if(window.TM_ROOM)TM_ROOM.send('jaso','자소서 초안'+(D.company?' · '+D.company:'')+(D.job?' · '+D.job:''),tx);CODE.left=r.left;saveCode();note.className='note ok';
        note.textContent=r.cut?'길이 제한으로 끝이 잘렸어요. 경험을 줄여 다시 해 보세요.':'완성! 이제 아래 체크리스트대로 고쳐 쓰세요.'},
       function(e){note.className='note bad';note.textContent=e.message;if(/초대코드|기간/.test(e.message)){CODE.ok=0;saveCode()}})
      .then(function(){busy=false;gen.disabled=false;out.dispatchEvent(new Event('input'))});
   };
 }
 
-if(h==='jaso') go(0); else home();
+if(joined()&&QPIN&&QPIN!==joined().pin)TM_ROOM.leave();
+if(h==='jaso'&&joined()) go(0); else home();
+if(joined())TM_ROOM.watch();
 })();
 
-/* 빔용 큰 QR: 라이브러리는 누를 때만 불러옴 */
-(function(){
-  var base='https://themore-junyong.github.io/tools/', ov=document.getElementById('qrov'), box=document.getElementById('qrbox');
-  function code(){try{return (JSON.parse(localStorage.getItem('tm-code')||'null')||{}).code||''}catch(e){return ''}}
-  function draw(){var c=code(),L=document.getElementById('qrL'),C=document.getElementById('qrC');L.hidden=!c;
-    var url=base+(c&&C.checked?'?c='+encodeURIComponent(c):'');box.innerHTML='';
-    new QRCode(box,{text:url,width:600,height:600,correctLevel:QRCode.CorrectLevel.M});
-    document.getElementById('qrU').textContent=url.replace(/^https:\/\//,'')}
-  function open(){ov.hidden=false;if(window.QRCode)return draw();
-    var sc=document.createElement('script');sc.src='https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';sc.onload=draw;
-    sc.onerror=function(){document.getElementById('qrU').textContent='QR을 불러오지 못했어요. 인터넷 연결을 확인해 주세요.'};document.head.appendChild(sc)}
-  document.addEventListener('click',function(e){if(e.target.closest('#qrOpen'))open();else if(e.target.closest('#qrX'))ov.hidden=true});
-  document.getElementById('qrC').addEventListener('change',draw);
-  document.addEventListener('keydown',function(e){if(e.key==='Escape')ov.hidden=true});
-})();
+
 </script>
 <script type="module" src="ai.js"></script>
 </body></html>

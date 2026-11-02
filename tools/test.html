@@ -80,6 +80,7 @@ a.g b{font-size:1.05rem} a.g span{color:var(--soft);font-size:.88rem}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head><body>
+<script src="room.js" data-guard></script>
 <div class="wrap" id="app"></div>
 <script src="tests.js"></script>
 <script>
@@ -140,6 +141,13 @@ function score(){
   var sc={};Object.keys(T.dims).forEach(function(d){sc[d]=cnt[d]?Math.round((sum[d]/cnt[d]-1)/4*100):0});
   return sc;
 }
+function sendRes(){ // 결과 요약을 수업 방 선생님 화면으로
+  if(!window.TM_ROOM)return;var sc=S.res,t,b;
+  if(QUIZ){t=sc.ok+' / '+sc.n+' 정답';b=t}
+  else if(T.show==='level'){var d=Object.keys(T.dims)[0],v=sc[d],lv=T.levels.filter(function(l){return v>=l[0]})[0];t=lv[1]+' ('+v+'점)';b=T.dims[d].name+' '+v+'점 / 100 · '+lv[1]}
+  else{var r=ranked(sc);t=r.slice(0,T.top||(T.show==='profile'?5:1)).map(function(d){return T.dims[d].name}).join(' · ');b=r.map(function(d){return T.dims[d].name+' '+sc[d]}).join('\n')}
+  TM_ROOM.send(('test-'+id).toLowerCase().replace(/[^a-z0-9-]/g,'').slice(0,24),T.title+' · '+t,b);
+}
 function ranked(sc){return Object.keys(sc).sort(function(a,b){return sc[b]-sc[a]})}
 function bars(sc,top){return '<div class="bars">'+ranked(sc).map(function(d,i){var D=T.dims[d];return '<div class="bar'+(i<top?' top':'')+'"><span>'+(D.emoji||'')+' '+esc(D.name)+'</span><span class="tr"><span class="fl" style="width:'+Math.max(3,sc[d])+'%"></span></span><span class="n">'+sc[d]+'</span></div>'}).join('')+'</div>'}
 function detail(d,sc){
@@ -195,7 +203,7 @@ function render(){
 function go(k){
   if(k==='0')page=0;
   else if(k==='prev')page=page===0?'intro':page-1;
-  else if(k==='next'){if(page===npages-1){S.res=score();save();page='res'}else page++}
+  else if(k==='next'){if(page===npages-1){S.res=score();save();page='res';sendRes()}else page++}
   else if(k==='again'){S={a:{}};save();page='intro'}
   else if(k==='print'){window.print();return}
   render();

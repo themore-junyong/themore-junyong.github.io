@@ -135,7 +135,7 @@ function stuRender(){
     h+='<div class="card"><h2>수업 참여하기</h2><div class="f"><label for="pin">방 번호 (선생님 화면의 4자리)</label><input id="pin" class="pin" inputmode="numeric" maxlength="4" value="'+esc(ST.pin)+'" placeholder="0000"></div>'+
       '<div class="f"><label for="nick">닉네임 (퀴즈 점수판에 나와요)</label><input id="nick" maxlength="12" value="'+esc(ST.nick)+'" placeholder="예: 번개 / 3번"></div>'+
       '<button class="btn pri" data-a="join">들어가기</button>'+(ST.note?'<p class="note bad">'+esc(ST.note)+'</p>':'')+'</div>'+
-      '<a class="card" href="?host" style="text-decoration:none;color:inherit;flex-direction:row;justify-content:space-between;align-items:center"><span><b>👩‍🏫 선생님이세요?</b><br><span class="soft">초대코드로 방 만들기 (강사 화면)</span></span><b style="color:var(--blue)">방 만들기 →</b></a>';
+      '<a class="card" href="teacher.html" style="text-decoration:none;color:inherit;flex-direction:row;justify-content:space-between;align-items:center"><span><b>👩‍🏫 선생님이세요?</b><br><span class="soft">초대코드로 방 만들기 (강사 화면)</span></span><b style="color:var(--blue)">방 만들기 →</b></a>';
     app.innerHTML=h;return;
   }
   const r=ST.room, q=r&&r.q;
@@ -312,6 +312,8 @@ function watchRoom(){
   H.unsub=F.onSnapshot(F.doc(db,'rooms',H.pin),d=>{
     const r=d.exists()?d.data():null;
     if(!r||r.owner!==me||r.exp.toMillis()<Date.now()){H.pin='';lsSet('live-host',{});H.note=r?'방이 끝났어요. 새로 만들어 주세요':'';hostRender();return}
+    if(r.closed){H.pin='';lsSet('live-host',{});H.note='방이 종료됐어요. 강사 입구에서 새로 만들어 주세요';hostRender();return}
+    if(!r.hb||Date.now()-r.hb.toMillis()>50e3)F.updateDoc(F.doc(db,'rooms',H.pin),{hb:F.serverTimestamp()}).catch(()=>{});
     H.room=r;if(r.q&&r.q.i!=null&&H.cur<0)H.cur=r.q.i;watchAns();watchRx();hostRender();
   },e=>{H.note=msg(e);hostRender()});
 }
@@ -339,6 +341,8 @@ function watchAns(){
     H.ans=s.docs.map(d=>Object.assign({id:d.id},d.data()));if(H.view==='q')hostRender();
   },e=>{H.note=msg(e);hostRender()});
 }
+// 강사 화면이 켜져 있는 동안 1분마다 hb(살아 있음)를 찍음 → 학생 화면이 수업 중인지 앎
+setInterval(()=>{if(HOST&&H.pin&&db)F.updateDoc(F.doc(db,'rooms',H.pin),{hb:F.serverTimestamp()}).catch(()=>{})},60e3);
 const setQ=q=>F.updateDoc(F.doc(db,'rooms',H.pin),{q}).catch(e=>{H.note=msg(e);hostRender()});
 function show(i){
   const x=H.qs[i];if(!x)return;H.cur=i;H.view='q';H.note='';
@@ -376,7 +380,7 @@ function hostClick(e){
   else if(a==='rank')H.view='rank';
   else if(a==='rx0'){RX.n={};RX.log=[]}
   else if(a==='back')H.view='q';
-  else if(a==='end'){if(!confirm('방을 닫을까요? 학생 화면도 끝나요.'))return;setQ(null);H.pin='';H.cur=-1;lsSet('live-host',{});if(H.unsub)H.unsub();if(rxUnsub){rxUnsub();rxUnsub=null}}
+  else if(a==='end'){if(!confirm('방을 닫을까요? 학생 화면도 끝나요.'))return;F.updateDoc(F.doc(db,'rooms',H.pin),{q:null,closed:true}).catch(()=>{});H.pin='';H.cur=-1;lsSet('live-host',{});if(H.unsub)H.unsub();if(rxUnsub){rxUnsub();rxUnsub=null}}
   hostRender();
 }
 app.addEventListener('change',e=>{if(e.target.id==='et'&&H.edit){readEdit();H.edit.type=e.target.value;if((H.edit.type==='poll'||H.edit.type==='quiz'||H.edit.type==='map')&&!(H.edit.opts||[]).length)H.edit.opts=['',''];hostRender()}});
