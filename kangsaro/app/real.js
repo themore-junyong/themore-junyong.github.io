@@ -233,7 +233,7 @@ async function flush() {
   if (g !== GEN) return;
   if (errs.length) {
     const code = (errs.find(x => x.e && x.e.code === 'permission-denied') || errs[0]).e.code;
-    saveErr(true, code);
+    saveErr(true, code, errs.map(x => x.k + ' · ' + ((x.e && x.e.code) || x.e)));
     // 이번 달 공고 한도를 넘었으면 저장 안 된 새 공고는 빼고 안내
     if (code === 'permission-denied' && role === 'c' && TD && LIMIT[TD.planC] && errs.some(x => /^jobs\/[^/]+$/.test(x.k) && !last.has(x.k))) { await loadTerm().catch(() => { }); if (quotaLeft() <= 0) { S.jobs = S.jobs.filter(j => j.coId !== CO || last.has(`jobs/${j.id}`)); save(); render(); return planSheet('quota'); } }
   } else saveErr(false);
@@ -247,11 +247,14 @@ async function planBackup(k) {
   await setDoc(doc(db, k.replace(/\/main$/, '/prev')), { slots, at: new Date().toISOString(), by: uidMe }).catch(e => console.warn('plan backup', e.code));
 }
 // 저장 실패는 잠깐 뜨는 알림 말고 화면 위에 남는 빨간 줄로
-function saveErr(on, code) {
+const KIND = { users: '내 정보', jobs: '공고', apps: '지원서·지급', notices: '공지', alerts: '알림', evs: '일정·메모', links: '강사 연결', rooms: '대화방' };
+const kindOf = k => k.includes('/plan/') ? '운영 시간표' : KIND[k.split('/')[0]] || k.split('/')[0];
+function saveErr(on, code, list) {
   let b = document.getElementById('saveErr');
   if (!on) { if (b) b.remove(); return; }
-  if (!b) { b = document.createElement('div'); b.id = 'saveErr'; b.setAttribute('role', 'alert'); b.style.cssText = 'position:sticky;top:0;z-index:50;background:#C62828;color:#fff;padding:10px 14px;font-weight:700;font-size:14px;display:flex;gap:8px;align-items:center'; document.querySelector('.app')?.prepend(b) || document.body.prepend(b); }
-  b.innerHTML = `<span style="flex:1">⚠ 방금 고친 내용이 서버에 저장되지 않았어요${code === 'permission-denied' ? ' (권한 문제)' : ''}. 새로고침하면 사라질 수 있어요.</span><button class="btn sm" style="background:#fff;color:#C62828;border:0" onclick="this.disabled=true;window.KSR_RESAVE&&window.KSR_RESAVE()">다시 저장</button>`;
+  if (!b) { b = document.createElement('div'); b.id = 'saveErr'; b.setAttribute('role', 'alert'); b.style.cssText = 'position:sticky;top:0;z-index:50;background:#C62828;color:#fff;padding:10px 14px;font-weight:700;font-size:14px;display:flex;flex-wrap:wrap;gap:8px;align-items:center'; (document.querySelector('.app') || document.body).prepend(b); }
+  const L = list || [], kinds = [...new Set(L.map(x => kindOf(x)))];
+  b.innerHTML = `<span style="flex:1;min-width:12em">⚠ 저장이 안 된 것이 있어요${kinds.length ? `: <u>${esc(kinds.join(', '))}</u>` : ''}${code === 'permission-denied' ? ' (권한 문제)' : ''}. 새로고침하면 그 부분은 사라질 수 있어요.</span><button class="btn sm" style="background:#fff;color:#C62828;border:0" onclick="this.disabled=true;window.KSR_RESAVE&&window.KSR_RESAVE()">다시 저장</button>${L.length ? `<details style="flex-basis:100%;font-weight:400;font-size:12px"><summary>자세히 (캡처해서 보내 주세요)</summary>${L.slice(0, 12).map(x => `<div>${esc(x)}</div>`).join('')}</details>` : ''}`;
 }
 window.KSR_RESAVE = () => flush();
 const mayDelete = k => /^(evs|notices|jobs|alerts)\//.test(k);
