@@ -1,12 +1,12 @@
 <!doctype html>
 <html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>숫자 줄 세우기</title>
+<title>스트림 게임</title>
 <meta name="robots" content="noindex">
 <script>/* 학생 폰(?stu=1): 수업 방에 들어온 학생만. 강사 노트북(빔)은 sync.js로 학생 폰과 연결 */
 if(/[?&]stu=1/.test(location.search))document.write('<script src="room.js?v=196" data-guard><\/script>');else document.write('<script src="sync.js?v=195"><\/script>')</script>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap">
 <style>
-/* 숫자 줄 세우기: 강사(빔)가 1~40 숫자를 하나씩 부르면 학생은 자기 칸 중 한 곳에 씀(못 바꿈).
+/* 스트림 게임(우리 규칙): 강사(빔)가 1~40 숫자를 하나씩 부르면 학생은 자기 칸 중 한 곳에 씀(못 바꿈).
    다 부르면 왼→오 계속 커지는 줄마다 (길이×길이) 점수. 같은 숫자를 받아도 결과가 다른 이유 = 판단 기준 */
 :root{
   --bg:#f6f6f6; --ink:#333; --soft:#6f7480; --card:#fff; --line:#e2e3e8; --field:#fbfbfc;
@@ -81,9 +81,9 @@ if(STU){
   var G=null,K='',S={p:[],u:0},sent=false,lastQ=null;
   function load(){K='line-s-'+G.id;S=lsGet(K,null)||{p:Array(G.n).fill(null),u:0};if(S.p.length!==G.n)S={p:Array(G.n).fill(null),u:0}}
   function stuRender(){
-    if(!G){app.innerHTML='<div class="top"><div class="brand"><small>위듀케이션 · 숫자 줄 세우기</small></div></div><div class="wait">👀 선생님이 게임을 시작하면 여기에 칸이 나와요</div>'+RULE;return}
+    if(!G){app.innerHTML='<div class="top"><div class="brand"><small>위듀케이션 · 스트림 게임</small></div></div><div class="wait">👀 선생님이 게임을 시작하면 여기에 칸이 나와요</div>'+RULE;return}
     var pend=G.d.slice(S.u),cur=pend.length?pend[0]:null,R=runs(S.p),inRun={};R.forEach(function(r){if(r.length>1)r.forEach(function(i){inRun[i]=1})});
-    var h='<div class="top"><div class="brand"><small>위듀케이션 · 숫자 줄 세우기</small></div><span class="note">'+G.d.length+' / '+G.n+'번째 숫자</span></div>';
+    var h='<div class="top"><div class="brand"><small>위듀케이션 · 스트림 게임</small></div><span class="note">'+G.d.length+' / '+G.n+'번째 숫자</span></div>';
     if(G.end&&cur==null)h+='<div class="card" style="text-align:center"><span class="soft">내 점수</span><div class="big">'+score(S.p)+'점</div><p>가장 긴 줄 <b>'+best(S.p)+'칸</b></p><p class="note">'+(sent?'✔ 선생님 화면에 보냈어요':'선생님 화면으로 보내는 중…')+'</p></div>';
     else if(cur!=null)h+='<div class="card" style="text-align:center;gap:4px"><span class="soft">이 숫자를 놓을 칸을 눌러요'+(pend.length>1?' (밀린 숫자 '+pend.length+'개)':'')+'</span><div class="now" style="font-size:5rem">'+cur+'</div></div>';
     else h+='<div class="wait">✔ 놓았어요! 다음 숫자를 기다려요</div>';
@@ -111,8 +111,8 @@ function save(){lsSet('line-g',G)}
 function shuffle(a){for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1)),t=a[i];a[i]=a[j];a[j]=t}return a}
 function newGame(n){var deck=[];for(var i=1;i<=40;i++)deck.push(i);G={id:String(Date.now()).slice(-8),n:n,deck:shuffle(deck),d:[],end:false};ANS=[];save()}
 function pub(){if(!SYNC)return;
-  if(!G.id){TM_SYNC.pub('line',{game:'🔢 숫자 줄 세우기',big:'곧 시작해요',sub:'앞 화면을 보세요'});TM_SYNC.ask(null);return}
-  TM_SYNC.pub('line',{game:'🔢 숫자 줄 세우기',play:'line.html?stu=1&g='+G.id,line:{id:G.id,n:G.n,d:G.d,end:G.end}});
+  if(!G.id){TM_SYNC.pub('line',{game:'🔢 스트림 게임',big:'곧 시작해요',sub:'앞 화면을 보세요'});TM_SYNC.ask(null);return}
+  TM_SYNC.pub('line',{game:'🔢 스트림 게임',play:'line.html?stu=1&g='+G.id,line:{id:G.id,n:G.n,d:G.d,end:G.end}});
   if(G.end){var id='line-'+G.id;TM_SYNC.ask({id:id,open:true,type:'line'});TM_SYNC.onAns(id,function(_,A){ANS=A;render()})}else TM_SYNC.ask(null)}
 function teamBars(){
   var L=ANS.map(function(a){var p=String(a.v||'').split('|');return {nick:a.nick||'',team:a.team||'',s:+p[0]||0,b:+p[1]||0}}).sort(function(a,b){return b.s-a.s||b.b-a.b});
@@ -123,7 +123,7 @@ function teamBars(){
     var am=Math.max.apply(null,av.map(function(x){return x.a}))||1;h+=av.map(function(x){return '<div class="tbar"><b style="color:'+COLORS[x.k%8]+'">'+esc(x.t)+'</b><span class="tr"><i style="width:'+(x.a/am*100)+'%;background:'+COLORS[x.k%8]+'"></i></span><span class="num">'+x.a+'점</span></div>'}).join('')}
   return h}
 function render(){
-  var h='<div class="top"><div class="brand"><small>위듀케이션 · 수업 게임</small><h1>🔢 숫자 줄 세우기</h1></div><a href="./">← 도구 모음</a></div>';
+  var h='<div class="top"><div class="brand"><small>위듀케이션 · 수업 게임</small><h1>🔢 스트림 게임</h1></div><a href="./">← 도구 모음</a></div>';
   if(!G.id){
     h+='<div class="card">'+RULE+'<div class="row"><b>칸 수</b>'+[10,15,20].map(function(n){return '<button class="btn" data-n="'+n+'" aria-pressed="'+(PRE===n)+'">'+n+'칸</button>'}).join('')+'</div>'+
       '<p class="note">'+(SYNC?'📱 수업 방과 연결됨 · 시작하면 학생 폰에 칸이 떠요':'종이로 할 때: 학생들에게 칸 '+PRE+'개를 그리게 하세요. (수업 방을 만든 노트북에서 열면 학생 폰과 연결돼요)')+'</p>'+
