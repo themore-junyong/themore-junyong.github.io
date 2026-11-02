@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>강사 입구</title>
+<title>위듀케이션 취업 연구소 · 선생님</title>
 <meta name="robots" content="noindex">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap">
 <style>
@@ -124,7 +124,7 @@ const STU=[
 ];
 const TST=[['riasec','직업흥미'],['big5','Big Five 성격'],['enneagram','에니어그램'],['values','직업가치관'],['strength','강점 24'],['conflict','갈등 대처'],['resil','회복탄력성'],['coping','스트레스 대처'],['mindset','성장 마인드셋'],['literacy','직장 문해력']];
 function render(){
-  let h='<div class="top"><div class="brand"><small>위듀케이션 · 강사 입구</small></div><a href="./">학생 첫 화면 보기 →</a></div>';
+  let h='<div class="top"><div class="brand"><small>위듀케이션 취업 연구소</small></div><a href="./">학생 첫 화면 보기 →</a></div>';
   if(!S.pin){
     h+='<div class="card"><h1>오늘 수업 방 만들기</h1><p class="soft">여러 반이 동시에 써도 섞이지 않도록 <b>수업마다 방을 먼저 만들어요.</b> 학생은 빔에 띄운 QR(방 번호가 들어 있어요)로 들어와요. 방은 8시간 뒤 자동으로 닫혀요.</p>'+
      '<div class="f"><label for="who"><b>강사 이름</b></label><input id="who" class="w" placeholder="예: 김준용" value="'+esc(S.name)+'" maxlength="12"></div>'+

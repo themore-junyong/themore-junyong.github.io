@@ -314,7 +314,7 @@ function watchRoom(){
   H.unsub=F.onSnapshot(F.doc(db,'rooms',H.pin),d=>{
     const r=d.exists()?d.data():null;
     if(!r||r.owner!==me||r.exp.toMillis()<Date.now()){H.pin='';lsSet('live-host',{});H.note=r?'방이 끝났어요. 새로 만들어 주세요':'';hostRender();return}
-    if(r.closed){H.pin='';lsSet('live-host',{});H.note='방이 종료됐어요. 강사 입구에서 새로 만들어 주세요';hostRender();return}
+    if(r.closed){H.pin='';lsSet('live-host',{});H.note='방이 종료됐어요. 수업 방 만들기에서 새로 만들어 주세요';hostRender();return}
     if(!r.hb||Date.now()-r.hb.toMillis()>50e3)F.updateDoc(F.doc(db,'rooms',H.pin),{hb:F.serverTimestamp()}).catch(()=>{});
     H.room=r;if(r.q&&r.q.i!=null&&H.cur<0)H.cur=r.q.i;watchAns();watchRx();hostRender();
   },e=>{H.note=msg(e);hostRender()});
