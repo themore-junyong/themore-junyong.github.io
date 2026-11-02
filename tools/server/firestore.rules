@@ -6,6 +6,7 @@ rules_version = '2';
 //  - 방 문서 go{to,t}(강사가 '학생 화면 바꾸기'): 강사만. 들어와 있는 학생 화면이 그 활동으로 넘어감
 //  - 방 문서 g{k,s,t}(강사 노트북의 게임 화면 상태): 강사만. 학생 폰 play.html이 같은 문제·점수를 보여 줌
 //  - 방 문서 hb(강사 화면이 1분마다 찍는 시각)·closed(방 종료): 강사만. 학생 화면은 hb가 3분 넘게 멈추거나 closed면 끊음
+//  - 방 문서 teams(강사가 정한 조 이름 목록, 8개까지): 강사만. 학생은 들어올 때 그중 하나를 고르고, 답·결과에 team으로 붙음
 //  - 결과(work/{uid}_{도구}): 방에 들어온 학생이 자소서·검사 등 결과를 도구마다 1개 쓰기·고치기, 읽기는 강사만
 service cloud.firestore {
   match /databases/{db}/documents {
@@ -16,7 +17,7 @@ service cloud.firestore {
       allow update: if request.auth != null
         && resource.data.owner == request.auth.uid
         && resource.data.exp > request.time
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['q', 'hb', 'closed', 'go', 'g'])
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['q', 'hb', 'closed', 'go', 'g', 'teams'])
         && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['go'])
             || request.resource.data.get('go', null) == null
             || (request.resource.data.go.keys().hasOnly(['to', 't'])
@@ -27,7 +28,9 @@ service cloud.firestore {
             || (request.resource.data.g.keys().hasOnly(['k', 's', 't'])
                 && request.resource.data.g.k is string && request.resource.data.g.k.size() <= 20
                 && request.resource.data.g.s is string && request.resource.data.g.s.size() <= 8000
-                && request.resource.data.g.t == request.time));
+                && request.resource.data.g.t == request.time))
+        && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['teams'])
+            || (request.resource.data.teams is list && request.resource.data.teams.size() <= 8));
 
       // 이모지 반응: 학생마다 문서 1개(rx/{uid})를 누를 때마다 덮어씀. 강사 화면이 바뀐 것을 세어 띄움
       match /rx/{uid} {
@@ -48,7 +51,8 @@ service cloud.firestore {
           && room().get('closed', false) != true
           && room().q.open == true
           && id == room().q.id + '_' + request.auth.uid
-          && request.resource.data.keys().hasOnly(['q', 'v', 'nick', 't'])
+          && request.resource.data.keys().hasOnly(['q', 'v', 'nick', 'team', 't'])
+          && request.resource.data.get('team', '') is string && request.resource.data.get('team', '').size() <= 12
           && request.resource.data.q == room().q.id
           && request.resource.data.nick is string && request.resource.data.nick.size() <= 12
           && ((request.resource.data.v is int && request.resource.data.v >= 0 && request.resource.data.v < 6)
@@ -62,7 +66,8 @@ service cloud.firestore {
         allow create, update: if request.auth != null
           && room2().exp > request.time
           && room2().get('closed', false) != true
-          && request.resource.data.keys().hasOnly(['tool', 'nick', 'title', 'body', 't'])
+          && request.resource.data.keys().hasOnly(['tool', 'nick', 'team', 'title', 'body', 't'])
+          && request.resource.data.get('team', '') is string && request.resource.data.get('team', '').size() <= 12
           && request.resource.data.tool is string && request.resource.data.tool.matches('^[a-z0-9-]{1,24}$')
           && id == request.auth.uid + '_' + request.resource.data.tool
           && request.resource.data.nick is string && request.resource.data.nick.size() > 0 && request.resource.data.nick.size() <= 12

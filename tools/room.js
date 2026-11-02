@@ -31,29 +31,34 @@
     if(!r.hb||now-r.hb.toMillis()>STALE)return '선생님 화면이 꺼져 있어요. 선생님이 방을 열면 다시 들어와 주세요.';
     return '';
   }
-  function check(pin){
-    return boot().then(function(b){return b.F.getDoc(b.F.doc(b.db,'rooms',pin))}).then(function(d){return alive(d.exists()?d.data():null)});
+  function info(pin){ // 방 문서(조 이름 teams 포함). 없거나 끝났으면 bad에 이유
+    return boot().then(function(b){return b.F.getDoc(b.F.doc(b.db,'rooms',pin))}).then(function(d){var r=d.exists()?d.data():null;return {bad:alive(r),teams:r&&Array.isArray(r.teams)?r.teams:[]}});
   }
-  function join(pin,nick){
-    pin=String(pin||'').replace(/\D/g,'');nick=String(nick||'').trim().slice(0,12);
+  function check(pin){return info(pin).then(function(x){return x.bad})}
+  /* 들어가기: 방 번호 + 이름 (+ 강사가 조 이름을 정해 둔 방이면 조) */
+  function join(pin,nick,team){
+    pin=String(pin||'').replace(/\D/g,'');nick=String(nick||'').trim().slice(0,12);team=String(team||'').slice(0,12);
     if(pin.length!==4)return Promise.reject(new Error('방 번호 4자리를 넣어 주세요'));
     if(!nick)return Promise.reject(new Error('이름(또는 번호)을 넣어 주세요'));
-    return check(pin).then(function(bad){if(bad)throw new Error(bad);put({pin:pin,nick:nick,t:Date.now()});return {pin:pin,nick:nick}});
+    return info(pin).then(function(x){if(x.bad)throw new Error(x.bad);if(x.teams.length&&x.teams.indexOf(team)<0)throw new Error('우리 조를 골라 주세요');
+      var r={pin:pin,nick:nick,t:Date.now()};if(team)r.team=team;put(r);return r});
   }
+  function setTeam(team){var r=get();if(!r)return;if(team)r.team=String(team).slice(0,12);else delete r.team;put(r);var a=document.getElementById('tmRoomBadge');if(a)a.textContent=label(r)}
+  function label(r){return '🏠 방 '+r.pin+' · '+(r.team?r.team+' · ':'')+r.nick}
   function toast(t,bad){var d=document.createElement('div');d.textContent=t;
     d.style.cssText='position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:90;background:'+(bad?'#c8432f':'#2e8b4c')+';color:#fff;font:700 15px system-ui;padding:10px 18px;border-radius:999px;box-shadow:0 4px 14px rgba(0,0,0,.2);max-width:90vw;text-align:center';
     document.body.appendChild(d);setTimeout(function(){d.remove()},2600)}
   function send(tool,title,body){
     var r=get();if(!r||TEACH)return Promise.resolve(false);
     return boot().then(function(b){
-      return b.F.setDoc(b.F.doc(b.db,'rooms',r.pin,'work',b.uid+'_'+tool),{tool:tool,nick:r.nick,title:String(title||'').slice(0,80),body:String(body||'').slice(0,6000),t:b.F.serverTimestamp()});
+      return b.F.setDoc(b.F.doc(b.db,'rooms',r.pin,'work',b.uid+'_'+tool),{tool:tool,nick:r.nick,team:r.team||'',title:String(title||'').slice(0,80),body:String(body||'').slice(0,6000),t:b.F.serverTimestamp()});
     }).then(function(){toast('✔ 선생님께 보냈어요');return true},function(){toast('선생님께 보내지 못했어요 (방이 끝났을 수 있어요)',true);return false});
   }
   /* 게임 응답(아이스브레이킹 밸런스 선택·퀴즈 답): 방 문서 q가 열려 있을 때 ans/{q.id}_{uid} 1개(다시 보내면 덮어씀). 강사 노트북만 읽음 */
   function answer(qid,v){
     var r=get();if(!r||TEACH)return Promise.resolve(false);
     return boot().then(function(b){
-      return b.F.setDoc(b.F.doc(b.db,'rooms',r.pin,'ans',qid+'_'+b.uid),{q:String(qid),v:String(v).slice(0,80),nick:r.nick,t:b.F.serverTimestamp()});
+      return b.F.setDoc(b.F.doc(b.db,'rooms',r.pin,'ans',qid+'_'+b.uid),{q:String(qid),v:String(v).slice(0,80),nick:r.nick,team:r.team||'',t:b.F.serverTimestamp()});
     }).then(function(){return true},function(){toast('보내지 못했어요 (마감됐을 수 있어요)',true);return false});
   }
   function ended(why){
@@ -86,14 +91,24 @@
   }
   function badge(){
     var r=get();if(!r)return;var a=document.createElement('a');a.href='./';a.id='tmRoomBadge';
-    a.textContent='🏠 방 '+r.pin+' · '+r.nick;
+    a.textContent=label(r);a.title='눌러서 조 바꾸기';a.addEventListener('click',function(e){e.preventDefault();teamPick()});
     a.style.cssText='position:fixed;top:max(8px,env(safe-area-inset-top,0px));right:max(8px,env(safe-area-inset-right,0px));z-index:40;background:#4e6bf1;color:#fff;font:700 13px system-ui;padding:6px 12px;border-radius:999px;text-decoration:none;opacity:.92';
     document.body.appendChild(a);
+  }
+  /* 조 바꾸기(자리 옮긴 학생): 오른쪽 위 방 표시를 누르면 강사가 정한 조 이름 중에서 고름 */
+  function teamPick(){
+    var r=get();if(!r)return;var o=document.createElement('div');
+    o.style.cssText='position:fixed;inset:0;z-index:95;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:16px';
+    o.innerHTML='<div style="background:#fff;color:#222;border-radius:12px;padding:20px;width:min(420px,100%);font-family:system-ui;display:flex;flex-direction:column;gap:12px"><b style="font-size:1.2rem">우리 조 바꾸기</b><div id="tmTP" style="display:grid;grid-template-columns:1fr 1fr;gap:8px">불러오는 중…</div><a href="./" style="color:#4e6bf1;font-weight:700;text-align:center">처음 화면으로</a><button style="border:1px solid #ccc;background:#fff;border-radius:6px;padding:10px;font:700 15px system-ui">닫기</button></div>';
+    o.addEventListener('click',function(e){var t=e.target;if(t===o||t.tagName==='BUTTON'&&!t.dataset.t){o.remove();return}if(t.dataset&&t.dataset.t!=null){setTeam(t.dataset.t);o.remove();toast('✔ '+t.dataset.t+'(으)로 바꿨어요');try{window.dispatchEvent(new Event('tm-team'))}catch(x){}}});
+    document.body.appendChild(o);
+    info(r.pin).then(function(x){var b=document.getElementById('tmTP');if(!b)return;
+      b.innerHTML=x.teams.length?x.teams.map(function(n){var on=n===r.team;return '<button data-t="'+String(n).replace(/[&<>"]/g,'')+'" style="border:2px solid #4e6bf1;background:'+(on?'#4e6bf1':'#fff')+';color:'+(on?'#fff':'#222')+';border-radius:8px;padding:14px;font:900 17px system-ui">'+String(n).replace(/[&<>"]/g,'')+'</button>'}).join(''):'<span style="grid-column:1/-1;color:#666">선생님이 아직 조 이름을 정하지 않았어요.</span>'},function(){});
   }
   function onRoom(cb){ // 방 문서 실시간(play.html: 강사 게임 화면 따라 보기)
     var r=get();if(!r)return;boot().then(function(b){b.F.onSnapshot(b.F.doc(b.db,'rooms',r.pin),function(d){cb(d.exists()?d.data():null)},function(){})}).catch(function(){});
   }
-  window.TM_ROOM={get:get,join:join,check:check,send:send,answer:answer,leave:function(){put(null)},watch:watch,teach:TEACH,onRoom:onRoom};
+  window.TM_ROOM={get:get,join:join,check:check,send:send,answer:answer,info:info,setTeam:setTeam,teamPick:teamPick,leave:function(){put(null)},watch:watch,teach:TEACH,onRoom:onRoom};
   /* 강사 미리보기 탭에서 도구 안 화면을 바꾸면(#해시) 학생도 같은 화면으로: 강사 노트북의 기본 Firebase 앱(방 주인)으로 go를 씀 */
   function teachGo(){
     var host=null;try{host=JSON.parse(localStorage.getItem('live-host')||'null')}catch(e){}if(!host||!host.pin)return;

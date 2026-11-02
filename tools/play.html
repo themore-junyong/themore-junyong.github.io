@@ -59,7 +59,7 @@ button.opt:disabled{cursor:default}
 .f button{border:0;border-radius:8px;padding:0 18px;background:var(--blue);color:var(--blue-ink);font:900 1rem var(--f)}
 .mine{text-align:center;font-weight:700}.mine.ok{color:var(--ok)}.mine.no{color:var(--bad)}
 </style></head><body>
-<script src="room.js?v=191" data-guard></script>
+<script src="room.js?v=192" data-guard></script>
 <main class="wrap" id="app"><div class="wait"><span style="font-size:2.4rem" aria-hidden="true">👀</span><b>선생님 화면과 연결하는 중…</b></div></main>
 <script>
 (function(){
@@ -67,7 +67,7 @@ var app=document.getElementById('app'),M=null,tick=null,lastS=null,draft='';
 function rm(){try{return (JSON.parse(localStorage.getItem('tm-room-s')||'null')||{}).pin||''}catch(e){return ''}}
 function lg(k,d){try{var v=JSON.parse(localStorage.getItem(k)||'null');return v==null?d:v}catch(e){return d}}
 function ls(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
-var PIN=rm(),TEAM=lg('tm-team-'+PIN,null),MINE=lg('tm-ans-'+PIN,{}),SENT={};
+var PIN=rm(),TEAM=null,MINE=lg('tm-ans-'+PIN,{}),SENT={};
 function norm(x){return String(x||'').replace(/[\s.,!?~·'"()\-]/g,'').toLowerCase()}
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
 function left(){return M&&M.end?Math.max(0,(M.end-Date.now())/1000):null}
@@ -75,6 +75,7 @@ function fmt(s){if(M.clock==='mmss'){s=Math.ceil(s);return Math.floor(s/60)+':'+
 function render(){
   if(!M){app.innerHTML='<div class="wait"><span style="font-size:2.4rem" aria-hidden="true">👀</span><b>지금은 앞 화면(빔)을 보세요</b><span>선생님이 게임을 시작하면 여기에도 똑같이 보여요.</span></div>';return}
   var A=M.ask&&M.teams&&M.teams.length?M.ask:null;
+  if(A){var me=window.TM_ROOM&&TM_ROOM.get(),ix=me&&me.team?M.teams.map(function(t){return t.n}).indexOf(me.team):-1;TEAM=ix>=0?ix:(TEAM!=null&&TEAM<M.teams.length?TEAM:null)}
   if(A&&(TEAM==null||TEAM>=M.teams.length)){app.innerHTML='<div class="card"><div class="game">'+esc(M.game)+'</div><p class="q">우리 조는 몇 조인가요?</p><p class="sub">고르면 폰으로 선택하고 답할 수 있어요. 조별로 모아서 앞 화면에 보여 줘요.</p><div class="teamp">'+M.teams.map(function(t,i){return '<button data-team="'+i+'" style="--c:'+esc(t.c)+'">'+esc(t.n)+'</button>'}).join('')+'</div></div>';return}
   var h=(A?'<div class="myteam" style="--c:'+esc(M.teams[TEAM].c)+'"><span>우리 조 <b>'+esc(M.teams[TEAM].n)+'</b></span><button data-team="x">조 바꾸기</button></div>':'')+'<div class="card"><div class="game">'+esc(M.game)+(M.num?'<span>'+esc(M.num)+'</span>':'')+'</div>';
   if(M.turn)h+='<span class="turn" style="background:'+esc(M.turn.c)+'">'+esc(M.turn.n)+'</span>';
@@ -107,10 +108,11 @@ function put(v){var A=M&&M.ask;if(!A||!A.open||TEAM==null||!window.TM_ROOM||!TM_
   TM_ROOM.answer(id,TEAM+'|'+v).then(function(ok){if(ok){MINE[id]=v;var k=Object.keys(MINE);if(k.length>60)delete MINE[k[0]];ls('tm-ans-'+PIN,MINE);if(id===(M&&M.ask&&M.ask.id))keep()}})}
 function sendTxt(){var t=document.getElementById('txt');var v=(t?t.value:'').replace(/[|\n]/g,' ').trim().slice(0,30);if(!v)return;draft='';put(v)}
 app.addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;
-  if(b.dataset.team!=null){TEAM=b.dataset.team==='x'?null:+b.dataset.team;ls('tm-team-'+PIN,TEAM);render();return}
+  if(b.dataset.team!=null){if(b.dataset.team==='x'){if(window.TM_ROOM&&TM_ROOM.teamPick&&TM_ROOM.get()&&TM_ROOM.get().team){TM_ROOM.teamPick();return}TEAM=null;if(window.TM_ROOM&&TM_ROOM.setTeam)TM_ROOM.setTeam('')}else{TEAM=+b.dataset.team;if(window.TM_ROOM&&TM_ROOM.setTeam&&M&&M.teams)TM_ROOM.setTeam(M.teams[TEAM].n)}render();return}
   if(b.dataset.ab!=null){put(b.dataset.ab);return}
   if(b.dataset.a==='send')sendTxt();
 });
+window.addEventListener('tm-team',function(){TEAM=null;keep()});
 if(window.TM_ROOM&&TM_ROOM.onRoom)TM_ROOM.onRoom(function(r){
   var g=r&&r.g,s=g&&g.s&&g.t&&g.t.toMillis&&Date.now()-g.t.toMillis()<6*3600e3?g.s:null;
   if(s===lastS&&lastS!==undefined&&app.dataset.r)return;lastS=s;app.dataset.r=1;  /* 강사 화면 1분 신호(hb)마다 다시 그리지 않음(답 쓰는 중 끊김 방지) */

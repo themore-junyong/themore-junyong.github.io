@@ -242,9 +242,10 @@ var CH='ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ';
 function cho(w){return w.split('').map(function(c){var k=c.charCodeAt(0)-0xAC00;return k>=0&&k<11172?CH[Math.floor(k/588)]:c}).join('')}
 
 /* ───── 상태 ───── */
-var COLORS=['#e5484d','#2f80ed','#2e9e5b','#f2a20c','#8e4ec6','#12a4b5'];
-var st={teams:4,score:[0,0,0,0,0,0],tname:['A팀','B팀','C팀','D팀','E팀','F팀'],sel:0,cat:{balance:'전체',chosung:'전체',emoji:'전체',body:'전체'},bodySec:60};
+var COLORS=['#e5484d','#2f80ed','#2e9e5b','#f2a20c','#8e4ec6','#12a4b5','#d6409f','#6b7a3a'];
+var st={teams:4,score:[0,0,0,0,0,0,0,0],tname:['A팀','B팀','C팀','D팀','E팀','F팀','G팀','H팀'],sel:0,cat:{balance:'전체',chosung:'전체',emoji:'전체',body:'전체'},bodySec:60};
 try{var sv=JSON.parse(localStorage.getItem('ice-v1')||'{}');st=Object.assign(st,sv);st.cat=Object.assign({balance:'전체',chosung:'전체',emoji:'전체',body:'전체'},sv.cat||{})}catch(e){}
+while(st.score.length<8)st.score.push(0);['A팀','B팀','C팀','D팀','E팀','F팀','G팀','H팀'].forEach(function(n,i){if(!st.tname[i])st.tname[i]=n});
 function save(){try{localStorage.setItem('ice-v1',JSON.stringify(st))}catch(e){}}
 var BANK={balance:BAL,chosung:CHO,emoji:EMO,body:BODY};
 var G={}; /* 게임별 덱·현재 문제 */
@@ -263,7 +264,7 @@ function cats(v){return '<div class="chips">'+['전체'].concat(Object.keys(BANK
 function count(v){var g=G[v];return '<span class="note">'+(v==='chosung'||v==='emoji'?'<b style="font-size:1.4rem;color:var(--ink)">'+(g.i+1)+'번</b> / '+g.deck.length+' · 정답지 '+g.seed:(g.i+1)+' / '+g.deck.length)+(g.done?' · 한 바퀴 돌아서 다시 섞었어요':'')+'</span>'}
 function hit(){var h='<div class="hit">';for(var i=0;i<st.teams;i++)h+='<button data-hit="'+i+'" style="--c:'+COLORS[i]+'">'+esc(st.tname[i])+' +1</button>';return h+'</div>'}
 function board(){
- var h='<div class="card"><div class="row" style="justify-content:space-between"><h3>팀 점수</h3><div class="row" style="gap:6px"><span class="note">팀 수</span>'+[2,3,4,5,6].map(function(n){return '<button class="btn" data-tn="'+n+'" style="padding:4px 12px;'+(st.teams===n?'background:var(--blue);color:var(--blue-ink);border-color:var(--blue)':'')+'">'+n+'</button>'}).join('')+'<button class="btn" data-a="zero" style="padding:4px 12px">0점으로</button></div></div><div class="score">';
+ var h='<div class="card"><div class="row" style="justify-content:space-between"><h3>팀 점수</h3><div class="row" style="gap:6px"><span class="note">팀 수</span>'+[2,3,4,5,6,7,8].map(function(n){return '<button class="btn" data-tn="'+n+'" style="padding:4px 12px;'+(st.teams===n?'background:var(--blue);color:var(--blue-ink);border-color:var(--blue)':'')+'">'+n+'</button>'}).join('')+'<button class="btn" data-a="zero" style="padding:4px 12px">0점으로</button></div></div><div class="score">';
  for(var i=0;i<st.teams;i++)h+='<div class="sc'+(V==='body'&&st.sel===i?' sel':'')+'" style="--c:'+COLORS[i]+'"><b data-ren="'+i+'" title="눌러서 이름 바꾸기">'+esc(st.tname[i])+'</b><div class="n">'+st.score[i]+'</div><div class="row"><button class="btn" data-sc="'+i+'" data-d="-1">−</button><button class="btn" data-sc="'+i+'" data-d="1">+</button></div></div>';
  return h+'</div><p class="note">팀 이름을 누르면 바꿀 수 있어요. 점수는 이 기기에만 저장돼요.</p></div>';
 }
@@ -504,6 +505,9 @@ document.addEventListener('keydown',function(e){
 document.getElementById('sov').addEventListener('click',function(e){var t=e.target.closest('button');if(t)act(t.dataset);else if(e.target.id==='sov')e.currentTarget.hidden=true});
 document.getElementById('kX').addEventListener('click',function(){document.getElementById('kov').hidden=true});
 if(HOST)hostInit();else render();
+/* 강사가 방을 만들 때 정한 조 이름이 있으면 점수판·학생 폰 조를 그 이름으로 (방 연결된 노트북) */
+if(!HOST&&window.TM_SYNC&&TM_SYNC.teams)TM_SYNC.teams(function(T){if(!T||T.length<2)return;var n=Math.min(8,T.length),ch=st.teams!==n;
+ for(var i=0;i<n;i++){if(st.tname[i]!==T[i])ch=true;st.tname[i]=String(T[i]).slice(0,12)}st.teams=n;if(st.sel>=n)st.sel=0;if(ch){st.score=[0,0,0,0,0,0,0,0]}save();render()});
 })();
 </script>
 </body></html>
