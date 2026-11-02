@@ -250,9 +250,14 @@ function save(){try{localStorage.setItem('ice-v1',JSON.stringify(st))}catch(e){}
 var BANK={balance:BAL,chosung:CHO,emoji:EMO,body:BODY};
 var G={}; /* 게임별 덱·현재 문제 */
 function pool(v){var b=BANK[v],c=st.cat[v];var out=[];Object.keys(b).forEach(function(k){if(c==='전체'||c===k)b[k].forEach(function(x){out.push({cat:k,x:x})})});return out}
-function deal(v){var g=G[v]||(G[v]={});g.seed=1000+Math.floor(Math.random()*9000);g.deck=sshuffle(pool(v),g.seed);g.i=0;g.show=false;g.pick=null;g.done=0}
+function deal(v){var g=G[v]||(G[v]={});g.seed=1000+Math.floor(Math.random()*9000);g.deck=sshuffle(pool(v),g.seed);g.i=0;g.show=false;g.pick=null;g.done=0;g.end=0}
 function cur(v){var g=G[v];if(!g||!g.deck)deal(v);g=G[v];return g.deck[g.i]}
-function next(v){var g=G[v];g.i++;g.show=false;g.pick=null;if(g.i>=g.deck.length){deal(v);G[v].done=1}}
+function next(v){var g=G[v];if(v!=='body'&&g.end)return;g.i++;g.show=false;g.pick=null;if(g.i>=g.deck.length){if(v==='body'){deal(v);G[v].done=1}else{g.i=g.deck.length-1;g.end=1}}}
+/* 마지막 문제 다음 → 끝 화면 (몸으로 말해요는 시간제라 계속 섞음) */
+function fin(v){var g=G[v],nm={balance:'밸런스 질문',chosung:'초성 문제',emoji:'이모지 문제'}[v];
+ return head()+'<div class="card" style="text-align:center"><div class="big" style="font-size:4rem">🎉 끝!</div><p style="font-size:1.4rem;font-weight:800">준비한 '+nm+' '+g.deck.length+'개를 모두 했어요.</p>'+
+  '<div class="row" style="justify-content:center">'+(SYNC()?'<button class="btn pri big" data-a="stat">📊 조별 통계 보기</button>':'')+'<button class="btn big" data-a="again">🔀 다시 섞어서 처음부터</button></div>'+
+  '<p class="note">위 탭에서 다른 게임으로 넘어가도 돼요.</p></div>'+board()}
 
 var V=(location.hash||'').slice(1)||'balance';
 window.addEventListener('hashchange',function(){if(HOST)return;V=(location.hash||'').slice(1)||'balance';stopT();render()});
@@ -271,6 +276,7 @@ function board(){
 
 /* ───── 밸런스 게임 ───── */
 function balance(){
+ if(cur('balance')&&G.balance.end)return fin('balance');
  var q=cur('balance'),g=G.balance,p=q.x;
  return head()+'<div class="card"><div class="row" style="justify-content:space-between">'+cats('balance')+count('balance')+'</div>'+
   '<div style="text-align:center"><span class="cat">'+esc(q.cat)+'</span></div>'+
@@ -280,6 +286,7 @@ function balance(){
 }
 /* ───── 초성 퀴즈 ───── */
 function chosung(){
+ if(cur('chosung')&&G.chosung.end)return fin('chosung');
  var q=cur('chosung'),g=G.chosung,w=q.x;
  return head()+'<div class="card"><div class="row" style="justify-content:space-between">'+cats('chosung')+count('chosung')+'</div>'+
   '<div style="text-align:center"><span class="cat">'+esc(q.cat)+' · '+w.replace(/\s/g,'').length+'글자</span></div>'+
@@ -290,6 +297,7 @@ function chosung(){
 }
 /* ───── 이모지 퀴즈 ───── */
 function emoji(){
+ if(cur('emoji')&&G.emoji.end)return fin('emoji');
  var q=cur('emoji'),g=G.emoji;
  return head()+'<div class="card"><div class="row" style="justify-content:space-between">'+cats('emoji')+count('emoji')+'</div>'+
   '<div style="text-align:center"><span class="cat">'+esc(q.cat)+'</span></div>'+
@@ -359,7 +367,7 @@ function keyOpen(v){var o=document.getElementById('kov');o.hidden=false;var u=ke
 var HOST=V==='host', BC=null;try{BC=new BroadcastChannel('ice-v1')}catch(e){}
 function snap(){
  var o={V:V,teams:st.teams,tname:st.tname.slice(0,st.teams),score:st.score.slice(0,st.teams),sel:st.sel,cat:st.cat[V]};
- if(G[V]&&G[V].deck){var g=G[V],q=g.deck[g.i];o.num=g.i+1;o.tot=g.deck.length;o.show=!!g.show;o.qcat=q.cat;
+ if(G[V]&&G[V].deck){var g=G[V],q=g.deck[g.i];o.num=g.i+1;o.tot=g.deck.length;o.show=!!g.show;o.qcat=q.cat;o.end=!!g.end;
   if(V==='chosung'){o.q=cho(q.x);o.ans=q.x}else if(V==='emoji'){o.q=q.x[0];o.ans=q.x[1]}else if(V==='balance'){o.q=q.x[0]+'  VS  '+q.x[1]}else if(V==='body'){o.ans=q.x}}
  o.T={run:T.run,end:T.end,left:T.left,sec:T.sec};o.B={run:B.run,end:B.end,ok:B.ok,pass:B.pass,over:B.over};o.bodySec=st.bodySec;return o}
 /* ───── 학생 폰 응답 (방 연결된 강사 노트북일 때만) : 학생이 조를 고르고 → 밸런스는 A/B, 초성·이모지는 답을 씀 → 조별로 모아 통계 ───── */
@@ -369,7 +377,7 @@ function rSave(){try{var k=Object.keys(R);if(k.length>150)k.sort(function(a,b){r
 function qid(){var g=G[V];return g&&g.deck?V+'-'+g.seed+'-'+g.i:''}
 function norm(x){return String(x||'').replace(/[\s.,!?~·'"()\-]/g,'').toLowerCase()}
 function parse(a){var v=String(a.v||''),i=v.indexOf('|');return {t:+v.slice(0,i),x:v.slice(i+1),nick:a.nick||''}}
-function curRec(){var id=qid();if(!id||!(V==='balance'||V==='chosung'||V==='emoji'))return null;
+function curRec(){var id=qid();if(!id||!(V==='balance'||V==='chosung'||V==='emoji')||G[V].end)return null;
  var g=G[V],q=g.deck[g.i];if(!R[id])R[id]={v:V,q:V==='balance'?q.x[0]+' VS '+q.x[1]:V==='chosung'?cho(q.x)+' ('+q.x+')':q.x[0]+' ('+q.x[1]+')',ans:V==='chosung'?q.x:V==='emoji'?q.x[1]:'',opts:V==='balance'?q.x:null,A:[],at:Date.now()};return R[id]}
 function askNow(){if(!SYNC()||V.indexOf('ans/')===0)return;var r=curRec();
  if(!r){TM_SYNC.ask(null);TM_SYNC.onAns('',null);return}
@@ -415,6 +423,7 @@ function statOpen(){var o=document.getElementById('sov'),ids=Object.keys(R).sort
 function stuPub(){if(!window.TM_SYNC||!TM_SYNC.on||HOST||V.indexOf('ans/')===0||!G[V]||!G[V].deck)return;var s=snap(),
  m={game:'🎲 아이스브레이킹 · '+({balance:'밸런스 게임',chosung:'초성 퀴즈',emoji:'이모지 퀴즈',body:'몸으로 말해요'}[s.V]||''),num:s.num+' / '+s.tot,cat:s.qcat||'',
   score:s.tname.map(function(n,i){return {n:n,v:s.score[i],c:COLORS[i]}}),teams:s.tname.map(function(n,i){return {n:n,c:COLORS[i]}})};
+ if(s.end){m.num='';m.cat='';m.big='🎉 끝! 모두 수고했어요';m.sub='선생님이 다음 활동을 고를 때까지 기다려 주세요';m.score=s.V==='balance'?null:m.score;return TM_SYNC.pub('ice',m)}
  if(s.V==='balance'||s.V==='chosung'||s.V==='emoji')m.ask={id:qid(),kind:s.V==='balance'?'ab':'text',open:s.V==='balance'||!s.show,ans:s.show?s.ans:''};
  if(s.V==='balance'){var ab=String(s.q).split('  VS  ');m.big='둘 중 하나만 고른다면?';m.opts=[{t:'🅰 '+ab[0]},{t:'🅱 '+(ab[1]||'')}];m.score=null}
  else if(s.V==='chosung'||s.V==='emoji'){m.big=s.q;m.huge=s.V==='chosung';if(s.show)m.reveal='정답: '+s.ans;if(s.T.run)m.end=s.T.end;else if(s.T.left!=null&&s.T.left<s.T.sec)m.clockText=Math.ceil(s.T.left)+'초'}
@@ -433,7 +442,9 @@ function hostRender(){
  if(!s){app.innerHTML=h+'<div class="card"><p>이 창은 노트북 화면에 두고, 원래 창(문제 화면)을 빔(2번 모니터)으로 옮겨 전체 화면으로 띄우세요.</p></div>';return}
  h+='<div class="card">';
  var tm='';if(s.V==='chosung'||s.V==='emoji'){var l=s.T.run?Math.max(0,Math.ceil((s.T.end-Date.now())/1000)):(s.T.left==null?s.T.sec:Math.ceil(s.T.left));tm='<span class="mini" id="htm">'+l+'초</span>'}
- if(s.V==='chosung'||s.V==='emoji'){
+ if(s.end&&s.V!=='body'){
+  h+='<div class="stage">🎉 마지막 문제까지 끝났어요 ('+s.tot+'개)</div><div class="row" style="justify-content:center"><button class="btn pri big" data-h="again">🔀 다시 섞어서 처음부터</button></div>';
+ }else if(s.V==='chosung'||s.V==='emoji'){
   h+='<div class="row" style="justify-content:space-between"><span class="cat">'+esc(s.qcat)+'</span><b style="font-size:1.6rem">'+s.num+'번 / '+s.tot+'</b></div>'+
    '<div style="text-align:center;font-size:2.4rem;font-weight:900">'+esc(s.q)+'</div>'+
    '<div class="ans" style="font-size:3rem">'+esc(s.ans)+'</div><p class="note" style="text-align:center">'+(s.show?'빔에 정답이 보이는 중':'빔에는 아직 정답이 안 보여요')+'</p>'+
@@ -480,6 +491,7 @@ function act(d){
   case 'fs':if(document.fullscreenElement)document.exitFullscreen();else document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen();break;
   case 'zero':if(confirm('모든 팀 점수를 0점으로 할까요?')){st.score=[0,0,0,0,0,0];save();render()}break;
   case 'next':next(V);resetQ();render();break;
+  case 'again':deal(V);resetQ();render();break;
   case 'key':keyOpen(V);break;
   case 'stat':statOpen();break;
   case 'sclose':document.getElementById('sov').hidden=true;break;
