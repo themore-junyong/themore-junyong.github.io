@@ -106,11 +106,11 @@ exports.pushChat = onDocumentCreated({ ...trig, document: 'rooms/{j}/msgs/{m}' }
   const to = [...(r.members || []), ...(await coPeople(r.coId))].filter(u => u && u !== m.by);
   await pushTo(to, `강사로 · ${clip(r.title || '강의 대화방', 30)}`, `${m.who || ''}: ${m.text || '사진을 보냈어요'}`, 'ch-' + e.params.j);
 });
-// 마감 + 확정 강사 모두 지급 완료 + 모두 입금 확인 → 대화방과 메시지를 지움
+// 확정 강사 모두 지급 완료 + 모두 입금 확인 → 대화방과 메시지를 지움 (마감 안 눌러도)
 async function chatDoneCheck(jobId) {
   if (!jobId) return;
   const [j, room] = await Promise.all([db.doc(`jobs/${jobId}`).get(), db.doc(`rooms/${jobId}`).get()]);
-  if (!room.exists || !j.exists || j.data().status !== '마감') return;
+  if (!room.exists || !j.exists) return;
   const cf = (await db.collection('apps').where('jobId', '==', jobId).get()).docs.map(d => d.data()).filter(a => a.status === '확정');
   if (!cf.length || !cf.every(a => a.paidAt && a.recv === 'ok')) return;
   await db.recursiveDelete(room.ref);

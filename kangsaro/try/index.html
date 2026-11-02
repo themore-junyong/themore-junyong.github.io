@@ -490,23 +490,31 @@ function planUndo(j){const U=planSeen(j);if(!U.st.length)return toast('되돌릴
 const myUid=()=>window.KSR_UID||meId();
 const chatMembers=j=>appsOf(j.id).filter(a=>a.status==='확정').map(a=>a.instId);
 const chatCan=j=>!!j&&chatMembers(j).length>0&&!chatDone(j)&&(meRole()==='c'?j.coId===meId():chatMembers(j).includes(meId()));
-// 마감 + 업체가 모두 지급 + 강사가 모두 입금 확인 → 대화방 끝 (서버가 메시지도 지움)
-const chatDone=j=>j.status==='마감'&&chatMembers(j).length>0&&appsOf(j.id).filter(a=>a.status==='확정').every(a=>a.paidAt&&a.recv==='ok');
+// 확정 강사 모두: 업체 '보냈어요'(지급) + 강사 '입금 확인했어요' → 대화방 끝 (대화 목록에서 빠지고, 서버가 방·메시지를 지움)
+const chatDone=j=>chatMembers(j).length>0&&appsOf(j.id).filter(a=>a.status==='확정').every(a=>a.paidAt&&a.recv==='ok');
 const CHL={msgs:jid=>(S.chats||[]).filter(m=>m.jobId===jid).sort((a,b)=>a.at<b.at?-1:1),
   send:(jid,m)=>{(S.chats=S.chats||[]).push({id:uid(),jobId:jid,...m});save();chatPaint()},
   del:(jid,id)=>{S.chats=(S.chats||[]).filter(x=>x.id!==id);save();chatPaint()},
-  lastOf:jid=>{const L=CHL.msgs(jid),m=L[L.length-1];return m?{at:m.at,by:m.by}:null},open(){},close(){}};
+  lastOf:jid=>{const L=CHL.msgs(jid),m=L[L.length-1];return m?{at:m.at,by:m.by,text:m.text||(m.img?'사진':''),who:m.who}:null},open(){},close(){}};
 const CHT=()=>window.CHATX||CHL;
 const chatKey=jid=>`kangsaro.chat.${myUid()}.${jid}`;
 const chatNew=jid=>{const l=CHT().lastOf(jid);if(!l||l.by===myUid())return false;let r='';try{r=localStorage.getItem(chatKey(jid))||''}catch(e){}return l.at>r};
 const chatBtn=j=>chatCan(j)?`<button class="btn sm${chatNew(j.id)?' pri':''}" style="align-self:flex-start" data-act="chatOpen" data-j="${j.id}">💬 강의 대화방${chatNew(j.id)?' · 새 메시지':''}</button>`:'';
+// 하단 '대화' 탭: 내가 들어갈 수 있는 강의 대화방 모음 (새 메시지·최근 대화 순)
+const chatRooms=()=>S.jobs.filter(chatCan).map(j=>({j,l:CHT().lastOf(j.id),nw:chatNew(j.id)})).sort((a,b)=>(b.nw-a.nw)||((b.l&&b.l.at||'')>(a.l&&a.l.at||'')?1:(b.l&&b.l.at||'')<(a.l&&a.l.at||'')?-1:(a.j.dates[0]||'')<(b.j.dates[0]||'')?-1:1));
+const chatNewCount=()=>chatRooms().filter(r=>r.nw).length;
+function vChat(){const R=chatRooms();
+  return `<h2>강의 대화방</h2><p class="mu sm">확정된 강사와 업체만 들어오는 방이에요. 강의마다 하나씩 열리고, 업체가 '보냈어요', 강사가 '입금 확인했어요'까지 모두 누르면 자동으로 사라져요.</p>
+  ${R.map(({j,l,nw})=>`<button class="card" data-act="chatOpen" data-j="${j.id}" style="text-align:left;cursor:pointer;width:100%"><div class="row">${nw?'<span class="chip warn">새 대화</span>':''}<span class="chip off">${j.dates.length?md(j.dates[0])+(j.dates.length>1?'~'+md(last(j.dates)):''):''}</span><span class="mu sm">${meRole()==='c'?`확정 강사 ${chatMembers(j).length}명`:esc(co(j.coId).name)}</span></div>
+    <h3>💬 ${esc(j.region||'')} ${esc(j.school)} ${esc(j.title)}</h3>
+    <span class="mu sm">${l?`${l.text?esc((l.who&&l.by!==myUid()?l.who+': ':'')+String(l.text).slice(0,40)):'새 메시지'} · ${chatTime(l.at)}`:'아직 대화가 없어요'}</span></button>`).join('')||`<div class="card"><p class="mu">열린 대화방이 없어요.</p><p class="mu sm">${meRole()==='c'?'강의에 강사를 확정하면 그 강의 대화방이 여기에 생겨요.':'업체가 나를 강사로 확정하면 그 강의 대화방이 여기에 생겨요.'}</p></div>`}`}
 const chatWho=j=>meRole()==='c'?`${co(j.coId).name}${WHO?' '+WHO:''}`:`${inst(meId()).name} 강사`;
 const chatTime=at=>{const d=new Date(at);return isNaN(d)?'':`${d.getMonth()+1}/${d.getDate()} ${pad(d.getHours())}:${pad(d.getMinutes())}`};
 function chatOpen(jid){const j=job(jid);if(!chatCan(j))return toast('확정된 강사와 업체만 들어올 수 있어요');ui.chat=jid;CHT().open(jid);document.body.classList.add('chatting');
   openSheet(`<div class="row"><h2 class="sp">💬 ${esc(j.school)} ${esc(j.title)}</h2><button class="btn sm" data-act="closeSheet">닫기</button></div>
   <span class="mu sm">${esc(co(j.coId).name)}과(와) 이 강의에 확정된 강사 ${chatMembers(j).length}명만 보는 방이에요.</span>
   <div id="chatList" class="chat" aria-live="polite"></div>
-  <span class="mu sm">모집 마감, 업체 지급, 강사 입금 확인이 모두 끝나면 대화방은 사라져요.</span>
+  <span class="mu sm">업체 지급, 강사 입금 확인이 모두 끝나면 대화방은 사라져요.</span>
   ${`<div class="chatIn"><label class="btn sm" title="사진 보내기" aria-label="사진 보내기">📷<input type="file" accept="image/*" data-act="chatImg" hidden></label><textarea id="chatText" rows="1" maxlength="1000" placeholder="메시지 (Enter 보내기, Shift+Enter 줄바꿈)"></textarea><button class="btn sm pri" data-act="chatSend">보내기</button></div>`}`);
   chatPaint()}
 function chatPaint(){const box=$('#chatList');if(!box||!ui.chat)return;const L=CHT().msgs(ui.chat),me=myUid();
@@ -548,7 +556,7 @@ function dateWarn(dates,dows){const W=[];for(const iso of dates){const a=dowOf(i
   if(iso<todayIso())W.push(`${mdK(iso)}은 이미 지난 날짜예요`)}return W}
 
 /* ===== 화면 공통 ===== */
-const NAV={i:[['cal','홈'],['jobs','공고'],['plus','+'],['money','결산'],['me','프로필']],c:[['cjobs','강의'],['cnew','+'],['pay','지급'],['csum','결산']]};
+const NAV={i:[['cal','홈'],['jobs','공고'],['plus','+'],['chat','대화'],['money','결산'],['me','프로필']],c:[['cjobs','강의'],['cnew','+'],['chat','대화'],['pay','지급'],['csum','결산']]};
 function unreadCount(){const id=meId();let n=0;for(const j of S.jobs)for(const nt of j.notices)if((nt.to||[]).includes(id)&&!nt.reads[id])n++;return n}
 // 리마인드: 확정 강사에게 강의 7일·3일·1일 전 한 번씩 알림 (서버판에서는 매일 아침 자동 발송)
 function runReminders(){const t=todayIso();let ch=0;
@@ -564,8 +572,8 @@ function contactBtns(p,body){return `<a class="btn sm" href="tel:${esc(String(p.
 function render(){runReminders();const sw0=$('#slide'),keep=sw0?sw0.scrollLeft:0;
   const who=$('#who');who.innerHTML=`<optgroup label="강사">${S.insts.map(i=>`<option value="i:${i.id}">강사 ${esc(i.name)} (예시)</option>`).join('')}</optgroup><optgroup label="회사">${S.cos.map(c=>`<option value="c:${c.id}">회사 ${esc(c.name)} (예시)</option>`).join('')}</optgroup>`;who.value=S.me;
   const r=meRole();if(!NAV[r].some(n=>n[0]===ui.tab))ui.tab=NAV[r][0][0];
-  const un=r==='i'?unreadCount():0;
-  $('#nav').innerHTML=NAV[r].map(([k,l])=>k==='plus'||k==='cnew'?`<button class="plus" data-act="${k}" aria-label="${r==='i'?'일정 넣기':'강의 등록'}">+</button>`:`<button data-tab="${k}" class="${ui.tab===k?'on':''}">${l}${k==='cal'&&un?`<span class="dot">${un}</span>`:''}</button>`).join('');
+  const un=r==='i'?unreadCount():0,cn=chatNewCount();
+  $('#nav').innerHTML=NAV[r].map(([k,l])=>k==='plus'||k==='cnew'?`<button class="plus" data-act="${k}" aria-label="${r==='i'?'일정 넣기':'강의 등록'}">+</button>`:`<button data-tab="${k}" class="${ui.tab===k?'on':''}">${l}${k==='cal'&&un?`<span class="dot">${un}</span>`:''}${k==='chat'&&cn?`<span class="dot">${cn}</span>`:''}</button>`).join('');
   $('#main').innerHTML=(VIEWS[ui.tab]||(()=>''))();
   // 슬라이드: 날짜·달이 바뀌면 그 날짜 카드로, 아니면 보던 자리 그대로
   const ac=$('#alCar');if(ac){const w=ac.clientWidth||1;ui.alI=Math.min(ui.alI||0,ac.children.length-1);ac.scrollLeft=ui.alI*w;alDots();ac.onscroll=()=>{clearTimeout(ui._at);ui._at=setTimeout(()=>{ui.alI=Math.round(ac.scrollLeft/(ac.clientWidth||1));alDots()},80)}}
@@ -1013,7 +1021,7 @@ function vCJob(j){const A=appsOf(j.id),s=jobStats(j);
   <h3>지원자 ${A.filter(a=>a.status!=='미선정'&&a.status!=='취소').length}명${A.some(a=>a.status==='미선정')?` · 미선정 ${A.filter(a=>a.status==='미선정').length}명`:''}${A.some(a=>a.status==='취소')?` · 취소 ${A.filter(a=>a.status==='취소').length}명`:''}</h3>
   ${A.filter(a=>a.status!=='미선정'&&a.status!=='취소').map(prof).join('')||'<p class="mu">아직 지원자가 없어요.</p>'}${A.filter(a=>a.status==='취소').map(a=>`<div class="row mu sm">${esc(inst(a.instId).name)} · ${a.cxConfirmed?'확정 후 취소':'지원 취소'}</div>`).join('')}
   <h3>공지</h3>
-  ${chatCan(j)?'':(chatDone(j)?'<span class="mu sm">마감·지급·입금 확인이 모두 끝나 대화방이 닫혔어요.</span>':'<span class="mu sm">강사를 확정하면 이 강의 대화방이 열려요. 확정된 강사와 업체만 들어와요.</span>')}
+  ${chatCan(j)?'':(chatDone(j)?'<span class="mu sm">지급·입금 확인이 모두 끝나 대화방이 닫혔어요.</span>':'<span class="mu sm">강사를 확정하면 이 강의 대화방이 열려요. 확정된 강사와 업체만 들어와요.</span>')}
   <div class="card"><label class="f">종류<select id="ntKind"><option>일반</option><option>시간표</option><option>집결 장소</option><option>주의사항</option><option>준비물</option></select></label><textarea class="f" id="ntText" rows="3" placeholder="도착 장소, 주차, 기자재, 인원, 준비물, 주의사항 등"></textarea><label class="f">사진·이미지 (시간표, 약도 등, 선택)<input type="file" id="ntImg" accept="image/*"></label><button class="btn pri" data-act="notice" data-j="${j.id}" ${s.cf?'':'disabled'}>확정 강사 ${s.cf}명에게 공지 보내기</button></div>
   ${j.notices.slice().reverse().map(n=>{const to=n.to||[],rd=to.filter(i=>n.reads[i]);return `<div class="card">${n.kind?`<b class="sm">[${esc(n.kind)}]</b>`:''}<pre class="pf">${esc(n.text)}</pre>${n.img?`<img src="${n.img}" alt="공지 이미지" style="width:100%;border-radius:8px">`:''}<span class="mu sm">${n.by?`작성 ${esc(n.by)} · `:''}읽음 ${rd.length}/${to.length}${to.length>rd.length?` · 안 읽음: ${to.filter(i=>!n.reads[i]).map(i=>esc(inst(i).name)).join(', ')}`:''}</span>
    ${to.filter(i=>!n.reads[i]).map(i=>{const p=inst(i);return `<div class="row"><b class="sm sp">${esc(p.name)} (안 읽음)</b>${contactBtns(p,`[${co(j.coId).name}] ${p.name} 강사님, ${j.school} ${j.title} 공지가 올라왔어요. 강사로 앱에서 확인 부탁드립니다.\n\n${n.text.slice(0,120)}`)}</div>`}).join('')}</div>`}).join('')}`}
@@ -1158,7 +1166,7 @@ function vCSum(){const Y=ui.month.slice(0,4),P=S.apps.filter(a=>a.paidAt&&a.paid
   <button class="btn" data-act="copyCSum">결산표 복사</button><button class="btn" data-act="taxCsv">지급명세서 준비 파일 받기 (CSV)</button>
   <p class="mu sm">파일에는 지급월·강사 이름·지급액·소득세·지방소득세가 강사별로 들어가요. 주민등록번호는 앱에 저장하지 않으니, 홈택스에 올릴 때 직접 채워 주세요.</p><p class="mu sm">참고용이에요. 실제 신고는 홈택스와 세무사 확인을 거치세요.</p>`}
 
-const VIEWS={cal:vCal,jobs:vJobs,money:vMoney,me:vMe,cjobs:vCJobs,pay:vPay,csum:vCSum};
+const VIEWS={cal:vCal,jobs:vJobs,money:vMoney,me:vMe,cjobs:vCJobs,pay:vPay,csum:vCSum,chat:vChat};
 
 /* ===== 동작 ===== */
 function tableText(){return [...$$('#main table')].map(t=>[...t.rows].map(r=>[...r.cells].map(c=>c.textContent).join('\t')).join('\n')).join('\n\n')}
