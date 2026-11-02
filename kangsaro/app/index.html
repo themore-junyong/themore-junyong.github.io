@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<meta name="build" content="261102-0952">
+<meta name="build" content="261102-0953">
 <title>강사로</title>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#2563EB">
@@ -453,7 +453,9 @@ function confirmApp(a,j){if(a.status==='확정')return;a.status='확정';S.alert
 // 되돌리기: 운영 칸·지원 상태를 바꿀 때마다 직전 모습을 쌓아 둠 (화면을 닫으면 사라짐)
 const planSnap=j=>JSON.stringify({slots:(j.plan&&j.plan.slots)||[],st:appsOf(j.id).map(a=>[a.id,a.status])});
 const planSeen=j=>{ui.undo=ui.undo||{};const U=ui.undo[j.id]=ui.undo[j.id]||{st:[],last:null};if(U.last===null)U.last=planSnap(j);return U};
-const planTouch=j=>{const U=planSeen(j),now=planSnap(j);if(now!==U.last){U.st.push(U.last);if(U.st.length>30)U.st.shift();U.last=now}j.planAt=new Date().toISOString();j.op=true;save();render()};
+// 운영 시간표가 있으면 공고 대표 시간은 칸 시간에서 자동 (가장 이른 시작~가장 늦은 끝)
+const planTime=j=>{if(!isOp(j))return;const R=j.plan.slots.map(x=>hmOf(x.time)).filter(Boolean);if(!R.length)return;j.time=`${hhmm(Math.min(...R.map(r=>r[0])))}~${hhmm(Math.max(...R.map(r=>r[1])))}`};
+const planTouch=j=>{planTime(j);const U=planSeen(j),now=planSnap(j);if(now!==U.last){U.st.push(U.last);if(U.st.length>30)U.st.shift();U.last=now}j.planAt=new Date().toISOString();j.op=true;save();render()};
 function planUndo(j){const U=planSeen(j);if(!U.st.length)return toast('되돌릴 게 없어요');const o=JSON.parse(U.st.pop());let un=0;
   if(o.slots.length){j.plan=j.plan||{};j.plan.slots=o.slots}else{delete j.plan;j.op=false}
   for(const [id,st] of o.st){const a=S.apps.find(x=>x.id===id);if(a&&a.status!==st){if(a.status==='확정'&&st==='지원'){S.alerts.push({id:uid(),instId:a.instId,appId:a.id,text:`[확정 취소] ${co(j.coId).name} · ${j.school} ${j.title} 배정이 잘못 눌려 취소되었어요. 다시 확정되면 알려 드릴게요.`,at:new Date().toISOString(),read:false});un++}a.status=st}}
@@ -946,7 +948,7 @@ function vCJob(j){const A=appsOf(j.id),s=jobStats(j);
   ${j.hold?`<div class="alert"><b>확인 대기 · 강사에게 아직 안 보여요</b><br>${scamWhy(j)} 때문이에요. 표현을 고쳐 저장하면 바로 다시 검사해서 올라가요. 그대로 두면 운영자 확인 뒤 올라가요. 문의: tobadyclup@naver.com</div>`:''}${downByReports(j)?'<div class="alert"><b>강사 신고 3건으로 내려갔어요.</b> 운영자가 확인 중이에요. 문의: tobadyclup@naver.com</div>':''}
   <div class="card"><div class="row">${jChip(j)}<h2 class="sp">${esc(j.region)} ${esc(j.school)} ${esc(j.title)}</h2></div>
   <div class="grid2"><label class="f">강의 제목<input data-act="jedit" data-k="title" value="${esc(j.title||'')}"></label><label class="f">학교(기관)<input data-act="jedit" data-k="school" value="${esc(j.school||'')}"></label><label class="f">지역<input data-act="jedit" data-k="region" value="${esc(j.region||'')}"></label></div>
-  <div class="grid2"><label class="f">날짜 (쉼표로)<input data-act="jedit" data-k="dates" value="${j.dates.join(', ')}"></label><label class="f">시간<input data-act="jedit" data-k="time" value="${esc(j.time)}"></label></div>
+  <div class="grid2"><label class="f">날짜 (쉼표로)<input data-act="jedit" data-k="dates" value="${j.dates.join(', ')}"></label>${isOp(j)?`<div class="f"><span>시간</span><span class="sm" style="padding:10px 0">${esc(j.time||'')} <span class="mu">· 아래 운영 시간표에서 칸마다 정해요</span></span></div>`:`<label class="f">시간<input data-act="jedit" data-k="time" value="${esc(j.time)}"></label>`}</div>
   <span class="mu sm">날짜·시간을 고치면 확정된 강사 달력에도 바로 바뀌고, 강사에게 변경 공지가 가요.</span>
   <span class="mu">${esc(j.교시)} · ${esc(j.대상)} · 강사료 ${feeLabel(j)} (강사에게 공개)</span>
   <label class="f">공고 내용<textarea data-act="jedit" data-k="desc" rows="4">${esc(j.desc||'')}</textarea></label>
@@ -1348,6 +1350,6 @@ document.addEventListener('input',ev=>{if(ev.target.matches&&ev.target.matches('
 render();
 </script>
 <script src="../bot.js" defer></script>
-<script type="module" src="real.js?v=261102-0952"></script>
+<script type="module" src="real.js?v=261102-0953"></script>
 </body>
 </html>
