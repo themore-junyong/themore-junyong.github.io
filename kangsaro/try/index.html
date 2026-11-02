@@ -326,9 +326,24 @@ const splitable=x=>{const r=hmOf(x.time);return !!r&&r[0]<12*60&&r[1]>13*60};
 function splitSlot(x){const [a,b]=hmOf(x.time),am=Math.round((12*60-a)/60),pm=Math.round((b-13*60)/60);
   return [{...x,id:uid(),time:`${hhmm(a)}~12:00`,per:'오전',n:Math.max(1,am)},{...x,id:uid(),time:`13:00~${hhmm(b)}`,per:'오후',n:Math.max(1,pm)}]}
 function splitSlots(j,id){let k=0;j.plan.slots=j.plan.slots.flatMap(x=>(!id||x.id===id)&&splitable(x)?(k++,splitSlot(x)):[x]);return k}
+// 시간표 만들기 폼: 날짜 고르기 + 시간 줄(시간·교시·인원) 여러 개. 유형 세 가지를 한 폼으로
+//  ① 고등학교 1~6교시 통 + 강사 여러 명 → 시간 한 줄, 인원 N  ② 오전·오후 강사 다름 → 시간 두 줄  ③ 2~4시간 한 명 → 시간 한 줄, 인원 1
+const opRowHtml=(t,pr,n)=>`<div class="row opRow" style="gap:6px;flex-wrap:nowrap"><input class="opTm" placeholder="09:00~12:00" value="${esc(t||'')}" style="flex:2 1 0;min-width:0" aria-label="시간"><input class="opPr" placeholder="1~3교시" value="${esc(pr||'')}" style="flex:1.3 1 0;min-width:0" aria-label="교시"><label class="sm" style="white-space:nowrap">인원 <input type="number" class="opN" min="1" max="40" value="${n||1}" style="width:3.6em" inputmode="numeric"></label><button class="btn sm" data-act="opRowDel" aria-label="이 시간 지우기">✕</button></div>`;
+function opForm(j,first){const r=hmOf(j.time),rows=[[first?j.time:'',first?j.교시:'']],lunch=first&&r&&r[0]<12*60&&r[1]>13*60;
+  return `<div class="f"><span>날짜</span><div class="row" style="flex-wrap:wrap">${j.dates.map(d=>`<label class="sm"><input type="checkbox" class="opD" value="${d}" checked> ${md(d)}(${dowOf(d)})</label>`).join('')}</div></div>
+    <div class="f"><span>강의 시간 <span class="mu sm">(시간마다 강사가 다르면 줄을 더하세요. 같은 시간에 강사가 여러 명이면 인원을 늘리세요)</span></span><div id="opRows" style="display:flex;flex-direction:column;gap:6px">${rows.map(([t,pr])=>opRowHtml(t,pr,1)).join('')}</div>
+    <div class="row" style="flex-wrap:wrap"><button class="btn sm" data-act="opRowAdd">＋ 시간 추가</button><button class="btn sm" data-act="opRowAdd" data-t="09:00~12:00" data-p="오전">＋ 오전</button><button class="btn sm" data-act="opRowAdd" data-t="13:00~16:00" data-p="오후">＋ 오후</button>${lunch?`<button class="btn sm" data-act="opRowSplit" data-t="${esc(j.time)}">오전·오후 두 줄로 나누기</button>`:''}</div></div>
+    <details><summary class="sm">반 이름으로 나누기 (선택)</summary><label class="f">반<input id="opCls" placeholder="예: 2학년 1~8반  또는  1반, 2반, 3반"></label><span class="mu sm">반을 쓰면 인원 대신 반마다 한 칸씩 만들어져요. '2학년 1~8반'처럼 쓰면 1반부터 8반까지 한 번에.</span>
+    <label class="f">수업 내용 (선택, 반 배정표 제목이 돼요)<input id="opMemo" placeholder="예: 중소기업이해"></label></details>
+    <button class="btn pri" data-act="opAdd" data-j="${j.id}">${first?'시간표 만들기':'칸 만들기'}</button>`}
+// 같은 시간에 강사 한 명 더: 그 시간 줄이 있는 날마다 칸 하나씩 (이름은 강사 1, 강사 2 …)
+function opMore(j,tk){let k=0;const ds=[...new Set(j.plan.slots.filter(x=>tKey(x)===tk).map(x=>x.d))];
+  for(const d of ds){const L=j.plan.slots.filter(x=>x.d===d&&tKey(x)===tk);if(L.length===1&&!L[0].cls)L[0].cls='강사 1';
+    let n=L.length+1;while(L.some(x=>x.cls===`강사 ${n}`))n++;const b=L[0];j.plan.slots.push({id:uid(),d,cls:`강사 ${n}`,time:b.time,per:b.per,n:b.n,inst:'',nm:'',sub:'',subNm:'',fee:'',...(b.memo?{memo:b.memo}:{})});k++}
+  return k}
 // 업체: 운영 시간표 (날짜 × 반 × 시간 칸에 강사 배정) + 강사별 받을 돈
 function opBox(j,A){
-  if(!isOp(j))return `<div class="card"><h3>여러 날·여러 반·여러 강사 운영인가요?</h3><span class="mu sm">한 주 과정처럼 날짜·반·오전/오후마다 강사가 다르면 운영 시간표를 만드세요. 칸마다 강사를 정하면 강사 달력에는 자기 칸만 떠요.</span><button class="btn" data-act="opMake" data-j="${j.id}">운영 시간표 만들기</button></div>`;
+  if(!isOp(j))return `<div class="card"><h3>시간표 만들기</h3><span class="mu sm">강의 시간과 강사 인원을 정하면 날짜마다 칸이 생기고, 칸마다 강사를 넣을 수 있어요. 강사 달력에는 자기 칸 날짜·시간만 떠요.</span>${opForm(j,true)}</div>`;
   const P=j.plan.slots,cf=A.filter(a=>a.status==='확정'||a.status==='지원'),names=[...new Set(P.flatMap(x=>[x.nm,x.subNm]).filter(Boolean))];
   const opt=(v,isSub)=>`<option value="">${isSub?'보조 없음':'미정'}</option>${cf.map(a=>`<option value="${a.instId}" ${v===a.instId?'selected':''}>${esc(inst(a.instId).name)}${a.status==='지원'?' (지원자)':''}</option>`).join('')}${names.map(n=>`<option value="nm:${esc(n)}" ${v==='nm:'+n?'selected':''}>${esc(n)} (앱 밖)</option>`).join('')}<option value="__nm">＋ 이름 직접 쓰기</option>`;
   const byD=[...new Set(P.map(x=>x.d))].sort();
@@ -345,12 +360,7 @@ function opBox(j,A){
     <div class="grid2"><label class="f">강사료 방식<select data-chg="opFee" data-j="${j.id}"><option value="day" ${j.feeMode!=='per'?'selected':''}>하루 총액</option><option value="per" ${j.feeMode==='per'?'selected':''}>교시당 단가</option></select></label>
     <label class="f">${j.feeMode==='per'?'교시당 단가(원)':'하루 총액(원)'}<input type="number" inputmode="numeric" data-chg="opAmt" data-j="${j.id}" value="${j.feeMode==='per'?(+j.feePer||''):(+j.fee||'')}"></label></div>
     <details><summary><b>＋ 칸 만들기</b> (날짜·반·시간을 고르면 한 번에)</summary>
-      <div class="row" style="flex-wrap:wrap">${j.dates.map(d=>`<label class="sm"><input type="checkbox" class="opD" value="${d}" checked> ${md(d)}(${dowOf(d)})</label>`).join('')}</div>
-      <label class="f">반 (하나면 비워 두세요)<input id="opCls" placeholder="예: 2학년 1~8반  또는  1반, 2반, 3반"></label><span class="mu sm">'2학년 1~8반'처럼 쓰면 2학년 1반부터 8반까지 한 번에 만들어져요.</span>
-      <label class="f">수업 내용 (선택, 반 배정표 제목이 돼요)<input id="opMemo" placeholder="예: 중소기업이해"></label>
-      <div class="grid2"><label class="f">시간<input id="opTime" placeholder="09:00~12:00" value="${esc(j.time||'')}"></label><label class="f">교시<input id="opPer" placeholder="1~3교시" value="${esc(j.교시||'')}"></label></div>
-      <div class="row"><button class="btn sm" data-act="opQuick" data-v="오전">오전 09:00~12:00</button><button class="btn sm" data-act="opQuick" data-v="오후">오후 13:00~16:00</button></div>
-      <button class="btn pri" data-act="opAdd" data-j="${j.id}">칸 만들기</button></details>
+      ${opForm(j,false)}</details>
     ${opGrid(j,cf,names,byD)}
     <details class="sm"><summary><b>칸별 자세히</b> (금액 바꾸기·보조강사·칸 지우기)</summary>
     ${byD.map(d=>{const L=P.filter(x=>x.d===d).sort((a,b)=>(String(a.time)+a.cls).localeCompare(String(b.time)+b.cls,'ko',{numeric:true})),e=L.filter(x=>!x.inst&&!x.nm).length;
@@ -392,6 +402,7 @@ function opGrid(j,cf,names,byD){const P=j.plan.slots,B=ui.brush||'',PN=opPanels(
   ${X.rows.map(r=>`<tr><th style="padding:2px"><button class="btn sm" data-act="paint" data-j="${j.id}" data-g="${gi}" data-rv="${esc(r)}" style="width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${short(r)}</button></th>${X.cols.map(v=>{const x=P.find(y=>X.in(y)&&X.cO(y)===v&&X.rO(y)===r);if(!x)return '<td style="background:var(--bg)"></td>';const w=who(x),hit=B&&val(x)===B;
     return `<td style="padding:2px"><button class="btn sm" data-act="paint" data-j="${j.id}" data-s="${x.id}" style="width:100%;height:${CH}px;padding:2px 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;${w?'background:var(--sf)':'background:var(--warns,#FDECE3);color:var(--r2)'};${hit?'outline:2px solid var(--ac)':''}">${w?esc(w)+(x.sub||x.subNm?'<span class="mu">+보조</span>':''):'미정'}${X.memo&&x.memo?`<span class="mu" style="display:block;font-size:11px;overflow:hidden;text-overflow:ellipsis">${esc(x.memo)}</span>`:''}</button></td>`}).join('')}</tr>`).join('')}
   </tbody></table></div>`}).join('')}
+  <div class="row" style="flex-wrap:wrap;gap:4px"><span class="sm">같은 시간에 강사 한 명 더:</span>${[...new Set(P.map(tKey))].sort(kSort).map(tk=>{const [t,pr]=tk.split('|');return `<button class="btn sm" data-act="opMore" data-j="${j.id}" data-tk="${esc(tk)}">＋ 인원 (${esc([t,pr].filter(Boolean).join(' ')||'시간 없음')})</button>`}).join('')}</div>
   <div class="row" style="flex-wrap:wrap;gap:4px"><b class="sm">${opKind(P)}</b><button class="btn sm" data-act="opPng" data-j="${j.id}" data-k="grid">⬇ 이미지</button><button class="btn sm" data-act="opPng" data-j="${j.id}" data-k="grid" data-n="1">공지에 넣기</button><button class="btn sm" data-act="opXls" data-j="${j.id}" data-k="inst">⬇ 강사별 엑셀 (정산용)</button></div>
   <span class="mu sm">표는 강의에 맞게 저절로 바뀌어요. 하루에 여러 반이 같은 시간에 들어가면 반 배정표, 시간에 따라 강사가 바뀌거나 여러 날이면 시간표로 나와요.</span>`}
 // 시간표·강사별 배정표를 엑셀(.xls)로. 색·테두리가 그대로 보이게 표(HTML)로 만듦
@@ -1226,14 +1237,21 @@ document.addEventListener('click',async ev=>{
     const v=x=>x.inst||(x.nm?'nm:'+x.nm:'');let c=0,n=0;
     for(const x of L){if(B==='__clear'||(D.s&&v(x)===B)){x.inst='';x.nm='';continue}if(!D.s&&v(x))continue;n++;c+=assignSlot(j,x,'inst',B)}
     planTouch(j);if(c)toast(`${inst(B).name} 강사를 확정했어요. 강사에게 알림이 갔어요`);else if(!D.s&&B!=='__clear')toast(n?`빈 칸 ${n}개에 넣었어요`:'빈 칸이 없어요');return}
-  if(A==='opQuick'){$('#opTime').value=D.v==='오전'?'09:00~12:00':'13:00~16:00';$('#opPer').value=D.v==='오전'?'1~3교시':'4~6교시';return}
-  if(A==='opAdd'){const j=job(D.j),ds=$$('.opD:checked').map(x=>x.value),cls=$('#opCls').value.split(/[,，]/).map(x=>x.trim()).filter(Boolean).flatMap(x=>{const m=x.match(/^(.*?)(\d+)\s*[~\-]\s*(\d+)\s*(반)?$/);if(!m||+m[3]<+m[2]||+m[3]-+m[2]>40)return [x];return Array.from({length:+m[3]-+m[2]+1},(_,i)=>`${m[1]}${+m[2]+i}${m[4]||'반'}`.replace(/(\S)(\d+반)$/,'$1 $2').replace(/\s+/g,' ').trim())}),memo=($('#opMemo')||{}).value?.trim()||'',time=$('#opTime').value.trim(),per=$('#opPer').value.trim();
-    if(!ds.length)return toast('날짜를 하나 이상 골라 주세요');if(!time&&!per)return toast('시간이나 교시를 넣어 주세요');
+  if(A==='opAdd'){const j=job(D.j),ds=$$('.opD:checked').map(x=>x.value),cls=$('#opCls').value.split(/[,，]/).map(x=>x.trim()).filter(Boolean).flatMap(x=>{const m=x.match(/^(.*?)(\d+)\s*[~\-]\s*(\d+)\s*(반)?$/);if(!m||+m[3]<+m[2]||+m[3]-+m[2]>40)return [x];return Array.from({length:+m[3]-+m[2]+1},(_,i)=>`${m[1]}${+m[2]+i}${m[4]||'반'}`.replace(/(\S)(\d+반)$/,'$1 $2').replace(/\s+/g,' ').trim())}),memo=($('#opMemo')||{}).value?.trim()||'',TR=$$('#opRows .opRow').map(r=>({time:r.querySelector('.opTm').value.trim(),per:r.querySelector('.opPr').value.trim(),n:Math.min(40,Math.max(1,+r.querySelector('.opN').value||1))})).filter(r=>r.time||r.per);
+    if(!ds.length)return toast('날짜를 하나 이상 골라 주세요');if(!TR.length)return toast('시간이나 교시를 넣어 주세요');
+    const first=!isOp(j);if(first){j.plan={slots:[]};j.feeMode=j.feeMode||'day'}
     // 처음 만든 빈 기본 칸(반·강사 없음)과 같은 날·시간이면 그 칸은 바꿔 씀
-    let n=0;for(const d of ds)for(const c of (cls.length?cls:[''])){const dup=j.plan.slots.find(x=>x.d===d&&x.cls===c&&x.time===time&&x.per===per);if(dup)continue;j.plan.slots.push({id:uid(),d,cls:c,time,per,n:perN(per||time),inst:'',nm:'',sub:'',subNm:'',fee:'',...(memo?{memo}:{})});n++}
+    let n=0;for(const d of ds)for(const {time,per,n:N} of TR)for(const c of (cls.length?cls:N>1?Array.from({length:N},(_,i)=>`강사 ${i+1}`):[''])){const dup=j.plan.slots.find(x=>x.d===d&&x.cls===c&&x.time===time&&x.per===per);if(dup)continue;const h=hmOf(time);j.plan.slots.push({id:uid(),d,cls:c,time,per,n:/\d/.test(per)?perN(per):h?Math.max(1,Math.round((h[1]-h[0])/60)):1,inst:'',nm:'',sub:'',subNm:'',fee:'',...(memo?{memo}:{})});n++}
     // 반 없이 처음 만들어진 칸은 반 칸이 생기면 없앰. 그 칸에 강사가 있었으면 그날 첫 반 칸으로 옮김
-    for(const x of j.plan.slots.filter(x=>x.cls==='')){const first=j.plan.slots.find(y=>y.d===x.d&&y.cls!=='');if(!first)continue;if((x.inst||x.nm)&&!first.inst&&!first.nm){first.inst=x.inst;first.nm=x.nm;first.sub=x.sub;first.subNm=x.subNm}x._del=1}
-    j.plan.slots=j.plan.slots.filter(x=>!x._del);planTouch(j);return toast(`칸 ${n}개를 만들었어요`)}
+    for(const x of j.plan.slots.filter(x=>x.cls==='')){const f1=j.plan.slots.find(y=>y.d===x.d&&y.cls!==''&&tKey(y)===tKey(x));if(!f1)continue;if((x.inst||x.nm)&&!f1.inst&&!f1.nm){f1.inst=x.inst;f1.nm=x.nm;f1.sub=x.sub;f1.subNm=x.subNm}x._del=1}
+    j.plan.slots=j.plan.slots.filter(x=>!x._del);if(!j.plan.slots.length){delete j.plan;j.op=false;return toast('칸을 만들지 못했어요')}
+    // 처음 만들 때 확정 강사가 한 명뿐이면 그 강사를 모든 칸에
+    if(first){const cf=appsOf(j.id).filter(a=>a.status==='확정');if(cf.length===1)j.plan.slots.forEach(x=>x.inst=cf[0].instId)}
+    planTouch(j);return toast(first?`시간표를 만들었어요 (칸 ${n}개). 위에서 강사를 고르고 칸을 누르세요`:`칸 ${n}개를 만들었어요`)}
+  if(A==='opRowAdd'){const b=$('#opRows');if(b)b.insertAdjacentHTML('beforeend',opRowHtml(D.t||'',D.p||'',1));const L=$$('#opRows .opTm');if(!D.t&&L.length)L[L.length-1].focus();return}
+  if(A==='opRowSplit'){const h=hmOf(D.t),b=$('#opRows');if(h&&b)b.innerHTML=opRowHtml(`${hhmm(h[0])}~12:00`,'오전',1)+opRowHtml(`13:00~${hhmm(h[1])}`,'오후',1);return}
+  if(A==='opRowDel'){const r=el.closest('.opRow');if($$('#opRows .opRow').length>1)r.remove();else{r.querySelector('.opTm').value='';r.querySelector('.opPr').value=''}return}
+  if(A==='opMore'){const j=job(D.j),k=opMore(j,D.tk);planTouch(j);return toast(`날마다 칸을 하나씩 더했어요 (${k}칸). 강사를 넣어 주세요`)}
   if(A==='opLink'){const j=job(D.j),nz=v=>String(v||'').replace(/\s|강사|님/g,''),L=appsOf(j.id).filter(a=>(a.status==='확정'||a.status==='지원')&&(D.i==='__all'||a.instId===D.i));let n=0,c=0;
     for(const a of L){const nm=nz(inst(a.instId).name);if(!nm)continue;let hit=0;for(const x of j.plan.slots){if(nz(x.nm)===nm){x.inst=a.instId;x.nm='';hit++}if(nz(x.subNm)===nm){x.sub=a.instId;x.subNm='';hit++}}if(hit){n+=hit;if(a.status==='지원'){confirmApp(a,j);c++}}}
     planTouch(j);return toast(n?`칸 ${n}개를 연결했어요${c?` · ${c}명 확정 알림을 보냈어요`:''}`:'이름이 같은 칸이 없어요')}
