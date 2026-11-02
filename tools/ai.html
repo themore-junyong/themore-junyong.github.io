@@ -63,11 +63,18 @@ a.g b{font-size:1.1rem} a.g span{color:var(--soft);font-size:.92rem}
 .vote button{border:2px solid var(--line);background:var(--field);border-radius:6px;padding:14px;font-weight:900;font-size:1.05rem}
 .vote button[aria-pressed="true"]{border-color:var(--blue);background:var(--blue-soft)}
 .side{border-left:4px solid var(--blue);padding:8px 12px;background:var(--field);font-size:.95rem}
+/* 강사 미리보기: 반 통계 */
+.stat{border:2px solid var(--blue);border-radius:6px;padding:14px 16px;display:flex;flex-direction:column;gap:10px;background:var(--card)}
+.stat h3{margin:0;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}.stat h3 span{color:var(--soft);font-size:.9rem;font-weight:700}
+.sb{display:grid;grid-template-columns:minmax(80px,30%) 1fr 92px;gap:8px;align-items:center;font-size:.92rem}
+.sb .tr{height:22px;border-radius:4px;background:var(--line);overflow:hidden;display:flex}.sb .tr i{display:block;height:100%}
+.sb .n{text-align:right;font-weight:700;font-variant-numeric:tabular-nums}
+.sq{border-top:1px dashed var(--line);padding-top:8px;display:flex;flex-direction:column;gap:6px}
 .qno{color:var(--blue);font-weight:700;font-size:.9rem}
 .big{font-size:2.2rem;font-weight:900;text-align:center}
 </style>
 </head><body>
-<script src="room.js?v=195" data-guard></script>
+<script src="room.js?v=196" data-guard></script>
 <div class="wrap" id="app"></div>
 <script type="module" src="ai.js"></script>
 <script>
@@ -84,7 +91,44 @@ if(AI&&CODE.code&&!CODE.ok)check();
 var V=(location.hash||'').slice(1)||'home', busy=false, note='';
 window.addEventListener('hashchange',function(){V=(location.hash||'').slice(1)||'home';note='';render();window.scrollTo(0,0)});
 var st={};try{st=JSON.parse(localStorage.getItem('ai-v1')||'{}')}catch(e){}
-function save(){try{localStorage.setItem('ai-v1',JSON.stringify(st))}catch(e){}}
+function save(){try{localStorage.setItem('ai-v1',JSON.stringify(st))}catch(e){}push()}
+/* 학생: 거짓말 찾기·AI vs 사람·윤리 딜레마에서 고른 것을 선생님 화면으로(조용히, 바뀔 때마다 1초 모아서). 강사 미리보기 탭은 반 통계를 봄 */
+var pushT=null,pushed={};
+function push(){if(!window.TM_ROOM||TM_ROOM.teach||!TM_ROOM.get())return;clearTimeout(pushT);pushT=setTimeout(function(){
+  var out=[];
+  if(st.lie){var L=st.lie,d={};Object.keys(L.done||{}).forEach(function(i){var s=L.sel[i]||{};d[i]=Object.keys(s).filter(function(j){return s[j]}).map(Number)});
+    if(Object.keys(d).length)out.push(['ai-lie','AI 거짓말 찾기 '+L.score+'점',{d:d,s:L.score}])}
+  if(st.who&&Object.keys(st.who.pick||{}).length){var ok=0,n=0;Object.keys(st.who.pick).forEach(function(i){n++;if(st.who.pick[i]==='ai')ok++});out.push(['ai-who','AI vs 사람 '+ok+'/'+n,{p:st.who.pick}])}
+  if(st.eth&&Object.keys(st.eth.v||{}).length)out.push(['ai-eth','AI 윤리 딜레마 '+Object.keys(st.eth.v).length+'개 투표',{v:st.eth.v}]);
+  out.forEach(function(o){var b=JSON.stringify(o[2]);if(pushed[o[0]]===b)return;pushed[o[0]]=b;TM_ROOM.send(o[0],o[1],b,true)});
+},1000)}
+var SW=null,STM=[];
+function statOn(){return !!(window.TM_ROOM&&TM_ROOM.teach&&TM_ROOM.teachWork)}
+if(statOn())TM_ROOM.teachWork(['ai-lie','ai-who','ai-eth'],function(A,T){if(T){STM=T}else SW=A.map(function(x){var b={};try{b=JSON.parse(x.body)}catch(e){}return {tool:x.tool,nick:x.nick,team:x.team||'',b:b}});
+  var y=window.scrollY;render();window.scrollTo(0,y)});
+function sbar(lab,n,tot,c){var p=tot?Math.round(n/tot*100):0;return '<div class="sb"><span>'+lab+'</span><span class="tr"><i style="width:'+p+'%;background:'+(c||'var(--blue)')+'"></i></span><span class="n">'+n+'명 '+p+'%</span></div>'}
+function tlist(R){var t=STM.slice();R.forEach(function(r){var k=r.team&&t.indexOf(r.team)>=0?r.team:'조 없음';if(t.indexOf(k)<0)t.push(k)});return t}
+function tof(r){return r.team&&STM.indexOf(r.team)>=0?r.team:'조 없음'}
+function statBox(kind){if(!statOn())return '';var R=(SW||[]).filter(function(x){return x.tool===kind}),h;
+  if(!SW)return '<div class="stat"><h3>📊 반 통계 <span>불러오는 중…</span></h3></div>';
+  h='<div class="stat"><h3>📊 반 통계 (선생님만 보여요) <span>참여 '+R.length+'명</span></h3>';
+  if(!R.length)return h+'<p class="note">학생이 고르면 여기에 바로 모여요.</p></div>';
+  if(kind==='ai-lie'){var T=tlist(R);
+    h+='<div class="sq"><b>조별 평균 점수</b>'+T.map(function(t){var M=R.filter(function(r){return tof(r)===t});if(!M.length)return '';var a=M.reduce(function(s,r){return s+(+r.b.s||0)},0)/M.length;return '<div class="sb"><span>'+esc(t)+'</span><span class="tr"><i style="width:'+Math.max(0,Math.min(100,a/3*100))+'%;background:var(--blue)"></i></span><span class="n">'+a.toFixed(1)+'점</span></div>'}).join('')+'</div>';
+    LIE.forEach(function(Q,i){var M=R.filter(function(r){return r.b.d&&r.b.d[i]});if(!M.length)return;
+      h+='<div class="sq"><b>'+(i+1)+'. '+esc(Q.t)+'</b> <span class="note">확인한 학생 '+M.length+'명 · 거짓 문장을 찾은 비율</span>'+Q.s.map(function(x,j){if(!x[1])return '';var n=M.filter(function(r){return r.b.d[i].indexOf(j)>=0}).length;return sbar(esc(x[0].slice(0,26))+'…',n,M.length,'var(--ok)')}).join('')+
+        (function(){var w=Q.s.map(function(x,j){return [j,x]}).filter(function(z){return !z[1][1]}).map(function(z){return [z[1][0],M.filter(function(r){return r.b.d[i].indexOf(z[0])>=0}).length]}).filter(function(z){return z[1]}).sort(function(a,b){return b[1]-a[1]})[0];return w?'<p class="note">참인데 거짓으로 고른 문장 1위: "'+esc(w[0].slice(0,30))+'…" ('+w[1]+'명)</p>':''})()+'</div>'});
+  }else if(kind==='ai-who'){var T2=tlist(R);
+    h+='<div class="sq"><b>조별 정답률</b>'+T2.map(function(t){var M=R.filter(function(r){return tof(r)===t}),ok=0,n=0;M.forEach(function(r){Object.keys(r.b.p||{}).forEach(function(i){n++;if(r.b.p[i]==='ai')ok++})});return n?sbar(esc(t)+' ('+M.length+'명)',ok,n).replace(/>\d+명 /,'>'+ok+'/'+n+' '):''}).join('')+'</div>';
+    WHO.forEach(function(Q,i){var M=R.filter(function(r){return r.b.p&&r.b.p[i]});if(!M.length)return;var ok=M.filter(function(r){return r.b.p[i]==='ai'}).length;
+      h+='<div class="sq">'+sbar((i+1)+'. '+esc(Q.q),ok,M.length,ok/M.length>=.5?'var(--ok)':'var(--bad)')+'</div>'});
+    h+='<p class="note">막대 = AI 글을 맞힌 학생 비율이에요.</p>';
+  }else{var T3=tlist(R);
+    ETH.forEach(function(Q,i){var M=R.filter(function(r){return r.b.v&&r.b.v[i]});if(!M.length)return;var y=M.filter(function(r){return r.b.v[i]==='y'}).length;
+      h+='<div class="sq"><b>'+(i+1)+'. '+esc(Q.q)+'</b>'+sbar('👍 된다',y,M.length,'var(--ok)')+sbar('👎 안 된다',M.length-y,M.length,'var(--bad)')+
+        '<span class="note">'+T3.map(function(t){var K=M.filter(function(r){return tof(r)===t});if(!K.length)return '';var yy=K.filter(function(r){return r.b.v[i]==='y'}).length;return esc(t)+' 👍'+yy+' 👎'+(K.length-yy)}).filter(Boolean).join(' · ')+'</span></div>'});
+  }
+  return h+'</div>'}
 
 function head(t){return '<div class="top"><div class="brand"><small>위듀케이션 · AI 수업 도구</small></div><a href="'+(V==='home'?'./':'#')+'">← '+(V==='home'?'도구 모음':'AI 수업 도구')+'</a></div>'+(t?'<h1>'+t+'</h1>':'')}
 function codeCard(){
@@ -145,9 +189,9 @@ var LIE=[
 ];
 function lie(){
   var L=st.lie||(st.lie={i:0,sel:{},done:{},score:0});
-  if(L.i>=LIE.length)return head('🕵️ AI 거짓말 찾기')+'<div class="card"><div class="big">'+L.score+'점</div><p style="text-align:center">맞게 찾은 거짓 문장 +1, 참인 문장을 거짓이라 하면 -1</p><div class="why"><b>오늘의 한 줄:</b> AI는 <b>틀린 말도 자신 있게</b> 해요. 숫자·사람·법·출처는 반드시 <b>다른 곳에서 한 번 더 확인</b>하세요.</div><button class="btn pri" data-a="lieRe">처음부터 다시</button></div>';
+  if(L.i>=LIE.length)return head('🕵️ AI 거짓말 찾기')+statBox('ai-lie')+'<div class="card"><div class="big">'+L.score+'점</div><p style="text-align:center">맞게 찾은 거짓 문장 +1, 참인 문장을 거짓이라 하면 -1</p><div class="why"><b>오늘의 한 줄:</b> AI는 <b>틀린 말도 자신 있게</b> 해요. 숫자·사람·법·출처는 반드시 <b>다른 곳에서 한 번 더 확인</b>하세요.</div><button class="btn pri" data-a="lieRe">처음부터 다시</button></div>';
   var R=LIE[L.i],sel=L.sel[L.i]||{},done=L.done[L.i];
-  var h=head('🕵️ AI 거짓말 찾기')+'<p class="soft">AI 답변 속에 <b>거짓 문장</b>이 숨어 있어요. 수상한 문장을 눌러 표시하고 "정답 확인"을 누르세요. ('+(L.i+1)+' / '+LIE.length+')</p>';
+  var h=head('🕵️ AI 거짓말 찾기')+statBox('ai-lie')+'<p class="soft">AI 답변 속에 <b>거짓 문장</b>이 숨어 있어요. 수상한 문장을 눌러 표시하고 "정답 확인"을 누르세요. ('+(L.i+1)+' / '+LIE.length+')</p>';
   h+='<div class="card"><div class="aibox"><div class="who">🙋 질문: '+esc(R.t)+'</div><div class="who">🤖 AI 답변</div><p>'+R.s.map(function(x,j){var c='sent';if(done){if(x[1]&&sel[j])c+=' hit';else if(x[1])c+=' false';else if(sel[j])c+=' miss'}return '<span class="'+c+'" data-s="'+j+'" aria-pressed="'+(!!sel[j]&&!done)+'" role="button">'+esc(x[0])+'</span> '}).join('')+'</p></div>';
   if(!done)h+='<button class="btn pri" data-a="lieCheck">정답 확인</button>';
   else{
@@ -176,10 +220,10 @@ var WHO=[
 function who(){
   var W=st.who||(st.who={i:0,pick:{},ord:{}});
   if(W.i>=WHO.length){var ok=0;WHO.forEach(function(_,i){if(W.pick[i]==='ai')ok++});
-    return head('🤖 AI vs 사람 글')+'<div class="card"><div class="big">'+ok+' / '+WHO.length+'</div><div class="why"><b>AI 글을 알아보는 4가지 신호</b><br>① 누구에게나 맞는 무난한 말 ② 구체적인 장면·숫자·이름이 없음 ③ 첫째·둘째·결론적으로 같은 깔끔한 틀 ④ 교훈으로 매끈하게 끝남<br><br><b>그래서 자소서는?</b> AI 초안을 그대로 내면 면접관은 바로 알아봐요. AI로 뼈대를 만들고, <b>나만 아는 장면과 숫자</b>를 꼭 채워 넣으세요.</div><button class="btn pri" data-a="whoRe">다시 하기</button></div>';}
+    return head('🤖 AI vs 사람 글')+statBox('ai-who')+'<div class="card"><div class="big">'+ok+' / '+WHO.length+'</div><div class="why"><b>AI 글을 알아보는 4가지 신호</b><br>① 누구에게나 맞는 무난한 말 ② 구체적인 장면·숫자·이름이 없음 ③ 첫째·둘째·결론적으로 같은 깔끔한 틀 ④ 교훈으로 매끈하게 끝남<br><br><b>그래서 자소서는?</b> AI 초안을 그대로 내면 면접관은 바로 알아봐요. AI로 뼈대를 만들고, <b>나만 아는 장면과 숫자</b>를 꼭 채워 넣으세요.</div><button class="btn pri" data-a="whoRe">다시 하기</button></div>';}
   if(W.ord[W.i]==null){W.ord[W.i]=Math.random()<.5?0:1;save()}
   var R=WHO[W.i],o=W.ord[W.i],L=o?[['hu',R.hu],['ai',R.ai]]:[['ai',R.ai],['hu',R.hu]],p=W.pick[W.i];
-  var h=head('🤖 AI vs 사람 글')+'<p class="soft">둘 중 <b>AI가 쓴 글</b>은 어느 쪽일까요? ('+(W.i+1)+' / '+WHO.length+')</p><div class="card"><span class="qno">주제: '+esc(R.q)+'</span><div class="pick">'+
+  var h=head('🤖 AI vs 사람 글')+statBox('ai-who')+'<p class="soft">둘 중 <b>AI가 쓴 글</b>은 어느 쪽일까요? ('+(W.i+1)+' / '+WHO.length+')</p><div class="card"><span class="qno">주제: '+esc(R.q)+'</span><div class="pick">'+
     L.map(function(x,j){var c=p?(x[0]==='ai'?'right':(p===x[0]?'wrong':'')):'';return '<button data-who="'+x[0]+'" class="'+c+'"'+(p?' disabled':'')+'><b>'+(j?'B':'A')+'</b> '+esc(x[1])+(p?'<br><b>'+(x[0]==='ai'?'🤖 AI':'🙋 사람')+'</b>':'')+'</button>'}).join('')+'</div>';
   if(p)h+='<div class="side"><b>'+(p==='ai'?'정답!':'아쉬워요!')+'</b> '+R.why+'</div><button class="btn pri" data-a="whoNext">'+(W.i===WHO.length-1?'결과 보기':'다음 →')+'</button>';
   return h+'</div><p class="note">이 활동의 글은 AI 글과 사람 글의 특징을 보여 주려고 수업용으로 만든 예시예요.</p>';
@@ -197,7 +241,7 @@ var ETH=[
 ];
 function ethics(){
   var E=st.eth||(st.eth={v:{}});
-  var h=head('⚖️ AI 윤리 딜레마')+'<p class="soft">정답은 없어요. 먼저 내 생각을 고르면 양쪽 입장과 "생각해 볼 점"이 열려요.</p>';
+  var h=head('⚖️ AI 윤리 딜레마')+statBox('ai-eth')+'<p class="soft">정답은 없어요. 먼저 내 생각을 고르면 양쪽 입장과 "생각해 볼 점"이 열려요.</p>';
   ETH.forEach(function(x,i){var v=E.v[i];
     h+='<div class="card"><span class="qno">딜레마 '+(i+1)+'</span><h3>'+esc(x.q)+'</h3><div class="vote"><button data-ev="'+i+'_y" aria-pressed="'+(v==='y')+'">👍 된다</button><button data-ev="'+i+'_n" aria-pressed="'+(v==='n')+'">👎 안 된다</button></div>';
     if(v)h+='<div class="side"><b>👍 된다는 입장:</b> '+esc(x.yes)+'</div><div class="side" style="border-color:var(--bad)"><b>👎 안 된다는 입장:</b> '+esc(x.no)+'</div><div class="why"><b>생각해 볼 점:</b> '+esc(x.think)+'</div>';

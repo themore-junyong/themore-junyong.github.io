@@ -52,11 +52,11 @@
   function toast(t,bad){var d=document.createElement('div');d.textContent=t;
     d.style.cssText='position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:90;background:'+(bad?'#c8432f':'#2e8b4c')+';color:#fff;font:700 15px system-ui;padding:10px 18px;border-radius:999px;box-shadow:0 4px 14px rgba(0,0,0,.2);max-width:90vw;text-align:center';
     document.body.appendChild(d);setTimeout(function(){d.remove()},2600)}
-  function send(tool,title,body){
+  function send(tool,title,body,quiet){
     var r=get();if(!r||TEACH)return Promise.resolve(false);
     return boot().then(function(b){
       return b.F.setDoc(b.F.doc(b.db,'rooms',r.pin,'work',b.uid+'_'+tool),{tool:tool,nick:r.nick,team:r.team||'',title:String(title||'').slice(0,80),body:String(body||'').slice(0,6000),t:b.F.serverTimestamp()});
-    }).then(function(){toast('✔ 선생님께 보냈어요');return true},function(){toast('선생님께 보내지 못했어요 (방이 끝났을 수 있어요)',true);return false});
+    }).then(function(){if(!quiet)toast('✔ 선생님께 보냈어요');return true},function(){if(!quiet)toast('선생님께 보내지 못했어요 (방이 끝났을 수 있어요)',true);return false});
   }
   /* 게임 응답(아이스브레이킹 밸런스 선택·퀴즈 답): 방 문서 q가 열려 있을 때 ans/{q.id}_{uid} 1개(다시 보내면 덮어씀). 강사 노트북만 읽음 */
   function answer(qid,v){
@@ -130,6 +130,20 @@
         var F=m[3];return F.updateDoc(F.doc(F.getFirestore(app),'rooms',host.pin),{go:{to:to,t:F.serverTimestamp()}})});
     }).then(function(){toast('✔ 학생 화면도 이 화면으로 바꿨어요')},function(){});
   }
+  /* 강사 미리보기에서 반 통계: 학생 결과(work) 중 tools에 든 것만 실시간으로 (강사 노트북 기본 앱 = 방 주인만 읽힘) */
+  function teachWork(tools,cb){
+    var host=null;try{host=JSON.parse(localStorage.getItem('live-host')||'null')}catch(e){}if(!host||!host.pin)return false;
+    Promise.all([import('./firebase-config.js'),import(G+'/firebase-app.js'),import(G+'/firebase-auth.js'),import(G+'/firebase-firestore.js')]).then(function(m){
+      var app=m[1].getApps().filter(function(a){return a.name==='[DEFAULT]'})[0]||m[1].initializeApp(m[0].firebaseConfig),auth=m[2].getAuth(app);
+      return auth.authStateReady().then(function(){return auth.currentUser||m[2].signInAnonymously(auth)}).then(function(){
+        var F=m[3],db=F.getFirestore(app);
+        F.onSnapshot(F.collection(db,'rooms',host.pin,'work'),function(s){var A=[];s.docs.forEach(function(d){var x=d.data();if(tools.indexOf(x.tool)>=0)A.push(x)});cb(A)},function(){});
+        F.getDoc(F.doc(db,'rooms',host.pin)).then(function(d){var r=d.data()||{};cb(null,Array.isArray(r.teams)?r.teams:[])}).catch(function(){});
+      });
+    }).catch(function(){});
+    return true;
+  }
+  window.TM_ROOM.teachWork=teachWork;
   if(TEACH){
     window.addEventListener('hashchange',teachGo);
     var tb=function(){var a=document.createElement('div');a.textContent='👀 선생님 미리보기 (학생이 보는 화면 · 결과는 안 보냄)';
