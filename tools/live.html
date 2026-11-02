@@ -225,13 +225,27 @@ const saveQs=()=>lsSet('live-qs',H.qs);
 const SETS={
   ulsan1103:[
     {type:'poll',text:'젊으니까 밤새워도 괜찮다?',opts:['O 괜찮다','X 안 괜찮다']},
+    {type:'poll',text:'나는 아침형? 저녁형?',opts:['완전 아침형','약간 아침형','약간 저녁형','완전 저녁형']},
     {type:'poll',text:'어젯밤 몇 시간 잤나요?',opts:['5시간 미만','5~6시간','6~7시간','7시간 이상']},
-    {type:'word',text:'요즘 내 머릿속을 차지한 한 단어'},
+    {type:'quiz',text:'졸릴 때 에너지음료 두 캔이면 버틸 수 있으니 괜찮다',opts:['O','X'],correct:1},
+    {type:'quiz',text:'커피는 잠들기 6시간 전에만 끊으면 잠에 영향이 없다',opts:['O','X'],correct:1},
+    {type:'quiz',text:'야간 근무를 마치고 퇴근할 때 선글라스가 잠에 도움이 된다',opts:['O','X'],correct:0},
+    {type:'quiz',text:'새 습관은 딱 21일이면 몸에 붙는다',opts:['O','X'],correct:1},
+    {type:'quiz',text:'현장실습생은 일하다 다쳐도 산재보험이 안 된다',opts:['O','X'],correct:1},
+    {type:'quiz',text:'스트레칭은 반동을 줘서 통통 튕겨야 효과가 좋다',opts:['O','X'],correct:1},
+    {type:'quiz',text:'하루 종일 서서 일하면 그게 곧 운동이다',opts:['O','X'],correct:1},
+    {type:'quiz',text:'고개를 숙일수록 목이 받는 무게가 늘어난다',opts:['O','X'],correct:0},
+    {type:'word',text:'요즘 내 비상벨을 울리는 것 한 단어'},
     {type:'map',text:'입사 후 100일, 내 몸 PM',opts:['잠','움직임','먹기','마음','폰']},
+    {type:'poll',text:'다시 묻습니다. 젊으니까 밤새워도 괜찮다?',opts:['O 괜찮다','X 안 괜찮다']},
     {type:'text',text:'오늘 하나만 가져간다면?'}
   ]
 };
-if(HOST&&SETS[P.get('set')]){let n=0;SETS[P.get('set')].forEach(x=>{if(!H.qs.some(y=>y.type===x.type&&y.text===x.text)){H.qs.push(JSON.parse(JSON.stringify(x)));n++}});if(n){saveQs();H.note='✔ 수업 질문 '+n+'개를 목록에 넣었어요'}}
+/* 묶음 질문은 목록 끝에 묶음 순서대로(= 수업 순서). 이미 있던 같은 질문·옛 문구는 빼고 다시 넣음 */
+const OLDQ={ulsan1103:['요즘 내 머릿속을 차지한 한 단어']};
+if(HOST&&SETS[P.get('set')]){const k=P.get('set'),set=SETS[k],same=(x,y)=>x.type===y.type&&x.text===y.text,before=H.qs.length;
+  const tail=H.qs.slice(-set.length);if(!(tail.length===set.length&&tail.every((y,i)=>same(set[i],y)))){
+    H.qs=H.qs.filter(y=>!set.some(x=>same(x,y))&&(OLDQ[k]||[]).indexOf(y.text)<0).concat(set.map(x=>JSON.parse(JSON.stringify(x))));saveQs();H.note='✔ 수업 질문 '+set.length+'개를 목록 끝에 수업 순서대로 넣었어요'}}
 function hostRender(){
   document.body.classList.add('host');
   let h='<div class="top"><div class="brand"><small>위듀케이션 · 실시간 마인드맵 (강사 화면)</small></div><a href="./">← 도구 모음</a></div>';
