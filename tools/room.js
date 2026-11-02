@@ -68,7 +68,11 @@
   }
   window.TM_ROOM={get:get,join:join,check:check,send:send,leave:function(){put(null)},watch:watch};
   if(GUARD){
-    if(!get()){location.replace('./?need=1');return}
+    var qr=(new URLSearchParams(location.search).get('r')||'').replace(/\D/g,'').slice(0,4), cur=get();
+    if(cur&&qr&&qr!==cur.pin){put(null);cur=null}
+    if(!cur){ // 방에 안 들어왔으면 첫 화면에서 방 번호·이름 → 들어오면 이 도구로 바로 돌아옴
+      var f=(location.pathname.split('/').pop()||'')+location.search.replace(/([?&])r=\d*&?/,'$1').replace(/[?&]$/,'')+location.hash;
+      location.replace('./?'+(qr?'r='+qr+'&':'')+'need=1&go='+encodeURIComponent(f));return}
     if(document.body)badge();else document.addEventListener('DOMContentLoaded',badge);
     watch();
   }

@@ -182,6 +182,9 @@ var STEPS=[
 
 /* 수업 방: 강사가 teacher.html에서 방을 만들어야 학생이 쓸 수 있음. 선생님 QR(?r=번호)이면 번호가 미리 채워짐 (공통 스크립트 room.js) */
 var QPIN=(new URLSearchParams(location.search).get('r')||'').replace(/\D/g,'').slice(0,4), RNOTE='', RBUSY=false;
+/* go = 들어온 뒤 바로 열 도구(강사 화면의 활동별 QR). 같은 폴더의 도구만 허용 */
+var GO=(function(g){g=g||'';return /^([a-z]+\.html)?(\?[\w=&-]*)?(#[\w-]*)?$/.test(g)&&g?g:''})(new URLSearchParams(location.search).get('go'));
+function goNext(){if(!GO)return false;location.replace(GO.charAt(0)==='#'?location.pathname+GO:GO);return true}
 function joined(){return window.TM_ROOM&&TM_ROOM.get()}
 function lastNick(){try{return (JSON.parse(localStorage.getItem('tm-room-s-last')||'null')||{}).nick||''}catch(e){return ''}}
 function roomCard(){var r=joined();
@@ -200,7 +203,7 @@ function gate(){
 document.addEventListener('click',function(e){
   if(e.target.closest('#roomGo')){RNOTE='';RBUSY=true;var pin=document.getElementById('roomIn').value,nick=document.getElementById('roomNick').value;gate();
     document.getElementById('roomIn').value=pin;document.getElementById('roomNick').value=nick;
-    TM_ROOM.join(pin,nick).then(function(r){RBUSY=false;try{localStorage.setItem('tm-room-s-last',JSON.stringify({nick:r.nick}))}catch(x){}TM_ROOM.watch();home()},
+    TM_ROOM.join(pin,nick).then(function(r){RBUSY=false;try{localStorage.setItem('tm-room-s-last',JSON.stringify({nick:r.nick}))}catch(x){}if(goNext())return;TM_ROOM.watch();home()},
       function(err){RBUSY=false;RNOTE=err.message||'연결이 안 돼요. 다시 눌러 주세요';gate();document.getElementById('roomIn').value=pin;document.getElementById('roomNick').value=nick})}
   else if(e.target.closest('#roomOut')){e.preventDefault();TM_ROOM.leave();QPIN='';home()}
 });
@@ -364,6 +367,7 @@ function bindResult(){
 }
 
 if(joined()&&QPIN&&QPIN!==joined().pin)TM_ROOM.leave();
+if(joined()&&goNext())return;
 if(h==='jaso'&&joined()) go(0); else home();
 if(joined())TM_ROOM.watch();
 })();
