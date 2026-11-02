@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>숫자 줄 세우기</title>
+<meta name="robots" content="noindex">
+<script>/* 학생 폰(?stu=1): 수업 방에 들어온 학생만. 강사 노트북(빔)은 sync.js로 학생 폰과 연결 */
+if(/[?&]stu=1/.test(location.search))document.write('<script src="room.js?v=196" data-guard><\/script>');else document.write('<script src="sync.js?v=195"><\/script>')</script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap">
+<style>
+/* 숫자 줄 세우기: 강사(빔)가 1~40 숫자를 하나씩 부르면 학생은 자기 칸 중 한 곳에 씀(못 바꿈).
+   다 부르면 왼→오 계속 커지는 줄마다 (길이×길이) 점수. 같은 숫자를 받아도 결과가 다른 이유 = 판단 기준 */
+:root{
+  --bg:#f6f6f6; --ink:#333; --soft:#6f7480; --card:#fff; --line:#e2e3e8; --field:#fbfbfc;
+  --blue:#4e6bf1; --blue-ink:#fff; --blue-soft:#e9edfe; --ok:#2e8b4c; --bad:#c8432f;
+  --f:"Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#16181d; --ink:#eceef2; --soft:#a3a8b5; --card:#1f2229; --line:#323642; --field:#1a1d23;
+  --blue:#7c93ff; --blue-ink:#10121a; --blue-soft:#262d4a; --ok:#5cc47c; --bad:#ff7a63; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#16181d; --ink:#eceef2; --soft:#a3a8b5; --card:#1f2229; --line:#323642; --field:#1a1d23;
+  --blue:#7c93ff; --blue-ink:#10121a; --blue-soft:#262d4a; --ok:#5cc47c; --bad:#ff7a63; color-scheme:dark}
+body{background:var(--bg);color:var(--ink);font-family:var(--f);font-size:16px;line-height:1.6;margin:0;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:1100px;margin:0 auto;padding-block:16px 40px;display:flex;flex-direction:column;gap:16px}
+h1,h2,h3{margin:0;line-height:1.3} h1{font-size:1.6rem;font-weight:900}
+p{margin:0} .soft{color:var(--soft)} .note{font-size:.9rem;color:var(--soft)}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+.top{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.top a{color:var(--blue);font-weight:700;text-decoration:none}
+.brand small{letter-spacing:.12em;font-weight:700;color:var(--blue);font-size:.78rem}
+.card{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:18px;display:flex;flex-direction:column;gap:14px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.btn{border:1px solid var(--line);background:var(--card);border-radius:4px;padding:10px 16px;font-weight:700}
+.btn.pri{background:var(--blue);color:var(--blue-ink);border-color:var(--blue)}
+.btn.big{font-size:1.25rem;padding:14px 30px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn[aria-pressed="true"]{background:var(--blue);color:var(--blue-ink);border-color:var(--blue)}
+.why{background:var(--blue-soft);border-radius:4px;padding:12px 14px}
+.why b{color:var(--blue)}
+.now{font-size:min(30vw,11rem);font-weight:900;line-height:1;text-align:center;color:var(--blue);font-variant-numeric:tabular-nums}
+.hist{display:flex;flex-wrap:wrap;gap:6px}
+.hist i{font-style:normal;min-width:2.4em;text-align:center;border:1px solid var(--line);border-radius:4px;padding:2px 6px;font-weight:700;background:var(--field)}
+.hist i.last{background:var(--blue);color:var(--blue-ink);border-color:var(--blue)}
+.slots{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.slots button{aspect-ratio:1;border:2px solid var(--line);border-radius:8px;background:var(--field);font-size:1.5rem;font-weight:900;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0;position:relative}
+.slots button small{position:absolute;left:6px;top:2px;font-size:.7rem;font-weight:700;color:var(--soft)}
+.slots button.full{background:var(--card);cursor:default}
+.slots button.go{border-color:var(--blue);border-style:dashed}
+.slots button.run{border-color:var(--ok)}
+.big{font-size:2.6rem;font-weight:900;text-align:center}
+.tbar{display:grid;grid-template-columns:6em 1fr 4.5em;gap:8px;align-items:center}
+.tbar .tr{height:24px;border-radius:4px;background:var(--field);border:1px solid var(--line);overflow:hidden}
+.tbar .tr i{display:block;height:100%}
+.tbar .num{text-align:right;font-weight:700}
+.rank{display:flex;flex-direction:column;gap:4px}
+.rank div{display:grid;grid-template-columns:2.4em 1fr auto;gap:8px;border-bottom:1px solid var(--line);padding:4px 0}
+.wait{text-align:center;padding:28px 16px;background:var(--blue);color:var(--blue-ink);border-radius:8px;font-weight:700}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head><body>
+<main class="wrap" id="app"></main>
+<script>
+(function(){
+var STU=/[?&]stu=1/.test(location.search), GID=(new URLSearchParams(location.search).get('g')||'').replace(/[^\w-]/g,'').slice(0,20);
+var COLORS=['#e5484d','#2f80ed','#2e9e5b','#f2994a','#9b51e0','#14a3b8','#d6409f','#8d6e3f'];
+var app=document.getElementById('app');
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+function lsGet(k,d){try{var v=JSON.parse(localStorage.getItem(k)||'null');return v==null?d:v}catch(e){return d}}
+function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+/* 점수: 빈칸 없이 왼→오로 계속 커지는 줄마다 길이×길이 */
+function runs(P){var R=[],cur=[];for(var i=0;i<P.length;i++){var v=P[i];if(v==null){if(cur.length)R.push(cur);cur=[];continue}
+  if(cur.length&&v>P[i-1])cur.push(i);else{if(cur.length)R.push(cur);cur=[i]}}if(cur.length)R.push(cur);return R}
+function score(P){return runs(P).reduce(function(s,r){return s+r.length*r.length},0)}
+function best(P){return runs(P).reduce(function(m,r){return Math.max(m,r.length)},0)}
+var RULE='<div class="why"><b>규칙</b> · 선생님이 1~40 중 숫자를 하나씩 불러요. 부를 때마다 <b>내 칸 중 한 곳</b>에 써요. <b>한 번 쓰면 못 바꿔요.</b><br>다 부르면 <b>왼쪽 → 오른쪽으로 계속 커지는 줄</b>마다 점수: 줄 길이 × 줄 길이 (3칸 줄 = 9점, 5칸 줄 = 25점). 빈칸이나 작아지는 곳에서 줄이 끊겨요.</div>';
+var LESSON='<div class="why"><b>오늘의 한 줄</b> · 모두 <b>똑같은 숫자</b>를 받았는데 점수는 다 달라요. 차이는 운보다 <b>처음 세운 기준</b>(큰 수는 오른쪽, 작은 수는 왼쪽)과 <b>나중을 위해 남겨 둔 빈자리</b>였어요. 일도 같아요. 계획(큰 그림)을 먼저 그려 두면, 갑자기 떨어지는 일(숫자)에도 놓을 자리가 있어요.</div>';
+
+/* ================= 학생 폰 ================= */
+if(STU){
+  var G=null,K='',S={p:[],u:0},sent=false,lastQ=null;
+  function load(){K='line-s-'+G.id;S=lsGet(K,null)||{p:Array(G.n).fill(null),u:0};if(S.p.length!==G.n)S={p:Array(G.n).fill(null),u:0}}
+  function stuRender(){
+    if(!G){app.innerHTML='<div class="top"><div class="brand"><small>위듀케이션 · 숫자 줄 세우기</small></div></div><div class="wait">👀 선생님이 게임을 시작하면 여기에 칸이 나와요</div>'+RULE;return}
+    var pend=G.d.slice(S.u),cur=pend.length?pend[0]:null,R=runs(S.p),inRun={};R.forEach(function(r){if(r.length>1)r.forEach(function(i){inRun[i]=1})});
+    var h='<div class="top"><div class="brand"><small>위듀케이션 · 숫자 줄 세우기</small></div><span class="note">'+G.d.length+' / '+G.n+'번째 숫자</span></div>';
+    if(G.end&&cur==null)h+='<div class="card" style="text-align:center"><span class="soft">내 점수</span><div class="big">'+score(S.p)+'점</div><p>가장 긴 줄 <b>'+best(S.p)+'칸</b></p><p class="note">'+(sent?'✔ 선생님 화면에 보냈어요':'선생님 화면으로 보내는 중…')+'</p></div>';
+    else if(cur!=null)h+='<div class="card" style="text-align:center;gap:4px"><span class="soft">이 숫자를 놓을 칸을 눌러요'+(pend.length>1?' (밀린 숫자 '+pend.length+'개)':'')+'</span><div class="now" style="font-size:5rem">'+cur+'</div></div>';
+    else h+='<div class="wait">✔ 놓았어요! 다음 숫자를 기다려요</div>';
+    h+='<div class="card"><div class="slots">'+S.p.map(function(v,i){var c=v!=null?'full'+(inRun[i]?' run':''):(cur!=null?'go':'');return '<button data-s="'+i+'" class="'+c+'"'+(v!=null||cur==null?' aria-disabled="true"':'')+' aria-label="'+(i+1)+'번 칸'+(v!=null?' '+v:' 빈칸')+'"><small>'+(i+1)+'</small>'+(v!=null?v:'')+'</button>'}).join('')+
+      '</div><p class="note">지금 점수 <b>'+score(S.p)+'점</b> · 초록 테두리 = 이어진 줄</p></div>'+(G.d.length<2?RULE:'');
+    app.innerHTML=h;
+  }
+  function trySend(r){
+    if(!G||!G.end||sent||G.d.slice(S.u).length)return;var q=r&&r.q;if(!q||q.id!=='line-'+G.id||!q.open||!window.TM_ROOM)return;
+    sent=true;TM_ROOM.answer(q.id,score(S.p)+'|'+best(S.p)).then(function(ok){if(!ok)sent=false;stuRender()});
+  }
+  app.addEventListener('click',function(e){var b=e.target.closest('[data-s]');if(!b||!G)return;var i=+b.dataset.s,pend=G.d.slice(S.u);if(S.p[i]!=null||!pend.length)return;
+    S.p[i]=pend[0];S.u++;lsSet(K,S);stuRender();trySend(lastQ)});
+  if(window.TM_ROOM&&TM_ROOM.onRoom)TM_ROOM.onRoom(function(r){var g=r&&r.g,m=null;try{m=g&&g.s?JSON.parse(g.s):null}catch(e){}
+    var want=m&&m.play?m.play:'';if(want!=='line.html?stu=1&g='+GID){location.replace(want||'play.html');return}
+    var L=m.line;if(!L)return;var nw=!G||G.id!==L.id;G=L;if(nw){load();sent=false}lastQ={q:r.q};stuRender();trySend(lastQ)});
+  stuRender();
+  return;
+}
+
+/* ================= 강사(빔) ================= */
+var SYNC=window.TM_SYNC&&TM_SYNC.on;
+var G=lsGet('line-g',null)||{id:'',n:15,deck:[],d:[],end:false}, TEAMS=[], ANS=[], PRE=G.n||15;
+function save(){lsSet('line-g',G)}
+function shuffle(a){for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1)),t=a[i];a[i]=a[j];a[j]=t}return a}
+function newGame(n){var deck=[];for(var i=1;i<=40;i++)deck.push(i);G={id:String(Date.now()).slice(-8),n:n,deck:shuffle(deck),d:[],end:false};ANS=[];save()}
+function pub(){if(!SYNC)return;
+  if(!G.id){TM_SYNC.pub('line',{game:'🔢 숫자 줄 세우기',big:'곧 시작해요',sub:'앞 화면을 보세요'});TM_SYNC.ask(null);return}
+  TM_SYNC.pub('line',{game:'🔢 숫자 줄 세우기',play:'line.html?stu=1&g='+G.id,line:{id:G.id,n:G.n,d:G.d,end:G.end}});
+  if(G.end){var id='line-'+G.id;TM_SYNC.ask({id:id,open:true,type:'line'});TM_SYNC.onAns(id,function(_,A){ANS=A;render()})}else TM_SYNC.ask(null)}
+function teamBars(){
+  var L=ANS.map(function(a){var p=String(a.v||'').split('|');return {nick:a.nick||'',team:a.team||'',s:+p[0]||0,b:+p[1]||0}}).sort(function(a,b){return b.s-a.s||b.b-a.b});
+  if(!L.length)return '<p class="note">학생 폰 점수가 여기 모여요. (학생이 마지막 숫자까지 놓으면 자동으로 보내요)</p>';
+  var T=TEAMS.slice();L.forEach(function(x){if(x.team&&T.indexOf(x.team)<0)T.push(x.team)});
+  var mx=Math.max.apply(null,L.map(function(x){return x.s}))||1,h='<h3>🏆 점수 순위 <span class="note">'+L.length+'명</span></h3><div class="rank">'+L.slice(0,10).map(function(x,i){return '<div><b>'+(['🥇','🥈','🥉'][i]||(i+1))+'</b><span>'+esc(x.nick)+(x.team?' <span class="note">'+esc(x.team)+'</span>':'')+'</span><b>'+x.s+'점 · '+x.b+'칸</b></div>'}).join('')+'</div>';
+  if(T.length){h+='<h3>조별 평균</h3>';var av=T.map(function(t,k){var M=L.filter(function(x){return x.team===t});return {t:t,k:k,n:M.length,a:M.length?Math.round(M.reduce(function(s,x){return s+x.s},0)/M.length):0}}).filter(function(x){return x.n}).sort(function(a,b){return b.a-a.a});
+    var am=Math.max.apply(null,av.map(function(x){return x.a}))||1;h+=av.map(function(x){return '<div class="tbar"><b style="color:'+COLORS[x.k%8]+'">'+esc(x.t)+'</b><span class="tr"><i style="width:'+(x.a/am*100)+'%;background:'+COLORS[x.k%8]+'"></i></span><span class="num">'+x.a+'점</span></div>'}).join('')}
+  return h}
+function render(){
+  var h='<div class="top"><div class="brand"><small>위듀케이션 · 수업 게임</small><h1>🔢 숫자 줄 세우기</h1></div><a href="./">← 도구 모음</a></div>';
+  if(!G.id){
+    h+='<div class="card">'+RULE+'<div class="row"><b>칸 수</b>'+[10,15,20].map(function(n){return '<button class="btn" data-n="'+n+'" aria-pressed="'+(PRE===n)+'">'+n+'칸</button>'}).join('')+'</div>'+
+      '<p class="note">'+(SYNC?'📱 수업 방과 연결됨 · 시작하면 학생 폰에 칸이 떠요':'종이로 할 때: 학생들에게 칸 '+PRE+'개를 그리게 하세요. (수업 방을 만든 노트북에서 열면 학생 폰과 연결돼요)')+'</p>'+
+      '<button class="btn pri big" data-a="start">▶ 시작하기</button></div>';
+  }else if(!G.end){
+    var last=G.d.length?G.d[G.d.length-1]:null;
+    h+='<div class="card" style="align-items:center"><span class="soft">'+(last==null?'첫 숫자를 뽑아요':G.d.length+' / '+G.n+'번째 숫자')+'</span><div class="now">'+(last==null?'?':last)+'</div>'+
+      '<div class="row" style="justify-content:center">'+(G.d.length<G.n?'<button class="btn pri big" data-a="draw">'+(last==null?'🎲 첫 숫자 뽑기':'🎲 다음 숫자')+'</button>':'<button class="btn pri big" data-a="end">🏁 결과 보기</button>')+'</div>'+
+      '<p class="note">키보드: 스페이스 또는 → = 다음 숫자 · 학생이 다 놓았는지 잠깐 기다려 주세요</p></div>'+
+      '<div class="card"><h3>지금까지 나온 숫자</h3><div class="hist">'+(G.d.length?G.d.map(function(v,i){return '<i class="'+(i===G.d.length-1?'last':'')+'">'+v+'</i>'}).join(''):'<span class="note">아직 없어요</span>')+'</div>'+
+      '<div class="row"><button class="btn" data-a="reset">처음부터 (새 게임)</button></div></div>';
+  }else{
+    h+='<div class="card"><h2>🏁 게임 끝!</h2><div class="hist">'+G.d.map(function(v){return '<i>'+v+'</i>'}).join('')+'</div>'+(SYNC?teamBars():'<p class="note">손을 들어 점수를 확인해요: 50점 넘은 사람? 80점 넘은 사람?</p>')+LESSON+
+      '<div class="row"><button class="btn pri" data-a="reset">🔁 새 게임</button></div></div>';
+  }
+  app.innerHTML=h;pub();
+}
+app.addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;var d=b.dataset;
+  if(d.n){PRE=+d.n;return render()}
+  if(d.a==='start'){newGame(PRE);return render()}
+  if(d.a==='draw'){if(G.d.length<G.n){G.d.push(G.deck[G.d.length]);save()}return render()}
+  if(d.a==='end'){G.end=true;save();return render()}
+  if(d.a==='reset'){if(G.id&&!G.end&&!confirm('지금 게임을 그만두고 새로 시작할까요?'))return;G={id:'',n:PRE,deck:[],d:[],end:false};ANS=[];save();return render()}
+});
+document.addEventListener('keydown',function(e){if((e.key===' '||e.key==='ArrowRight')&&G.id&&!G.end&&G.d.length<G.n){e.preventDefault();G.d.push(G.deck[G.d.length]);save();render()}});
+if(SYNC&&TM_SYNC.teams)TM_SYNC.teams(function(t){TEAMS=t;render()});
+render();
+})();
+</script>
+</body></html>
