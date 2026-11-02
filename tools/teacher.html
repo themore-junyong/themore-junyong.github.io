@@ -80,7 +80,7 @@ input.w{width:100%}
 </style>
 </head><body>
 <div class="wrap" id="app"><p class="soft">불러오는 중…</p></div>
-<div id="qrov" hidden role="dialog" aria-label="학생 입장 QR"><button class="x" id="qrX" aria-label="닫기">✕</button><h2>📱 휴대폰 카메라로 찍고 들어오세요</h2><div class="p" id="qrP"></div><div id="qrbox"></div><div id="qrU" style="font-weight:700"></div></div>
+<div id="qrov" hidden role="dialog" aria-label="학생 입장 QR"><button class="x" id="qrX" aria-label="닫기">✕</button><h2 id="qrH">📱 휴대폰 카메라로 찍고 들어오세요</h2><div class="p" id="qrP"></div><div id="qrbox"></div><div id="qrU" style="font-weight:700"></div></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script type="module">
 import { firebaseConfig } from './firebase-config.js';
@@ -109,6 +109,18 @@ const ACT=[
  ['river.html','🚣 문제해결 강건너기','3단계 퍼즐 (진행자 화면에 풀이)'],
  ['class.html','👥 교실 도구','팀 나누기 · 한 명 뽑기 · 큰 타이머']
 ];
+/* 학생 활동: 누르면 그 도구로 바로 들어가는 QR(방 번호 포함). 학생이 마치면 결과가 아래 '학생 결과'로 들어옴 */
+const STU=[
+ ['#jaso','📝 자소서 만들기','8단계 질문 → AI 초안 · 완성본이 강사 화면으로'],
+ ['color.html','🎨 퍼스널컬러 진단','셀카 + 색 천 드레이핑 → 진단서가 강사 화면으로'],
+ ['interview.html','🎤 AI 모의면접','질문 → 피드백 → 꼬리질문 · 점수표가 강사 화면으로'],
+ ['intro.html','🗣 1분 자기소개 꼬꼬무','질문에 답하면 1분 멘트 완성 · 강사 화면으로'],
+ ['test.html','🧭 자가진단 검사 (목록)','10종 중 학생이 골라서 · 결과가 강사 화면으로'],
+ ['sme.html','🏭 중소기업 이해 · 좋은 회사 찾기','OX 퀴즈 · 회사 조사 체크리스트'],
+ ['health.html','💪 생활습관 점검','33문항 → 내 약점 2곳 · 7일 실천'],
+ ['ai.html','🤖 AI 수업 도구 5종','프롬프트 연습장 · AI 거짓말 찾기 등']
+];
+const TST=[['riasec','직업흥미'],['big5','Big Five 성격'],['enneagram','에니어그램'],['values','직업가치관'],['strength','강점 24'],['conflict','갈등 대처'],['resil','회복탄력성'],['coping','스트레스 대처'],['mindset','성장 마인드셋'],['literacy','직장 문해력']];
 function render(){
   let h='<div class="top"><div class="brand"><small>위듀케이션 · 강사 입구</small></div><a href="./">학생 첫 화면 보기 →</a></div>';
   if(!S.pin){
@@ -123,7 +135,10 @@ function render(){
      '<div class="row" style="justify-content:center"><button class="btn pri big" data-a="qr">📱 빔에 학생 QR 크게 띄우기</button><button class="btn" data-a="new">⏹ 방 종료</button></div>'+
      '<span class="note">이 탭을 켜 두는 동안 방이 열려 있어요. 방 종료를 누르거나 이 탭을 닫으면 3분 안에 학생 화면도 "수업이 끝났어요"로 끊겨요.</span></div>'+
      '<div class="card"><h3>수업 활동</h3><div class="grid">'+ACT.map(a=>'<a class="g" href="'+a[0]+'" target="_blank" rel="noopener"><b>'+a[1]+'</b><span>'+a[2]+'</span></a>').join('')+'</div>'+
-     '<p class="note">활동은 새 탭으로 열려요. 이 탭은 켜 두세요. 게임은 빔에 띄우고 <b>🖥 진행자 화면</b>으로 정답을 보며 진행하면 돼요.</p></div>'+works();
+     '<p class="note">활동은 새 탭으로 열려요. 이 탭은 켜 두세요. 게임은 빔에 띄우고 <b>🖥 진행자 화면</b>으로 정답을 보며 진행하면 돼요.</p></div>'+
+     '<div class="card"><h3>학생 활동 (학생 휴대폰으로)</h3><p class="soft">누르면 <b>그 활동으로 바로 들어가는 QR</b>이 빔에 크게 떠요. 학생은 찍고 이름만 넣으면 바로 시작해요. 마친 결과는 아래 <b>학생 결과</b>에 모여요.</p>'+
+     '<div class="grid">'+STU.map(a=>'<button class="g" data-q="'+a[0]+'" data-qn="'+esc(a[1])+'" style="text-align:left;font:inherit"><b>'+a[1]+'</b><span>'+a[2]+'</span></button>').join('')+'</div>'+
+     '<h3 style="margin-top:8px">🧭 검사 하나만 바로 시키기</h3><div class="chips">'+TST.map(t=>'<button data-q="test.html?t='+t[0]+'" data-qn="🧭 '+t[1]+' 검사">'+t[1]+'</button>').join('')+'</div></div>'+works();
   }
   app.innerHTML=h;
 }
@@ -166,10 +181,12 @@ async function resume(){ // 이 노트북에서 만든 방이 아직 살아 있�
   try{const d=await F.getDoc(F.doc(db,'rooms',pin));const r=d.exists()?d.data():null;
     if(r&&r.owner===me&&!r.closed&&r.exp.toMillis()>Date.now()){S.pin=pin;S.exp=r.exp.toMillis();lsSet('live-host',{pin});live()}}catch(e){}
 }
-function qr(){const o=document.getElementById('qrov'),u=SITE+'?r='+S.pin,b=document.getElementById('qrbox');o.hidden=false;
+function qr(to,name){const o=document.getElementById('qrov'),u=to?(to.charAt(0)==='#'?SITE+'?r='+S.pin+'&go='+encodeURIComponent(to):SITE+to+(to.indexOf('?')<0?'?':'&')+'r='+S.pin):SITE+'?r='+S.pin,b=document.getElementById('qrbox');o.hidden=false;
+  document.getElementById('qrH').textContent=to?name+' · 찍고 바로 시작해요':'📱 휴대폰 카메라로 찍고 들어오세요';
   document.getElementById('qrP').textContent='방 번호 '+S.pin;document.getElementById('qrU').textContent=u.replace('https://','');b.innerHTML='';
   if(window.QRCode)new QRCode(b,{text:u,width:600,height:600,correctLevel:QRCode.CorrectLevel.M});else b.textContent='QR을 불러오지 못했어요. 위 주소를 칠판에 적어 주세요.'}
-app.addEventListener('click',e=>{const t=e.target.closest('[data-a],[data-w]');if(!t)return;
+app.addEventListener('click',e=>{const t=e.target.closest('[data-a],[data-w],[data-q]');if(!t)return;
+  if(t.dataset.q){qr(t.dataset.q,t.dataset.qn);return}
   if(t.dataset.w){openW[t.dataset.w]=!openW[t.dataset.w];render();return}
   const a=t.dataset.a;
   if(a==='make')make();else if(a==='qr')qr();else if(a==='csv')csv();
