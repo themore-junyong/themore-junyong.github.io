@@ -6,6 +6,7 @@
 (function(){
   var V='10.12.2', G='https://www.gstatic.com/firebasejs/'+V, K='tm-room-s', STALE=3*60e3;
   var me=document.currentScript, GUARD=me&&me.hasAttribute('data-guard');
+  var TEACH=/[?&]teach=1/.test(location.search); // 강사 미리보기: 방 없이 화면만 봄, 결과는 안 보냄
   var fb=null;
   function get(){try{var r=JSON.parse(localStorage.getItem(K)||'null');return r&&r.pin&&r.nick?r:null}catch(e){return null}}
   function put(r){try{if(r)localStorage.setItem(K,JSON.stringify(r));else localStorage.removeItem(K)}catch(e){}}
@@ -40,7 +41,7 @@
     d.style.cssText='position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:90;background:'+(bad?'#c8432f':'#2e8b4c')+';color:#fff;font:700 15px system-ui;padding:10px 18px;border-radius:999px;box-shadow:0 4px 14px rgba(0,0,0,.2);max-width:90vw;text-align:center';
     document.body.appendChild(d);setTimeout(function(){d.remove()},2600)}
   function send(tool,title,body){
-    var r=get();if(!r)return Promise.resolve(false);
+    var r=get();if(!r||TEACH)return Promise.resolve(false);
     return boot().then(function(b){
       return b.F.setDoc(b.F.doc(b.db,'rooms',r.pin,'work',b.uid+'_'+tool),{tool:tool,nick:r.nick,title:String(title||'').slice(0,80),body:String(body||'').slice(0,6000),t:b.F.serverTimestamp()});
     }).then(function(){toast('✔ 선생님께 보냈어요');return true},function(){toast('선생님께 보내지 못했어요 (방이 끝났을 수 있어요)',true);return false});
@@ -65,7 +66,7 @@
     location.href=g.to==='home'?'./':g.to.charAt(0)==='#'?'./'+g.to:g.to+(g.to.indexOf('?')<0?'?':'&')+'r='+r.pin;
   }
   function watch(onlyFollow){
-    var r=get();if(!r)return;
+    var r=get();if(!r||TEACH)return;
     boot().then(function(b){
       var last=null;
       b.F.onSnapshot(b.F.doc(b.db,'rooms',r.pin),function(d){last=d.exists()?d.data():null;var w=alive(last);if(w){if(!onlyFollow)ended(w);return}follow(r,last)},function(){});
@@ -79,7 +80,13 @@
     a.style.cssText='position:fixed;top:max(8px,env(safe-area-inset-top,0px));right:max(8px,env(safe-area-inset-right,0px));z-index:40;background:#4e6bf1;color:#fff;font:700 13px system-ui;padding:6px 12px;border-radius:999px;text-decoration:none;opacity:.92';
     document.body.appendChild(a);
   }
-  window.TM_ROOM={get:get,join:join,check:check,send:send,leave:function(){put(null)},watch:watch};
+  window.TM_ROOM={get:get,join:join,check:check,send:send,leave:function(){put(null)},watch:watch,teach:TEACH};
+  if(TEACH){
+    var tb=function(){var a=document.createElement('div');a.textContent='👀 선생님 미리보기 (학생이 보는 화면 · 결과는 안 보냄)';
+      a.style.cssText='position:fixed;top:max(8px,env(safe-area-inset-top,0px));right:max(8px,env(safe-area-inset-right,0px));z-index:40;background:#2e2e2e;color:#fff;font:700 13px system-ui;padding:6px 12px;border-radius:999px;opacity:.92';document.body.appendChild(a)};
+    if(document.body)tb();else document.addEventListener('DOMContentLoaded',tb);
+    return;
+  }
   if(GUARD){
     var qr=(new URLSearchParams(location.search).get('r')||'').replace(/\D/g,'').slice(0,4), cur=get();
     if(cur&&qr&&qr!==cur.pin){put(null);cur=null}

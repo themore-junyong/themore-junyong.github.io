@@ -356,7 +356,7 @@ function bindResult(){
 
 if(joined()&&QPIN&&QPIN!==joined().pin)TM_ROOM.leave();
 if(joined()&&goNext())return;
-if(h==='jaso'&&joined()) go(0); else home();
+if(h==='jaso'&&(joined()||TM_ROOM.teach)) go(0); else home();
 if(joined())TM_ROOM.watch();
 })();
 
