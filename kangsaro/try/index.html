@@ -974,6 +974,8 @@ function docTable(j,A){const cf=A.filter(a=>a.status==='확정'),N=j.needs.filte
   <div class="tw"><table><thead><tr><th>강사</th>${N.map(n=>`<th style="text-align:center;white-space:normal;font-size:11px;min-width:44px">${esc(n)}</th>`).join('')}</tr></thead>
   <tbody>${cf.map(a=>`<tr><td><b>${esc(inst(a.instId).name)}</b></td>${N.map(n=>cell(a,n)).join('')}</tr>`).join('')}</tbody></table></div>
   <span class="mu sm">✓를 누르면 그 서류를 내려받아요. ✗는 아직 안 낸 서류예요.</span>
+  <details class="sm" ${ui.need2===j.id?'open':''}><summary><b>＋ 서류 추가·빼기</b> (받을 서류가 바뀌었을 때)</summary><span class="mu sm">체크하면 받을 서류에 들어가고, 체크를 풀면 빠져요. 새로 넣은 서류는 확정 강사에게 공지로 알려요.</span>
+    ${needBox('cNeed2',j.needs,'needEdit')}<div class="row"><input id="needNew2" placeholder="목록에 없는 서류 (예: 성범죄 경력 회보서)" style="flex:1;min-width:0"><button class="btn sm" data-act="needAdd" data-in="needNew2">＋ 넣기</button></div></details>
   ${miss.length?`<button class="btn pri" data-act="nudgeDocs" data-j="${j.id}">안 낸 ${miss.length}명(${miss.map(a=>esc(inst(a.instId).name)).join(', ')})에게 요청 공지 보내기</button>`:'<div class="ok">확정 강사 서류를 다 받았어요.</div>'}</div>`}
 function vCJob(j){const A=appsOf(j.id),s=jobStats(j);
   const prof=a=>{const p=inst(a.instId);const cf=a.status==='확정';return `<div class="card"><div class="row">${pic(p)}<h3 class="sp">${esc(p.name)} <span class="mu sm">${esc(p.region)} · ${esc(p.topics)}</span>${verified(p.id).length?` <span class="chip paid">✓ 인증 강의 ${verified(p.id).length}회</span>`:''}</h3>${cf?chip('confirmed'):a.status==='미선정'?'<span class="chip off">미선정</span>':a.status==='취소'?`<span class="chip ${a.cxConfirmed?'warn':'off'}">${a.cxConfirmed?'확정 후 취소':'지원 취소'}</span>`:chip('applied')}</div>
@@ -1227,7 +1229,7 @@ document.addEventListener('click',async ev=>{
   if(A==='copyYear'||A==='copyCSum')return copy(tableText(),'결산표');
   // 회사
   if(A==='openJob'){ui.jobId=D.j;render();return scrollTo(0,0)}
-  if(A==='needAdd'){const v=($('#needNew').value||'').trim();if(!v)return toast('서류 이름을 써 주세요');const j=job(ui.jobId);if(j.needs.includes(v))return toast('이미 받을 서류에 있어요');
+  if(A==='needAdd'){if(D.in)ui.need2=ui.jobId;const v=(($('#'+(D.in||'needNew'))||{}).value||'').trim();if(!v)return toast('서류 이름을 써 주세요');const j=job(ui.jobId);if(j.needs.includes(v))return toast('이미 받을 서류에 있어요');
     j.needs=[...j.needs,v];const cf=appsOf(j.id).filter(a=>a.status==='확정');if(cf.length)j.notices.push({id:uid(),...(WHO?{by:WHO}:{}),text:`[서류 추가] ${j.school} ${j.title} 강의에 ${v}을(를) 내 주세요. 강의 상세에서 올릴 수 있어요.`,kind:'서류',to:cf.map(a=>a.instId),reads:{},at:new Date().toISOString()});
     save();render();return toast(`${v}을(를) 받을 서류에 넣었어요${cf.length?` · 확정 강사 ${cf.length}명에게 알렸어요`:''}`)}
   if(A==='back'){ui.jobId=null;return render()}
@@ -1366,7 +1368,7 @@ document.addEventListener('change',ev=>{const el=ev.target,D=el.dataset||{};
   if(D.act==='logo'&&el.files[0]){shrinkLogo(el.files[0]).then(u=>{if(!u)return toast('로고를 읽지 못했어요');co(meId()).logo=u;save();render();toast('로고를 올렸어요. 프로필 PDF에 들어가요')});return}
   if(D.act==='photo'&&el.files[0]){shrink(el.files[0],480).then(u=>{if(!u)return toast('사진을 읽지 못했어요');inst(meId()).photo=u;save();render();toast('프로필 사진을 올렸어요')});return}
   if(D.act==='doc'&&el.files[0]){const a=S.apps.find(x=>x.id===D.a);a.docs[D.n]=el.files[0].name;save();render();toast(`${D.n} 냈어요 (체험판은 파일 이름만 저장해요)`)}
-  if(D.act==='needEdit'){const j=job(ui.jobId),old=j.needs||[],nw=['프로필',...$$('.cNeed:checked').map(x=>x.value).filter(x=>x!=='프로필')],add=nw.filter(x=>!old.includes(x));j.needs=nw;
+  if(D.act==='needEdit'){if(el.classList.contains('cNeed2'))ui.need2=ui.jobId;const j=job(ui.jobId),old=j.needs||[],nw=['프로필',...$$('.'+(el.classList.contains('cNeed2')?'cNeed2':'cNeed')+':checked').map(x=>x.value).filter(x=>x!=='프로필')],add=nw.filter(x=>!old.includes(x));j.needs=nw;
     const cf=appsOf(j.id).filter(a=>a.status==='확정');if(add.length&&cf.length)j.notices.push({id:uid(),...(WHO?{by:WHO}:{}),text:`[서류 추가] ${j.school} ${j.title} 강의에 ${add.join(', ')}을(를) 내 주세요. 강의 상세에서 올릴 수 있어요.`,kind:'서류',to:cf.map(a=>a.instId),reads:{},at:new Date().toISOString()});
     save();render();return toast(add.length?`${add.join(', ')}을(를) 받을 서류에 넣었어요${cf.length?` · 확정 강사 ${cf.length}명에게 알렸어요`:''}`:'받을 서류에서 뺐어요')}
   if(D.act==='jedit'){const j=job(ui.jobId);const old=j[D.k];let v=el.value.trim();
