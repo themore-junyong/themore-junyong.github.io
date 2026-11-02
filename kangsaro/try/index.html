@@ -347,7 +347,12 @@ function opLess(j,tk){let k=0;const ds=[...new Set(j.plan.slots.filter(x=>tKey(x
   return k}
 // 업체: 운영 시간표 (날짜 × 반 × 시간 칸에 강사 배정) + 강사별 받을 돈
 function opBox(j,A){
-  if(!isOp(j))return `<div class="card"><h3>시간표 만들기</h3><span class="mu sm">강의 시간과 강사 인원을 정하면 날짜마다 칸이 생기고, 칸마다 강사를 넣을 수 있어요. 강사 달력에는 자기 칸 날짜·시간만 떠요.</span>${opForm(j,true)}</div>`;
+  // 실제 앱: 시간표가 있는 강의인데 아직 못 불러왔으면 '만들기' 대신 불러오기·되살리기 (덮어쓰기 막기)
+  if(!isOp(j)&&j.op&&window.PLANST&&PLANST[j.id]!=='new'){const st=PLANST[j.id]||'loading',pv=(window.PLANPREV||{})[j.id];
+    if(st==='loading')return `<div class="card"><h3>운영 시간표</h3><span class="mu sm">시간표를 불러오는 중이에요…</span><button class="btn sm" data-act="planLoad" data-j="${j.id}">다시 불러오기</button></div>`;
+    return `<div class="card" style="border-color:var(--r2)"><h3 style="color:var(--r2)">운영 시간표를 불러오지 못했어요</h3><span class="sm">이 강의에는 시간표가 있었는데 서버에서 찾지 못했어요.${st==='error'?' (인터넷이나 권한 문제일 수 있어요)':''}</span>
+      <div class="row" style="flex-wrap:wrap"><button class="btn sm" data-act="planLoad" data-j="${j.id}">다시 불러오기</button>${pv&&pv.slots&&pv.slots.length?`<button class="btn sm pri" data-act="planPrev" data-j="${j.id}">직전 시간표 되살리기 (${pv.slots.length}칸 · ${esc(String(pv.at||'').slice(5,16).replace('T',' '))})</button>`:''}<button class="btn sm" data-act="planNew" data-j="${j.id}">새로 만들기</button></div></div>`}
+  if(!isOp(j))return `<div class="card"><h3>시간표 만들기</h3>${window.KSR_PLANPREV?`<button class="btn sm" data-act="planPrev" data-j="${j.id}" style="align-self:flex-start">↶ 직전에 저장된 시간표 되살리기</button>`:''}<span class="mu sm">강의 시간과 강사 인원을 정하면 날짜마다 칸이 생기고, 칸마다 강사를 넣을 수 있어요. 강사 달력에는 자기 칸 날짜·시간만 떠요.</span>${opForm(j,true)}</div>`;
   const P=j.plan.slots,cf=A.filter(a=>a.status==='확정'||a.status==='지원'),names=[...new Set(P.flatMap(x=>[x.nm,x.subNm]).filter(Boolean))];
   const opt=(v,isSub)=>`<option value="">${isSub?'보조 없음':'미정'}</option>${cf.map(a=>`<option value="${a.instId}" ${v===a.instId?'selected':''}>${esc(inst(a.instId).name)}${a.status==='지원'?' (지원자)':''}</option>`).join('')}${names.map(n=>`<option value="nm:${esc(n)}" ${v==='nm:'+n?'selected':''}>${esc(n)} (앱 밖)</option>`).join('')}<option value="__nm">＋ 이름 직접 쓰기</option>`;
   const byD=[...new Set(P.map(x=>x.d))].sort();
@@ -473,9 +478,10 @@ const planSnap=j=>JSON.stringify({slots:(j.plan&&j.plan.slots)||[],st:appsOf(j.i
 const planSeen=j=>{ui.undo=ui.undo||{};const U=ui.undo[j.id]=ui.undo[j.id]||{st:[],last:null};if(U.last===null)U.last=planSnap(j);return U};
 // 운영 시간표가 있으면 공고 대표 시간은 칸 시간에서 자동 (가장 이른 시작~가장 늦은 끝)
 const planTime=j=>{if(!isOp(j))return;const R=j.plan.slots.map(x=>hmOf(x.time)).filter(Boolean);if(!R.length)return;j.time=`${hhmm(Math.min(...R.map(r=>r[0])))}~${hhmm(Math.max(...R.map(r=>r[1])))}`};
+const planDelMark=j=>{if(window.PLANDEL)PLANDEL.add(j.id)};
 const planTouch=j=>{planTime(j);const U=planSeen(j),now=planSnap(j);if(now!==U.last){U.st.push(U.last);if(U.st.length>30)U.st.shift();U.last=now}j.planAt=new Date().toISOString();j.op=true;save();render()};
 function planUndo(j){const U=planSeen(j);if(!U.st.length)return toast('되돌릴 게 없어요');const o=JSON.parse(U.st.pop());let un=0;
-  if(o.slots.length){j.plan=j.plan||{};j.plan.slots=o.slots}else{delete j.plan;j.op=false}
+  if(o.slots.length){j.plan=j.plan||{};j.plan.slots=o.slots}else{delete j.plan;j.op=false;planDelMark(j)}
   for(const [id,st] of o.st){const a=S.apps.find(x=>x.id===id);if(a&&a.status!==st){if(a.status==='확정'&&st==='지원'){S.alerts.push({id:uid(),instId:a.instId,appId:a.id,text:`[확정 취소] ${co(j.coId).name} · ${j.school} ${j.title} 배정이 잘못 눌려 취소되었어요. 다시 확정되면 알려 드릴게요.`,at:new Date().toISOString(),read:false});un++}a.status=st}}
   U.last=planSnap(j);j.planAt=new Date().toISOString();save();render();toast(`되돌렸어요${un?` · 잘못 확정된 ${un}명에게 취소 알림을 보냈어요`:''}`)}
 
@@ -1261,6 +1267,11 @@ document.addEventListener('click',async ev=>{
   if(A==='opXls')return opXls(job(D.j),D.k);
   if(A==='opPng')return opPng(job(D.j),!!D.n,D.k);
   if(A==='planUndo')return planUndo(job(D.j));
+  if(A==='planLoad'){if(window.KSR_PLANLOAD){PLANST[D.j]='loading';render();KSR_PLANLOAD(D.j)}return}
+  if(A==='planNew'){if(window.PLANST)PLANST[D.j]='new';return render()}
+  if(A==='planPrev'){const j=job(D.j);const pv=window.KSR_PLANPREV?await KSR_PLANPREV(j.id):null;if(!pv||!pv.slots||!pv.slots.length)return toast('되살릴 시간표가 없어요');
+    if(!confirm(`${pv.slots.length}칸 시간표(${String(pv.at||'').slice(5,16).replace('T',' ')} 저장)로 되살릴까요?${isOp(j)?' 지금 시간표는 백업으로 남아요.':''}`))return;
+    j.plan={slots:pv.slots};if(window.PLANST)PLANST[j.id]='ok';planTouch(j);return toast('시간표를 되살렸어요')}
   if(A==='brush'){const B=ui.brush||'';
     if(B&&!B.startsWith('nm:')&&B!=='__clear'&&D.v.startsWith('nm:')){const j=job(ui.jobId),n=D.v.slice(3);let k=0;for(const x of j.plan.slots){if(x.nm===n){x.inst=B;x.nm='';k++}if(x.subNm===n){x.sub=B;x.subNm='';k++}}
       const ap=appsOf(j.id).find(y=>y.instId===B&&y.status==='지원');if(ap)confirmApp(ap,j);ui.brush='';planTouch(j);return toast(`'${n}' 칸 ${k}개를 ${inst(B).name} 강사 계정으로 바꿨어요${ap?' · 확정 알림을 보냈어요':''}`)}
@@ -1290,12 +1301,12 @@ document.addEventListener('click',async ev=>{
   if(A==='opRowSplit'){const h=hmOf(D.t),b=$('#opRows');if(h&&b)b.innerHTML=opRowHtml(`${hhmm(h[0])}~12:00`,'오전',1)+opRowHtml(`13:00~${hhmm(h[1])}`,'오후',1);return}
   if(A==='opRowDel'){const r=el.closest('.opRow');if($$('#opRows .opRow').length>1)r.remove();else r.outerHTML=opRowHtml('','',1);return}
   if(A==='opLess'){const j=job(D.j),k=opLess(j,D.tk);if(!k)return toast('뺄 칸이 없어요');planTouch(j);return toast(`날마다 칸을 하나씩 뺐어요 (${k}칸)`)}
-  if(A==='opClear'){const j=job(D.j);if(!confirm('시간표를 모두 지우고 처음부터 다시 만들까요? 칸에 넣은 강사 배정도 지워져요. (확정 상태는 그대로)'))return;delete j.plan;planTouch(j);j.op=false;save();render();return toast('시간표를 지웠어요. 아래에서 다시 만드세요')}
+  if(A==='opClear'){const j=job(D.j);if(!confirm('시간표를 모두 지우고 처음부터 다시 만들까요? 칸에 넣은 강사 배정도 지워져요. (확정 상태는 그대로)'))return;delete j.plan;planDelMark(j);planTouch(j);j.op=false;save();render();return toast('시간표를 지웠어요. 아래에서 다시 만드세요')}
   if(A==='opMore'){const j=job(D.j),k=opMore(j,D.tk);planTouch(j);return toast(`날마다 칸을 하나씩 더했어요 (${k}칸). 강사를 넣어 주세요`)}
   if(A==='opLink'){const j=job(D.j),nz=v=>String(v||'').replace(/\s|강사|님/g,''),L=appsOf(j.id).filter(a=>(a.status==='확정'||a.status==='지원')&&(D.i==='__all'||a.instId===D.i));let n=0,c=0;
     for(const a of L){const nm=nz(inst(a.instId).name);if(!nm)continue;let hit=0;for(const x of j.plan.slots){if(nz(x.nm)===nm){x.inst=a.instId;x.nm='';hit++}if(nz(x.subNm)===nm){x.sub=a.instId;x.subNm='';hit++}}if(hit){n+=hit;if(a.status==='지원'){confirmApp(a,j);c++}}}
     planTouch(j);return toast(n?`칸 ${n}개를 연결했어요${c?` · ${c}명 확정 알림을 보냈어요`:''}`:'이름이 같은 칸이 없어요')}
-  if(A==='opDel'){const j=job(D.j);j.plan.slots=j.plan.slots.filter(x=>x.id!==D.s);if(!j.plan.slots.length){delete j.plan;j.op=false}planTouch(j);return}
+  if(A==='opDel'){const j=job(D.j);j.plan.slots=j.plan.slots.filter(x=>x.id!==D.s);if(!j.plan.slots.length){if(!confirm('마지막 칸이에요. 지우면 시간표가 없어져요. 지울까요?'))return;delete j.plan;planDelMark(j);planTouch(j);j.op=false;save();render();return}planTouch(j);return}
   if(A==='extAdd'||A==='extAll'){const add=(a,k,v,tx)=>{a.ext=[...(a.ext||[]),{k,amt:v,tx}]};
     const sel=$(A==='extAdd'?'#extK_'+D.a:'#extAllK'),v=+$(A==='extAdd'?'#extV_'+D.a:'#extAllV').value;if(!v)return toast('금액을 넣어 주세요');
     const k=sel.value,tx=sel.selectedOptions[0].dataset.tx==='1';
