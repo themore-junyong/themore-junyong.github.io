@@ -182,6 +182,8 @@ var STEPS=[
 
 /* 수업 방: 강사가 teacher.html에서 방을 만들어야 학생이 쓸 수 있음. 선생님 QR(?r=번호)이면 번호가 미리 채워짐 (공통 스크립트 room.js) */
 var QPIN=(new URLSearchParams(location.search).get('r')||'').replace(/\D/g,'').slice(0,4), RNOTE='', RBUSY=false;
+/* v = 강사가 빔으로 진행하는 활동(게임·교실 도구) → 학생은 '앞 화면을 보세요' */
+var VIEW=new URLSearchParams(location.search).get('v')||'', BEAM={icebreak:'🎲 아이스브레이킹',safety:'🦺 안전 징검다리',river:'🚣 문제해결 강건너기',class:'👥 교실 도구'};
 /* go = 들어온 뒤 바로 열 도구(강사 화면의 활동별 QR). 같은 폴더의 도구만 허용 */
 var GO=(function(g){g=g||'';return /^([a-z]+\.html)?(\?[\w=&-]*)?(#[\w-]*)?$/.test(g)&&g?g:''})(new URLSearchParams(location.search).get('go'));
 function goNext(){if(!GO)return false;location.replace(GO.charAt(0)==='#'?location.pathname+GO:GO);return true}
@@ -214,7 +216,8 @@ function home(){
   var r=joined();
   app.innerHTML='<header class="brand"><small>위듀케이션</small><h1>위듀케이션 취업 연구소</h1></header>'+
    '<div class="room" style="text-align:center;align-items:center"><span class="soft">들어온 수업 방</span><span class="pin">'+r.pin+'</span><b style="font-size:1.2rem">'+esc(r.nick)+' 님, 반가워요! 👋</b></div>'+
-   '<div class="hero" style="text-align:center;align-items:center;padding:28px 16px"><span style="font-size:2.6rem" aria-hidden="true">⏳</span><b>선생님이 활동을 고르면<br>이 화면이 자동으로 바뀌어요</b><span style="opacity:.9">화면을 켜 둔 채로 기다려 주세요.</span></div>'+
+   (BEAM[VIEW]?'<div class="hero" style="text-align:center;align-items:center;padding:28px 16px"><span style="font-size:2.6rem" aria-hidden="true">👀</span><b>지금은 앞 화면(빔)을 보세요</b><span style="font-size:1.3rem;font-weight:800">'+BEAM[VIEW]+'</span><span style="opacity:.9">다음 활동으로 넘어가면 이 화면도 자동으로 바뀌어요.</span></div>':
+   '<div class="hero" style="text-align:center;align-items:center;padding:28px 16px"><span style="font-size:2.6rem" aria-hidden="true">⏳</span><b>선생님이 활동을 고르면<br>이 화면이 자동으로 바뀌어요</b><span style="opacity:.9">화면을 켜 둔 채로 기다려 주세요.</span></div>')+
    '<a href="#" id="roomOut" class="note" style="text-align:center">방 번호를 잘못 넣었어요 (다른 방으로 들어가기)</a>';
 }
 
