@@ -265,8 +265,25 @@ try{var sv=JSON.parse(localStorage.getItem('ice-v1')||'{}');st=Object.assign(st,
 while(st.score.length<8)st.score.push(0);['A팀','B팀','C팀','D팀','E팀','F팀','G팀','H팀'].forEach(function(n,i){if(!st.tname[i])st.tname[i]=n});
 function save(){try{localStorage.setItem('ice-v1',JSON.stringify(st))}catch(e){}}
 var BANK={balance:BAL,chosung:CHO,emoji:EMO,body:BODY};
+/* ✏️ 내 문제: 강사가 직접 넣은 문제(이 노트북에 저장). '전체'에는 안 섞음(정답지 QR 순서가 그대로이도록) */
+var MYC='✏️ 내 문제',MY={},ED=null;try{MY=JSON.parse(localStorage.getItem('ice-my')||'{}')||{}}catch(e){MY={}}
+function applyMy(){['balance','chosung','emoji','body'].forEach(function(v){if(Array.isArray(MY[v])&&MY[v].length)BANK[v][MYC]=MY[v];else delete BANK[v][MYC];if(st.cat[v]!=='전체'&&!BANK[v][st.cat[v]])st.cat[v]='전체'})}
+applyMy();
+var FMT={balance:['한 줄에 하나씩 · 두 가지를 / 로 나눠요','짜장면 / 짬뽕\n월급 300 주말 출근 / 월급 250 칼퇴'],
+ chosung:['한 줄에 낱말 하나 · 초성은 자동으로 만들어져요','안전모\n근로계약서\n점심시간'],
+ emoji:['한 줄에 하나씩 · 이모지 / 정답','🐒🌳⬇️ / 원숭이도 나무에서 떨어진다\n☕😴❌ / 커피 마시면 잠이 안 와요'],
+ body:['한 줄에 제시어 하나','택배기사\n라면 끓이기\n지옥철 출근']};
+function myLines(v){return (MY[v]||[]).map(function(x){return Array.isArray(x)?x.join(' / '):x}).join('\n')}
+function myParse(v,t){var out=[],bad=[];t.split(/\r?\n/).forEach(function(l){l=l.trim();if(!l)return;
+  if(v==='balance'||v==='emoji'){var m=l.split(/\s*\/\s*|\s+(?:vs|VS)\s+/);if(m.length<2||!m[0]||!m.slice(1).join('/').trim()){bad.push(l);return}out.push([m[0].slice(0,60),m.slice(1).join('/').trim().slice(0,60)])}
+  else out.push(l.slice(0,40))});return {items:out.slice(0,200),bad:bad}}
+function editor(v){var f=FMT[v],nm={balance:'⚖️ 밸런스 게임',chosung:'🔤 초성 퀴즈',emoji:'😀 이모지 퀴즈',body:'🙆 몸으로 말해요'}[v];
+ return head()+'<div class="card"><h2>✏️ '+nm+' · 내 문제 만들기</h2><p>'+f[0]+'. 저장하면 분류 <b>'+MYC+'</b>로 바로 시작해요.</p>'+
+  '<textarea id="myta" rows="12" style="width:100%;box-sizing:border-box;font:inherit;font-size:1.1rem;padding:12px;border:1px solid var(--line);border-radius:6px;background:var(--field);color:var(--ink)" placeholder="'+esc(f[1].replace(/\n/g,'&#10;'))+'">'+esc(myLines(v))+'</textarea>'+
+  '<p class="note">예) '+esc(f[1]).replace(/\n/g,' · ')+'<br>이 노트북(브라우저)에만 저장돼요. 기본 문제는 그대로 있고, 다 지우고 저장하면 내 문제가 없어져요.</p>'+
+  '<div class="row"><button class="btn pri big" data-a="esave">💾 저장하고 시작</button><button class="btn big" data-a="ecancel">취소</button></div></div>'}
 var G={}; /* 게임별 덱·현재 문제 */
-function pool(v){var b=BANK[v],c=st.cat[v];var out=[];Object.keys(b).forEach(function(k){if(c==='전체'||c===k)b[k].forEach(function(x){out.push({cat:k,x:x})})});return out}
+function pool(v){var b=BANK[v],c=st.cat[v];var out=[];Object.keys(b).forEach(function(k){if((c==='전체'&&k!==MYC)||c===k)b[k].forEach(function(x){out.push({cat:k,x:x})})});return out}
 function deal(v){var g=G[v]||(G[v]={});g.seed=1000+Math.floor(Math.random()*9000);g.deck=sshuffle(pool(v),g.seed);g.i=0;g.show=false;g.pick=null;g.done=0;g.end=0}
 function cur(v){var g=G[v];if(!g||!g.deck)deal(v);g=G[v];return g.deck[g.i]}
 function next(v){var g=G[v];if(v!=='body'&&g.end)return;g.i++;g.show=false;g.pick=null;if(g.i>=g.deck.length){if(v==='body'){deal(v);G[v].done=1}else{g.i=g.deck.length-1;g.end=1}}}
@@ -282,7 +299,7 @@ var TABS=[['balance','⚖️ 밸런스 게임'],['chosung','🔤 초성 퀴즈']
 
 function head(){return '<div class="top"><div class="brand"><small>위듀케이션 · 아이스브레이킹</small></div><div class="row">'+(SYNC()?'<button class="btn" data-a="stat">📊 조별 통계</button>':'')+'<button class="btn" data-a="host">🖥 진행자 화면</button><button class="btn" data-a="fs">⛶ 전체 화면</button><a href="./">← 도구 모음</a></div></div>'+
  '<div class="tabs">'+TABS.map(function(x){return '<a href="#'+x[0]+'"'+(V===x[0]?' aria-current="page"':'')+'>'+x[1]+'</a>'}).join('')+'</div>'}
-function cats(v){return '<div class="chips">'+['전체'].concat(Object.keys(BANK[v])).map(function(k){var on=st.cat[v]===k;return '<button data-cat="'+esc(k)+'" style="'+(on?'background:var(--blue);color:var(--blue-ink)':'')+'">'+esc(k)+'</button>'}).join('')+'</div>'}
+function cats(v){return '<div class="chips">'+['전체'].concat(Object.keys(BANK[v])).map(function(k){var on=st.cat[v]===k;return '<button data-cat="'+esc(k)+'" style="'+(on?'background:var(--blue);color:var(--blue-ink)':'')+'">'+esc(k)+'</button>'}).join('')+'<button data-a="edit" title="직접 문제 넣기">✏️ 문제 편집</button></div>'}
 function count(v){var g=G[v];return '<span class="note">'+(v==='chosung'||v==='emoji'?'<b style="font-size:1.4rem;color:var(--ink)">'+(g.i+1)+'번</b> / '+g.deck.length+' · 정답지 '+g.seed:(g.i+1)+' / '+g.deck.length)+(g.done?' · 한 바퀴 돌아서 다시 섞었어요':'')+'</span>'}
 function hit(){var h='<div class="hit">';for(var i=0;i<st.teams;i++)h+='<button data-hit="'+i+'" style="--c:'+COLORS[i]+'">'+esc(st.tname[i])+' +1</button>';return h+'</div>'}
 function board(){
@@ -369,6 +386,7 @@ function keyUrl(v){return SITE+'#ans/'+v+'/'+encodeURIComponent(st.cat[v])+'/'+G
 function answers(){
  var p=V.split('/'),v=p[1],c=decodeURIComponent(p[2]||'전체'),seed=+p[3];
  if(!BANK[v]||!(v==='chosung'||v==='emoji')||!seed)return '<p>정답지 주소가 잘못됐어요. 빔 화면에서 QR을 다시 찍어 주세요.</p>';
+ if(c===MYC&&!BANK[v][MYC])return '<p>✏️ 내 문제는 빔 노트북에만 저장돼 있어서 이 휴대폰에서는 정답지를 볼 수 없어요. 빔 화면의 <b>정답 보기</b>를 써 주세요.</p>';
  var save=st.cat[v];st.cat[v]=BANK[v][c]||c==='전체'?c:'전체';var d=sshuffle(pool(v),seed);st.cat[v]=save;
  return '<div class="top"><div class="brand"><small>위듀케이션 · 선생님 정답지</small></div></div><div class="card"><h2>'+(v==='chosung'?'🔤 초성 퀴즈':'😀 이모지 퀴즈')+' 정답지</h2>'+
   '<p class="note">정답지 번호 <b>'+seed+'</b> · '+esc(c)+' · 빔 화면 오른쪽 위의 <b>문제 번호</b>와 맞춰 보세요. 학생에게는 보여 주지 마세요.</p>'+
@@ -488,7 +506,7 @@ function hostInit(){document.title='진행자 화면 · 아이스브레이킹';h
   if(d.h)send({a:d.h});else if(d.hh!=null)send({hit:d.hh});else if(d.hsc!=null)send({sc:d.hsc,d:d.d});else if(d.hsel!=null)send({sel:d.hsel});else if(d.hgo)send({go:d.hgo})});
  document.addEventListener('keydown',function(e){if(!HS)return;if(e.key==='ArrowRight'){e.preventDefault();send({a:HS.V==='body'?'bok':'next'})}else if(e.key===' '&&(HS.V==='chosung'||HS.V==='emoji')){e.preventDefault();send({a:'show'})}});
 }
-function render(){if(HOST)return;if(V.indexOf('ans/')===0){app.innerHTML=answers();return}var f={balance:balance,chosung:chosung,emoji:emoji,body:body}[V];if(!f){V='balance';f=balance}app.innerHTML=f();pub()}
+function render(){if(HOST)return;if(V.indexOf('ans/')===0){app.innerHTML=answers();return}var f={balance:balance,chosung:chosung,emoji:emoji,body:body}[V];if(!f){V='balance';f=balance}if(ED===V){app.innerHTML=editor(V);return}ED=null;app.innerHTML=f();pub()}
 
 app.addEventListener('click',function(e){
  if(HOST)return;var t=e.target.closest('button,[data-side],[data-ren]');if(!t)return;act(t.dataset);
@@ -510,6 +528,10 @@ function act(d){
   case 'next':next(V);resetQ();render();break;
   case 'again':deal(V);resetQ();render();break;
   case 'key':keyOpen(V);break;
+  case 'edit':ED=V;clearInterval(T.iv);T.run=false;render();var ta=document.getElementById('myta');if(ta)ta.focus();break;
+  case 'ecancel':ED=null;render();break;
+  case 'esave':var r=myParse(V,(document.getElementById('myta')||{}).value||'');if(r.bad.length&&!confirm('형식이 맞지 않는 줄 '+r.bad.length+'개는 빼고 저장할까요?\n(예: '+r.bad[0]+')\n두 가지는 / 로 나눠 주세요.'))break;
+   MY[V]=r.items;try{localStorage.setItem('ice-my',JSON.stringify(MY))}catch(e){}applyMy();if(r.items.length)st.cat[V]=MYC;save();ED=null;deal(V);resetQ();render();break;
   case 'stat':statOpen();break;
   case 'sclose':document.getElementById('sov').hidden=true;break;
   case 'sreset':if(confirm('학생 응답 기록(조별 통계)을 모두 지울까요?')){R={};rSave();statOpen();render()}break;
