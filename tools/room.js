@@ -32,7 +32,7 @@
     return '';
   }
   function info(pin){ // 방 문서(조 이름 teams 포함). 없거나 끝났으면 bad에 이유
-    return boot().then(function(b){return b.F.getDoc(b.F.doc(b.db,'rooms',pin))}).then(function(d){var r=d.exists()?d.data():null;return {bad:alive(r),teams:r&&Array.isArray(r.teams)?r.teams:[]}});
+    return boot().then(function(b){return b.F.getDoc(b.F.doc(b.db,'rooms',pin))}).then(function(d){var r=d.exists()?d.data():null;return {bad:alive(r),teams:r&&Array.isArray(r.teams)?r.teams:[],ak:r&&typeof r.ak==='string'?r.ak:''}});
   }
   function check(pin){return info(pin).then(function(x){return x.bad})}
   /* 들어가기: 방 번호 + 이름 (+ 강사가 조 이름을 정해 둔 방이면 조) */
@@ -41,8 +41,12 @@
     if(pin.length!==4)return Promise.reject(new Error('방 번호 4자리를 넣어 주세요'));
     if(!nick)return Promise.reject(new Error('이름(또는 번호)을 넣어 주세요'));
     return info(pin).then(function(x){if(x.bad)throw new Error(x.bad);if(x.teams.length&&x.teams.indexOf(team)<0)throw new Error('우리 조를 골라 주세요');
-      var r={pin:pin,nick:nick,t:Date.now()};if(team)r.team=team;put(r);return r});
+      var r={pin:pin,nick:nick,t:Date.now()};if(team)r.team=team;if(x.ak)r.ak=x.ak;put(r);useCode(r.ak);return r});
   }
+  /* AI 초대코드: 강사가 방을 만들 때 쓴 코드(방 문서 ak)를 학생 휴대폰 tm-code에 넣어 둠 → 자소서·꼬꼬무·면접·AI 도구에서 코드 입력 칸이 안 뜸 */
+  function useCode(ak){if(!ak)return false;var c=null;try{c=JSON.parse(localStorage.getItem('tm-code')||'null')}catch(e){}
+    if(c&&c.code===ak&&c.ok)return false;try{localStorage.setItem('tm-code',JSON.stringify({code:ak,name:(c&&c.code===ak&&c.name)||'',ok:1,room:1}))}catch(e){}return true}
+  (function(){var r=get();if(r&&r.ak&&!TEACH)useCode(r.ak)})();
   function setTeam(team){var r=get();if(!r)return;if(team)r.team=String(team).slice(0,12);else delete r.team;put(r);var a=document.getElementById('tmRoomBadge');if(a)a.textContent=label(r)}
   function label(r){return '🏠 방 '+r.pin+' · '+(r.team?r.team+' · ':'')+r.nick}
   function toast(t,bad){var d=document.createElement('div');d.textContent=t;
@@ -80,11 +84,13 @@
     if(g.to===here())return;
     location.href=g.to==='home'?'./':g.to.charAt(0)==='#'?'./'+g.to:g.to+(g.to.indexOf('?')<0?'?':'&')+'r='+r.pin;
   }
+  function codeSync(room){var r=get(),ak=room&&typeof room.ak==='string'?room.ak:'';if(!r||!ak)return;
+    if(r.ak!==ak){r.ak=ak;put(r)}if(useCode(ak)&&/(intro|interview|ai)\.html$/.test(location.pathname))location.reload()}
   function watch(onlyFollow){
     var r=get();if(!r||TEACH)return;
     boot().then(function(b){
       var last=null;
-      b.F.onSnapshot(b.F.doc(b.db,'rooms',r.pin),function(d){last=d.exists()?d.data():null;var w=alive(last);if(w){if(!onlyFollow)ended(w);return}follow(r,last)},function(){});
+      b.F.onSnapshot(b.F.doc(b.db,'rooms',r.pin),function(d){last=d.exists()?d.data():null;var w=alive(last);if(w){if(!onlyFollow)ended(w);return}codeSync(last);follow(r,last)},function(){});
       if(onlyFollow)return;
       setInterval(function(){if(!get())return;var w=alive(last);if(last!==null&&w)ended(w)},30e3);
     }).catch(function(){});

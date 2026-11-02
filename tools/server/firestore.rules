@@ -7,6 +7,7 @@ rules_version = '2';
 //  - 방 문서 g{k,s,t}(강사 노트북의 게임 화면 상태): 강사만. 학생 폰 play.html이 같은 문제·점수를 보여 줌
 //  - 방 문서 hb(강사 화면이 1분마다 찍는 시각)·closed(방 종료): 강사만. 학생 화면은 hb가 3분 넘게 멈추거나 closed면 끊음
 //  - 방 문서 teams(강사가 정한 조 이름 목록, 8개까지): 강사만. 학생은 들어올 때 그중 하나를 고르고, 답·결과에 team으로 붙음
+//  - 방 문서 ak(강사가 방 만들 때 쓴 초대코드): 강사만 씀. 방에 들어온 학생 화면이 AI 도구에 자동으로 씀(학생 코드 입력 없음)
 //  - 결과(work/{uid}_{도구}): 방에 들어온 학생이 자소서·검사 등 결과를 도구마다 1개 쓰기·고치기, 읽기는 강사만
 service cloud.firestore {
   match /databases/{db}/documents {
@@ -17,7 +18,7 @@ service cloud.firestore {
       allow update: if request.auth != null
         && resource.data.owner == request.auth.uid
         && resource.data.exp > request.time
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['q', 'hb', 'closed', 'go', 'g', 'teams'])
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['q', 'hb', 'closed', 'go', 'g', 'teams', 'ak'])
         && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['go'])
             || request.resource.data.get('go', null) == null
             || (request.resource.data.go.keys().hasOnly(['to', 't'])
@@ -30,7 +31,9 @@ service cloud.firestore {
                 && request.resource.data.g.s is string && request.resource.data.g.s.size() <= 8000
                 && request.resource.data.g.t == request.time))
         && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['teams'])
-            || (request.resource.data.teams is list && request.resource.data.teams.size() <= 8));
+            || (request.resource.data.teams is list && request.resource.data.teams.size() <= 8))
+        && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['ak'])
+            || (request.resource.data.ak is string && request.resource.data.ak.size() <= 40));
 
       // 이모지 반응: 학생마다 문서 1개(rx/{uid})를 누를 때마다 덮어씀. 강사 화면이 바뀐 것을 세어 띄움
       match /rx/{uid} {
