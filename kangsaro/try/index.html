@@ -300,8 +300,11 @@ const EXT0=[['교통비',false],['숙박비',false],['교안비',true]]; // 기�
 const extItems=c=>[...EXT0,...((c&&c.items)||[]).map(x=>[x.k,x.tx!==false])];
 function slotFee(j,s,who){if(s.sub===who&&s.inst!==who)return +s.subFee||0;if(s.fee!==''&&s.fee!=null&&!(s.fa&&j.feeMode==='per'))return +s.fee;return j.feeMode==='per'?(+j.feePer||0)*(+s.n||perN(s.per)):null}
 // 강사 한 명이 이 운영(또는 보통 강의)에서 받을 돈: 날짜별 금액 + 추가 금액
-// 여러 날 강의에서 이 강사가 맡은 날 (업체가 고름, 안 고르면 전체)
-const appDays=(j,a)=>{const L=a&&Array.isArray(a.days)&&a.days.length?j.dates.filter(d=>a.days.includes(d)):[];return L.length?L:j.dates};
+// 운영 시간표를 쓰는 강의(j.op)에서 강사가 시간표를 못 읽었을 때: 업체 앱이 지원 기록에 적어 둔 배정 날짜(a.days)만. 시간표가 없는 강의는 전체 날짜
+const appDays=(j,a)=>{if(!j.op)return j.dates;const L=a&&Array.isArray(a.days)?j.dates.filter(d=>a.days.includes(d)):[];return L};
+// 업체: 시간표 배정이 바뀌면 확정 강사 지원 기록에 배정 날짜를 같이 적음 (강사 달력이 시간표 없이도 맞게)
+function opDaysSync(){for(const a of S.apps){const j=job(a.jobId);if(!j||a.status!=='확정'||j.coId!==meId())continue;
+  if(isOp(j)){const ds=payOf(j,a.instId,a).dates;if(JSON.stringify(a.days||[])!==JSON.stringify(ds))a.days=ds}else if(!j.op&&a.days)delete a.days}}
 const cfApp=(j,iid)=>S.apps.find(x=>x.jobId===j.id&&x.instId===iid&&x.status==='확정');
 function payOf(j,iid,a){const days=[];a=a||cfApp(j,iid);
   if(!isOp(j))for(const d of appDays(j,a))days.push({d,fee:+j.fee||0,time:j.time,lab:''});
@@ -928,7 +931,6 @@ function vCJob(j){const A=appsOf(j.id),s=jobStats(j);
     <span class="mu sm">${esc(p.intro)}</span>
     <button class="btn sm" style="align-self:flex-start" data-act="pdf" data-a="${a.id}">프로필 PDF 받기</button>
     <details><summary>프로필 보기</summary><pre class="pf">${esc(profileText(cf?p:{...p,phone:'확정하면 보여요',email:'확정하면 보여요'}))}</pre>${cf?`<span class="mu sm">계좌: ${esc(p.bank)} ${esc(p.acct)} ${esc(p.holder)}</span><button class="btn sm" data-act="copyPfOf" data-i="${p.id}">학교 제출용으로 복사</button>`:''}</details>
-    ${cf&&!isOp(j)&&j.dates.length>1?`<div class="row" style="flex-wrap:wrap;gap:8px"><b class="sm">이 강사가 맡는 날</b>${j.dates.map(d=>`<label class="sm"><input type="checkbox" data-act="appDay" data-a="${a.id}" value="${d}" ${appDays(j,a).includes(d)?'checked':''}> ${md(d)}(${dowOf(d)})</label>`).join('')}<span class="mu sm" style="flex-basis:100%">체크한 날만 강사 달력·강사료에 들어가요. 강사에게 알림이 가요.</span></div>`:''}
     ${cf?`<span class="mu sm">리마인드: ${remText(a)}</span><div class="row">${contactBtns(p,`[${co(j.coId).name}] ${p.name} 강사님, ${myDates(j,p.id).map(d=>`${md(d)}(${dowOf(d)})`).join('·')} ${j.school} ${j.title} 강의 관련 연락드립니다.`)}</div>`:''}
     ${cf?`<div class="mu sm">받을 것: ${j.needs.map(n=>n==='프로필'?'프로필 ✓':n===RRN&&a.rrn?`${RRN} ✓ <button class="btn sm" data-act="rrnTake" data-a="${a.id}">복사하고 지우기</button>`:docOf(a,n)?`${esc(n)} ✓ <button class="btn sm" data-act="getFile" data-p="${esc(docPath(a,n))}" data-nm="${esc(docOf(a,n).replace(/ \(자동\)$/,''))}">받기</button>`:`<b style="color:var(--r2)">${esc(n)} 빠짐</b>`).join(' · ')}</div>`:''}
     ${a.status==='지원'?`<button class="btn pri" data-act="confirm" data-a="${a.id}">이 강사로 확정</button>`:cf&&!a.paidAt?`<button class="btn sm" data-act="unconfirm" data-a="${a.id}">확정 취소</button>`:''}</div>`};
@@ -1272,13 +1274,6 @@ document.addEventListener('change',ev=>{const el=ev.target,D=el.dataset||{};
   if(el.id==='jcWe'){ui.jcal.we=el.checked;return}
   // 날짜 메모: 화면을 다시 그리지 않고 저장 (다른 날짜를 바로 누를 수 있게), 비우면 지움
   if(D.act==='chatImg'&&el.files[0]){const j=job(ui.chat);if(!j)return;shrink(el.files[0],900).then(img=>{if(!img)return toast('사진을 읽지 못했어요');if(img.length>290000)return toast('사진이 너무 커요');CHT().send(j.id,{by:myUid(),who:chatWho(j),text:'',img,at:new Date().toISOString()})});el.value='';return}
-  // 여러 날 강의: 이 강사가 맡는 날 고르기 → 강사 달력·강사료에 그날만. 읽기 전 알림은 하나로 고쳐 씀
-  if(D.act==='appDay'){const a=S.apps.find(x=>x.id===D.a),j=a&&job(a.jobId);if(!j)return;
-    const L=$$(`[data-act="appDay"][data-a="${a.id}"]:checked`).map(x=>x.value);if(!L.length){el.checked=true;return toast('하루는 골라야 해요')}
-    if(L.length===j.dates.length)delete a.days;else a.days=L;
-    const txt=`[날짜 확정] ${co(j.coId).name} · ${j.school} ${j.title}: ${L.map(d=>`${md(d)}(${dowOf(d)})`).join('·')}${L.length<j.dates.length?'만':''} 강의해요. 달력에 이 날짜만 들어가요.`;
-    const old=S.alerts.find(x=>x.appId===a.id&&x.kind==='days'&&!x.read);if(old){old.text=txt;old.at=new Date().toISOString()}else S.alerts.push({id:uid(),instId:a.instId,appId:a.id,kind:'days',text:txt,at:new Date().toISOString(),read:false});
-    save();render();return toast('강사 날짜를 바꿨어요')}
   if(D.act==='memo'){const v=el.value.trim().slice(0,500),m=memoOf(D.d,D.side),at=new Date().toISOString();
     if(m){if(v){m.text=v;m.at=at}else S.evs=S.evs.filter(x=>x!==m)}else if(v)S.evs.push({id:uid(),instId:memoOwner(),kind:'memo',side:D.side,d:D.d,text:v,at});else return;
     save();const c=document.querySelector(`[data-act="${D.side==='c'?'csel':'sel'}"][data-d="${D.d}"]`);if(c){const k=c.querySelector('.mm');if(v&&!k)c.querySelector('.n').insertAdjacentHTML('afterend',memoMark(D.d,D.side));if(!v&&k)k.remove()}

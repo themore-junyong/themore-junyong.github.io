@@ -156,6 +156,7 @@ function payloads() {
     { const r = roomOf(j); if (r.members.length && !chatDone(j)) out.set(`rooms/${j.id}`, r); }
     for (const n of j.notices || []) out.set(`notices/${n.id}`, { ...n, jobId: j.id, coId: c });
   }
+  if (c) opDaysSync();
   for (const a of S.apps) {
     const j = job(a.jobId);
     if (a.instId !== u && (!c || !j || j.coId !== c)) continue;
