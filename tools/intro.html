@@ -105,6 +105,7 @@ pre.out{white-space:pre-wrap;word-break:keep-all;overflow-wrap:anywhere;backgrou
 .top a{color:var(--blue);font-weight:700;text-decoration:none}
 </style>
 </head><body>
+<script src="room.js" data-guard></script>
 <div class="wrap" id="app"></div>
 <script>
 (function(){
@@ -193,7 +194,7 @@ function write(){
   if(busy)return; if(S.text&&!confirm('지금 멘트를 새로 바꿀까요? (오늘 횟수 1번을 써요)'))return;
   busy=true; say('1분 멘트를 쓰는 중… (30초~1분, 새로고침하지 마세요)'); render();
   var last=S.hist[S.hist.length-1]; if(last&&!last.a)S.hist.pop();
-  AI.intro(payload(true)).then(function(r){S.text=r.text;save();say('완성! 고쳐 쓰고 1분 연습을 해 보세요.','ok')},function(e){say(e.message,'bad')})
+  AI.intro(payload(true)).then(function(r){S.text=r.text;save();if(window.TM_ROOM)TM_ROOM.send('intro','1분 자기소개'+(S.job?' · '+S.job:''),S.text);say('완성! 고쳐 쓰고 1분 연습을 해 보세요.','ok')},function(e){say(e.message,'bad')})
    .then(function(){busy=false;render()});
 }
 function bind(){
