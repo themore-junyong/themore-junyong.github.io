@@ -180,34 +180,63 @@ function prime(keys) {
   for (const [k, v] of R) if (!keys || keys.has(k.split('#')[0])) last.set(k, v);
 }
 
-let timer = null, busy = false, again = false;
+let timer = null, busy = false, again = false, GEN = 0;
 SYNC = () => { clearTimeout(timer); timer = setTimeout(flush, 250); };
+// 바뀐 칸만 보내기: 서버에 이미 있는 문서는 '마지막으로 맞춘 내용'과 다른 칸만 merge로 씀.
+// 그래서 상대편(강사↔업체, 다른 기기)이 그사이 바꾼 다른 칸을 옛 내용으로 덮어쓰지 않음. 이 기기에서 지운 칸만 지움
+const isObj = x => x !== null && typeof x === 'object' && !Array.isArray(x);
+function patchOf(o, n) {
+  const p = {};
+  for (const k of Object.keys(n)) { const a = o[k], b = n[k]; if (isObj(a) && isObj(b)) { const q = patchOf(a, b); if (Object.keys(q).length) p[k] = q; } else if (stable(a) !== stable(b)) p[k] = b; }
+  for (const k of Object.keys(o)) if (!(k in n)) p[k] = deleteField();
+  return p;
+}
+async function put(k, v) {
+  const o = last.get(k);
+  // 시간표(칸 목록)와 대화방은 통째로, 처음 쓰는 문서도 통째로
+  if (!o || k.endsWith('/plan/main') || k.startsWith('rooms/')) return setDoc(doc(db, k), v, k.startsWith('jobs/') || k.startsWith('rooms/') ? { merge: true } : {});
+  let old; try { old = JSON.parse(o); } catch (e) { old = null; }
+  if (!isObj(old)) return setDoc(doc(db, k), v, k.startsWith('jobs/') ? { merge: true } : {});
+  const p = patchOf(old, v); if (!Object.keys(p).length) return;
+  return setDoc(doc(db, k), p, { merge: true });
+}
 async function flush() {
   if (LOCK) return;
   if (busy) { again = true; return; }
   busy = true; clearTimeout(timer);
+  const g = GEN, errs = [];
+  // 한 문서가 실패해도 나머지는 계속 저장 (예전에는 하나가 막히면 뒤의 공고·시간표·지원서가 전부 저장 안 됐음)
+  const tryDo = async (k, f) => { try { await f(); } catch (e) { console.warn('save', k, e.code || e); errs.push({ k, e }); } };
   try {
-    const P = payloads(), R = readMarks(), order = k => k.startsWith('users/') ? 0 : k.startsWith('jobs/') ? (k.includes('/plan/') ? 1.5 : 1) : k.startsWith('apps/') ? 2 : 3;
+    const P = payloads(), R = readMarks(), order = k => k.startsWith('users/') ? 0 : k.startsWith('jobs/') ? (k.includes('/plan/') ? 1.5 : 1) : k.startsWith('apps/') ? 2 : k.startsWith('rooms/') ? 4 : 3;
     const writes = [...P].filter(([k, v]) => last.get(k) !== stable(v)).sort((a, b) => order(a[0]) - order(b[0]));
-    for (const [k, v] of writes.filter(([k]) => !k.startsWith('rooms/'))) { if (k.endsWith('/plan/main')) await planBackup(k); const nw = k.startsWith('jobs/') && !last.has(k); await setDoc(doc(db, k), v, k.startsWith('jobs/') ? { merge: true } : {}); last.set(k, stable(v)); if (nw && TD) TD.cnt = { ...(TD.cnt || {}), [ymNow()]: ((TD.cnt || {})[ymNow()] || 0) + 1 }; }
-    // 대화방 문서는 따로 (보안 규칙이 아직 안 올라갔거나 실패해도 다른 저장을 막지 않게)
-    for (const [k, v] of writes) if (k.startsWith('rooms/')) { try { await setDoc(doc(db, k), v, { merge: true }); last.set(k, stable(v)); } catch (e) { console.warn('room', k, e.code); } }
-    for (const [k, v] of R) if (last.get(k) !== v) { const p = k.split('#')[0]; await updateDoc(doc(db, p), { ['reads.' + uidMe]: v }); last.set(k, v); }
-    // 하위 문서(운영 시간표)를 먼저 지워야 보안 규칙이 공고를 찾을 수 있음
-    for (const k of [...last.keys()].sort((a, b) => b.split('/').length - a.split('/').length)) if (!k.includes('#') && !P.has(k) && mayDelete(k)) {
-      // 시간표는 업체가 직접 지우기(✕ 마지막 칸·다시 만들기·되돌리기)를 눌렀을 때만 서버에서 지움. 지우기 전에 백업
-      if (k.includes('/plan/')) { const jid = k.split('/')[1]; if (!(window.PLANDEL && window.PLANDEL.has(jid)) && S.jobs.some(j => j.id === jid)) continue; await planBackup(k); if (window.PLANDEL) window.PLANDEL.delete(jid); }
-      await deleteDoc(doc(db, k)); last.delete(k);
+    for (const [k, v] of writes) {
+      if (g !== GEN) break; // 계정·역할을 바꾸는 중이면 멈춤
+      await tryDo(k, async () => {
+        if (k.endsWith('/plan/main')) await planBackup(k);
+        const nw = k.startsWith('jobs/') && !k.includes('/plan/') && !last.has(k);
+        await put(k, v); last.set(k, stable(v));
+        if (nw && TD) TD.cnt = { ...(TD.cnt || {}), [ymNow()]: ((TD.cnt || {})[ymNow()] || 0) + 1 };
+      });
     }
-    if (role === 'c') await syncLinks();
-    saveErr(false);
-  } catch (e) {
-    console.error(e); saveErr(true, e.code);
-    // 이번 달 공고 한도를 넘었으면 저장 안 된 새 공고는 빼고 안내
-    if (e.code === 'permission-denied' && role === 'c' && TD && LIMIT[TD.planC]) { await loadTerm().catch(() => { }); if (quotaLeft() <= 0) { S.jobs = S.jobs.filter(j => j.coId !== CO || last.has(`jobs/${j.id}`)); save(); render(); busy = false; return planSheet('quota'); } }
-    toast(e.code === 'permission-denied' ? '저장할 권한이 없어요. 새로고침해 주세요' : '저장하지 못했어요. 인터넷을 확인해 주세요');
-  }
+    for (const [k, v] of R) if (g === GEN && last.get(k) !== v) await tryDo(k, async () => { const p = k.split('#')[0]; await updateDoc(doc(db, p), { ['reads.' + uidMe]: v }); last.set(k, v); });
+    // 지우기: 이 기기에서 지운 것만. 하위 문서(운영 시간표)를 먼저 지워야 보안 규칙이 공고를 찾을 수 있음
+    if (g === GEN && !errs.length) for (const k of [...last.keys()].sort((a, b) => b.split('/').length - a.split('/').length)) if (!k.includes('#') && !P.has(k) && mayDelete(k)) {
+      if (g !== GEN) break;
+      // 시간표는 업체가 직접 지우기(✕ 마지막 칸·다시 만들기·되돌리기)를 눌렀을 때만 서버에서 지움. 지우기 전에 백업
+      if (k.includes('/plan/')) { const jid = k.split('/')[1]; if (!(window.PLANDEL && window.PLANDEL.has(jid)) && S.jobs.some(j => j.id === jid)) continue; }
+      await tryDo(k, async () => { if (k.includes('/plan/')) { await planBackup(k); if (window.PLANDEL) window.PLANDEL.delete(k.split('/')[1]); } await deleteDoc(doc(db, k)); last.delete(k); });
+    }
+    if (g === GEN && role === 'c') await tryDo('links', syncLinks);
+  } catch (e) { errs.push({ k: '?', e }); console.error(e); }
   busy = false;
+  if (g !== GEN) return;
+  if (errs.length) {
+    const code = (errs.find(x => x.e && x.e.code === 'permission-denied') || errs[0]).e.code;
+    saveErr(true, code);
+    // 이번 달 공고 한도를 넘었으면 저장 안 된 새 공고는 빼고 안내
+    if (code === 'permission-denied' && role === 'c' && TD && LIMIT[TD.planC] && errs.some(x => /^jobs\/[^/]+$/.test(x.k) && !last.has(x.k))) { await loadTerm().catch(() => { }); if (quotaLeft() <= 0) { S.jobs = S.jobs.filter(j => j.coId !== CO || last.has(`jobs/${j.id}`)); save(); render(); return planSheet('quota'); } }
+  } else saveErr(false);
   if (again) { again = false; flush(); }
 }
 // 시간표 백업: 서버의 시간표를 바꾸거나 지우기 직전 모습을 plan/prev 에 남김 (사라지면 '되살리기')
@@ -301,7 +330,7 @@ function app(ch) {
 
 async function start(user, want) {
   uidMe = user.uid; window.KSR_UID = uidMe;
-  unsub.splice(0).forEach(f => f()); links.clear(); last.clear(); ROOMS.clear(); MSGS.clear(); if (window.CHATX) window.CHATX.close();
+  GEN++; unsub.splice(0).forEach(f => f()); links.clear(); last.clear(); ROOMS.clear(); MSGS.clear(); if (window.CHATX) window.CHATX.close();
   Object.assign(S, { insts: [], cos: [], jobs: [], apps: [], evs: [], alerts: [] });
   me = await loadUser(uidMe, true);
   profileLoaded = true; PEND = null; CO = ''; staffMe = null; WHO = '';
