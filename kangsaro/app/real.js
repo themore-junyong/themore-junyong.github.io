@@ -189,15 +189,20 @@ async function flush() {
   try {
     const P = payloads(), R = readMarks(), order = k => k.startsWith('users/') ? 0 : k.startsWith('jobs/') ? (k.includes('/plan/') ? 1.5 : 1) : k.startsWith('apps/') ? 2 : 3;
     const writes = [...P].filter(([k, v]) => last.get(k) !== stable(v)).sort((a, b) => order(a[0]) - order(b[0]));
-    for (const [k, v] of writes.filter(([k]) => !k.startsWith('rooms/'))) { const nw = k.startsWith('jobs/') && !last.has(k); await setDoc(doc(db, k), v, k.startsWith('jobs/') ? { merge: true } : {}); last.set(k, stable(v)); if (nw && TD) TD.cnt = { ...(TD.cnt || {}), [ymNow()]: ((TD.cnt || {})[ymNow()] || 0) + 1 }; }
+    for (const [k, v] of writes.filter(([k]) => !k.startsWith('rooms/'))) { if (k.endsWith('/plan/main')) await planBackup(k); const nw = k.startsWith('jobs/') && !last.has(k); await setDoc(doc(db, k), v, k.startsWith('jobs/') ? { merge: true } : {}); last.set(k, stable(v)); if (nw && TD) TD.cnt = { ...(TD.cnt || {}), [ymNow()]: ((TD.cnt || {})[ymNow()] || 0) + 1 }; }
     // 대화방 문서는 따로 (보안 규칙이 아직 안 올라갔거나 실패해도 다른 저장을 막지 않게)
     for (const [k, v] of writes) if (k.startsWith('rooms/')) { try { await setDoc(doc(db, k), v, { merge: true }); last.set(k, stable(v)); } catch (e) { console.warn('room', k, e.code); } }
     for (const [k, v] of R) if (last.get(k) !== v) { const p = k.split('#')[0]; await updateDoc(doc(db, p), { ['reads.' + uidMe]: v }); last.set(k, v); }
     // 하위 문서(운영 시간표)를 먼저 지워야 보안 규칙이 공고를 찾을 수 있음
-    for (const k of [...last.keys()].sort((a, b) => b.split('/').length - a.split('/').length)) if (!k.includes('#') && !P.has(k) && mayDelete(k)) { await deleteDoc(doc(db, k)); last.delete(k); }
+    for (const k of [...last.keys()].sort((a, b) => b.split('/').length - a.split('/').length)) if (!k.includes('#') && !P.has(k) && mayDelete(k)) {
+      // 시간표는 업체가 직접 지우기(✕ 마지막 칸·다시 만들기·되돌리기)를 눌렀을 때만 서버에서 지움. 지우기 전에 백업
+      if (k.includes('/plan/')) { const jid = k.split('/')[1]; if (!(window.PLANDEL && window.PLANDEL.has(jid)) && S.jobs.some(j => j.id === jid)) continue; await planBackup(k); if (window.PLANDEL) window.PLANDEL.delete(jid); }
+      await deleteDoc(doc(db, k)); last.delete(k);
+    }
     if (role === 'c') await syncLinks();
+    saveErr(false);
   } catch (e) {
-    console.error(e);
+    console.error(e); saveErr(true, e.code);
     // 이번 달 공고 한도를 넘었으면 저장 안 된 새 공고는 빼고 안내
     if (e.code === 'permission-denied' && role === 'c' && TD && LIMIT[TD.planC]) { await loadTerm().catch(() => { }); if (quotaLeft() <= 0) { S.jobs = S.jobs.filter(j => j.coId !== CO || last.has(`jobs/${j.id}`)); save(); render(); busy = false; return planSheet('quota'); } }
     toast(e.code === 'permission-denied' ? '저장할 권한이 없어요. 새로고침해 주세요' : '저장하지 못했어요. 인터넷을 확인해 주세요');
@@ -205,6 +210,21 @@ async function flush() {
   busy = false;
   if (again) { again = false; flush(); }
 }
+// 시간표 백업: 서버의 시간표를 바꾸거나 지우기 직전 모습을 plan/prev 에 남김 (사라지면 '되살리기')
+async function planBackup(k) {
+  const o = last.get(k); if (!o) return;
+  let slots = []; try { slots = JSON.parse(o).slots || []; } catch (e) { }
+  if (!slots.length) return;
+  await setDoc(doc(db, k.replace(/\/main$/, '/prev')), { slots, at: new Date().toISOString(), by: uidMe }).catch(e => console.warn('plan backup', e.code));
+}
+// 저장 실패는 잠깐 뜨는 알림 말고 화면 위에 남는 빨간 줄로
+function saveErr(on, code) {
+  let b = document.getElementById('saveErr');
+  if (!on) { if (b) b.remove(); return; }
+  if (!b) { b = document.createElement('div'); b.id = 'saveErr'; b.setAttribute('role', 'alert'); b.style.cssText = 'position:sticky;top:0;z-index:50;background:#C62828;color:#fff;padding:10px 14px;font-weight:700;font-size:14px;display:flex;gap:8px;align-items:center'; document.querySelector('.app')?.prepend(b) || document.body.prepend(b); }
+  b.innerHTML = `<span style="flex:1">⚠ 방금 고친 내용이 서버에 저장되지 않았어요${code === 'permission-denied' ? ' (권한 문제)' : ''}. 새로고침하면 사라질 수 있어요.</span><button class="btn sm" style="background:#fff;color:#C62828;border:0" onclick="this.disabled=true;window.KSR_RESAVE&&window.KSR_RESAVE()">다시 저장</button>`;
+}
+window.KSR_RESAVE = () => flush();
 const mayDelete = k => /^(evs|notices|jobs|alerts)\//.test(k);
 // 업체가 확정한 강사만 그 강사의 연락처·계좌·서류를 볼 수 있게 표시
 async function syncLinks() {
@@ -229,15 +249,27 @@ async function loadJob(id) { if (S.jobs.some(j => j.id === id)) return; const d 
 function putJob(j) {
   const old = S.jobs.find(x => x.id === j.id); j.notices = old ? old.notices : []; if (old && old.plan) j.plan = old.plan;
   upsert(S.jobs, j); loadCo(j.coId);
-  if (j.op && (!j.plan || !old || old.planAt !== j.planAt)) loadPlan(j.id);
+  // 업체는 op 표시가 꺼져 있어도 서버에 시간표가 남아 있으면 불러옴 (표시만 꺼져서 안 보이는 일 막기)
+  if ((j.op || role === 'c') && (!j.plan || !old || old.planAt !== j.planAt)) loadPlan(j.id);
   else if (!j.op) delete j.plan;
 }
 // 운영 시간표: 업체와 확정(연결)된 강사만 읽을 수 있음. 못 읽으면 그냥 보통 강의처럼 보임
+window.PLANST = {}; window.PLANPREV = {}; window.PLANDEL = new Set();
 async function loadPlan(id) {
-  const d = await getDoc(doc(db, 'jobs', id, 'plan', 'main')).catch(() => null), j = S.jobs.find(x => x.id === id);
-  if (!j || !d || !d.exists()) return;
-  j.plan = { slots: d.data().slots || [] }; prime(new Set([`jobs/${id}/plan/main`])); later();
+  if (PLANST[id] !== 'ok') PLANST[id] = 'loading';
+  let err = false; const d = await getDoc(doc(db, 'jobs', id, 'plan', 'main')).catch(e => { err = true; console.warn('plan', id, e.code); return null; }), j = S.jobs.find(x => x.id === id);
+  if (!j) return;
+  if (!d || !d.exists()) {
+    PLANST[id] = err ? 'error' : 'missing';
+    // 다른 기기에서 직접 지운 경우(op 꺼짐)만 이 기기 화면에서도 뺌. op가 켜져 있으면 이 기기의 시간표를 다시 저장해 되살림
+    if (!err && !j.op && j.plan) { delete j.plan; last.delete(`jobs/${id}/plan/main`); }
+    if (role === 'c') { const pv = await getDoc(doc(db, 'jobs', id, 'plan', 'prev')).catch(() => null); if (pv && pv.exists()) PLANPREV[id] = pv.data(); }
+    later(); return;
+  }
+  PLANST[id] = 'ok'; j.plan = { slots: d.data().slots || [] }; prime(new Set([`jobs/${id}/plan/main`])); later();
 }
+window.KSR_PLANLOAD = id => { loadPlan(id); };
+window.KSR_PLANPREV = async id => { const pv = await getDoc(doc(db, 'jobs', id, 'plan', 'prev')).catch(() => null); return pv && pv.exists() ? pv.data() : null; };
 
 // 서버에서 바뀐 것 반영 (먼저 내 쪽 변경을 보내고)
 function live(q, apply) {
