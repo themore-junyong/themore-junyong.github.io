@@ -7,6 +7,9 @@
   var V='10.12.2', G='https://www.gstatic.com/firebasejs/'+V, K='tm-room-s', STALE=3*60e3;
   var me=document.currentScript, GUARD=me&&me.hasAttribute('data-guard');
   var TEACH=/[?&]teach=1/.test(location.search); // 강사 미리보기: 방 없이 화면만 봄, 결과는 안 보냄
+  /* 도구 안 화면(#해시, 예: ai.html#who)도 따라가기: 강사가 보낸 ?h=who 를 #who 로 바꿔 둠(페이지 스크립트보다 먼저) */
+  (function(){var u=new URL(location.href),h=u.searchParams.get('h');if(!h||!/^[a-z0-9-]{1,20}$/.test(h))return;
+    u.searchParams.delete('h');try{history.replaceState(null,'',u.pathname+u.search+'#'+h)}catch(e){}})();
   var fb=null;
   function get(){try{var r=JSON.parse(localStorage.getItem(K)||'null');return r&&r.pin&&r.nick?r:null}catch(e){return null}}
   function put(r){try{if(r)localStorage.setItem(K,JSON.stringify(r));else localStorage.removeItem(K)}catch(e){}}
@@ -57,7 +60,7 @@
   function here(){var f=location.pathname.split('/').pop()||'';if(f==='index.html')f='';
     var q=location.search.replace(/([?&])(r|need|go)=[^&]*/g,'$1').replace(/[?&]+$/,'').replace(/\?&+/,'?');
     if(f===''){var v=new URLSearchParams(location.search).get('v');return location.hash==='#jaso'?'#jaso':v?'index.html?v='+v:'home'}
-    return f+q}
+    var hh=(location.hash||'').slice(1);return f+q+(/^[a-z0-9-]{1,20}$/.test(hh)?(q?'&':'?')+'h='+hh:'')}
   function follow(r,room){
     var g=room&&room.go;if(!g||!g.to||!g.t||!g.t.toMillis)return;
     var key=r.pin+':'+g.t.toMillis(),seen='';try{seen=localStorage.getItem('tm-room-go')||''}catch(e){}
@@ -84,7 +87,19 @@
     var r=get();if(!r)return;boot().then(function(b){b.F.onSnapshot(b.F.doc(b.db,'rooms',r.pin),function(d){cb(d.exists()?d.data():null)},function(){})}).catch(function(){});
   }
   window.TM_ROOM={get:get,join:join,check:check,send:send,leave:function(){put(null)},watch:watch,teach:TEACH,onRoom:onRoom};
+  /* 강사 미리보기 탭에서 도구 안 화면을 바꾸면(#해시) 학생도 같은 화면으로: 강사 노트북의 기본 Firebase 앱(방 주인)으로 go를 씀 */
+  function teachGo(){
+    var host=null;try{host=JSON.parse(localStorage.getItem('live-host')||'null')}catch(e){}if(!host||!host.pin)return;
+    var f=location.pathname.split('/').pop()||'',hh=(location.hash||'').slice(1),u=new URL(location.href);u.searchParams.delete('teach');
+    var q=u.search,to=f+q+(/^[a-z0-9-]{1,20}$/.test(hh)?(q?'&':'?')+'h='+hh:'');if(!/^[a-z]+\.html/.test(to))return;
+    Promise.all([import('./firebase-config.js'),import(G+'/firebase-app.js'),import(G+'/firebase-auth.js'),import(G+'/firebase-firestore.js')]).then(function(m){
+      var app=m[1].getApps().filter(function(a){return a.name==='[DEFAULT]'})[0]||m[1].initializeApp(m[0].firebaseConfig),auth=m[2].getAuth(app);
+      return auth.authStateReady().then(function(){return auth.currentUser||m[2].signInAnonymously(auth)}).then(function(){
+        var F=m[3];return F.updateDoc(F.doc(F.getFirestore(app),'rooms',host.pin),{go:{to:to,t:F.serverTimestamp()}})});
+    }).then(function(){toast('✔ 학생 화면도 이 화면으로 바꿨어요')},function(){});
+  }
   if(TEACH){
+    window.addEventListener('hashchange',teachGo);
     var tb=function(){var a=document.createElement('div');a.textContent='👀 선생님 미리보기 (학생이 보는 화면 · 결과는 안 보냄)';
       a.style.cssText='position:fixed;top:max(8px,env(safe-area-inset-top,0px));right:max(8px,env(safe-area-inset-right,0px));z-index:40;background:#2e2e2e;color:#fff;font:700 13px system-ui;padding:6px 12px;border-radius:999px;opacity:.92';document.body.appendChild(a)};
     if(document.body)tb();else document.addEventListener('DOMContentLoaded',tb);
