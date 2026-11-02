@@ -206,7 +206,8 @@ async function flush() {
   busy = true; clearTimeout(timer);
   const g = GEN, errs = [];
   // 한 문서가 실패해도 나머지는 계속 저장 (예전에는 하나가 막히면 뒤의 공고·시간표·지원서가 전부 저장 안 됐음)
-  const tryDo = async (k, f) => { try { await f(); } catch (e) { console.warn('save', k, e.code || e); errs.push({ k, e }); } };
+  // 대화방은 보안 규칙을 아직 안 올렸으면 막힘 → 다른 저장에 영향 없고 경고줄도 안 띄움
+  const tryDo = async (k, f) => { try { await f(); } catch (e) { console.warn('save', k, e.code || e); if (!k.startsWith('rooms/')) errs.push({ k, e }); } };
   try {
     const P = payloads(), R = readMarks(), order = k => k.startsWith('users/') ? 0 : k.startsWith('jobs/') ? (k.includes('/plan/') ? 1.5 : 1) : k.startsWith('apps/') ? 2 : k.startsWith('rooms/') ? 4 : 3;
     const writes = [...P].filter(([k, v]) => last.get(k) !== stable(v)).sort((a, b) => order(a[0]) - order(b[0]));
