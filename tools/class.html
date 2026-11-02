@@ -67,7 +67,7 @@ input[type=number]{width:80px}
 </style>
 </head><body>
 <div class="wrap" id="app"></div>
-<script src="sync.js?v=193"></script>
+<script src="sync.js?v=195"></script>
 <script>
 (function(){
 var app=document.getElementById('app');
@@ -75,19 +75,29 @@ function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return
 var st={names:'',teamBy:'count',teamN:4,teams:null,tnames:0,pick:null,pickDone:[],tm:{set:300,label:''}};
 try{st=Object.assign(st,JSON.parse(localStorage.getItem('class-v1')||'{}'))}catch(e){}
 function save(){try{localStorage.setItem('class-v1',JSON.stringify(st))}catch(e){}}
-var V=(location.hash||'').slice(1)||'team';
+var V=(location.hash||'').slice(1)||(window.TM_SYNC&&TM_SYNC.on?'pick':'team');
 window.addEventListener('hashchange',function(){V=(location.hash||'').slice(1)||'team';render()});
 var COLORS=['#e5484d','#2f80ed','#2e9e5b','#f2a20c','#8e4ec6','#12a4b5','#e8618c','#6b7c2f','#c2571a','#4b5ad6'];
 var TNAMES=[['1모둠','2모둠','3모둠','4모둠','5모둠','6모둠','7모둠','8모둠','9모둠','10모둠'],['🔥 불꽃','🌊 파도','🌳 나무','⚡ 번개','🌙 달빛','☀️ 햇살','🍀 클로버','🚀 로켓','🐯 호랑이','🦅 독수리'],['A팀','B팀','C팀','D팀','E팀','F팀','G팀','H팀','I팀','J팀']];
-function names(){var ls=st.names.split(/[\n,]/).map(function(x){return x.trim()}).filter(Boolean);return ls}
+/* 수업 방(강사 노트북)이면: 학생이 들어올 때 고른 조·이름(접속 명단)으로 조별 명단·뽑기. 방이 없으면 예전처럼 명단 붙여 넣기 */
+var ROOM=!!(window.TM_SYNC&&TM_SYNC.on),RT=[],RL=[];
+function rteams(){var t=RT.slice();RL.forEach(function(x){var k=x.team&&t.indexOf(x.team)>=0?x.team:'조 없음';if(t.indexOf(k)<0)t.push(k)});return t}
+function rmembers(t){return RL.filter(function(x){return (x.team&&RT.indexOf(x.team)>=0?x.team:'조 없음')===t}).map(function(x){return x.nick}).sort(function(a,b){return a.localeCompare(b,'ko',{numeric:true})})}
+function rgroups(){return rteams().map(function(t){return rmembers(t)})}
+if(ROOM){TM_SYNC.roster(function(A){RL=A;if(V!=='timer')render()});var rt=function(){TM_SYNC.teams(function(T){RT=T||[];if(V!=='timer')render()})};rt();setInterval(rt,20000)}
+function names(){if(ROOM)return RL.map(function(x){return x.nick}).sort(function(a,b){return a.localeCompare(b,'ko',{numeric:true})});var ls=st.names.split(/[\n,]/).map(function(x){return x.trim()}).filter(Boolean);return ls}
+function teamList(){return ROOM?rteams():(st.teams?st.teams.map(function(_,i){return TNAMES[st.tnames][i]||((i+1)+'팀')}):null)}
+function teamOf(n){if(!ROOM)return '';var x=RL.filter(function(y){return y.nick===n})[0];return x?(x.team&&RT.indexOf(x.team)>=0?x.team:'조 없음'):''}
 function shuffle(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t}return a}
 
 function head(){return '<div class="top"><div class="brand"><small>위듀케이션 · 강사용 교실 도구</small></div><div class="row"><button class="btn" data-a="fs">⛶ 전체 화면</button><a href="./">← 도구 모음</a></div></div>'+
-  '<div class="tabs">'+[['team','👥 팀 나누기'],['pick','🎯 순서·한 명 뽑기'],['timer','⏱ 타이머']].map(function(x){return '<a href="#'+x[0]+'"'+(V===x[0]?' aria-current="page"':'')+'>'+x[1]+'</a>'}).join('')+'</div>'}
-function nameBox(){var n=names().length;return '<div class="card"><h3>명단</h3><textarea id="names" placeholder="한 줄에 한 명 (쉼표도 돼요)&#10;이름 대신 번호만 써도 돼요">'+esc(st.names)+'</textarea><div class="row"><span class="note" id="cnt">'+n+'명</span><span class="soft">또는</span><input type="number" id="numN" min="2" max="60" placeholder="인원"><button class="btn" data-a="nums">번호로 채우기</button></div><p class="note">명단은 이 기기에만 저장돼요.</p></div>'}
+  '<div class="tabs">'+[['team',ROOM?'👥 우리 반 조':'👥 팀 나누기'],['pick','🎯 순서·한 명 뽑기'],['timer','⏱ 타이머']].map(function(x){return '<a href="#'+x[0]+'"'+(V===x[0]?' aria-current="page"':'')+'>'+x[1]+'</a>'}).join('')+'</div>'}
+function nameBox(){var n=names().length;if(ROOM)return '<div class="card"><h3>들어온 학생 '+n+'명</h3><p class="note">학생이 QR로 들어올 때 고른 조와 이름이에요. 새로 들어오면 바로 늘어나요. 조를 옮긴 학생은 휴대폰 오른쪽 위 방 표시를 눌러 바꿔요.</p></div>';return '<div class="card"><h3>명단</h3><textarea id="names" placeholder="한 줄에 한 명 (쉼표도 돼요)&#10;이름 대신 번호만 써도 돼요">'+esc(st.names)+'</textarea><div class="row"><span class="note" id="cnt">'+n+'명</span><span class="soft">또는</span><input type="number" id="numN" min="2" max="60" placeholder="인원"><button class="btn" data-a="nums">번호로 채우기</button></div><p class="note">명단은 이 기기에만 저장돼요.</p></div>'}
 
 /* 팀 나누기 */
 function team(){
+  if(ROOM){var G2=rgroups(),T2=rteams();return head()+(T2.length?'<div class="teams">'+T2.map(function(t,i){var m=G2[i],c=COLORS[i%COLORS.length];return '<div class="team" style="--c:'+c+'"><h3><span>'+esc(t)+'</span><span style="font-size:1rem">'+m.length+'명</span></h3><ul>'+m.map(function(n,j){return '<li style="animation-delay:'+(j*.06)+'s">'+esc(n)+'</li>'}).join('')+'</ul></div>'}).join('')+'</div>':'<div class="stage spin" style="font-size:1.6rem">학생이 QR로 들어오면 조별로 이름이 떠요</div>')+
+    '<p class="note">학생이 접속할 때 고른 조·이름이에요 (들어온 학생 '+RL.length+'명). 조 이름은 강사 화면의 [조 바꾸기]에서 바꿔요.</p>'}
   var h=head()+'<div class="split"><div style="display:flex;flex-direction:column;gap:16px">'+nameBox()+
   '<div class="card"><h3>나누는 방법</h3><div class="chips"><button data-by="count" aria-pressed="'+(st.teamBy==='count')+'" style="'+(st.teamBy==='count'?'background:var(--blue);color:var(--blue-ink)':'')+'">팀 개수로</button><button data-by="size" style="'+(st.teamBy==='size'?'background:var(--blue);color:var(--blue-ink)':'')+'">한 팀 인원으로</button></div>'+
   '<div class="row"><input type="number" id="teamN" min="1" max="30" value="'+st.teamN+'"><span>'+(st.teamBy==='count'?'개 팀':'명씩')+'</span></div>'+
@@ -99,10 +109,11 @@ function team(){
 /* 순서·한 명 뽑기 */
 var spinT=null;
 function pick(){
-  var src=st.teams&&st.pickSrc==='team'?st.teams.map(function(_,i){return TNAMES[st.tnames][i]||((i+1)+'팀')}):names();
+  var src=st.pickSrc==='team'&&teamList()?teamList():names();
   var h=head()+'<div class="split"><div style="display:flex;flex-direction:column;gap:16px">'+nameBox()+
-   '<div class="card"><h3>무엇을 뽑을까요?</h3><div class="chips"><button data-src="name" style="'+(st.pickSrc!=='team'?'background:var(--blue);color:var(--blue-ink)':'')+'">명단에서</button><button data-src="team"'+(st.teams?'':' disabled')+' style="'+(st.pickSrc==='team'?'background:var(--blue);color:var(--blue-ink)':'')+'">나눈 팀에서</button></div>'+
-   '<div class="row"><button class="btn pri big" data-a="one">🎯 한 명 뽑기</button><button class="btn big" data-a="order">🔢 발표 순서 정하기</button></div>'+
+   '<div class="card"><h3>무엇을 뽑을까요?</h3><div class="chips"><button data-src="name" style="'+(st.pickSrc!=='team'?'background:var(--blue);color:var(--blue-ink)':'')+'">'+(ROOM?'학생 중에서':'명단에서')+'</button><button data-src="team"'+(teamList()?'':' disabled')+' style="'+(st.pickSrc==='team'?'background:var(--blue);color:var(--blue-ink)':'')+'">'+(ROOM?'조 중에서':'나눈 팀에서')+'</button></div>'+
+   (ROOM&&st.pickSrc!=='team'?'<div class="chips"><span class="note" style="align-self:center">어느 조에서?</span>'+['전체'].concat(rteams()).map(function(t){var on=(st.inTeam||'전체')===t;return '<button data-in="'+esc(t)+'" style="'+(on?'background:var(--blue);color:var(--blue-ink)':'')+'">'+esc(t)+'</button>'}).join('')+'</div>':'')+
+   '<div class="row"><button class="btn pri big" data-a="one">🎯 한 명 뽑기</button><button class="btn big" data-a="order">🔢 발표 순서 정하기</button>'+(ROOM&&st.pickSrc!=='team'?'<button class="btn big" data-a="perteam">👥 조마다 한 명씩</button>':'')+'</div>'+
    '<label class="row note"><input type="checkbox" id="noRep"'+(st.noRep?' checked':'')+'> 한 번 뽑힌 사람은 빼고 뽑기</label>'+(st.pickDone.length?'<button class="btn" data-a="clearDone">뽑힌 기록 지우기 ('+st.pickDone.length+')</button>':'')+'</div></div>'+
    '<div style="display:flex;flex-direction:column;gap:16px"><div class="stage" id="stage">'+esc(st.pick&&st.pick.one||'?')+'</div>';
   if(st.pick&&st.pick.order)h+='<div class="card"><h3>발표 순서 <span class="note">(누르면 끝난 표시)</span></h3><ol class="order">'+st.pick.order.map(function(n,i){return '<li data-od="'+i+'" class="'+(st.pick.od&&st.pick.od[i]?'done':'')+'" style="animation-delay:'+(i*.08)+'s;cursor:pointer"><b>'+(i+1)+'</b>'+esc(n)+'</li>'}).join('')+'</ol></div>';
@@ -136,6 +147,7 @@ function treset(){clearInterval(T.iv);T={left:null,run:false,end:0,iv:null,beepe
 function stuPub(){if(!window.TM_SYNC||!TM_SYNC.on)return;var m;
   if(V==='pick')m={game:'🎯 뽑기',big:st.pick&&st.pick.one||'?',huge:true,list:st.pick&&st.pick.order||null};
   else if(V==='timer'){var l=T.left==null?st.tm.set:T.left;m={game:'⏱ '+(st.tm.label||'타이머'),clock:'mmss',end:T.run?T.end:null,clockText:T.run?null:fmt(l)}}
+  else if(ROOM){var T3=rteams(),G3=rgroups();m=T3.length?{game:'👥 우리 반 조',groups:T3.map(function(t,i){return {n:t,c:COLORS[i%COLORS.length],m:G3[i]}})}:{game:'👥 우리 반 조',big:'친구들이 들어오는 중…'}}
   else m=st.teams?{game:'👥 팀 나누기',groups:st.teams.map(function(t,i){return {n:TNAMES[st.tnames][i]||((i+1)+'팀'),c:COLORS[i%COLORS.length],m:t}})}:{game:'👥 팀 나누기',big:'팀을 나누는 중…'};
   TM_SYNC.pub('class',m)}
 function render(){
@@ -149,18 +161,20 @@ function doSplit(){
   var k=st.teamBy==='count'?Math.min(n,ls.length):Math.max(1,Math.round(ls.length/n));
   var t=[];for(var i=0;i<k;i++)t.push([]);ls.forEach(function(x,i){t[i%k].push(x)});st.teams=t;save();render();
 }
+function pool0(){var src=st.pickSrc==='team'&&teamList()?teamList():names();if(ROOM&&st.pickSrc!=='team'&&st.inTeam&&st.inTeam!=='전체')src=rmembers(st.inTeam);return src}
+function lab(n){return ROOM&&st.pickSrc!=='team'?(teamOf(n)?teamOf(n)+' · ':'')+n:n}
 function onePick(){
-  var src=st.pickSrc==='team'&&st.teams?st.teams.map(function(_,i){return TNAMES[st.tnames][i]||((i+1)+'팀')}):names();
+  var src=pool0();
   st.noRep=document.getElementById('noRep').checked;
   var pool=st.noRep&&st.pickSrc!=='team'?src.filter(function(n){return st.pickDone.indexOf(n)<0}):src;
   if(!pool.length){alert(src.length?'모두 뽑혔어요. "뽑힌 기록 지우기"를 누르세요':'명단을 먼저 넣어 주세요');return}
   var el=document.getElementById('stage'),n=0,steps=18+Math.floor(Math.random()*6);el.classList.add('spin');clearTimeout(spinT);
   (function go(){el.textContent=pool[Math.floor(Math.random()*pool.length)];n++;
     if(n<steps)spinT=setTimeout(go,40+n*n*1.2);
-    else{var w=pool[Math.floor(Math.random()*pool.length)];el.textContent=w;el.classList.remove('spin');st.pick=Object.assign(st.pick||{},{one:w});if(st.pickSrc!=='team')st.pickDone.push(w);save();beep();render()}})();
+    else{var w=pool[Math.floor(Math.random()*pool.length)];el.textContent=lab(w);el.classList.remove('spin');st.pick=Object.assign(st.pick||{},{one:lab(w)});if(st.pickSrc!=='team')st.pickDone.push(w);save();beep();render()}})();
 }
 app.addEventListener('click',function(e){
-  var t=e.target.closest('[data-a],[data-by],[data-tn],[data-src],[data-od],[data-set]');if(!t)return;var d=t.dataset;
+  var t=e.target.closest('[data-a],[data-by],[data-tn],[data-src],[data-od],[data-set],[data-in]');if(!t)return;var d=t.dataset;
   if(d.a==='fs'){if(document.fullscreenElement)document.exitFullscreen();else document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen();return}
   if(d.a==='nums'){var k=+document.getElementById('numN').value;if(k>=2&&k<=60){st.names=Array.from({length:k},function(_,i){return (i+1)+'번'}).join('\n');save();render()}return}
   if(d.by){st.teamN=+document.getElementById('teamN').value||st.teamN;st.teamBy=d.by;save();render();return}
@@ -168,7 +182,9 @@ app.addEventListener('click',function(e){
   if(d.a==='split'){doSplit();return}
   if(d.src){st.pickSrc=d.src;save();render();return}
   if(d.a==='one'){onePick();return}
-  if(d.a==='order'){var src=st.pickSrc==='team'&&st.teams?st.teams.map(function(_,i){return TNAMES[st.tnames][i]||((i+1)+'팀')}):names();if(src.length<2){alert('명단을 2명 이상 넣어 주세요');return}st.pick=Object.assign(st.pick||{},{order:shuffle(src),od:{}});save();render();return}
+  if(d.a==='order'){var src=pool0();if(src.length<2){alert(ROOM?'학생이 2명 이상 들어와야 해요':'명단을 2명 이상 넣어 주세요');return}st.pick=Object.assign(st.pick||{},{order:shuffle(src).map(lab),od:{}});save();render();return}
+  if(d.a==='perteam'){var o=[];rteams().forEach(function(t){var m=rmembers(t);if(m.length)o.push(t+' · '+m[Math.floor(Math.random()*m.length)])});if(!o.length){alert('학생이 아직 없어요');return}st.pick=Object.assign(st.pick||{},{order:o,od:{},one:'조마다 한 명씩!'});save();beep();render();return}
+  if(d.in){st.inTeam=d.in;save();render();return}
   if(d.od!=null){st.pick.od=st.pick.od||{};st.pick.od[d.od]=!st.pick.od[d.od];save();render();return}
   if(d.a==='clearDone'){st.pickDone=[];save();render();return}
   if(d.set){clearInterval(T.iv);T={left:null,run:false,end:0,iv:null,beeped:false};st.tm.set=+d.set;save();render();return}
