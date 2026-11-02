@@ -69,9 +69,6 @@ input[type=number]{width:80px}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
 .g{display:flex;flex-direction:column;gap:4px;border:1px solid var(--line);background:var(--card);border-radius:6px;padding:14px;color:var(--ink);text-decoration:none}
 .g b{font-size:1.05rem}.g span{color:var(--soft);font-size:.9rem}.g:hover{border-color:var(--blue)}
-.who{display:flex;gap:8px;flex-wrap:wrap}
-.who button{border:1px solid var(--line);background:var(--field);border-radius:999px;padding:8px 16px;font-weight:700}
-.who button[aria-pressed="true"]{background:var(--blue);color:var(--blue-ink);border-color:var(--blue)}
 input.w{width:100%}
 .bad{color:var(--bad)}
 #qrov{position:fixed;inset:0;z-index:50;background:#fff;color:#222;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:16px;text-align:center}
@@ -116,8 +113,8 @@ function render(){
   let h='<div class="top"><div class="brand"><small>위듀케이션 · 강사 입구</small></div><a href="./">학생 첫 화면 보기 →</a></div>';
   if(!S.pin){
     h+='<div class="card"><h1>오늘 수업 방 만들기</h1><p class="soft">여러 반이 동시에 써도 섞이지 않도록 <b>수업마다 방을 먼저 만들어요.</b> 학생은 빔에 띄운 QR(방 번호가 들어 있어요)로 들어와요. 방은 8시간 뒤 자동으로 닫혀요.</p>'+
-     '<div class="f"><label><b>강사</b></label><div class="who">'+['강사1','강사2','강사3'].map(n=>'<button data-who="'+n+'" aria-pressed="'+(S.name===n)+'">'+n+'</button>').join('')+'<input id="who" placeholder="또는 이름" value="'+esc(['강사1','강사2','강사3'].includes(S.name)?'':S.name)+'" maxlength="12" style="width:140px"></div></div>'+
-     '<div class="f"><label for="code"><b>초대코드</b></label><input id="code" class="w" value="'+esc(S.code)+'" placeholder="예: WEDU-0000" autocomplete="off"></div>'+
+     '<div class="f"><label for="who"><b>강사 이름</b></label><input id="who" class="w" placeholder="예: 김준용" value="'+esc(S.name)+'" maxlength="12"></div>'+
+     '<div class="f"><label for="code"><b>초대코드</b> <span class="note">(위듀케이션에서 받은 코드. 맞아야 방이 열려요)</span></label><input id="code" class="w" value="'+esc(S.code)+'" placeholder="예: WEDU-0000" autocomplete="off"></div>'+
      '<button class="btn pri big" data-a="make"'+(S.busy?' disabled':'')+'>'+(S.busy?'만드는 중…':'🏠 방 만들기')+'</button>'+(S.note?'<p class="bad">'+esc(S.note)+'</p>':'')+'</div>';
   }else{
     const left=Math.max(0,Math.round((S.exp-Date.now())/60000));
@@ -153,9 +150,9 @@ function csv(){const rows=[['이름','도구','제목','시각','내용']].conca
   const t='\ufeff'+rows.map(r=>r.map(x=>'"'+String(x==null?'':x).replace(/"/g,'""')+'"').join(',')).join('\r\n');
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([t],{type:'text/csv'}));a.download='방'+S.pin+'_학생결과.csv';a.click()}
 async function make(){
-  const w=document.getElementById('who').value.trim();if(w)S.name=w;
+  S.name=document.getElementById('who').value.trim();
   S.code=document.getElementById('code').value.trim().toUpperCase();S.note='';
-  if(!S.name){S.note='강사를 골라 주세요';return render()}
+  if(!S.name){S.note='강사 이름을 넣어 주세요';return render()}
   if(!S.code){S.note='초대코드를 넣어 주세요';return render()}
   S.busy=true;render();
   try{const r=await call('liveRoom',{code:S.code});S.pin=r.pin;S.exp=Date.now()+8*3600e3;
@@ -172,9 +169,8 @@ async function resume(){ // 이 노트북에서 만든 방이 아직 살아 있�
 function qr(){const o=document.getElementById('qrov'),u=SITE+'?r='+S.pin,b=document.getElementById('qrbox');o.hidden=false;
   document.getElementById('qrP').textContent='방 번호 '+S.pin;document.getElementById('qrU').textContent=u.replace('https://','');b.innerHTML='';
   if(window.QRCode)new QRCode(b,{text:u,width:600,height:600,correctLevel:QRCode.CorrectLevel.M});else b.textContent='QR을 불러오지 못했어요. 위 주소를 칠판에 적어 주세요.'}
-app.addEventListener('click',e=>{const t=e.target.closest('[data-a],[data-who],[data-w]');if(!t)return;
+app.addEventListener('click',e=>{const t=e.target.closest('[data-a],[data-w]');if(!t)return;
   if(t.dataset.w){openW[t.dataset.w]=!openW[t.dataset.w];render();return}
-  if(t.dataset.who){S.name=t.dataset.who;const i=document.getElementById('who');if(i)i.value='';document.querySelectorAll('[data-who]').forEach(b=>b.setAttribute('aria-pressed',b===t));return}
   const a=t.dataset.a;
   if(a==='make')make();else if(a==='qr')qr();else if(a==='csv')csv();
   else if(a==='new'){if(!confirm('방을 종료할까요? 들어와 있던 학생 화면도 "수업이 끝났어요"로 끊겨요. (받은 결과는 먼저 CSV로 받아 두세요)'))return;
