@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<meta name="build" content="261102-1212">
+<meta name="build" content="261102-1216">
 <title>강사로</title>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#2563EB">
@@ -560,16 +560,27 @@ function render(){if(meRole()==='c')runReminders();const sw0=$('#slide'),keep=sw
   const r=meRole();if(!NAV[r].some(n=>n[0]===ui.tab))ui.tab=NAV[r][0][0];
   const un=r==='i'?unreadCount():0;
   $('#nav').innerHTML=NAV[r].map(([k,l])=>k==='plus'||k==='cnew'?`<button class="plus" data-act="${k}" aria-label="${r==='i'?'일정 넣기':'강의 등록'}">+</button>`:`<button data-tab="${k}" class="${ui.tab===k?'on':''}">${l}${k==='cal'&&un?`<span class="dot">${un}</span>`:''}</button>`).join('');
-  const al=r==='i'&&ui.tab==='cal'?S.alerts.filter(a=>a.instId===meId()&&!a.read):[],NJ=r==='i'&&ui.tab==='cal'?ntJobs():[];
-  $('#main').innerHTML=(al.length||NJ.length?`<div class="card" style="border-color:var(--b2);background:var(--b1)" role="status"><div class="row"><b class="sp" style="color:var(--b2)">알림 ${al.length+NJ.length}개</b></div>${NJ.map(ntAlertHtml).join('')}${(al.sort((x,y)=>alertDay(x).localeCompare(alertDay(y))),(ui.alMore?al:al.slice(0,3)).map(alertHtml).join(''))}${al.length>3?`<button class="btn sm" data-act="alMore" style="width:100%">${ui.alMore?'접기':`알림 ${al.length-3}개 더 보기`}</button>`:''}</div>`:'')+(VIEWS[ui.tab]||(()=>''))();;
+  $('#main').innerHTML=(VIEWS[ui.tab]||(()=>''))();
   // 슬라이드: 날짜·달이 바뀌면 그 날짜 카드로, 아니면 보던 자리 그대로
+  const ac=$('#alCar');if(ac){const w=ac.clientWidth||1;ui.alI=Math.min(ui.alI||0,ac.children.length-1);ac.scrollLeft=ui.alI*w;alDots();ac.onscroll=()=>{clearTimeout(ui._at);ui._at=setTimeout(()=>{ui.alI=Math.round(ac.scrollLeft/(ac.clientWidth||1));alDots()},80)}}
   if(ui.tab==='cal'){const key=ui.sel+ui.month;if(ui._sk!==key||!sw0){ui._sk=key;slideTo(ui.sel)}else if($('#slide')){ui._prog=Date.now();$('#slide').scrollLeft=keep}
     const sw=$('#slide');if(sw)sw.onscroll=()=>{if(Date.now()-(ui._prog||0)<400)return;clearTimeout(ui._st);ui._st=setTimeout(slideMonth,180)}}
 }
+// 강사 홈 알림: 할 일(서류)·공지·소식을 한 장씩, 옆으로 넘겨 보기
+function docJobs(iid){const t=todayIso();return S.apps.filter(a=>a.instId===iid&&a.status==='확정').map(a=>{const j=job(a.jobId);if(!j||!j.dates.some(d=>d>=t))return null;
+  const miss=j.needs.filter(n=>n!=='프로필'&&n!==RRN&&!docOf(a,n));return miss.length?{j,miss}:null}).filter(Boolean).sort((x,y)=>String(x.j.dates[0]).localeCompare(String(y.j.dates[0])))}
+function docAlertHtml({j,miss}){return `<div style="display:flex;gap:8px;align-items:flex-start"><span class="chip warn" style="margin-top:2px">서류</span><div class="sp" style="display:flex;flex-direction:column;gap:4px;min-width:0"><b>${esc(j.region)} ${esc(j.school)} ${esc(j.title)}</b><span class="sm mu">🏢 ${esc(co(j.coId).name)} · 📅 ${j.dates.map(d=>`${md(d)}(${dowOf(d)})`).join('·')}</span>
+  <span class="sm">아직 안 낸 것: <b style="color:var(--r2)">${miss.map(esc).join(', ')}</b></span><div class="row"><button class="btn sm pri" data-act="jobGo" data-j="${j.id}">내러 가기</button></div></div></div>`}
+function alCarousel(iid){const al=S.alerts.filter(a=>a.instId===iid&&!a.read).sort((x,y)=>alertDay(x).localeCompare(alertDay(y)));
+  const L=[...docJobs(iid).map(docAlertHtml),...ntJobs().map(ntAlertHtml),...al.map(alertHtml)];if(!L.length)return '';
+  return `<div class="card" style="border-color:var(--b2);background:var(--b1);gap:6px" role="status"><div class="row"><b class="sp" style="color:var(--b2)">알림 ${L.length}개</b>${L.length>1?'<span class="mu sm">옆으로 넘겨 보세요 ›</span>':''}</div>
+  <div id="alCar" style="display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;gap:0">${L.map(h=>`<div class="alS" style="flex:0 0 100%;scroll-snap-align:start;min-width:0;box-sizing:border-box;padding:0 2px">${h}</div>`).join('')}</div>
+  ${L.length>1?`<div id="alDots" style="display:flex;justify-content:center;gap:5px">${L.map((_,i)=>`<button data-act="alTo" data-i="${i}" aria-label="${i+1}번째 알림" style="width:7px;height:7px;border-radius:50%;border:0;padding:0;background:var(--ln)"></button>`).join('')}</div>`:''}</div>`}
+function alDots(){const D=$$('#alDots button');D.forEach((b,i)=>b.style.background=i===(ui.alI||0)?'var(--b2)':'var(--ln)')}
 // 안 읽은 회사 공지도 맨 위 알림에 (강의 날짜가 멀어도 바로 보이게)
 const ntJobs=()=>{const id=meId();const t=todayIso();return S.jobs.filter(j=>j.dates.some(d=>d>=t)&&(j.notices||[]).some(n=>(n.to||[]).includes(id)&&!(n.reads||{})[id])).sort((a,b)=>String(a.dates[0]).localeCompare(String(b.dates[0])))};
 function ntAlertHtml(j){const id=meId(),L=j.notices.filter(n=>(n.to||[]).includes(id)&&!(n.reads||{})[id]).slice().reverse();
-  return `<div style="border-top:1px solid var(--ln);padding-top:8px;display:flex;gap:8px;align-items:flex-start"><span class="chip warn" style="margin-top:2px">공지</span><div class="sp" style="display:flex;flex-direction:column;gap:4px;min-width:0"><b>${esc(j.region)} ${esc(j.school)} ${esc(j.title)}</b><span class="sm mu">🏢 ${esc(co(j.coId).name)} · 📅 ${j.dates.map(d=>`${md(d)}(${dowOf(d)})`).join('·')}</span>
+  return `<div style="display:flex;gap:8px;align-items:flex-start"><span class="chip warn" style="margin-top:2px">공지</span><div class="sp" style="display:flex;flex-direction:column;gap:4px;min-width:0"><b>${esc(j.region)} ${esc(j.school)} ${esc(j.title)}</b><span class="sm mu">🏢 ${esc(co(j.coId).name)} · 📅 ${j.dates.map(d=>`${md(d)}(${dowOf(d)})`).join('·')}</span>
     ${L.map(n=>`<div class="sm" style="background:var(--sf);border-radius:8px;padding:6px 8px">${n.kind?`<b>[${esc(n.kind)}]</b> `:''}${esc(n.text||'').replace(/\n/g,'<br>')}${n.img?`<img src="${n.img}" alt="공지 이미지" style="display:block;width:100%;max-width:320px;border-radius:8px;margin-top:6px">`:''}<div class="mu sm">${String(n.at||'').slice(5,10).replace('-','/')} ${String(n.at||'').slice(11,16)}${n.by?` · ${esc(n.by)}`:''}</div></div>`).join('')}
     <div class="row"><button class="btn sm pri" data-act="ntOk" data-j="${j.id}">확인했어요</button><button class="btn sm" data-act="ntGo" data-j="${j.id}">강의 일정 보기</button></div></div></div>`}
 // 알림을 줄글 대신 강의별로: [꼬리표] 강의 이름 / 날짜·시간 / 업체 / 할 일
@@ -582,7 +593,7 @@ function alertHtml(a){const m=String(a.text||'').match(/^\[(.+?)\]\s*/),tag=m?m[
     ${/리마인드/.test(tag)&&nts?`<span class="sm" style="color:var(--r2);font-weight:700">📢 안 읽은 공지 ${nts}개</span>`:''}${tag==='D-1 리마인드'?'<span class="sm">✅ 내일 강의예요. 일정 카드에서 "확인했어요"를 눌러 주세요</span>':''}${tag==='마감'?'<span class="sm mu">이번에는 선정되지 않았어요</span>':''}`
     :rest.split(' · ').map((x,i)=>i?`<span class="sm">${esc(x)}</span>`:`<b>${esc(x)}</b>`).join('');
   const btn=a.kind==='pay'?`<div class="row"><button class="btn sm pri" data-act="recv" data-id="${a.id}" data-v="ok">입금 확인했어요</button><button class="btn sm" data-act="recv" data-id="${a.id}" data-v="no">아직 안 들어왔어요</button></div>`:'';
-  return `<div style="border-top:1px solid var(--ln);padding-top:8px;display:flex;gap:8px;align-items:flex-start"><span class="chip ${cls}" style="margin-top:2px">${esc(tag.replace(' 리마인드',''))}</span><div class="sp" style="display:flex;flex-direction:column;gap:2px;min-width:0">${body}${btn}</div>${a.kind==='pay'?'':j&&tag!=='마감'?`<button class="btn sm pri" data-act="alertGo" data-id="${a.id}">보기 ›</button>`:`<button class="btn sm" data-act="alertOk" data-id="${a.id}">확인</button>`}</div>`}
+  return `<div style="display:flex;gap:8px;align-items:flex-start"><span class="chip ${cls}" style="margin-top:2px">${esc(tag.replace(' 리마인드',''))}</span><div class="sp" style="display:flex;flex-direction:column;gap:2px;min-width:0">${body}${btn}</div>${a.kind==='pay'?'':j&&tag!=='마감'?`<button class="btn sm pri" data-act="alertGo" data-id="${a.id}">보기 ›</button>`:`<button class="btn sm" data-act="alertOk" data-id="${a.id}">확인</button>`}</div>`}
 function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(toast.h);toast.h=setTimeout(()=>t.classList.remove('on'),2400)}
 // 지원자 프로필 PDF: 인쇄 창을 열어 'PDF로 저장'으로 받게 함 (연락처는 확정한 강사만)
 const lines=t=>String(t||'').split('\n').map(x=>x.trim()).filter(Boolean);
@@ -619,6 +630,7 @@ function vCal(){const iid=meId(),E=entries(iid),t=todayIso();const [Y,M]=ui.mont
   const late=E.filter(e=>e.st==='done'&&addDays(e.d,30)<t);
   return `<div class="row"><h2>${Y}년 ${M}월</h2><span class="sp"></span><button class="btn sm" data-act="mon" data-n="-1" aria-label="이전 달">‹</button><button class="btn sm" data-act="mon" data-n="0">오늘</button><button class="btn sm" data-act="mon" data-n="1" aria-label="다음 달">›</button></div>
   <div class="row lg">${Object.keys(ST).map(chip).join('')}<span class="chip warn">빨간 테두리 = 겹침</span></div>
+  ${alCarousel(iid)}
   ${(()=>{const U=unpaidList(iid);return U.length?`<button class="btn" data-act="unpaid" style="border-color:var(--r2);color:var(--r2)">미입금 ${U.length}건 · ${won(U.reduce((a,u)=>a+u.net,0))} 보기</button>`:''})()}
   ${late.length?`<div class="alert">강의 끝나고 30일이 지났는데 아직 못 받은 강사료가 ${late.length}건 있어요.</div>`:''}
   <div class="dow">${[...DOW].map(x=>`<span>${x}</span>`).join('')}</div><div class="cal">${cells.join('')}</div>
@@ -1175,7 +1187,8 @@ document.addEventListener('click',async ev=>{
   if(A==='payOne'){markPaid(S.apps.find(x=>x.id===D.a));save();render();return toast('지급 완료로 바꾸고 강사에게 입금 확인 알림을 보냈어요')}
   if(A==='payAll'){const U=unpaidOf(meId());for(const x of U)markPaid(x.a);save();render();return toast(`${U.length}명 지급 완료, 입금 확인 알림을 보냈어요`)}
   if(A==='recv'){const al=S.alerts.find(x=>x.id===D.id),a=S.apps.find(x=>x.id===al.appId);al.read=true;if(a)a.recv=D.v;save();render();return toast(D.v==='ok'?'입금 확인을 업체에 알렸어요':'아직 안 들어왔다고 업체에 알렸어요')}
-  if(A==='alMore'){ui.alMore=!ui.alMore;return render()}
+  if(A==='alTo'){const ac=$('#alCar');ui.alI=+D.i;if(ac)ac.scrollTo({left:ui.alI*ac.clientWidth,behavior:'smooth'});alDots();return}
+  if(A==='jobGo'){const j=job(D.j);if(!j)return;ui.tab='cal';ui.jobId=null;const d=j.dates.find(x=>x>=todayIso())||j.dates[0];if(d){ui.sel=d;ui.month=ym(d)}render();return}
   // 알림 '보기': 읽음 처리하고 그 강의 카드(공지·서류)로 바로 이동
   if(A==='ntOk'||A==='ntGo'){const j=job(D.j);if(!j)return;markRead(j,meId());if(A==='ntOk'){render();return toast('공지를 읽음으로 표시했어요. 업체에도 읽음으로 보여요')}
     ui.tab='cal';ui.jobId=null;const d=j.dates.find(x=>x>=todayIso())||j.dates[0];if(d){ui.sel=d;ui.month=ym(d)}render();return}
@@ -1392,6 +1405,6 @@ document.addEventListener('input',ev=>{if(ev.target.matches&&ev.target.matches('
 render();
 </script>
 <script src="../bot.js" defer></script>
-<script type="module" src="real.js?v=261102-1212"></script>
+<script type="module" src="real.js?v=261102-1216"></script>
 </body>
 </html>
