@@ -149,8 +149,30 @@ function radar(sc){
   g+='<polygon points="'+sc.map(function(v,i){return pt(i,Math.max(.04,v/100)).join(',')}).join(' ')+'" fill="color-mix(in srgb,var(--blue) 25%,transparent)" stroke="var(--blue)" stroke-width="2"/>';
   return '<svg class="radar" viewBox="0 0 360 360" role="img" aria-label="영역별 건강 점수">'+g+'</svg>';
 }
+/* 수업 방: 결과를 work 'health'로 보내고(점수 바뀔 때만), 강사 미리보기(?teach=1)에 📊 반 통계 */
+var TEACH=!!(window.TM_ROOM&&TM_ROOM.teach&&TM_ROOM.teachWork),SW=[],STM=[],sent='';
+function push(){if(!window.TM_ROOM||TM_ROOM.teach||!TM_ROOM.get||!TM_ROOM.get())return;var sc=score(),ord=sc.map(function(v,i){return i}).sort(function(a,b){return sc[a]-sc[b]}),
+  tot=Math.round(sc.reduce(function(a,b){return a+b},0)/sc.length),b=JSON.stringify({sc:sc,tot:tot,weak:A[ord[0]].k,weak2:A[ord[1]].k});if(b===sent)return;sent=b;
+  TM_ROOM.send('health','생활습관 점검 '+tot+'점 · 약점 '+A[ord[0]].n,b,true)}
+if(TEACH)TM_ROOM.teachWork(['health'],function(L,T){if(T){STM=T}else SW=L.map(function(x){var b={};try{b=JSON.parse(x.body)}catch(e){}return {nick:x.nick,team:x.team||'',b:b}}).filter(function(x){return x.b&&x.b.sc&&x.b.sc.length===A.length});var el=document.getElementById('hstat');if(el)el.innerHTML=statHtml();else render()});
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+var TC=['#e5484d','#2f80ed','#2e9e5b','#f2994a','#9b51e0','#14a3b8','#d6409f','#8d6e3f'];
+function statHtml(){
+  var T=STM.slice();SW.forEach(function(x){if(x.team&&T.indexOf(x.team)<0)T.push(x.team)});
+  var h='<h2 style="margin:0">📊 반 통계 <span class="soft" style="font-size:1rem">결과까지 마친 학생 '+SW.length+'명</span></h2>';
+  if(!SW.length)return h+'<p class="soft">학생이 점검을 끝내면 여기에 영역별 평균이 모여요.</p>';
+  function avg(L,i){return L.length?Math.round(L.reduce(function(a,x){return a+x.b.sc[i]},0)/L.length):null}
+  var G=[{n:'반 전체',c:'var(--blue)',L:SW}].concat(T.map(function(t,k){return {n:t,c:TC[k%8],L:SW.filter(function(x){return x.team===t})}}).filter(function(g){return g.L.length}));
+  h+='<p class="soft" style="margin:0">'+G.map(function(g){return '<b style="color:'+g.c+'">■</b> '+esc(g.n)+'('+g.L.length+'명) · 평균 '+Math.round(g.L.reduce(function(a,x){return a+x.b.tot},0)/g.L.length)+'점'}).join(' &nbsp; ')+'</p>';
+  A.forEach(function(ar,i){h+='<div style="display:flex;flex-direction:column;gap:3px"><b>'+ar.e+' '+ar.n+'</b>'+G.map(function(g){var v=avg(g.L,i);return '<div class="area"><span class="soft" style="font-size:.85rem">'+esc(g.n)+'</span><span class="tr"><span class="fl" style="width:'+Math.max(3,v)+'%;background:'+g.c+'"></span></span><span class="g">'+v+'</span></div>'}).join('')+'</div>'});
+  var cnt=A.map(function(ar){return SW.filter(function(x){return x.b.weak===ar.k}).length}),ord=A.map(function(_,i){return i}).sort(function(a,b){return cnt[b]-cnt[a]});
+  h+='<h3 style="margin:8px 0 0">🎯 약점 1위 영역 (가장 낮은 영역이 무엇인지)</h3><table class="wk"><tr><th>영역</th><th>전체</th>'+T.map(function(t,k){return '<th style="color:'+TC[k%8]+'">'+esc(t)+'</th>'}).join('')+'</tr>'+
+    ord.filter(function(i){return cnt[i]}).map(function(i){return '<tr><td>'+A[i].e+' '+A[i].n+'</td><td><b>'+cnt[i]+'</b>명</td>'+T.map(function(t){var n=SW.filter(function(x){return x.team===t&&x.b.weak===A[i].k}).length;return '<td>'+(n||'-')+'</td>'}).join('')+'</tr>'}).join('')+'</table>';
+  return h;
+}
+function statBox(){return TEACH?'<div class="card" id="hstat">'+statHtml()+'</div>':''}
 function start(){
-  return head()+'<div class="card"><div style="font-size:2.4rem">🩺</div><h1>건강 생활습관 점검</h1><p>수면·운동·식사·마음·스마트폰·자세·담배와 술, <b>7가지 영역 33문항</b>으로 내 생활습관을 점검해요. 결과로 내 약점 영역과 <b>이번 주 실천 약속</b>을 만들어요.</p>'+
+  return head()+statBox()+'<div class="card"><div style="font-size:2.4rem">🩺</div><h1>건강 생활습관 점검</h1><p>수면·운동·식사·마음·스마트폰·자세·담배와 술, <b>7가지 영역 33문항</b>으로 내 생활습관을 점검해요. 결과로 내 약점 영역과 <b>이번 주 실천 약속</b>을 만들어요.</p>'+
    '<div class="why"><b>약 5분</b> · 최근 2주 동안의 평소 모습으로 답하세요. 답은 이 휴대폰에만 저장돼요.</div>'+
    '<div class="card" style="padding:12px"><b>교대근무(밤샘 근무)를 하거나 할 예정인가요?</b><div class="seg">'+[['예',true],['아니요',false]].map(function(o){return '<button data-shift="'+o[1]+'" aria-pressed="'+(S.shift===o[1])+'">'+o[0]+'</button>'}).join('')+'</div></div>'+
    '<button class="btn pri" data-go="0"'+(S.shift==null?' disabled':'')+'>시작하기</button></div>';
@@ -163,7 +185,8 @@ function area(i){
 function result(){
   var sc=score(),tot=Math.round(sc.reduce(function(a,b){return a+b},0)/sc.length),g=grade(tot);
   var ord=sc.map(function(v,i){return i}).sort(function(a,b){return sc[a]-sc[b]}),weak=ord.slice(0,2);
-  var h=head()+'<div class="card"><span class="soft">나의 건강 생활습관 점수</span><div><span class="total" style="color:'+g[1]+'">'+tot+'</span><span class="soft"> / 100 · '+g[0]+'</span></div>'+radar(sc)+
+  push();
+  var h=head()+statBox()+'<div class="card"><span class="soft">나의 건강 생활습관 점수</span><div><span class="total" style="color:'+g[1]+'">'+tot+'</span><span class="soft"> / 100 · '+g[0]+'</span></div>'+radar(sc)+
     '<div style="display:flex;flex-direction:column;gap:8px">'+A.map(function(ar,i){var gg=grade(sc[i]);return '<div class="area"><span>'+ar.e+' '+ar.n+'</span><span class="tr"><span class="fl" style="width:'+Math.max(3,sc[i])+'%;background:'+gg[1]+'"></span></span><span class="g" style="color:'+gg[1]+'">'+sc[i]+' '+gg[0]+'</span></div>'}).join('')+'</div></div>';
   if(S.a.mind1===0||S.a.mind1===1)h+='<div class="warn"><b>💛 마음이 많이 지쳐 있는 것 같아요.</b> 기분이 가라앉는 날이 2주 넘게 이어지면 혼자 버티지 말고 이야기해 주세요. 선생님·보건실·가족, 또는 <b>청소년상담 1388</b>, <b>자살예방 상담전화 109</b>(24시간)로 연락할 수 있어요.</div>';
   h+='<div class="card"><h2>🎯 먼저 바꿀 곳: '+weak.map(function(i){return A[i].e+' '+A[i].n}).join(', ')+'</h2><p class="soft">점수가 가장 낮은 두 영역이에요. 아래에서 이번 주에 해 볼 행동을 <b>최대 3개</b> 골라 약속해요.</p>';

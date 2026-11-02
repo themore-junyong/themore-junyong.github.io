@@ -221,6 +221,17 @@ const RX={n:{},log:[]}; // 반응 수, 최근 반응 시각(헷갈림 알림용)
 const H={code:(lsGet('tm-code',{})||{}).code||'',pin:lsGet('live-host',{}).pin||'',qs:lsGet('live-qs',SAMPLE),cur:-1,ans:[],unsub:null,room:null,note:'',score:{},hide:{},view:'q',edit:null};
 Object.assign(H.score,lsGet('live-score-'+H.pin,{}));
 const saveQs=()=>lsSet('live-qs',H.qs);
+/* 수업별 질문 묶음: live.html?host&set=이름 → 목록에 없는 질문만 뒤에 추가 */
+const SETS={
+  ulsan1103:[
+    {type:'poll',text:'젊으니까 밤새워도 괜찮다?',opts:['O 괜찮다','X 안 괜찮다']},
+    {type:'poll',text:'어젯밤 몇 시간 잤나요?',opts:['5시간 미만','5~6시간','6~7시간','7시간 이상']},
+    {type:'word',text:'요즘 내 머릿속을 차지한 한 단어'},
+    {type:'map',text:'입사 후 100일, 내 몸 PM',opts:['잠','움직임','먹기','마음','폰']},
+    {type:'text',text:'오늘 하나만 가져간다면?'}
+  ]
+};
+if(HOST&&SETS[P.get('set')]){let n=0;SETS[P.get('set')].forEach(x=>{if(!H.qs.some(y=>y.type===x.type&&y.text===x.text)){H.qs.push(JSON.parse(JSON.stringify(x)));n++}});if(n){saveQs();H.note='✔ 수업 질문 '+n+'개를 목록에 넣었어요'}}
 function hostRender(){
   document.body.classList.add('host');
   let h='<div class="top"><div class="brand"><small>위듀케이션 · 실시간 마인드맵 (강사 화면)</small></div><a href="./">← 도구 모음</a></div>';
