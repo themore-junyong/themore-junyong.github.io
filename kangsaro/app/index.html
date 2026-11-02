@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<meta name="build" content="261102-0943">
+<meta name="build" content="261102-0953">
 <title>강사로</title>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#2563EB">
@@ -319,6 +319,13 @@ const feeLabel=j=>j.feeMode==='per'?`교시당 ${won(j.feePer)}`:j.fee?`1일 ${w
 const myDates=(j,iid)=>isOp(j)?payOf(j,iid).dates:appDays(j,cfApp(j,iid));
 const opEmpty=j=>isOp(j)?j.plan.slots.filter(s=>!s.inst&&!s.nm).length:0;
 
+// 하루 통 시간(예: 09:00~16:00)이 점심(12~13시)을 넘으면 오전·오후 두 칸으로 나눌 수 있음
+const hmOf=t=>{const m=String(t||'').match(/(\d{1,2}):(\d{2})\s*[~∼\-–]\s*(\d{1,2}):(\d{2})/);return m?[+m[1]*60+ +m[2],+m[3]*60+ +m[4]]:null};
+const hhmm=n=>`${pad(Math.floor(n/60))}:${pad(n%60)}`;
+const splitable=x=>{const r=hmOf(x.time);return !!r&&r[0]<12*60&&r[1]>13*60};
+function splitSlot(x){const [a,b]=hmOf(x.time),am=Math.round((12*60-a)/60),pm=Math.round((b-13*60)/60);
+  return [{...x,id:uid(),time:`${hhmm(a)}~12:00`,per:'오전',n:Math.max(1,am)},{...x,id:uid(),time:`13:00~${hhmm(b)}`,per:'오후',n:Math.max(1,pm)}]}
+function splitSlots(j,id){let k=0;j.plan.slots=j.plan.slots.flatMap(x=>(!id||x.id===id)&&splitable(x)?(k++,splitSlot(x)):[x]);return k}
 // 업체: 운영 시간표 (날짜 × 반 × 시간 칸에 강사 배정) + 강사별 받을 돈
 function opBox(j,A){
   if(!isOp(j))return `<div class="card"><h3>여러 날·여러 반·여러 강사 운영인가요?</h3><span class="mu sm">한 주 과정처럼 날짜·반·오전/오후마다 강사가 다르면 운영 시간표를 만드세요. 칸마다 강사를 정하면 강사 달력에는 자기 칸만 떠요.</span><button class="btn" data-act="opMake" data-j="${j.id}">운영 시간표 만들기</button></div>`;
@@ -326,7 +333,7 @@ function opBox(j,A){
   const opt=(v,isSub)=>`<option value="">${isSub?'보조 없음':'미정'}</option>${cf.map(a=>`<option value="${a.instId}" ${v===a.instId?'selected':''}>${esc(inst(a.instId).name)}${a.status==='지원'?' (지원자)':''}</option>`).join('')}${names.map(n=>`<option value="nm:${esc(n)}" ${v==='nm:'+n?'selected':''}>${esc(n)} (앱 밖)</option>`).join('')}<option value="__nm">＋ 이름 직접 쓰기</option>`;
   const byD=[...new Set(P.map(x=>x.d))].sort();
   const row=x=>{const f=slotFee(j,x,x.inst),cur=x.inst||(x.nm?'nm:'+x.nm:''),sub=x.sub||(x.subNm?'nm:'+x.subNm:'');
-    return `<div style="border-top:1px solid var(--ln);padding:6px 0;${cur?'':'background:var(--warns,#FDECE3)'}"><div class="row"><span class="sm" style="min-width:0;flex:1 1 40%">${x.cls?`<b>${esc(x.cls)}</b> `:''}${esc(x.time||'')} ${esc(x.per||'')}</span><select data-chg="slotSel" data-j="${j.id}" data-s="${x.id}" data-k="inst" style="flex:1 1 45%;min-width:0" aria-label="강사">${opt(cur)}</select><button class="btn sm" data-act="opDel" data-j="${j.id}" data-s="${x.id}" aria-label="칸 지우기">✕</button></div>
+    return `<div style="border-top:1px solid var(--ln);padding:6px 0;${cur?'':'background:var(--warns,#FDECE3)'}"><div class="row"><span class="sm" style="min-width:0;flex:1 1 40%">${x.cls?`<b>${esc(x.cls)}</b> `:''}${esc(x.time||'')} ${esc(x.per||'')}</span><select data-chg="slotSel" data-j="${j.id}" data-s="${x.id}" data-k="inst" style="flex:1 1 45%;min-width:0" aria-label="강사">${opt(cur)}</select>${splitable(x)?`<button class="btn sm" data-act="opSplit" data-j="${j.id}" data-s="${x.id}" title="오전·오후 두 칸으로">나누기</button>`:''}<button class="btn sm" data-act="opDel" data-j="${j.id}" data-s="${x.id}" aria-label="칸 지우기">✕</button></div>
       <details class="sm"><summary class="mu">금액 ${x.fee!==''&&x.fee!=null?won(x.fee):j.feeMode==='per'?won(f||0):'하루 총액'}${x.sub||x.subNm?` · 보조 ${esc(x.sub?inst(x.sub).name:x.subNm)}`:''}</summary>
       <div class="grid2"><label class="f">이 칸 금액 (비우면 ${j.feeMode==='per'?`교시당 × ${x.n||perN(x.per)}교시`:'하루 총액'})<input type="number" inputmode="numeric" data-chg="slotFee" data-j="${j.id}" data-s="${x.id}" value="${x.fee??''}"></label><label class="f">보조강사<select data-chg="slotSel" data-j="${j.id}" data-s="${x.id}" data-k="sub">${opt(sub,1)}</select></label></div>
       ${x.sub||x.subNm?`<label class="f">보조강사 금액<input type="number" inputmode="numeric" data-chg="slotSubFee" data-j="${j.id}" data-s="${x.id}" value="${x.subFee||''}"></label>`:''}</details></div>`};
@@ -334,7 +341,7 @@ function opBox(j,A){
   const itSel=id=>`<select id="${id}">${IT.map(([k,t])=>`<option value="${esc(k)}" data-tx="${t?1:0}">${esc(k)}${t?'':' (3.3% 안 뗌)'}</option>`).join('')}</select>`;
   const nz=v=>String(v||'').replace(/\s|강사|님/g,''),LK=cf.map(a=>{const nm=nz(inst(a.instId).name),k=P.filter(x=>nm&&(nz(x.nm)===nm||nz(x.subNm)===nm)).length;return k?[a,k]:null}).filter(Boolean);
   const lk=LK.length?`<div class="card" style="background:var(--acs);gap:6px"><b>초대한 강사가 들어왔어요</b><span class="sm">엑셀에 이름으로만 적혀 있던 칸을 이 강사 계정에 연결하면, 강사 달력에 자기 칸이 뜨고 확정 알림이 가요.</span>${LK.map(([a,k])=>`<div class="row"><span class="sp sm"><b>${esc(inst(a.instId).name)}</b> · 이름이 같은 칸 ${k}개${a.status==='지원'?' · 지원자':''}</span><button class="btn sm pri" data-act="opLink" data-j="${j.id}" data-i="${a.instId}">연결하고 확정</button></div>`).join('')}${LK.length>1?`<button class="btn sm" data-act="opLink" data-j="${j.id}" data-i="__all">모두 연결하고 확정</button>`:''}</div>`:'';
-  return lk+`<div class="card"><div class="row"><h3 class="sp">운영 시간표 · ${P.length}칸${opEmpty(j)?` <span class="chip warn">빈 칸 ${opEmpty(j)}</span>`:''}</h3></div>
+  return lk+`<div class="card"><div class="row"><h3 class="sp">운영 시간표 · ${P.length}칸${opEmpty(j)?` <span class="chip warn">빈 칸 ${opEmpty(j)}</span>`:''}</h3>${P.some(splitable)?`<button class="btn sm" data-act="opSplit" data-j="${j.id}">모든 칸 오전·오후로 나누기</button>`:''}</div>
     <div class="grid2"><label class="f">강사료 방식<select data-chg="opFee" data-j="${j.id}"><option value="day" ${j.feeMode!=='per'?'selected':''}>하루 총액</option><option value="per" ${j.feeMode==='per'?'selected':''}>교시당 단가</option></select></label>
     <label class="f">${j.feeMode==='per'?'교시당 단가(원)':'하루 총액(원)'}<input type="number" inputmode="numeric" data-chg="opAmt" data-j="${j.id}" value="${j.feeMode==='per'?(+j.feePer||''):(+j.fee||'')}"></label></div>
     <details><summary><b>＋ 칸 만들기</b> (날짜·반·시간을 고르면 한 번에)</summary>
@@ -446,7 +453,9 @@ function confirmApp(a,j){if(a.status==='확정')return;a.status='확정';S.alert
 // 되돌리기: 운영 칸·지원 상태를 바꿀 때마다 직전 모습을 쌓아 둠 (화면을 닫으면 사라짐)
 const planSnap=j=>JSON.stringify({slots:(j.plan&&j.plan.slots)||[],st:appsOf(j.id).map(a=>[a.id,a.status])});
 const planSeen=j=>{ui.undo=ui.undo||{};const U=ui.undo[j.id]=ui.undo[j.id]||{st:[],last:null};if(U.last===null)U.last=planSnap(j);return U};
-const planTouch=j=>{const U=planSeen(j),now=planSnap(j);if(now!==U.last){U.st.push(U.last);if(U.st.length>30)U.st.shift();U.last=now}j.planAt=new Date().toISOString();j.op=true;save();render()};
+// 운영 시간표가 있으면 공고 대표 시간은 칸 시간에서 자동 (가장 이른 시작~가장 늦은 끝)
+const planTime=j=>{if(!isOp(j))return;const R=j.plan.slots.map(x=>hmOf(x.time)).filter(Boolean);if(!R.length)return;j.time=`${hhmm(Math.min(...R.map(r=>r[0])))}~${hhmm(Math.max(...R.map(r=>r[1])))}`};
+const planTouch=j=>{planTime(j);const U=planSeen(j),now=planSnap(j);if(now!==U.last){U.st.push(U.last);if(U.st.length>30)U.st.shift();U.last=now}j.planAt=new Date().toISOString();j.op=true;save();render()};
 function planUndo(j){const U=planSeen(j);if(!U.st.length)return toast('되돌릴 게 없어요');const o=JSON.parse(U.st.pop());let un=0;
   if(o.slots.length){j.plan=j.plan||{};j.plan.slots=o.slots}else{delete j.plan;j.op=false}
   for(const [id,st] of o.st){const a=S.apps.find(x=>x.id===id);if(a&&a.status!==st){if(a.status==='확정'&&st==='지원'){S.alerts.push({id:uid(),instId:a.instId,appId:a.id,text:`[확정 취소] ${co(j.coId).name} · ${j.school} ${j.title} 배정이 잘못 눌려 취소되었어요. 다시 확정되면 알려 드릴게요.`,at:new Date().toISOString(),read:false});un++}a.status=st}}
@@ -939,7 +948,7 @@ function vCJob(j){const A=appsOf(j.id),s=jobStats(j);
   ${j.hold?`<div class="alert"><b>확인 대기 · 강사에게 아직 안 보여요</b><br>${scamWhy(j)} 때문이에요. 표현을 고쳐 저장하면 바로 다시 검사해서 올라가요. 그대로 두면 운영자 확인 뒤 올라가요. 문의: tobadyclup@naver.com</div>`:''}${downByReports(j)?'<div class="alert"><b>강사 신고 3건으로 내려갔어요.</b> 운영자가 확인 중이에요. 문의: tobadyclup@naver.com</div>':''}
   <div class="card"><div class="row">${jChip(j)}<h2 class="sp">${esc(j.region)} ${esc(j.school)} ${esc(j.title)}</h2></div>
   <div class="grid2"><label class="f">강의 제목<input data-act="jedit" data-k="title" value="${esc(j.title||'')}"></label><label class="f">학교(기관)<input data-act="jedit" data-k="school" value="${esc(j.school||'')}"></label><label class="f">지역<input data-act="jedit" data-k="region" value="${esc(j.region||'')}"></label></div>
-  <div class="grid2"><label class="f">날짜 (쉼표로)<input data-act="jedit" data-k="dates" value="${j.dates.join(', ')}"></label><label class="f">시간<input data-act="jedit" data-k="time" value="${esc(j.time)}"></label></div>
+  <div class="grid2"><label class="f">날짜 (쉼표로)<input data-act="jedit" data-k="dates" value="${j.dates.join(', ')}"></label>${isOp(j)?`<div class="f"><span>시간</span><span class="sm" style="padding:10px 0">${esc(j.time||'')} <span class="mu">· 아래 운영 시간표에서 칸마다 정해요</span></span></div>`:`<label class="f">시간<input data-act="jedit" data-k="time" value="${esc(j.time)}"></label>`}</div>
   <span class="mu sm">날짜·시간을 고치면 확정된 강사 달력에도 바로 바뀌고, 강사에게 변경 공지가 가요.</span>
   <span class="mu">${esc(j.교시)} · ${esc(j.대상)} · 강사료 ${feeLabel(j)} (강사에게 공개)</span>
   <label class="f">공고 내용<textarea data-act="jedit" data-k="desc" rows="4">${esc(j.desc||'')}</textarea></label>
@@ -1201,7 +1210,9 @@ document.addEventListener('click',async ev=>{
     j.reports={...(j.reports||{}),[me]:new Date().toISOString()};if(typeof REAL!=='undefined'&&REAL.report)REAL.report(j.id);else save();render();return toast('신고했어요. 고마워요')}
   if(A==='opMake'){const j=job(D.j);j.plan={slots:j.dates.map(d=>({id:uid(),d,cls:'',time:j.time||'',per:j.교시||'',n:perN(j.교시),inst:'',nm:'',sub:'',subNm:'',fee:''}))};j.feeMode=j.feeMode||'day';
     // 이미 확정한 강사가 한 명이면 그 강사를 모든 칸에
-    const cf=appsOf(j.id).filter(a=>a.status==='확정');if(cf.length===1)j.plan.slots.forEach(x=>x.inst=cf[0].instId);planTouch(j);return toast('운영 시간표를 만들었어요. 칸을 더 만들거나 강사를 정하세요')}
+    const sp=splitSlots(j); // 09:00~16:00처럼 점심을 넘는 시간이면 처음부터 오전·오후 두 칸
+    const cf=appsOf(j.id).filter(a=>a.status==='확정');if(cf.length===1)j.plan.slots.forEach(x=>x.inst=cf[0].instId);planTouch(j);return toast(sp?'운영 시간표를 날마다 오전·오후 두 칸으로 만들었어요. 칸마다 강사를 정하세요':'운영 시간표를 만들었어요. 칸을 더 만들거나 강사를 정하세요')}
+  if(A==='opSplit'){const j=job(D.j),k=splitSlots(j,D.s);if(!k)return toast('나눌 칸이 없어요 (점심 12~13시를 넘는 칸만 나눠요)');planTouch(j);return toast(`${k}칸을 오전·오후로 나눴어요. 강사는 그대로예요`)}
   if(A==='opXls')return opXls(job(D.j),D.k);
   if(A==='opPng')return opPng(job(D.j),!!D.n,D.k);
   if(A==='planUndo')return planUndo(job(D.j));
@@ -1339,6 +1350,6 @@ document.addEventListener('input',ev=>{if(ev.target.matches&&ev.target.matches('
 render();
 </script>
 <script src="../bot.js" defer></script>
-<script type="module" src="real.js?v=261102-0943"></script>
+<script type="module" src="real.js?v=261102-0953"></script>
 </body>
 </html>
