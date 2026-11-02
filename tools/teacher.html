@@ -61,6 +61,7 @@ input[type=number]{width:80px}
 .label{font-size:clamp(1.2rem,3vw,2rem);font-weight:900;text-align:center}
 .chips{display:flex;flex-wrap:wrap;gap:8px}
 .chips button{border:1px solid var(--line);background:var(--field);border-radius:999px;padding:8px 16px;font-weight:700}
+.chips button[aria-pressed="true"]{background:var(--blue);color:var(--blue-ink);border-color:var(--blue)}
 .note{font-size:.88rem;color:var(--soft)}
 :fullscreen .wrap{max-width:none;padding:24px}
 :fullscreen{background:var(--bg)}
@@ -111,6 +112,7 @@ const ACT=[
 ];
 /* 학생 활동: 누르면 그 도구로 바로 들어가는 QR(방 번호 포함). 학생이 마치면 결과가 아래 '학생 결과'로 들어옴 */
 const STU=[
+ ['live.html','📊 실시간 마인드맵 · 투표 (학생 답하기)','강사가 띄운 질문에 휴대폰으로 답하기'],
  ['#jaso','📝 자소서 만들기','8단계 질문 → AI 초안 · 완성본이 강사 화면으로'],
  ['color.html','🎨 퍼스널컬러 진단','셀카 + 색 천 드레이핑 → 진단서가 강사 화면으로'],
  ['interview.html','🎤 AI 모의면접','질문 → 피드백 → 꼬리질문 · 점수표가 강사 화면으로'],
@@ -136,7 +138,11 @@ function render(){
      '<span class="note">이 탭을 켜 두는 동안 방이 열려 있어요. 방 종료를 누르거나 이 탭을 닫으면 3분 안에 학생 화면도 "수업이 끝났어요"로 끊겨요.</span></div>'+
      '<div class="card"><h3>수업 활동</h3><div class="grid">'+ACT.map(a=>'<a class="g" href="'+a[0]+'" target="_blank" rel="noopener"><b>'+a[1]+'</b><span>'+a[2]+'</span></a>').join('')+'</div>'+
      '<p class="note">활동은 새 탭으로 열려요. 이 탭은 켜 두세요. 게임은 빔에 띄우고 <b>🖥 진행자 화면</b>으로 정답을 보며 진행하면 돼요.</p></div>'+
-     '<div class="card"><h3>학생 활동 (학생 휴대폰으로)</h3><p class="soft">누르면 <b>그 활동으로 바로 들어가는 QR</b>이 빔에 크게 떠요. 학생은 찍고 이름만 넣으면 바로 시작해요. 마친 결과는 아래 <b>학생 결과</b>에 모여요.</p>'+
+     '<div class="card"><h3>학생 활동 (학생 휴대폰으로)</h3>'+
+     '<p class="soft">처음 한 번만 위의 <b>학생 QR</b>로 방에 들어오게 하세요. 그다음부터는 아래 활동을 누르면 <b>들어와 있는 학생 화면이 자동으로 그 활동으로 넘어가요.</b> 마친 결과는 아래 <b>학생 결과</b>에 모여요.</p>'+
+     '<div class="chips" role="group" aria-label="누르면"><button data-mode="push" aria-pressed="'+(S.mode!=='qr')+'">📲 학생 화면 바로 바꾸기</button><button data-mode="qr" aria-pressed="'+(S.mode==='qr')+'">🔳 활동 QR 띄우기 (늦게 온 학생)</button>'+
+     '<button data-q="home" data-qn="🏠 첫 화면">🏠 학생 화면 첫 화면으로</button></div>'+
+     (S.goName?'<p class="note">지금 학생 화면: <b>'+esc(S.goName)+'</b></p>':'')+
      '<div class="grid">'+STU.map(a=>'<button class="g" data-q="'+a[0]+'" data-qn="'+esc(a[1])+'" style="text-align:left;font:inherit"><b>'+a[1]+'</b><span>'+a[2]+'</span></button>').join('')+'</div>'+
      '<h3 style="margin-top:8px">🧭 검사 하나만 바로 시키기</h3><div class="chips">'+TST.map(t=>'<button data-q="test.html?t='+t[0]+'" data-qn="🧭 '+t[1]+' 검사">'+t[1]+'</button>').join('')+'</div></div>'+works();
   }
@@ -181,12 +187,19 @@ async function resume(){ // 이 노트북에서 만든 방이 아직 살아 있�
   try{const d=await F.getDoc(F.doc(db,'rooms',pin));const r=d.exists()?d.data():null;
     if(r&&r.owner===me&&!r.closed&&r.exp.toMillis()>Date.now()){S.pin=pin;S.exp=r.exp.toMillis();lsSet('live-host',{pin});live()}}catch(e){}
 }
+/* 학생 화면 바꾸기: 방 문서 go={to,t}. 학생 room.js가 보고 그 활동으로 넘어감 */
+function push(to,name){
+  F.updateDoc(F.doc(db,'rooms',S.pin),{go:{to,t:F.serverTimestamp()}}).then(()=>{S.goName=name;render();flash('✔ 학생 화면을 「'+name+'」(으)로 바꿨어요')},
+    e=>flash('바꾸지 못했어요: '+msg(e),true));
+}
+function flash(t,bad){const d=document.createElement('div');d.textContent=t;d.style.cssText='position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:60;background:'+(bad?'#c8432f':'#2e8b4c')+';color:#fff;font-weight:700;padding:10px 18px;border-radius:999px;max-width:90vw;text-align:center';document.body.appendChild(d);setTimeout(()=>d.remove(),2600)}
 function qr(to,name){const o=document.getElementById('qrov'),u=to?(to.charAt(0)==='#'?SITE+'?r='+S.pin+'&go='+encodeURIComponent(to):SITE+to+(to.indexOf('?')<0?'?':'&')+'r='+S.pin):SITE+'?r='+S.pin,b=document.getElementById('qrbox');o.hidden=false;
   document.getElementById('qrH').textContent=to?name+' · 찍고 바로 시작해요':'📱 휴대폰 카메라로 찍고 들어오세요';
   document.getElementById('qrP').textContent='방 번호 '+S.pin;document.getElementById('qrU').textContent=u.replace('https://','');b.innerHTML='';
   if(window.QRCode)new QRCode(b,{text:u,width:600,height:600,correctLevel:QRCode.CorrectLevel.M});else b.textContent='QR을 불러오지 못했어요. 위 주소를 칠판에 적어 주세요.'}
-app.addEventListener('click',e=>{const t=e.target.closest('[data-a],[data-w],[data-q]');if(!t)return;
-  if(t.dataset.q){qr(t.dataset.q,t.dataset.qn);return}
+app.addEventListener('click',e=>{const t=e.target.closest('[data-a],[data-w],[data-q],[data-mode]');if(!t)return;
+  if(t.dataset.mode){S.mode=t.dataset.mode;render();return}
+  if(t.dataset.q){if(S.mode==='qr'&&t.dataset.q!=='home')qr(t.dataset.q,t.dataset.qn);else push(t.dataset.q,t.dataset.qn);return}
   if(t.dataset.w){openW[t.dataset.w]=!openW[t.dataset.w];render();return}
   const a=t.dataset.a;
   if(a==='make')make();else if(a==='qr')qr();else if(a==='csv')csv();

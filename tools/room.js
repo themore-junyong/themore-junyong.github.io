@@ -52,11 +52,23 @@
     o.innerHTML='<div style="background:#fff;color:#222;border-radius:12px;padding:24px;max-width:420px;text-align:center;font-family:system-ui;display:flex;flex-direction:column;gap:12px"><b style="font-size:1.4rem">수업이 끝났어요 👋</b><span>'+why+'</span><span style="color:#666;font-size:.9rem">내가 쓴 내용은 이 휴대폰에 그대로 남아 있어요.</span><a href="./" style="background:#4e6bf1;color:#fff;padding:12px;border-radius:6px;text-decoration:none;font-weight:700">처음 화면으로</a></div>';
     document.body.appendChild(o);
   }
-  function watch(){
+  /* 강사가 '학생 화면 바꾸기'를 누르면 방 문서 go={to,t}가 바뀜 → 들어와 있는 학생 화면이 그 활동으로 넘어감(같은 지시는 한 번만) */
+  function here(){var f=location.pathname.split('/').pop()||'';if(f==='index.html')f='';
+    var q=location.search.replace(/([?&])(r|need|go)=[^&]*/g,'$1').replace(/[?&]+$/,'').replace(/\?&+/,'?');
+    return f===''?(location.hash==='#jaso'?'#jaso':'home'):f+q}
+  function follow(r,room){
+    var g=room&&room.go;if(!g||!g.to||!g.t||!g.t.toMillis)return;
+    var key=r.pin+':'+g.t.toMillis(),seen='';try{seen=localStorage.getItem('tm-room-go')||''}catch(e){}
+    if(seen===key)return;try{localStorage.setItem('tm-room-go',key)}catch(e){}
+    if(g.to===here())return;
+    location.href=g.to==='home'?'./':g.to.charAt(0)==='#'?'./'+g.to:g.to+(g.to.indexOf('?')<0?'?':'&')+'r='+r.pin;
+  }
+  function watch(onlyFollow){
     var r=get();if(!r)return;
     boot().then(function(b){
       var last=null;
-      b.F.onSnapshot(b.F.doc(b.db,'rooms',r.pin),function(d){last=d.exists()?d.data():null;var w=alive(last);if(w)ended(w)},function(){});
+      b.F.onSnapshot(b.F.doc(b.db,'rooms',r.pin),function(d){last=d.exists()?d.data():null;var w=alive(last);if(w){if(!onlyFollow)ended(w);return}follow(r,last)},function(){});
+      if(onlyFollow)return;
       setInterval(function(){if(!get())return;var w=alive(last);if(last!==null&&w)ended(w)},30e3);
     }).catch(function(){});
   }
