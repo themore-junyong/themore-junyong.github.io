@@ -131,6 +131,10 @@ const msg=e=>(e&&e.message&&!/^(internal|INTERNAL)$/.test(e.message))?(/permissi
 
 /* ================= 학생 ================= */
 const ST={pin:(P.get('r')||'').replace(/\D/g,'').slice(0,4),nick:lsGet('live-nick',''),room:null,mine:{},note:'',joined:false,unsub:null,draft:''};
+function stuKeep(){ // 다시 그려도 입력 중이던 칸·커서 그대로
+  const a=document.activeElement,id=a&&a.id,st=a&&a.selectionStart,en=a&&a.selectionEnd;stuRender();
+  if(id){const b=document.getElementById(id);if(b&&b!==a){b.focus();try{b.setSelectionRange(st,en)}catch(e){}}}
+}
 function stuRender(){
   let h='<div class="top"><div class="brand"><small>위듀케이션 · 실시간 마인드맵</small></div></div>';
   if(!ST.joined){
@@ -182,7 +186,10 @@ async function join(){
     const ref=F.doc(db,'rooms',ST.pin),s=await F.getDoc(ref);
     if(!s.exists()||s.data().exp.toMillis()<Date.now()){ST.note='없는 방 번호예요. 다시 확인해 주세요';return stuRender()}
     ST.joined=true;ST.mine=lsGet('live-mine-'+ST.pin,{});
-    ST.unsub=F.onSnapshot(ref,d=>{const prev=ST.room&&ST.room.q&&ST.room.q.id;ST.room=d.exists()?d.data():null;if(ST.room&&ST.room.q&&ST.room.q.id!==prev){ST.draft='';ST.note='';ST.br=null}stuRender()},()=>{ST.room=null;stuRender()});
+    let seen=null; // 방 문서엔 hb(강사 1분 신호)·go·g도 바뀜 → 질문(q)·종료가 바뀔 때만 다시 그림 (쓰던 글자·커서 유지)
+    ST.unsub=F.onSnapshot(ref,d=>{const prev=ST.room&&ST.room.q&&ST.room.q.id;ST.room=d.exists()?d.data():null;
+      const key=ST.room?JSON.stringify([ST.room.q||null,!!ST.room.closed]):'x';if(key===seen)return;seen=key;
+      if(ST.room&&ST.room.q&&ST.room.q.id!==prev){ST.draft='';ST.note='';ST.br=null}stuKeep()},()=>{ST.room=null;stuRender()});
   }catch(e){ST.note=msg(e);stuRender()}
 }
 function mapAdd(){
