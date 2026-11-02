@@ -139,7 +139,7 @@ function render(){
      '<div class="card"><h3>수업 활동</h3><div class="grid">'+ACT.map(a=>'<a class="g" href="'+a[0]+'" target="_blank" rel="noopener"'+' data-live="'+a[0]+'" data-qn="'+esc(a[1])+'"'+'><b>'+a[1]+'</b><span>'+a[2]+'</span></a>').join('')+'</div>'+
      '<p class="note">활동은 새 탭으로 열려요. 이 탭은 켜 두세요. 게임은 빔에 띄우고 <b>🖥 진행자 화면</b>으로 정답을 보며 진행하면 돼요.</p></div>'+
      '<div class="card"><h3>학생 활동 (학생 휴대폰으로)</h3>'+
-     '<p class="soft">처음 한 번만 위의 <b>학생 QR</b>로 방에 들어오게 하세요. 그다음부터는 아래 활동을 누르면 <b>들어와 있는 학생 화면이 자동으로 그 활동으로 넘어가요.</b> 마친 결과는 아래 <b>학생 결과</b>에 모여요.</p>'+
+     '<p class="soft">처음 한 번만 위의 <b>학생 QR</b>로 방에 들어오게 하세요. 그다음부터는 아래 활동을 누르면 <b>들어와 있는 학생 화면이 자동으로 그 활동으로 넘어가요.</b> 선생님 노트북에도 <b>같은 화면이 새 탭(미리보기)</b>으로 열려서 빔에 띄우고 설명할 수 있어요. 마친 결과는 아래 <b>학생 결과</b>에 모여요.</p>'+
      '<div class="chips" role="group" aria-label="누르면"><button data-mode="push" aria-pressed="'+(S.mode!=='qr')+'">📲 학생 화면 바로 바꾸기</button><button data-mode="qr" aria-pressed="'+(S.mode==='qr')+'">🔳 활동 QR 띄우기 (늦게 온 학생)</button>'+
      '<button data-q="home" data-qn="🏠 첫 화면">🏠 학생 화면 첫 화면으로</button></div>'+
      (S.goName?'<p class="note">지금 학생 화면: <b>'+esc(S.goName)+'</b></p>':'')+
@@ -189,6 +189,12 @@ async function resume(){ // 이 노트북에서 만든 방이 아직 살아 있�
     if(r&&r.owner===me&&!r.closed&&r.exp.toMillis()>Date.now()){S.pin=pin;S.exp=r.exp.toMillis();lsSet('live-host',{pin});live()}}catch(e){}
 }
 /* 학생 화면 바꾸기: 방 문서 go={to,t}. 학생 room.js가 보고 그 활동으로 넘어감 */
+/* 강사도 학생이 보는 화면을 같이 봄: 탭 하나('tm-view')를 계속 재사용. 미리보기라 결과는 안 보냄 */
+function view(to){
+  if(to==='home')return;
+  const u=to==='live.html'?'live.html?host':to==='#jaso'?'index.html?teach=1#jaso':to+(to.indexOf('?')<0?'?':'&')+'teach=1';
+  const w=window.open(u,'tm-view');if(w)try{w.focus()}catch(e){}
+}
 function push(to,name){
   F.updateDoc(F.doc(db,'rooms',S.pin),{go:{to,t:F.serverTimestamp()}}).then(()=>{S.goName=name;render();flash('✔ 학생 화면을 「'+name+'」(으)로 바꿨어요')},
     e=>flash('바꾸지 못했어요: '+msg(e),true));
@@ -203,7 +209,7 @@ app.addEventListener('click',e=>{const t=e.target.closest('[data-a],[data-w],[da
   if(t.dataset.pick){S.pick=!S.pick;render();if(S.pick)document.getElementById('pick').scrollIntoView({behavior:'smooth',block:'center'});return}
   if(t.dataset.live){ // 새 탭(진행 화면)은 링크 그대로 열리고, 학생 화면도 따라감: 마인드맵은 답하기 화면, 게임·교실 도구는 '앞 화면을 보세요'
     const l=t.dataset.live;push(l==='live.html?host'?'live.html':'index.html?v='+l.replace('.html',''),t.dataset.qn);return}
-  if(t.dataset.q){if(S.mode==='qr'&&t.dataset.q!=='home')qr(t.dataset.q,t.dataset.qn);else{if(t.dataset.q.indexOf('test.html')===0)S.pick=false;push(t.dataset.q,t.dataset.qn)}return}
+  if(t.dataset.q){if(S.mode==='qr'&&t.dataset.q!=='home')qr(t.dataset.q,t.dataset.qn);else{if(t.dataset.q.indexOf('test.html')===0)S.pick=false;push(t.dataset.q,t.dataset.qn);view(t.dataset.q)}return}
   if(t.dataset.w){openW[t.dataset.w]=!openW[t.dataset.w];render();return}
   const a=t.dataset.a;
   if(a==='make')make();else if(a==='qr')qr();else if(a==='csv')csv();
