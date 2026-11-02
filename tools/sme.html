@@ -46,6 +46,13 @@ button{cursor:pointer}
 .ans{border-left:4px solid var(--ok);padding:10px 12px;background:var(--field)}
 .ans.bad{border-color:var(--bad)}
 .big{font-size:2.4rem;font-weight:900;text-align:center}
+.ox button.mine{border-color:var(--blue);background:var(--blue-soft)}
+.wait{background:var(--blue-soft);border-radius:6px;padding:12px 14px;font-weight:700;text-align:center}
+.tbar{display:grid;grid-template-columns:5.5em 1fr 4.5em;gap:8px;align-items:center;font-size:.92rem}
+.tbar .tr{display:flex;height:26px;border-radius:4px;overflow:hidden;background:var(--field);border:1px solid var(--line)}
+.tbar .tr i{display:flex;align-items:center;justify-content:center;color:#fff;font-style:normal;font-weight:700;font-size:.85rem;white-space:nowrap}
+.tbar .num{text-align:right;font-weight:700}
+.st{width:100%;border-collapse:collapse;font-size:.92rem}.st td,.st th{border-bottom:1px solid var(--line);padding:6px 4px;text-align:left}
 .chk{display:flex;flex-direction:column;gap:12px}
 .ci{display:flex;flex-direction:column;gap:6px;padding-bottom:12px;border-bottom:1px solid var(--line)}
 .ci:last-child{border-bottom:0}
@@ -103,11 +110,59 @@ try{S=Object.assign(S,JSON.parse(localStorage.getItem('sme-v1')||'{}'))}catch(e)
 function save(){try{localStorage.setItem('sme-v1',JSON.stringify(S))}catch(e){}}
 /* 탭을 주소 #t0·#t1·#t2로: 강사 미리보기에서 탭을 바꾸면 학생 화면도 같은 탭으로 따라감(room.js) */
 var HT=/^#t([0-2])$/.exec(location.hash);if(HT)S.tab=+HT[1];
-window.addEventListener('hashchange',function(){var m=/^#t([0-2])$/.exec(location.hash);if(m&&+m[1]!==S.tab){S.tab=+m[1];save();render();window.scrollTo(0,0)}});
+window.addEventListener('hashchange',function(){var m=/^#t([0-2])$/.exec(location.hash);if(m&&+m[1]!==S.tab){S.tab=+m[1];save();render();window.scrollTo(0,0)}else if(qh())render()});
+/* 수업 방 진행: 강사 미리보기가 문제를 넘기면 주소가 #q3(풀기) · #q3-a(정답 공개) · #qend(결과) → 학생 폰도 같은 문제로.
+   학생 답은 work/{uid}_sme-ox 하나에 조용히 모아 보내고, 강사 미리보기 화면에 실시간 집계 */
+var ROOM=window.TM_ROOM&&!TM_ROOM.teach&&TM_ROOM.get?TM_ROOM.get():null, TEACH=!!(window.TM_ROOM&&TM_ROOM.teach&&TM_ROOM.teachWork);
+var REV=false, CTL=false, SW=[], STM=[];
+function qh(){var m=/^#q(\d+|end)(-a)?$/.exec(location.hash);if(!m)return false;S.tab=0;S.i=m[1]==='end'?OX.length:Math.min(+m[1],OX.length);REV=!!m[2];CTL=true;return true}
+if(ROOM){if(S.room!==ROOM.pin){S.room=ROOM.pin;S.picks=[];S.i=0;save()}}
+qh();
+function qgo(i,rev){S.i=i;REV=!!rev;var h='q'+(i>=OX.length?'end':i)+(rev?'-a':'');if(location.hash!=='#'+h)location.hash=h;else render();window.scrollTo(0,0)}
+function push(){if(!ROOM||!window.TM_ROOM)return;var ok=S.picks.filter(function(p,i){return p===OX[i].a}).length,n=S.picks.filter(function(p){return p!=null}).length;
+  var o={};S.picks.forEach(function(p,i){if(p!=null)o[i]=p?1:0});TM_ROOM.send('sme-ox','중소기업 오해 깨기 '+ok+'/'+n,JSON.stringify({p:o}),true)}
+if(TEACH)TM_ROOM.teachWork(['sme-ox'],function(A,T){if(T){STM=T}else SW=A.map(function(x){var b={};try{b=JSON.parse(x.body)}catch(e){}return {nick:x.nick,team:x.team||'',p:b.p||{}}});if(S.tab===0)render()});
+function bar(lab,parts,num){return '<div class="tbar"><span>'+esc(lab)+'</span><span class="tr">'+parts+'</span><span class="num">'+num+'</span></div>'}
+function seg(n,tot,c,l){return n?'<i style="width:'+(n/tot*100)+'%;background:'+c+'">'+l+'</i>':''}
+function teams(){var t=STM.slice();SW.forEach(function(x){if(x.team&&t.indexOf(x.team)<0)t.push(x.team)});return t}
+/* 강사 미리보기 화면: 문제 + 실시간 O/X 집계 + 넘기기 */
+function tQuiz(){
+  if(S.i>=OX.length){
+    var h='<div class="card"><h2 style="margin:0">📊 반 결과</h2><p class="soft">응답한 학생 '+SW.length+'명</p><table class="st"><tr><th>문제</th><th>정답</th><th>정답률</th></tr>';
+    OX.forEach(function(q,i){var L=SW.filter(function(x){return x.p[i]!=null}),ok=L.filter(function(x){return !!x.p[i]===q.a}).length;h+='<tr><td>Q'+(i+1)+'. '+esc(q.q)+'</td><td>'+(q.a?'⭕':'❌')+'</td><td><b>'+(L.length?Math.round(ok/L.length*100)+'%':'-')+'</b> <span class="soft">('+ok+'/'+L.length+')</span></td></tr>'});
+    h+='</table>';var T=teams();
+    if(T.length){h+='<h3 style="margin:8px 0 0">조별 정답률</h3>';T.forEach(function(t){var M=SW.filter(function(x){return x.team===t}),a=0,o=0;M.forEach(function(x){Object.keys(x.p).forEach(function(k){a++;if(!!x.p[k]===OX[k].a)o++})});
+      h+=bar(t,a?seg(o,a,'#2e8b4c','⭕ '+o)+seg(a-o,a,'#9aa0ab','✕ '+(a-o)):'',a?Math.round(o/a*100)+'%':'-')})}
+    var top=SW.map(function(x){var o=0;Object.keys(x.p).forEach(function(k){if(!!x.p[k]===OX[k].a)o++});return {n:x.nick,t:x.team,o:o}}).sort(function(a,b){return b.o-a.o}).slice(0,5);
+    if(top.length)h+='<h3 style="margin:8px 0 0">🏅 많이 맞힌 학생</h3><p>'+top.map(function(x){return '<b>'+esc(x.n)+'</b>'+(x.t?'('+esc(x.t)+')':'')+' '+x.o+'개'}).join(' · ')+'</p>';
+    return h+'<div class="why"><b>오늘의 한 줄:</b> 중소기업은 "작고 나쁜 회사"가 아니라 <b>우리나라 일자리의 대부분</b>이에요. 중요한 건 <b>좋은 회사를 고르는 눈</b>이에요.</div><div class="btns" style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" data-a="tprev">← 마지막 문제</button><button class="btn" data-a="t0">처음부터 다시</button><button class="btn pri" data-tab="1">좋은 회사 고르는 법 →</button></div></div>';
+  }
+  var q=OX[S.i],L=SW.filter(function(x){return x.p[S.i]!=null}),nO=L.filter(function(x){return x.p[S.i]==1}).length,nX=L.length-nO;
+  var h='<div class="card"><span class="qno">Q'+(S.i+1)+' / '+OX.length+' · 학생 폰에 같은 문제가 떠요</span><p class="q">'+esc(q.q)+'</p>'+
+    '<p class="wait">📱 응답 <b>'+L.length+'</b>명 · ⭕ '+nO+' · ❌ '+nX+'</p>'+
+    bar('전체',L.length?seg(nO,L.length,'#2e8b4c','⭕ '+nO)+seg(nX,L.length,'#c8432f','❌ '+nX):'',L.length+'명');
+  teams().forEach(function(t){var M=L.filter(function(x){return x.team===t}),o=M.filter(function(x){return x.p[S.i]==1}).length;h+=bar(t,M.length?seg(o,M.length,'#2e8b4c','⭕ '+o)+seg(M.length-o,M.length,'#c8432f','❌ '+(M.length-o)):'',M.length+'명')});
+  if(REV){var ok=q.a?nO:nX;h+='<div class="ans"><b>정답: '+(q.a?'⭕':'❌')+'</b> · 맞힌 학생 '+ok+'명'+(L.length?' ('+Math.round(ok/L.length*100)+'%)':'')+'<br>'+q.e+'</div>'}
+  return h+'<div style="display:flex;gap:8px;flex-wrap:wrap">'+(S.i?'<button class="btn" data-a="tprev">← 이전</button>':'')+'<button class="btn" data-a="trev">'+(REV?'정답 가리기':'정답 공개')+'</button><button class="btn pri" data-a="tnext">'+(S.i===OX.length-1?'결과 보기 →':'다음 문제 →')+'</button></div>'+
+   '<p class="note">학생 폰은 선생님이 넘길 때 같이 넘어가요. 정답을 공개하면 학생 답은 마감돼요.</p></div>';
+}
+/* 학생 폰: 선생님이 넘기는 대로 */
+function sQuiz(){
+  if(S.i>=OX.length){var ok=S.picks.filter(function(p,i){return p===OX[i].a}).length;
+    return '<div class="card"><p class="soft" style="text-align:center">오해 깨기 결과</p><div class="big">'+ok+' / '+OX.length+'</div><div class="why"><b>오늘의 한 줄:</b> 중소기업은 "작고 나쁜 회사"가 아니라 <b>우리나라 일자리의 대부분</b>이에요. 중요한 건 <b>좋은 회사를 고르는 눈</b>이에요.</div><p class="wait">앞 화면에서 반 결과를 함께 봐요</p></div>'}
+  var q=OX[S.i],p=S.picks[S.i],done=p!=null;
+  var h='<div class="card"><span class="qno">Q'+(S.i+1)+' / '+OX.length+' · O일까 X일까?</span><p class="q">'+esc(q.q)+'</p><div class="ox">'+
+    [true,false].map(function(v){var c=REV?(v===q.a?'right':(v===p?'wrong':'')):(v===p?'mine':'');return '<button data-sox="'+v+'" class="'+c+'"'+(REV?' disabled':'')+'>'+(v?'⭕':'❌')+'</button>'}).join('')+'</div>';
+  if(REV)h+='<div class="ans'+(p===q.a?'':' bad')+'"><b>'+(!done?'정답은 '+(q.a?'⭕':'❌')+'!':p===q.a?'정답!':'아쉬워요!')+'</b> '+q.e+'</div><p class="wait">선생님이 다음 문제로 넘겨 줄 거예요</p>';
+  else h+='<p class="wait">'+(done?'✔ 보냈어요! 바꾸려면 다른 쪽을 눌러요. 선생님이 정답을 공개할 때까지 기다려요':'⭕ 또는 ❌를 눌러 골라요')+'</p>';
+  return h+'</div>';
+}
 var app=document.getElementById('app');
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
 
 function quiz(){
+  if(TEACH&&CTL)return tQuiz();
+  if(ROOM&&CTL)return sQuiz();
   if(S.i>=OX.length){
     var ok=S.picks.filter(function(p,i){return p===OX[i].a}).length;
     return '<div class="card"><p class="soft" style="text-align:center">오해 깨기 결과</p><div class="big">'+ok+' / '+OX.length+'</div><p style="text-align:center">'+(ok>=9?'🏅 중소기업 박사!':ok>=6?'👍 꽤 잘 알고 있어요':'🌱 오늘 새로 알게 된 게 많네요')+'</p>'+
@@ -152,14 +207,21 @@ function render(){
 }
 app.addEventListener('click',function(e){
   var b=e.target.closest('button');if(!b)return;var d=b.dataset;
-  if(d.tab!=null){S.tab=+d.tab;save();if(location.hash!=='#t'+S.tab)location.hash='t'+S.tab;render();window.scrollTo(0,0);return}
-  if(d.ox!=null){S.picks[S.i]=d.ox==='true';save();render();return}
+  if(d.tab!=null){S.tab=+d.tab;save();if(TEACH&&S.tab===0){CTL=true;qgo(S.i>=OX.length?0:S.i,false);return}if(location.hash!=='#t'+S.tab)location.hash='t'+S.tab;render();window.scrollTo(0,0);return}
+  if(d.sox!=null){if(REV)return;S.picks[S.i]=d.sox==='true';save();push();render();return}
+  if(d.a==='tnext'){qgo(S.i+1,false);return}
+  if(d.a==='tprev'){qgo(Math.max(0,Math.min(S.i,OX.length)-1),false);return}
+  if(d.a==='trev'){qgo(S.i,!REV);return}
+  if(d.a==='t0'){qgo(0,false);return}
+  if(d.ox!=null){S.picks[S.i]=d.ox==='true';save();push();render();return}
   if(d.a==='nx'){S.i++;save();render();window.scrollTo(0,0);return}
   if(d.a==='re'){S.i=0;S.picks=[];save();render();return}
   if(d.ck!=null){S.ck[d.ck]=+d.v;save();var y=window.scrollY;render();window.scrollTo(0,y);return}
   if(d.a==='ckre'){S.ck={};S.co='';save();render();window.scrollTo(0,0)}
 });
 app.addEventListener('input',function(e){if(e.target.id==='co'){S.co=e.target.value;save()}});
+if(TEACH&&S.tab===0&&!CTL){var hp='';try{hp=(JSON.parse(localStorage.getItem('live-host')||'null')||{}).pin||''}catch(e){}if(S.hroom!==hp){S.hroom=hp;S.i=0;save()}
+  CTL=true;S.i=Math.min(S.i,OX.length-1);location.hash='q'+S.i}
 render();
 })();
 </script>
