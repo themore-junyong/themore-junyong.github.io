@@ -41,13 +41,13 @@
     if(pin.length!==4)return Promise.reject(new Error('방 번호 4자리를 넣어 주세요'));
     if(!nick)return Promise.reject(new Error('이름(또는 번호)을 넣어 주세요'));
     return info(pin).then(function(x){if(x.bad)throw new Error(x.bad);if(x.teams.length&&x.teams.indexOf(team)<0)throw new Error('우리 조를 골라 주세요');
-      var r={pin:pin,nick:nick,t:Date.now()};if(team)r.team=team;if(x.ak)r.ak=x.ak;put(r);useCode(r.ak);return r});
+      var r={pin:pin,nick:nick,t:Date.now()};if(team)r.team=team;if(x.ak)r.ak=x.ak;put(r);useCode(r.ak);hello();return r});
   }
   /* AI 초대코드: 강사가 방을 만들 때 쓴 코드(방 문서 ak)를 학생 휴대폰 tm-code에 넣어 둠 → 자소서·꼬꼬무·면접·AI 도구에서 코드 입력 칸이 안 뜸 */
   function useCode(ak){if(!ak)return false;var c=null;try{c=JSON.parse(localStorage.getItem('tm-code')||'null')}catch(e){}
     if(c&&c.code===ak&&c.ok)return false;try{localStorage.setItem('tm-code',JSON.stringify({code:ak,name:(c&&c.code===ak&&c.name)||'',ok:1,room:1}))}catch(e){}return true}
   (function(){var r=get();if(r&&r.ak&&!TEACH)useCode(r.ak)})();
-  function setTeam(team){var r=get();if(!r)return;if(team)r.team=String(team).slice(0,12);else delete r.team;put(r);var a=document.getElementById('tmRoomBadge');if(a)a.textContent=label(r)}
+  function setTeam(team){var r=get();if(!r)return;if(team)r.team=String(team).slice(0,12);else delete r.team;put(r);hello();var a=document.getElementById('tmRoomBadge');if(a)a.textContent=label(r)}
   function label(r){return '🏠 방 '+r.pin+' · '+(r.team?r.team+' · ':'')+r.nick}
   function toast(t,bad){var d=document.createElement('div');d.textContent=t;
     d.style.cssText='position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:90;background:'+(bad?'#c8432f':'#2e8b4c')+';color:#fff;font:700 15px system-ui;padding:10px 18px;border-radius:999px;box-shadow:0 4px 14px rgba(0,0,0,.2);max-width:90vw;text-align:center';
@@ -65,6 +65,10 @@
       return b.F.setDoc(b.F.doc(b.db,'rooms',r.pin,'ans',qid+'_'+b.uid),{q:String(qid),v:String(v).slice(0,80),nick:r.nick,team:r.team||'',t:b.F.serverTimestamp()});
     }).then(function(){return true},function(){toast('보내지 못했어요 (마감됐을 수 있어요)',true);return false});
   }
+  /* 접속 명단: 학생마다 work/{uid}_join 1개(조·이름). 강사 화면·교실 도구가 조별 명단으로 씀 */
+  function hello(){var r=get();if(!r||TEACH)return;try{if(sessionStorage.getItem('tm-hello')===r.pin+'|'+(r.team||'')+'|'+r.nick)return}catch(e){}
+    boot().then(function(b){return b.F.setDoc(b.F.doc(b.db,'rooms',r.pin,'work',b.uid+'_join'),{tool:'join',nick:r.nick,team:r.team||'',title:'',body:'',t:b.F.serverTimestamp()})})
+      .then(function(){try{sessionStorage.setItem('tm-hello',r.pin+'|'+(r.team||'')+'|'+r.nick)}catch(e){}},function(){})}
   function ended(why){
     put(null);
     var o=document.createElement('div');
@@ -87,7 +91,7 @@
   function codeSync(room){var r=get(),ak=room&&typeof room.ak==='string'?room.ak:'';if(!r||!ak)return;
     if(r.ak!==ak){r.ak=ak;put(r)}if(useCode(ak)&&/(intro|interview|ai)\.html$/.test(location.pathname))location.reload()}
   function watch(onlyFollow){
-    var r=get();if(!r||TEACH)return;
+    var r=get();if(!r||TEACH)return;hello();
     boot().then(function(b){
       var last=null;
       b.F.onSnapshot(b.F.doc(b.db,'rooms',r.pin),function(d){last=d.exists()?d.data():null;var w=alive(last);if(w){if(!onlyFollow)ended(w);return}codeSync(last);follow(r,last)},function(){});
