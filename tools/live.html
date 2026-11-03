@@ -110,6 +110,7 @@ const V='10.12.2', G=`https://www.gstatic.com/firebasejs/${V}`;
 const app=document.getElementById('app');
 const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const COL=['var(--c1)','var(--c2)','var(--c3)','var(--c4)','var(--c5)','var(--c6)'];
+const WORD_ORDER={}; /* 단어 구름 자리 고정용: 질문 id → {단어: 처음 나온 순번} */
 const TYPES={poll:'투표',quiz:'퀴즈',word:'단어 구름',map:'마인드맵',text:'한 줄 답변'};
 const MC=['#4e6bf1','#f08a24','#2e9e6b','#d6457a','#8a5cd6','#2aa3b8','#b8860b','#e0533d'];
 // 마인드맵 답 v = "가지번호:단어" 줄바꿈으로 여러 개 (80자 안)
@@ -270,7 +271,7 @@ function hostRender(){
   if(H.view==='rank')h+=rankHtml();
   else if(H.view==='edit')h+=editHtml();
   else if(!q)h+='<p class="qtext">휴대폰으로 QR을 찍고 들어오세요 📱</p><p class="count">오른쪽 목록에서 질문을 골라 "띄우기"를 누르면 시작돼요.</p>';
-  else h+='<span class="soft">'+TYPES[q.type]+'</span><p class="qtext">'+esc(q.text)+'</p><p class="count">응답 <b>'+H.ans.length+'</b>명 · '+(live&&live.open?'🟢 받는 중':'⏸ 마감')+'</p>'+resultHtml(q,live);
+  else h+='<span class="soft">'+TYPES[q.type]+'</span><p class="qtext">'+esc(q.text)+'</p><div id="res">'+resInner(q,live)+'</div>';
   h+='</div><div style="display:flex;flex-direction:column;gap:16px"><div class="card join"><span class="soft">방 번호</span><div class="num">'+H.pin+'</div><div id="qr"></div><span class="soft" style="font-size:.85rem;word-break:break-all">'+esc(url.replace(/^https?:\/\//,''))+'</span></div>';
   h+='<div class="card"><h3>수업 반응</h3><div id="rxbox">'+rxHtml()+'</div><button class="btn sm" data-a="rx0" style="align-self:flex-start">0으로</button></div><div class="card"><div class="top"><h3>질문 목록</h3><button class="btn sm" data-a="new">+ 추가</button></div>'+'<div class="row" style="gap:6px;flex-wrap:wrap;align-items:center"><label for="setsel" class="soft" style="font-size:.85rem">묶음</label><select id="setsel" style="flex:1;min-width:8em">'+H.sets.map((s,i)=>'<option value="'+i+'"'+(i===H.si?' selected':'')+'>'+esc(s.n)+' ('+s.qs.length+')</option>').join('')+'</select><button class="btn sm" data-a="snew">+ 새 묶음</button><button class="btn sm" data-a="sren">이름</button><button class="btn sm" data-a="sdel">삭제</button></div>'+'<span class="note" style="font-size:.8rem">'+(H.my?'☁️ 내 수업함에 저장돼요 · 같은 초대코드면 다른 컴퓨터에서도 그대로':'💻 이 컴퓨터에만 저장돼요 · 초대코드로 방을 만들면 내 수업함에 저장돼요')+'</span>'+'<div class="qlist">'+H.qs.map((x,i)=>'<div class="'+(i===H.cur?'on':'')+'"><span><small>'+(i+1)+'. '+TYPES[x.type]+'</small><br>'+esc(x.text)+'</span><span class="row" style="gap:4px"><span style="display:flex;flex-direction:column;gap:2px"><button class="btn sm mv" data-up="'+i+'" aria-label="위로"'+(i?'':' disabled')+'>▲</button><button class="btn sm mv" data-dn="'+i+'" aria-label="아래로"'+(i<H.qs.length-1?'':' disabled')+'>▼</button></span><button class="btn sm" data-show="'+i+'">띄우기</button><button class="btn sm" data-ed="'+i+'">✎</button></span></div>').join('')+(H.qs.length?'':'<p class="note">이 묶음엔 아직 질문이 없어요. + 추가를 눌러요.</p>')+'</div></div></div></div>';
   if(q&&H.view==='q'){
@@ -284,6 +285,9 @@ function hostRender(){
   app.innerHTML=h;
   const qr=document.getElementById('qr');if(qr&&window.QRCode)new QRCode(qr,{text:url,width:400,height:400,correctLevel:QRCode.CorrectLevel.M});
 }
+function resInner(q,live){return '<p class="count">응답 <b>'+H.ans.length+'</b>명 · '+(live&&live.open?'🟢 받는 중':'⏸ 마감')+'</p>'+resultHtml(q,live)}
+/* 답이 들어올 때는 결과 칸만 다시 그림 (예전엔 화면 전체·QR까지 매번 새로 그려서 답이 많으면 화면이 계속 깜빡이고 흔들렸음) */
+function paintRes(){const el=document.getElementById('res'),q=H.cur>=0?H.qs[H.cur]:null;if(!el||!q){hostRender();return}el.innerHTML=resInner(q,H.room&&H.room.q)}
 function resultHtml(q,live){
   const A=H.ans;
   if(q.type==='poll'||q.type==='quiz'){
@@ -296,7 +300,9 @@ function resultHtml(q,live){
     const c={};A.forEach(a=>String(a.v).split(/[,，、\n]/).map(w=>w.trim().slice(0,15)).filter(Boolean).slice(0,3).forEach(w=>{if(!H.hide[w])c[w]=(c[w]||0)+1}));
     const ws=Object.entries(c).sort((a,b)=>b[1]-a[1]).slice(0,60),mx=ws.length?ws[0][1]:1;
     if(!ws.length)return '<div class="cloud"><span class="soft" style="font-weight:400">답을 기다리는 중…</span></div>';
-    return '<div class="cloud">'+ws.sort(()=>Math.random()-.5).map(([w,k],i)=>'<span data-hw="'+esc(w)+'" title="눌러서 숨기기" style="cursor:pointer;font-size:'+(1+k/mx*2.8).toFixed(2)+'rem;color:'+COL[i%6]+'">'+esc(w)+'</span>').join('')+'</div><p class="count">부적절한 단어는 눌러서 숨길 수 있어요.</p>';
+    /* 자리 고정: 예전엔 그릴 때마다 무작위로 섞어서 답이 들어올 때마다 전체가 뒤섞였음 → 처음 나온 순서대로 자리·색 고정, 새 단어는 뒤에 붙음 */
+    const O=WORD_ORDER[q.id]||(WORD_ORDER[q.id]={});ws.forEach(([w])=>{if(!(w in O))O[w]=Object.keys(O).length});
+    return '<div class="cloud">'+ws.slice().sort((a,b)=>O[a[0]]-O[b[0]]).map(([w,k])=>'<span data-hw="'+esc(w)+'" title="눌러서 숨기기" style="cursor:pointer;font-size:'+(1+k/mx*2.8).toFixed(2)+'rem;color:'+COL[O[w]%6]+'">'+esc(w)+'</span>').join('')+'</div><p class="count">부적절한 단어는 눌러서 숨길 수 있어요.</p>';
   }
   return '<div class="texts">'+A.filter(a=>!H.hide[a.id]).map(a=>'<div>'+esc(a.v)+'<button data-ht="'+esc(a.id)+'" title="숨기기">✕</button></div>').join('')+'</div>';
 }
@@ -383,7 +389,7 @@ function watchAns(){
   const q=H.room&&H.room.q;if(!q||q.id===ansQ)return;
   if(ansUnsub)ansUnsub();ansQ=q.id;H.ans=[];H.hide={};
   ansUnsub=F.onSnapshot(F.query(F.collection(db,'rooms',H.pin,'ans'),F.where('q','==',q.id)),s=>{
-    H.ans=s.docs.map(d=>Object.assign({id:d.id},d.data()));if(H.view==='q')hostRender();
+    H.ans=s.docs.map(d=>Object.assign({id:d.id},d.data()));if(H.view==='q')paintRes();
   },e=>{H.note=msg(e);hostRender()});
 }
 // 강사 화면이 켜져 있는 동안 1분마다 hb(살아 있음)를 찍음 → 학생 화면이 수업 중인지 앎
