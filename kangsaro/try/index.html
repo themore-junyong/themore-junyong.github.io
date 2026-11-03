@@ -535,9 +535,12 @@ function entries(iid){const t=todayIso(),me=inst(iid),out=[];
     const st=e.st==='confirmed'&&isOver(e.dates,e.time)?'done':e.st;
     for(const d of e.dates)out.push({kind:'ev',ref:e,d,st,title:e.title,org:e.org,time:e.time,fee:+e.fee||0,trv:travel(e,me)})}
   for(const a of S.apps){if(a.instId!==iid||a.status==='미선정'||a.status==='취소')continue;const j=job(a.jobId);if(!j)continue;
-    const P=a.status==='확정'&&isOp(j)?payOf(j,iid,a):null;if(P&&!P.days.length)continue; // 운영에서 아직 칸을 안 받았으면 달력에 안 뜸
-    const ds=P?P.dates:a.status==='확정'?appDays(j,a):j.dates,st=a.status==='지원'?'applied':a.paidAt||a.selfPaid?'paid':isOver(ds,j.time)?'done':'confirmed';
-    if(P)P.days.forEach((x,i)=>out.push({kind:'app',ref:a,job:j,d:x.d,st,title:`${j.region} ${j.school} ${j.title}${x.lab?' · '+x.lab:''}`,org:co(j.coId).name,time:x.time||j.time,fee:x.fee+(i?0:P.taxable-P.base),plus:i?0:P.plus,trv:travel(a,me)}));
+    const P=a.status==='확정'&&isOp(j)?payOf(j,iid,a):null;
+    // 확정된 강의는 절대 달력에서 숨기지 않음: 운영 시간표에 아직 내 칸이 없거나(다시 만드는 중 등) 시간표를 못 읽었으면 강의 날짜 전체에 '배정 확인 중'으로 표시
+    const pend=a.status==='확정'&&!!j.op&&(P?!P.days.length:!appDays(j,a).length);
+    const ds=pend?j.dates:P?P.dates:a.status==='확정'?appDays(j,a):j.dates,st=a.status==='지원'?'applied':a.paidAt||a.selfPaid?'paid':isOver(ds,j.time)?'done':'confirmed';
+    if(pend)for(const d of ds)out.push({kind:'app',ref:a,job:j,d,st,pend:true,title:`${j.region} ${j.school} ${j.title} · 시간표 배정 확인 중`,org:co(j.coId).name,time:j.time,fee:0,trv:travel(a,me)});
+    else if(P)P.days.forEach((x,i)=>out.push({kind:'app',ref:a,job:j,d:x.d,st,title:`${j.region} ${j.school} ${j.title}${x.lab?' · '+x.lab:''}`,org:co(j.coId).name,time:x.time||j.time,fee:x.fee+(i?0:P.taxable-P.base),plus:i?0:P.plus,trv:travel(a,me)}));
     else for(const d of ds)out.push({kind:'app',ref:a,job:j,d,st,title:`${j.region} ${j.school} ${j.title}`,org:co(j.coId).name,time:j.time,fee:+j.fee||0,trv:travel(a,me)})}
   return out.sort((x,y)=>x.d<y.d?-1:x.d>y.d?1:0)}
 const netOf=e=>tax(e.fee).net+(e.plus||0)-e.trv;
@@ -715,7 +718,7 @@ function entryCard(e,clash){const tx=tax(e.fee),t=todayIso(),left=Math.round((dt
   return `<div class="card" data-d="${e.d}" ${e.kind==='app'?`data-j="${j.id}"`:''}><div class="row">${chip(e.st)}${e.d>=t?`<span class="chip ${left<=1?'warn':'off'}">${left<=0?'오늘':'D-'+left}</span>`:''}${un?`<span class="chip warn">새 공지 ${un}</span>`:''}${miss.length?`<span class="chip warn">서류 ${miss.length}</span>`:''}${e.kind==='app'&&chatNew(j.id)&&chatCan(j)?'<span class="chip warn">새 대화</span>':''}</div><h3>${esc(e.title)}</h3>
   <span class="mu">${md(e.d)}(${dowOf(e.d)}) · ${esc(e.time||'시간 미정')} · ${esc(e.org)}</span>
   ${clash?'<div class="alert">같은 날 일정이 두 개예요. 시간과 거리를 확인하세요.</div>':''}
-  ${e.kind==='app'?noticeBox(j,iid)+chatBtn(j)+dayBox(e):''}
+  ${e.pend?'<div class="alert">업체 운영 시간표에 아직 내 칸이 없어요. 업체가 시간표에 넣으면 정확한 날짜·시간·강사료로 바뀌어요. 그때까지 강의 날짜 전체에 표시해 둘게요.</div>':''}${e.kind==='app'?noticeBox(j,iid)+chatBtn(j)+dayBox(e):''}
   ${a&&j.desc?`<details><summary>공고 내용 보기</summary><pre class="pf">${esc(j.desc)}</pre></details>`:''}
   ${a?`<div class="mu sm">낼 것: ${j.needs.map(n=>n==='프로필'?'프로필 ✓(자동)':docOf(a,n)?`${esc(n)} ✓${docOf(a,n).endsWith('(자동)')?'(자동)':''}`:`<b style="color:var(--r2)">${esc(n)} 빠짐</b>`).join(' · ')}</div>
     ${miss.map(n=>{const fm=(co(j.coId).forms||{})[n];return `${fm?`<div class="row"><span class="sm sp">${esc(n)}: 업체 양식이 있어요. 받아서 채운 뒤 올려 주세요.</span><button class="btn sm" data-act="getFile" data-p="users/${j.coId}/forms/${esc(n)}" data-nm="${esc(fm)}">양식 받기</button></div>`:''}<label class="f">${esc(n)} 올리기 <input type="file" data-act="doc" data-a="${a.id}" data-n="${esc(n)}"></label>`}).join('')}
@@ -970,7 +973,7 @@ function vCJobs(){if(ui.jobId&&job(ui.jobId))return vCJob(job(ui.jobId));const t
   const up=J.filter(j=>last(j.dates)>=t),past=J.filter(j=>last(j.dates)<t);
   const card=j=>{const s=jobStats(j);return `<button class="card" style="text-align:left;cursor:pointer" data-act="openJob" data-j="${j.id}"><div class="row">${jChip(j)}<h3 class="sp">${esc(j.region)} ${esc(j.school)} ${esc(j.title)}</h3>${jDelBtn(j)}</div>
     <span class="mu">${j.dates.map(d=>`${md(d)}(${dowOf(d)})`).join('·')} ${esc(j.time)} · ${feeLabel(j)}</span>
-    <div class="row">${s.ap?`<span class="chip applied">지원 ${s.ap}</span>`:''}${s.cf?`<span class="chip confirmed">확정 ${s.cf}</span>`:''}${s.miss?`<span class="chip warn">빠진 서류 ${s.miss}</span>`:''}${s.unread?`<span class="chip warn">공지 안 읽음 ${s.unread}</span>`:''}${s.cx?`<span class="chip warn">확정 강사 취소 ${s.cx}</span>`:''}${!s.cf&&j.status==='마감'?'<span class="chip warn">확정 강사 없음</span>':''}${isOp(j)?`<span class="chip off">운영 ${j.plan.slots.length}칸</span>`:''}${s.empty?`<span class="chip warn">빈 칸 ${s.empty}</span>`:''}${chatNew(j.id)&&chatCan(j)?'<span class="chip warn">새 대화</span>':''}</div></button>`};
+    <div class="row">${s.ap?`<span class="chip applied">지원 ${s.ap}</span>`:''}${s.cf?`<span class="chip confirmed">확정 ${s.cf}</span>`:''}${s.miss?`<span class="chip warn">빠진 서류 ${s.miss}</span>`:''}${s.unread?`<span class="chip warn">공지 안 읽음 ${s.unread}</span>`:''}${s.cx?`<span class="chip warn">확정 강사 취소 ${s.cx}</span>`:''}${!s.cf&&j.status==='마감'?'<span class="chip warn">확정 강사 없음</span>':''}${isOp(j)?`<span class="chip off">운영 ${j.plan.slots.length}칸</span>`:''}${(()=>{const n=isOp(j)?appsOf(j.id).filter(x=>x.status==='확정'&&!payOf(j,x.instId,x).days.length).length:0;return n?`<span class="chip warn">시간표에 없는 확정 강사 ${n}</span>`:''})()}${s.empty?`<span class="chip warn">빈 칸 ${s.empty}</span>`:''}${chatNew(j.id)&&chatCan(j)?'<span class="chip warn">새 대화</span>':''}</div></button>`};
   const todo=up.filter(j=>{const s=jobStats(j);return s.miss||s.unread||s.cx||(!s.cf&&j.status==='마감')});
   return `<h2>${esc(co(meId()).name)} 강의 운영판</h2>${dayBoard(meId())}
   ${todo.length?`<div class="alert">챙길 강의 ${todo.length}건: 빠진 서류, 안 읽은 공지, 확정 강사 없음을 확인하세요.</div>`:'<div class="ok">다가오는 강의에 빠진 것이 없어요.</div>'}

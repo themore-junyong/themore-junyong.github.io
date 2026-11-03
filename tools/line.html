@@ -55,6 +55,20 @@ button{font:inherit;color:inherit;cursor:pointer}
 .tbar .num{text-align:right;font-weight:700}
 .rank{display:flex;flex-direction:column;gap:4px}
 .rank div{display:grid;grid-template-columns:2.4em 1fr auto;gap:8px;border-bottom:1px solid var(--line);padding:4px 0}
+.tabs{display:flex;gap:8px;flex-wrap:wrap}
+.tabs a{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:8px 18px;font-weight:700;color:var(--ink);text-decoration:none}
+.tabs a[aria-current="page"]{background:var(--blue);color:var(--blue-ink);border-color:var(--blue)}
+.steps{margin:0;padding-left:1.4em;display:flex;flex-direction:column;gap:8px;font-size:1.15rem}
+.ex{display:grid;grid-template-columns:repeat(10,1fr);gap:6px}
+.ex div{border:2px solid var(--line);border-radius:6px;text-align:center;padding:8px 0 4px;font-weight:900;font-size:1.4rem;position:relative;background:var(--field)}
+.ex div small{position:absolute;left:4px;top:0;font-size:.65rem;color:var(--soft);font-weight:700}
+.ex div.r0{border-color:#2e9e5b;background:color-mix(in srgb,#2e9e5b 14%,var(--card))}
+.ex div.r1{border-color:#f2994a;background:color-mix(in srgb,#f2994a 14%,var(--card))}
+.ex div.r2{border-color:#2f80ed;background:color-mix(in srgb,#2f80ed 14%,var(--card))}
+.pts{display:grid;grid-template-columns:repeat(auto-fit,minmax(88px,1fr));gap:6px}
+.pts div{border:1px solid var(--line);border-radius:6px;text-align:center;padding:6px;background:var(--field)}
+.pts b{display:block;font-size:1.3rem;color:var(--blue)}
+@media (max-width:560px){.ex{grid-template-columns:repeat(5,1fr)}}
 .wait{text-align:center;padding:28px 16px;background:var(--blue);color:var(--blue-ink);border-radius:8px;font-weight:700}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
@@ -74,6 +88,26 @@ function runs(P){var R=[],cur=[];for(var i=0;i<P.length;i++){var v=P[i];if(v==nu
 function score(P){return runs(P).reduce(function(s,r){return s+r.length*r.length},0)}
 function best(P){return runs(P).reduce(function(m,r){return Math.max(m,r.length)},0)}
 var RULE='<div class="why"><b>규칙</b> · 선생님이 1~40 중 숫자를 하나씩 불러요. 부를 때마다 <b>내 칸 중 한 곳</b>에 써요. <b>한 번 쓰면 못 바꿔요.</b><br>다 부르면 <b>왼쪽 → 오른쪽으로 계속 커지는 줄</b>마다 점수: 줄 길이 × 줄 길이 (3칸 줄 = 9점, 5칸 줄 = 25점). 빈칸이나 작아지는 곳에서 줄이 끊겨요.</div>';
+/* 📖 설명 탭: 진행 순서 + 예시 판(10칸) + 점수표 + 잘하는 법 */
+var EX=[3,8,12,15,22,19,5,26,31,38],EXR=[0,0,0,0,0,1,2,2,2,2];
+function ruleHtml(){
+  return '<div class="card"><h2>📖 스트림 게임, 이렇게 해요</h2><ol class="steps">'+
+   '<li>각자 <b>빈칸 10~20개</b>를 받아요. (폰 화면 또는 종이에 칸 그리기)</li>'+
+   '<li>선생님이 <b>1~40 중 숫자를 하나</b> 뽑아요. 같은 숫자는 두 번 안 나와요.</li>'+
+   '<li>모두 그 숫자를 <b>내 칸 중 아무 곳</b>에 써요. <b>한 번 쓰면 못 바꿔요.</b></li>'+
+   '<li>칸이 다 찰 때까지 반복해요. 그다음 점수를 세요.</li></ol></div>'+
+  '<div class="card"><h2>🧮 점수 세는 법</h2><p style="font-size:1.15rem">왼쪽 → 오른쪽으로 <b>계속 커지는 줄</b>을 찾아요. 줄마다 <b>칸 수 × 칸 수</b>가 점수예요. 작아지는 곳에서 줄이 끊겨요.</p>'+
+   '<div class="ex">'+EX.map(function(v,i){return '<div class="r'+EXR[i]+'"><small>'+(i+1)+'</small>'+v+'</div>'}).join('')+'</div>'+
+   '<p style="font-size:1.15rem"><b style="color:#2e9e5b">3·8·12·15·22</b> = 5칸 → 25점 &nbsp; <b style="color:#f2994a">19</b> = 1칸 → 1점 &nbsp; <b style="color:#2f80ed">5·26·31·38</b> = 4칸 → 16점 &nbsp; <b>합계 42점</b></p>'+
+   '<div class="pts">'+[1,2,3,4,5,6,7,8,10].map(function(n){return '<div>'+n+'칸<b>'+(n*n)+'점</b></div>'}).join('')+'</div>'+
+   '<p class="note">긴 줄 하나가 짧은 줄 여러 개보다 훨씬 커요. 10칸이 전부 이어지면 100점!</p></div>'+
+  '<div class="card"><h2>💡 잘하는 법</h2><ul class="steps">'+
+   '<li>작은 수(1~10)는 <b>왼쪽</b>, 큰 수(30~40)는 <b>오른쪽</b>, 20 근처는 <b>가운데</b>에.</li>'+
+   '<li>숫자 사이에 <b>빈자리를 남겨 두기</b>. 나중에 사이 숫자가 나와요.</li>'+
+   '<li>애매한 숫자가 나오면 한 곳을 <b>버리는 칸</b>으로 쓰는 것도 작전이에요.</li></ul>'+
+   (STU?'':'<div class="row"><a class="btn pri big" href="#game" style="text-decoration:none">🎲 게임으로 가기</a></div>')+'</div>'}
+function tabs(){return '<div class="tabs"><a href="#game"'+(TAB==='game'?' aria-current="page"':'')+'>🎲 게임</a><a href="#rule"'+(TAB==='rule'?' aria-current="page"':'')+'>📖 설명</a></div>'}
+var TAB=location.hash==='#rule'?'rule':'game';
 var LESSON='<div class="why"><b>오늘의 한 줄</b> · 모두 <b>똑같은 숫자</b>를 받았는데 점수는 다 달라요. 차이는 운보다 <b>처음 세운 기준</b>(큰 수는 오른쪽, 작은 수는 왼쪽)과 <b>나중을 위해 남겨 둔 빈자리</b>였어요. 일도 같아요. 계획(큰 그림)을 먼저 그려 두면, 갑자기 떨어지는 일(숫자)에도 놓을 자리가 있어요.</div>';
 
 /* ================= 학생 폰 ================= */
@@ -86,9 +120,9 @@ if(STU){
     var h='<div class="top"><div class="brand"><small>위듀케이션 · 스트림 게임</small></div><span class="note">'+G.d.length+' / '+G.n+'번째 숫자</span></div>';
     if(G.end&&cur==null)h+='<div class="card" style="text-align:center"><span class="soft">내 점수</span><div class="big">'+score(S.p)+'점</div><p>가장 긴 줄 <b>'+best(S.p)+'칸</b></p><p class="note">'+(sent?'✔ 선생님 화면에 보냈어요':'선생님 화면으로 보내는 중…')+'</p></div>';
     else if(cur!=null)h+='<div class="card" style="text-align:center;gap:4px"><span class="soft">이 숫자를 놓을 칸을 눌러요'+(pend.length>1?' (밀린 숫자 '+pend.length+'개)':'')+'</span><div class="now" style="font-size:5rem">'+cur+'</div></div>';
-    else h+='<div class="wait">✔ 놓았어요! 다음 숫자를 기다려요</div>';
+    else h+='<div class="wait">'+(G.d.length?'✔ 놓았어요! 다음 숫자를 기다려요':'👀 선생님이 첫 숫자를 부르면 시작해요')+'</div>';
     h+='<div class="card"><div class="slots">'+S.p.map(function(v,i){var c=v!=null?'full'+(inRun[i]?' run':''):(cur!=null?'go':'');return '<button data-s="'+i+'" class="'+c+'"'+(v!=null||cur==null?' aria-disabled="true"':'')+' aria-label="'+(i+1)+'번 칸'+(v!=null?' '+v:' 빈칸')+'"><small>'+(i+1)+'</small>'+(v!=null?v:'')+'</button>'}).join('')+
-      '</div><p class="note">지금 점수 <b>'+score(S.p)+'점</b> · 초록 테두리 = 이어진 줄</p></div>'+(G.d.length<2?RULE:'');
+      '</div><p class="note">지금 점수 <b>'+score(S.p)+'점</b> · 초록 테두리 = 이어진 줄</p></div>'+(G.rule?ruleHtml():G.d.length<2?RULE:'');
     app.innerHTML=h;
   }
   function trySend(r){
@@ -111,8 +145,8 @@ function save(){lsSet('line-g',G)}
 function shuffle(a){for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1)),t=a[i];a[i]=a[j];a[j]=t}return a}
 function newGame(n){var deck=[];for(var i=1;i<=40;i++)deck.push(i);G={id:String(Date.now()).slice(-8),n:n,deck:shuffle(deck),d:[],end:false};ANS=[];save()}
 function pub(){if(!SYNC)return;
-  if(!G.id){TM_SYNC.pub('line',{game:'🔢 스트림 게임',big:'곧 시작해요',sub:'앞 화면을 보세요'});TM_SYNC.ask(null);return}
-  TM_SYNC.pub('line',{game:'🔢 스트림 게임',play:'line.html?stu=1&g='+G.id,line:{id:G.id,n:G.n,d:G.d,end:G.end}});
+  if(!G.id){TM_SYNC.pub('line',{game:'🔢 스트림 게임',big:TAB==='rule'?'📖 규칙 설명 중':'곧 시작해요',sub:'앞 화면을 보세요'});TM_SYNC.ask(null);return}
+  TM_SYNC.pub('line',{game:'🔢 스트림 게임',play:'line.html?stu=1&g='+G.id,line:{id:G.id,n:G.n,d:G.d,end:G.end,rule:TAB==='rule'?1:0}});
   if(G.end){var id='line-'+G.id;TM_SYNC.ask({id:id,open:true,type:'line'});TM_SYNC.onAns(id,function(_,A){ANS=A;render()})}else TM_SYNC.ask(null)}
 function teamBars(){
   var L=ANS.map(function(a){var p=String(a.v||'').split('|');return {nick:a.nick||'',team:a.team||'',s:+p[0]||0,b:+p[1]||0}}).sort(function(a,b){return b.s-a.s||b.b-a.b});
@@ -123,8 +157,9 @@ function teamBars(){
     var am=Math.max.apply(null,av.map(function(x){return x.a}))||1;h+=av.map(function(x){return '<div class="tbar"><b style="color:'+COLORS[x.k%8]+'">'+esc(x.t)+'</b><span class="tr"><i style="width:'+(x.a/am*100)+'%;background:'+COLORS[x.k%8]+'"></i></span><span class="num">'+x.a+'점</span></div>'}).join('')}
   return h}
 function render(){
-  var h='<div class="top"><div class="brand"><small>위듀케이션 · 수업 게임</small><h1>🔢 스트림 게임</h1></div><a href="./">← 도구 모음</a></div>';
-  if(!G.id){
+  var h='<div class="top"><div class="brand"><small>위듀케이션 · 수업 게임</small><h1>🔢 스트림 게임</h1></div><a href="./">← 도구 모음</a></div>'+tabs();
+  if(TAB==='rule'){h+=ruleHtml()}
+  else if(!G.id){
     h+='<div class="card">'+RULE+'<div class="row"><b>칸 수</b>'+[10,15,20].map(function(n){return '<button class="btn" data-n="'+n+'" aria-pressed="'+(PRE===n)+'">'+n+'칸</button>'}).join('')+'</div>'+
       '<p class="note">'+(SYNC?'📱 수업 방과 연결됨 · 시작하면 학생 폰에 칸이 떠요':'종이로 할 때: 학생들에게 칸 '+PRE+'개를 그리게 하세요. (수업 방을 만든 노트북에서 열면 학생 폰과 연결돼요)')+'</p>'+
       '<button class="btn pri big" data-a="start">▶ 시작하기</button></div>';
@@ -148,7 +183,8 @@ app.addEventListener('click',function(e){var b=e.target.closest('button');if(!b)
   if(d.a==='end'){G.end=true;save();return render()}
   if(d.a==='reset'){if(G.id&&!G.end&&!confirm('지금 게임을 그만두고 새로 시작할까요?'))return;G={id:'',n:PRE,deck:[],d:[],end:false};ANS=[];save();return render()}
 });
-document.addEventListener('keydown',function(e){if((e.key===' '||e.key==='ArrowRight')&&G.id&&!G.end&&G.d.length<G.n){e.preventDefault();G.d.push(G.deck[G.d.length]);save();render()}});
+window.addEventListener('hashchange',function(){TAB=location.hash==='#rule'?'rule':'game';render();scrollTo(0,0)});
+document.addEventListener('keydown',function(e){if(TAB==='game'&&(e.key===' '||e.key==='ArrowRight')&&G.id&&!G.end&&G.d.length<G.n){e.preventDefault();G.d.push(G.deck[G.d.length]);save();render()}});
 if(SYNC&&TM_SYNC.teams)TM_SYNC.teams(function(t){TEAMS=t;render()});
 render();
 })();

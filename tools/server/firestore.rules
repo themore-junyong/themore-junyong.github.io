@@ -14,21 +14,30 @@ service cloud.firestore {
     match /{doc=**} { allow read, write: if false; }
 
     // 내 수업함: 강사마다 자기 초대코드(codes/{코드})로 문서 1개. 코드를 아는 사람만 읽고 씀(목록 보기 불가).
-    //  fav(⭐ 자주 쓰는 활동)·teams(조 이름)·name(강사 이름)·sets(실시간 마인드맵 질문 묶음)
+    //  fav(⭐ 자주 쓰는 활동)·teams(조 이름)·name(강사 이름)·sets(실시간 마인드맵 질문 묶음)·ice(아이스브레이킹 내 문제)
     match /teachers/{code} {
       function okCode() {
         return request.auth != null && code != 'PASS'
           && exists(/databases/$(db)/documents/codes/$(code))
           && get(/databases/$(db)/documents/codes/$(code)).data.get('on', true) != false;
       }
+      // ice = 아이스브레이킹 ✏️ 내 문제 {balance, chosung, emoji, body}: 편집 칸 글 그대로(한 줄에 하나)
+      function iceOk(m) {
+        return m is map && m.keys().hasOnly(['balance', 'chosung', 'emoji', 'body'])
+          && m.get('balance', '') is string && m.get('balance', '').size() <= 12000
+          && m.get('chosung', '') is string && m.get('chosung', '').size() <= 12000
+          && m.get('emoji', '') is string && m.get('emoji', '').size() <= 12000
+          && m.get('body', '') is string && m.get('body', '').size() <= 12000;
+      }
       allow get: if okCode();
       allow create, update: if okCode()
-        && request.resource.data.keys().hasOnly(['name', 'fav', 'teams', 'sets', 't'])
+        && request.resource.data.keys().hasOnly(['name', 'fav', 'teams', 'sets', 'ice', 't'])
         && request.resource.data.t == request.time
         && request.resource.data.get('name', '') is string && request.resource.data.get('name', '').size() <= 20
         && request.resource.data.get('fav', []) is list && request.resource.data.get('fav', []).size() <= 40
         && request.resource.data.get('teams', []) is list && request.resource.data.get('teams', []).size() <= 8
-        && request.resource.data.get('sets', []) is list && request.resource.data.get('sets', []).size() <= 30;
+        && request.resource.data.get('sets', []) is list && request.resource.data.get('sets', []).size() <= 30
+        && iceOk(request.resource.data.get('ice', {}));
     }
 
     match /rooms/{pin} {

@@ -112,6 +112,7 @@ input[type=number]{width:80px}
 <div class="wrap" id="app"></div>
 <div id="sov" hidden><div class="kin2" id="sbox"></div></div>
 <div id="kov" hidden><div class="kin"><h2>📱 선생님 휴대폰으로 찍으세요</h2><p>문제 번호 순서대로 정답이 휴대폰에만 보여요. 학생들은 찍지 않게 잠깐만 띄웠다가 닫으세요.</p><div id="kbox"></div><b id="kU"></b><button class="btn pri big" id="kX">닫기</button></div></div>
+<script src="my.js?v=222"></script>
 <script src="sync.js?v=195"></script>
 <script>
 (function(){
@@ -269,6 +270,18 @@ var BANK={balance:BAL,chosung:CHO,emoji:EMO,body:BODY};
 var MYC='✏️ 내 문제',MY={},ED=null;try{MY=JSON.parse(localStorage.getItem('ice-my')||'{}')||{}}catch(e){MY={}}
 function applyMy(){['balance','chosung','emoji','body'].forEach(function(v){if(Array.isArray(MY[v])&&MY[v].length)BANK[v][MYC]=MY[v];else delete BANK[v][MYC];if(st.cat[v]!=='전체'&&!BANK[v][st.cat[v]])st.cat[v]='전체'})}
 applyMy();
+/* 강사 초대코드로 들어온 노트북이면 내 수업함(teachers/{코드}.ice)에 저장 → 다른 PC에서도 같은 코드면 그대로 */
+var MYS='';
+function myAll(){var o={};['balance','chosung','emoji','body'].forEach(function(v){o[v]=myLines(v)});return o}
+function myPush(){if(!window.TM_MY||!TM_MY.code())return;TM_MY.save({ice:myAll()}).then(function(ok){MYS=ok?'cloud':'local';if(ED)render()})}
+if(window.TM_MY&&TM_MY.code())TM_MY.load().then(function(d){if(!d){MYS='local';return}MYS='cloud';
+ if(d.ice&&typeof d.ice==='object'){['balance','chosung','emoji','body'].forEach(function(v){MY[v]=myParse(v,String(d.ice[v]||'')).items});
+  try{localStorage.setItem('ice-my',JSON.stringify(MY))}catch(e){}applyMy();Object.keys(G).forEach(function(v){if(st.cat[v]===MYC||!G[v].deck||!G[v].deck.length)deal(v)});if(typeof render==='function')render()}
+ else if(Object.keys(MY).some(function(v){return MY[v]&&MY[v].length}))myPush()});
+function myNote(){var k=window.TM_MY&&TM_MY.code();
+ if(k&&MYS!=='local')return '☁️ 강사 코드 <b>'+esc(k)+'</b>의 내 수업함에 저장돼요. 다른 PC에서도 강사 화면에서 같은 코드로 방을 만들면 그대로 나와요.';
+ if(k)return '💻 지금은 서버에 저장이 안 돼서 이 노트북에만 저장돼요.';
+ return '💻 이 노트북에만 저장돼요. 강사 화면에서 내 코드로 방을 만든 뒤 열면 코드별로 저장돼요.'}
 var FMT={balance:['한 줄에 하나씩 · 두 가지를 / 로 나눠요','짜장면 / 짬뽕\n월급 300 주말 출근 / 월급 250 칼퇴'],
  chosung:['한 줄에 낱말 하나 · 초성은 자동으로 만들어져요','안전모\n근로계약서\n점심시간'],
  emoji:['한 줄에 하나씩 · 이모지 / 정답','🐒🌳⬇️ / 원숭이도 나무에서 떨어진다\n☕😴❌ / 커피 마시면 잠이 안 와요'],
@@ -280,7 +293,7 @@ function myParse(v,t){var out=[],bad=[];t.split(/\r?\n/).forEach(function(l){l=l
 function editor(v){var f=FMT[v],nm={balance:'⚖️ 밸런스 게임',chosung:'🔤 초성 퀴즈',emoji:'😀 이모지 퀴즈',body:'🙆 몸으로 말해요'}[v];
  return head()+'<div class="card"><h2>✏️ '+nm+' · 내 문제 만들기</h2><p>'+f[0]+'. 저장하면 분류 <b>'+MYC+'</b>로 바로 시작해요.</p>'+
   '<textarea id="myta" rows="12" style="width:100%;box-sizing:border-box;font:inherit;font-size:1.1rem;padding:12px;border:1px solid var(--line);border-radius:6px;background:var(--field);color:var(--ink)" placeholder="'+esc(f[1].replace(/\n/g,'&#10;'))+'">'+esc(myLines(v))+'</textarea>'+
-  '<p class="note">예) '+esc(f[1]).replace(/\n/g,' · ')+'<br>이 노트북(브라우저)에만 저장돼요. 기본 문제는 그대로 있고, 다 지우고 저장하면 내 문제가 없어져요.</p>'+
+  '<p class="note">예) '+esc(f[1]).replace(/\n/g,' · ')+'<br>'+myNote()+'<br>기본 문제는 그대로 있고, 다 지우고 저장하면 내 문제가 없어져요.</p>'+
   '<div class="row"><button class="btn pri big" data-a="esave">💾 저장하고 시작</button><button class="btn big" data-a="ecancel">취소</button></div></div>'}
 var G={}; /* 게임별 덱·현재 문제 */
 function pool(v){var b=BANK[v],c=st.cat[v];var out=[];Object.keys(b).forEach(function(k){if((c==='전체'&&k!==MYC)||c===k)b[k].forEach(function(x){out.push({cat:k,x:x})})});return out}
@@ -531,7 +544,7 @@ function act(d){
   case 'edit':ED=V;clearInterval(T.iv);T.run=false;render();var ta=document.getElementById('myta');if(ta)ta.focus();break;
   case 'ecancel':ED=null;render();break;
   case 'esave':var r=myParse(V,(document.getElementById('myta')||{}).value||'');if(r.bad.length&&!confirm('형식이 맞지 않는 줄 '+r.bad.length+'개는 빼고 저장할까요?\n(예: '+r.bad[0]+')\n두 가지는 / 로 나눠 주세요.'))break;
-   MY[V]=r.items;try{localStorage.setItem('ice-my',JSON.stringify(MY))}catch(e){}applyMy();if(r.items.length)st.cat[V]=MYC;save();ED=null;deal(V);resetQ();render();break;
+   MY[V]=r.items;try{localStorage.setItem('ice-my',JSON.stringify(MY))}catch(e){}applyMy();myPush();if(r.items.length)st.cat[V]=MYC;save();ED=null;deal(V);resetQ();render();break;
   case 'stat':statOpen();break;
   case 'sclose':document.getElementById('sov').hidden=true;break;
   case 'sreset':if(confirm('학생 응답 기록(조별 통계)을 모두 지울까요?')){R={};rSave();statOpen();render()}break;
