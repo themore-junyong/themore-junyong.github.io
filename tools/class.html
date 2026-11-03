@@ -75,6 +75,10 @@ function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return
 var st={names:'',teamBy:'count',teamN:4,teams:null,tnames:0,pick:null,pickDone:[],tm:{set:300,label:''}};
 try{st=Object.assign(st,JSON.parse(localStorage.getItem('class-v1')||'{}'))}catch(e){}
 function save(){try{localStorage.setItem('class-v1',JSON.stringify(st))}catch(e){}}
+/* 새 수업 방이면 지난 수업의 '어느 조에서' 선택·뽑힌 기록을 지움 (예전엔 남아 있어서 지난번에 고른 4조에서만 계속 뽑혔음) */
+(function(){var p='';try{p=(JSON.parse(localStorage.getItem('live-host')||'null')||{}).pin||''}catch(e){}
+  if(p&&st.roomPin!==p){st.roomPin=p;st.inTeam='전체';st.pickDone=[];st.pick=null;save()}})();
+var SPIN=false;
 var V=(location.hash||'').slice(1)||(window.TM_SYNC&&TM_SYNC.on?'pick':'team');
 window.addEventListener('hashchange',function(){V=(location.hash||'').slice(1)||'team';render()});
 var COLORS=['#e5484d','#2f80ed','#2e9e5b','#f2a20c','#8e4ec6','#12a4b5','#e8618c','#6b7c2f','#c2571a','#4b5ad6'];
@@ -84,7 +88,7 @@ var ROOM=!!(window.TM_SYNC&&TM_SYNC.on),RT=[],RL=[];
 function rteams(){var t=RT.slice();RL.forEach(function(x){var k=x.team&&t.indexOf(x.team)>=0?x.team:'조 없음';if(t.indexOf(k)<0)t.push(k)});return t}
 function rmembers(t){return RL.filter(function(x){return (x.team&&RT.indexOf(x.team)>=0?x.team:'조 없음')===t}).map(function(x){return x.nick}).sort(function(a,b){return a.localeCompare(b,'ko',{numeric:true})})}
 function rgroups(){return rteams().map(function(t){return rmembers(t)})}
-if(ROOM){TM_SYNC.roster(function(A){RL=A;if(V!=='timer')render()});var rt=function(){TM_SYNC.teams(function(T){RT=T||[];if(V!=='timer')render()})};rt();setInterval(rt,20000)}
+if(ROOM){TM_SYNC.roster(function(A){RL=A;if(V!=='timer'&&!SPIN)render()});var rt=function(){TM_SYNC.teams(function(T){RT=T||[];if(st.inTeam&&st.inTeam!=='전체'&&rteams().indexOf(st.inTeam)<0){st.inTeam='전체';save()}if(V!=='timer'&&!SPIN)render()})};rt();setInterval(rt,20000)}
 function names(){if(ROOM)return RL.map(function(x){return x.nick}).sort(function(a,b){return a.localeCompare(b,'ko',{numeric:true})});var ls=st.names.split(/[\n,]/).map(function(x){return x.trim()}).filter(Boolean);return ls}
 function teamList(){return ROOM?rteams():(st.teams?st.teams.map(function(_,i){return TNAMES[st.tnames][i]||((i+1)+'팀')}):null)}
 function teamOf(n){if(!ROOM)return '';var x=RL.filter(function(y){return y.nick===n})[0];return x?(x.team&&RT.indexOf(x.team)>=0?x.team:'조 없음'):''}
@@ -109,7 +113,7 @@ function team(){
 /* 순서·한 명 뽑기 */
 var spinT=null;
 function pick(){
-  var src=st.pickSrc==='team'&&teamList()?teamList():names();
+  var src=pool0(),only=ROOM&&st.pickSrc!=='team'&&st.inTeam&&st.inTeam!=='전체'&&rteams().indexOf(st.inTeam)>=0?st.inTeam:'';
   var h=head()+'<div class="split"><div style="display:flex;flex-direction:column;gap:16px">'+nameBox()+
    '<div class="card"><h3>무엇을 뽑을까요?</h3><div class="chips"><button data-src="name" style="'+(st.pickSrc!=='team'?'background:var(--blue);color:var(--blue-ink)':'')+'">'+(ROOM?'학생 중에서':'명단에서')+'</button><button data-src="team"'+(teamList()?'':' disabled')+' style="'+(st.pickSrc==='team'?'background:var(--blue);color:var(--blue-ink)':'')+'">'+(ROOM?'조 중에서':'나눈 팀에서')+'</button></div>'+
    (ROOM&&st.pickSrc!=='team'?'<div class="chips"><span class="note" style="align-self:center">어느 조에서?</span>'+['전체'].concat(rteams()).map(function(t){var on=(st.inTeam||'전체')===t;return '<button data-in="'+esc(t)+'" style="'+(on?'background:var(--blue);color:var(--blue-ink)':'')+'">'+esc(t)+'</button>'}).join('')+'</div>':'')+
@@ -117,7 +121,7 @@ function pick(){
    '<label class="row note"><input type="checkbox" id="noRep"'+(st.noRep?' checked':'')+'> 한 번 뽑힌 사람은 빼고 뽑기</label>'+(st.pickDone.length?'<button class="btn" data-a="clearDone">뽑힌 기록 지우기 ('+st.pickDone.length+')</button>':'')+'</div></div>'+
    '<div style="display:flex;flex-direction:column;gap:16px"><div class="stage" id="stage">'+esc(st.pick&&st.pick.one||'?')+'</div>';
   if(st.pick&&st.pick.order)h+='<div class="card"><h3>발표 순서 <span class="note">(누르면 끝난 표시)</span></h3><ol class="order">'+st.pick.order.map(function(n,i){return '<li data-od="'+i+'" class="'+(st.pick.od&&st.pick.od[i]?'done':'')+'" style="animation-delay:'+(i*.08)+'s;cursor:pointer"><b>'+(i+1)+'</b>'+esc(n)+'</li>'}).join('')+'</ol></div>';
-  return h+'<p class="note">후보 '+src.length+'개'+(st.noRep&&st.pickSrc!=='team'?' · 남은 사람 '+src.filter(function(n){return st.pickDone.indexOf(n)<0}).length+'명':'')+'</p></div></div>';
+  return h+'<p class="note">'+(only?'<b style="color:var(--blue)">🎯 '+esc(only)+'에서만 뽑는 중</b> · ':'')+'후보 '+src.length+'개'+(st.noRep&&st.pickSrc!=='team'?' · 남은 사람 '+src.filter(function(n){return st.pickDone.indexOf(n)<0}).length+'명':'')+'</p></div></div>';
 }
 /* 타이머 */
 var T={left:null,run:false,end:0,iv:null,beeped:false};
@@ -161,17 +165,17 @@ function doSplit(){
   var k=st.teamBy==='count'?Math.min(n,ls.length):Math.max(1,Math.round(ls.length/n));
   var t=[];for(var i=0;i<k;i++)t.push([]);ls.forEach(function(x,i){t[i%k].push(x)});st.teams=t;save();render();
 }
-function pool0(){var src=st.pickSrc==='team'&&teamList()?teamList():names();if(ROOM&&st.pickSrc!=='team'&&st.inTeam&&st.inTeam!=='전체')src=rmembers(st.inTeam);return src}
+function pool0(){var src=st.pickSrc==='team'&&teamList()?teamList():names();if(ROOM&&st.pickSrc!=='team'&&st.inTeam&&st.inTeam!=='전체'&&rteams().indexOf(st.inTeam)>=0)src=rmembers(st.inTeam);return src}
 function lab(n){return ROOM&&st.pickSrc!=='team'?(teamOf(n)?teamOf(n)+' · ':'')+n:n}
 function onePick(){
   var src=pool0();
   st.noRep=document.getElementById('noRep').checked;
   var pool=st.noRep&&st.pickSrc!=='team'?src.filter(function(n){return st.pickDone.indexOf(n)<0}):src;
   if(!pool.length){alert(src.length?'모두 뽑혔어요. "뽑힌 기록 지우기"를 누르세요':'명단을 먼저 넣어 주세요');return}
-  var el=document.getElementById('stage'),n=0,steps=18+Math.floor(Math.random()*6);el.classList.add('spin');clearTimeout(spinT);
+  var el=document.getElementById('stage'),n=0,steps=18+Math.floor(Math.random()*6);el.classList.add('spin');clearTimeout(spinT);SPIN=true;
   (function go(){el.textContent=pool[Math.floor(Math.random()*pool.length)];n++;
     if(n<steps)spinT=setTimeout(go,40+n*n*1.2);
-    else{var w=pool[Math.floor(Math.random()*pool.length)];el.textContent=lab(w);el.classList.remove('spin');st.pick=Object.assign(st.pick||{},{one:lab(w)});if(st.pickSrc!=='team')st.pickDone.push(w);save();beep();render()}})();
+    else{var w=pool[Math.floor(Math.random()*pool.length)];el.textContent=lab(w);el.classList.remove('spin');SPIN=false;st.pick=Object.assign(st.pick||{},{one:lab(w)});if(st.pickSrc!=='team')st.pickDone.push(w);save();beep();render()}})();
 }
 app.addEventListener('click',function(e){
   var t=e.target.closest('[data-a],[data-by],[data-tn],[data-src],[data-od],[data-set],[data-in]');if(!t)return;var d=t.dataset;
