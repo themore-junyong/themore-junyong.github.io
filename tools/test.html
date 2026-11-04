@@ -127,6 +127,7 @@ function qpage(p){
   list.forEach(function(it,i){var n=from+i,a=S.a[n];
     if(QUIZ){
       if(it.p)h+='<div class="passage">'+esc(it.p)+'</div>';
+      else if(it.c&&i===0){for(var b=n-1;b>=0;b--)if(ITEMS[b].p){h+='<div class="passage"><span class="soft">(앞 쪽 지문 이어서)</span>\n'+esc(ITEMS[b].p)+'</div>';break}} /* 지문 문제가 쪽을 넘어가면 지문을 다시 보여 줌 */
       h+='<div class="item"><p>'+(n+1)+'. '+esc(it.q)+'</p><div class="mc">'+it.o.map(function(o,j){return '<button data-n="'+n+'" data-v="'+j+'" aria-pressed="'+(a===j)+'">'+(j+1)+') '+esc(o)+'</button>'}).join('')+'</div></div>';
     }else{
       h+='<div class="item"><p>'+(n+1)+'. '+esc(it[0])+'</p><div class="lk">'+LK.map(function(l,j){return '<button data-n="'+n+'" data-v="'+(j+1)+'" aria-pressed="'+(a===j+1)+'"><b></b>'+l.replace('\n','<br>')+'</button>'}).join('')+'</div></div>';
