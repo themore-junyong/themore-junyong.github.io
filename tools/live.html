@@ -150,7 +150,7 @@ function stuRender(){
   h+='<p class="soft">방 '+ST.pin+' · '+esc(ST.nick||'익명')+'</p>';
   if(!r){h+='<div class="card"><p class="big">방이 끝났어요</p></div>';app.innerHTML=h;return}
   const emo='<div class="card"><span class="soft">수업 반응 보내기 (익명, 여러 번 눌러도 돼요)</span><div class="emo">'+EMO.map(([e,l])=>'<button data-e="'+e+'">'+e+'<small>'+l+'</small></button>').join('')+'</div></div>';
-  if(!q||!q.id){h+='<div class="card"><p class="big">곧 질문이 떠요 👀</p><p class="soft" style="text-align:center">선생님 화면을 봐 주세요</p></div>'+emo;app.innerHTML=h;return}
+  if(!q||!q.id){h+='<div class="card"><p class="big">곧 질문이 떠요 👀</p><p class="soft" style="text-align:center">선생님 화면을 봐 주세요</p></div>'+emo+'<button class="btn" data-a="resync" style="opacity:.75">🔄 선생님 화면에 질문이 떴는데 안 보이면 눌러요</button>';app.innerHTML=h;return}
   const mine=ST.mine[q.id];
   h+='<div class="card"><span class="soft">'+TYPES[q.type]+'</span><h2>'+esc(q.text)+'</h2>';
   if(q.type==='poll'||q.type==='quiz'){
@@ -171,7 +171,7 @@ function stuRender(){
   if(!q.open&&!q.reveal)h+='<p class="note">마감됐어요. 선생님 화면을 봐 주세요.</p>';
   else if(q.open&&mine!=null&&(q.type==='poll'||q.type==='quiz'))h+='<p class="note ok">보냈어요! 마감 전까지 바꿀 수 있어요.</p>';
   if(ST.note)h+='<p class="note bad">'+esc(ST.note)+'</p>';
-  app.innerHTML=h+'</div>'+emo;
+  app.innerHTML=h+'</div>'+emo+'<button class="btn" data-a="resync" style="opacity:.75">🔄 선생님 화면과 질문이 다르면 눌러요</button>';
 }
 let lastE=0;
 function react(e){
@@ -188,12 +188,35 @@ async function join(){
     const ref=F.doc(db,'rooms',ST.pin),s=await F.getDoc(ref);
     if(!s.exists()||s.data().exp.toMillis()<Date.now()){ST.note='없는 방 번호예요. 다시 확인해 주세요';return stuRender()}
     ST.joined=true;ST.mine=lsGet('live-mine-'+ST.pin,{});
-    let seen=null; // 방 문서엔 hb(강사 1분 신호)·go·g도 바뀜 → 질문(q)·종료가 바뀔 때만 다시 그림 (쓰던 글자·커서 유지)
-    ST.unsub=F.onSnapshot(ref,d=>{const prev=ST.room&&ST.room.q&&ST.room.q.id;ST.room=d.exists()?d.data():null;
-      const key=ST.room?JSON.stringify([ST.room.q||null,!!ST.room.closed]):'x';if(key===seen)return;seen=key;
-      if(ST.room&&ST.room.q&&ST.room.q.id!==prev){ST.draft='';ST.note='';ST.br=null}stuKeep()},()=>{ST.room=null;stuRender()});
+    ST.seen=null;listen();
   }catch(e){ST.note=msg(e);stuRender()}
 }
+// 방 문서 하나를 화면에 반영. 방 문서엔 hb(강사 1분 신호)·go·g도 바뀜 → 질문(q)·종료가 바뀔 때만 다시 그림 (쓰던 글자·커서 유지)
+// 새 질문(id가 바뀜)이면 쓰던 칸·안내·고른 가지를 비우고 처음부터 다시 쓸 수 있게
+function applyRoom(d){
+  const prev=ST.room&&ST.room.q&&ST.room.q.id;ST.room=d.exists()?d.data():null;
+  const key=ST.room?JSON.stringify([ST.room.q||null,!!ST.room.closed]):'x';if(key===ST.seen)return false;ST.seen=key;
+  const nw=!!(ST.room&&ST.room.q&&ST.room.q.id!==prev);
+  if(nw){ST.draft='';ST.note='';ST.br=null;const a=document.activeElement;if(a&&a.id==='txt')a.blur();stuRender()}else stuKeep();
+  return nw;
+}
+// 실시간 연결: 폰 화면이 꺼졌다 켜지거나 와이파이가 바뀌면 연결이 멈춰 옛 질문에 머무는 일이 있음 → 끊기면 다시 붙음
+function listen(){
+  if(ST.unsub){try{ST.unsub()}catch(e){}}
+  const ref=F.doc(db,'rooms',ST.pin);
+  ST.unsub=F.onSnapshot(ref,applyRoom,()=>{ST.unsub=null;setTimeout(()=>{if(ST.joined&&!ST.unsub)listen()},3000)});
+}
+// 서버에서 지금 질문을 직접 한 번 더 받아 옴 (연결이 멈췄어도 새 질문이 뜸). 새 질문이었으면 true
+async function resync(again){
+  if(!ST.joined||!F)return false;
+  if(again)listen();
+  try{const ref=F.doc(db,'rooms',ST.pin),d=await (F.getDocFromServer||F.getDoc)(ref);return applyRoom(d)}catch(e){return false}
+}
+// 폰을 다시 켜거나(화면 돌아옴)·인터넷이 다시 붙으면 바로, 켜져 있는 동안엔 15초마다 지금 질문 확인
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)resync(true)});
+addEventListener('pageshow',e=>{if(e.persisted)resync(true)});
+addEventListener('online',()=>resync(true));
+setInterval(()=>{if(!HOST&&!document.hidden)resync(false)},15000);
 function mapAdd(){
   const q=ST.room&&ST.room.q,w=(document.getElementById('txt').value||'').replace(/[:\n]/g,' ').trim().slice(0,12);if(!q||ST.br==null||!w)return;
   const L=mapParse(ST.mine[q.id]);if(L.some(x=>x[0]===ST.br&&x[1]===w)){ST.draft='';return stuRender()}
@@ -207,7 +230,16 @@ async function send(v){
   try{
     await F.setDoc(F.doc(db,'rooms',ST.pin,'ans',q.id+'_'+me),{q:q.id,v,nick:ST.nick||'익명',t:F.serverTimestamp()});
     ST.mine[q.id]=v;lsSet('live-mine-'+ST.pin,ST.mine);
-  }catch(e){ST.note=msg(e)}
+  }catch(e){
+    const nw=await resync(true);
+    if(nw){ST.note='선생님이 새 질문을 띄웠어요. 아래 칸에 다시 써서 보내 주세요';return stuRender()}
+    const c=ST.room&&ST.room.q;
+    if(c&&c.id===q.id&&c.open){ // 같은 질문이 아직 열려 있음 = 잠깐 끊긴 것 → 한 번 더 보내 봄
+      try{await F.setDoc(F.doc(db,'rooms',ST.pin,'ans',q.id+'_'+me),{q:q.id,v,nick:ST.nick||'익명',t:F.serverTimestamp()});
+        ST.mine[q.id]=v;lsSet('live-mine-'+ST.pin,ST.mine);return stuRender()}catch(e2){e=e2}
+    }
+    ST.note=msg(e);
+  }
   stuRender();
 }
 
@@ -446,6 +478,7 @@ app.addEventListener('click',e=>{
   if(HOST)return hostClick(e);
   const b=e.target.closest('button');if(!b)return;
   if(b.dataset.a==='join')return join();
+  if(b.dataset.a==='resync'){b.disabled=true;b.textContent='확인하는 중…';return resync(true).then(()=>stuRender())}
   if(b.dataset.e)return react(b.dataset.e);
   if(b.dataset.v!=null)return send(+b.dataset.v);
   if(b.dataset.br!=null){ST.br=+b.dataset.br;stuRender();const t=document.getElementById('txt');if(t)t.focus();return}
