@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<meta name="build" content="261103-0743">
+<meta name="build" content="261104-1223">
 <title>강사로</title>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#2563EB">
@@ -785,7 +785,7 @@ function vJobs(){const iid=meId(),t=todayIso();
 /* ===== 강사: 공고 붙여넣기 / 직접 입력 ===== */
 function sheetPaste(pre){const p=pre||{};
   openSheet(`<div class="row"><h2 class="sp">일정 넣기</h2><button class="btn sm" data-act="closeSheet">닫기</button></div>
-  <label class="f">단톡방·메일 공고를 그대로 붙여 넣으세요<textarea id="pRaw" rows="6" placeholder="예) 11/18(화) 천안 ○○고 3학년 면접 특강 09:00~15:50 강사료 30만원 지원: job@example.com">${esc(p.raw||'')}</textarea></label>
+  <label class="f">단톡방·메일 공고를 붙여 넣고, 틀린 곳은 고친 뒤 '공고 읽기'를 누르세요<textarea id="pRaw" rows="6" placeholder="예) 11/18(화) 천안 ○○고 3학년 면접 특강 09:00~15:50 강사료 30만원 지원: job@example.com">${esc(p.raw||'')}</textarea></label>
   <button class="btn" data-act="parse">공고 읽기</button>
   <div id="pNet"></div>
   <div class="grid2">
@@ -1415,8 +1415,7 @@ if(!INST.standalone){
   addEventListener('appinstalled',()=>{$('#instBtn').hidden=true});
 }
 if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw.js').catch(()=>{});
-// 붙여넣기만 하면 바로 읽기 ('공고 읽기' 버튼을 안 눌러도 됨)
-document.addEventListener('paste',ev=>{if(ev.target.id==='pRaw')setTimeout(()=>{const b=document.querySelector('[data-act="parse"]');if(b&&$('#pRaw').value.trim().length>20)b.click()},0)});
+// 붙여 넣어도 바로 읽지 않음: 공고를 고친 뒤 '공고 읽기'를 눌러야 읽음 (11/4 준용)
 document.addEventListener('keydown',ev=>{if(ev.target.id==='chatText'&&ev.key==='Enter'&&!ev.shiftKey&&!ev.isComposing){ev.preventDefault();chatSend()}});
 document.addEventListener('change',ev=>{const sp=ev.target.closest&&ev.target.closest('.tp');if(sp)tPickSync(sp)});
 // 새 공고: 시작~끝 시간을 고르면 jTime을 채우고, 차시(1시간 = 1차시, 반올림)를 자동으로 넣음. 차시를 직접 고치면 그 뒤로는 안 건드림
@@ -1432,6 +1431,6 @@ function jTimeSync(){const R=jRanges(),t=$('#jTime'),pe=$('#jPer');if(!t)return;
 document.addEventListener('input',ev=>{if(ev.target.matches&&ev.target.matches('.trvV')){const c=$$('.trvC').find(x=>x.dataset.a===ev.target.dataset.a);if(c)c.checked=!!+ev.target.value}if(ev.target.matches&&ev.target.matches('.jTa,.jTb'))jTimeSync();if(ev.target.id==='jPer')ev.target.dataset.man=ev.target.value?'1':'';if(['pDates','pRaw'].includes(ev.target.id))pWarn();if(['pDates','pFee','pKm','pToll'].includes(ev.target.id))pNet()});
 render();
 </script>
-<script type="module" src="real.js?v=261103-0743"></script>
+<script type="module" src="real.js?v=261104-1223"></script>
 </body>
 </html>
