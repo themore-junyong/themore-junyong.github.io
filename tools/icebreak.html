@@ -261,8 +261,8 @@ function cho(w){return w.split('').map(function(c){var k=c.charCodeAt(0)-0xAC00;
 
 /* ───── 상태 ───── */
 var COLORS=['#e5484d','#2f80ed','#2e9e5b','#f2a20c','#8e4ec6','#12a4b5','#d6409f','#6b7a3a'];
-var st={teams:4,score:[0,0,0,0,0,0,0,0],tname:['A팀','B팀','C팀','D팀','E팀','F팀','G팀','H팀'],sel:0,cat:{balance:'전체',chosung:'전체',emoji:'전체',body:'전체'},bodySec:60};
-try{var sv=JSON.parse(localStorage.getItem('ice-v1')||'{}');st=Object.assign(st,sv);st.cat=Object.assign({balance:'전체',chosung:'전체',emoji:'전체',body:'전체'},sv.cat||{})}catch(e){}
+var st={teams:4,score:[0,0,0,0,0,0,0,0],tname:['A팀','B팀','C팀','D팀','E팀','F팀','G팀','H팀'],sel:0,cat:{balance:'전체',chosung:'전체',emoji:'전체',body:'전체'},bodySec:60,qSec:{chosung:30,emoji:30}};
+try{var sv=JSON.parse(localStorage.getItem('ice-v1')||'{}');st=Object.assign(st,sv);st.cat=Object.assign({balance:'전체',chosung:'전체',emoji:'전체',body:'전체'},sv.cat||{});st.qSec=Object.assign({chosung:30,emoji:30},sv.qSec||{})}catch(e){}
 while(st.score.length<8)st.score.push(0);['A팀','B팀','C팀','D팀','E팀','F팀','G팀','H팀'].forEach(function(n,i){if(!st.tname[i])st.tname[i]=n});
 function save(){try{localStorage.setItem('ice-v1',JSON.stringify(st))}catch(e){}}
 var BANK={balance:BAL,chosung:CHO,emoji:EMO,body:BODY};
@@ -338,7 +338,7 @@ function chosung(){
  return head()+'<div class="card"><div class="row" style="justify-content:space-between">'+cats('chosung')+count('chosung')+'</div>'+
   '<div style="text-align:center"><span class="cat">'+esc(q.cat)+' · '+w.replace(/\s/g,'').length+'글자</span></div>'+
   '<div class="big">'+esc(cho(w))+'</div>'+
-  '<div class="ans'+(g.show?'':' hide')+'">'+esc(w)+'</div>'+timerBox(30)+
+  '<div class="ans'+(g.show?'':' hide')+'">'+esc(w)+'</div>'+timerBox(st.qSec.chosung)+
   '<div class="row" style="justify-content:center"><button class="btn big" data-a="show">'+(g.show?'정답 가리기':'정답 보기')+'</button><button class="btn pri big" data-a="next">다음 문제 →</button><button class="btn" data-a="key">📱 선생님 정답지</button></div>'+
   (g.show?hit():'')+'<p class="note" style="text-align:center">손 먼저 든 팀이 답해요. 틀리면 다른 팀에게 기회가 넘어가요. 키보드: 스페이스 = 정답 보기, → = 다음</p>'+stuBox()+'</div>'+board();
 }
@@ -349,7 +349,7 @@ function emoji(){
  return head()+'<div class="card"><div class="row" style="justify-content:space-between">'+cats('emoji')+count('emoji')+'</div>'+
   '<div style="text-align:center"><span class="cat">'+esc(q.cat)+'</span></div>'+
   '<div class="emo">'+esc(q.x[0])+'</div>'+
-  '<div class="ans'+(g.show?'':' hide')+'">'+esc(q.x[1])+'</div>'+timerBox(30)+
+  '<div class="ans'+(g.show?'':' hide')+'">'+esc(q.x[1])+'</div>'+timerBox(st.qSec.emoji)+
   '<div class="row" style="justify-content:center"><button class="btn big" data-a="show">'+(g.show?'정답 가리기':'정답 보기')+'</button><button class="btn pri big" data-a="next">다음 문제 →</button><button class="btn" data-a="key">📱 선생님 정답지</button></div>'+
   (g.show?hit():'')+'<p class="note" style="text-align:center">이모지만 보고 맞히기. 비슷하게 말해도 강사가 인정하면 정답이에요.</p>'+stuBox()+'</div>'+board();
 }
@@ -382,7 +382,9 @@ function btick(){var l=(B.end-Date.now())/1000,c=document.getElementById('bclock
 /* 작은 타이머(초성·이모지) */
 var T={left:null,run:false,end:0,iv:null};
 function timerBox(sec){var l=T.left==null?sec:T.left;T.sec=sec;
- return '<div class="row" style="justify-content:center"><span class="mini'+(T.left!=null&&l<=5?' warn':'')+'" id="qclock">'+(T.left==null?'⏱ '+sec+'초':Math.max(0,Math.ceil(l))+'초')+'</span><button class="btn" data-a="qt">'+(T.run?'멈춤':'⏱ '+sec+'초 재기')+'</button></div>'}
+ return '<div class="row" style="justify-content:center"><span class="mini'+(T.left!=null&&l<=5?' warn':'')+'" id="qclock">'+(T.left==null?'⏱ '+sec+'초':Math.max(0,Math.ceil(l))+'초')+'</span><button class="btn" data-a="qt">'+(T.run?'멈춤':'⏱ '+sec+'초 재기')+'</button></div>'+
+  (T.run?'':'<div class="chips" style="justify-content:center"><span class="note" style="margin:0">문제마다 시간</span>'+[10,20,30,45,60,90].map(function(x){return '<button data-qs="'+x+'" style="'+(sec===x?'background:var(--blue);color:var(--blue-ink)':'')+'">'+x+'초</button>'}).join('')+
+  '<button data-qs="0" style="'+([10,20,30,45,60,90].indexOf(sec)<0?'background:var(--blue);color:var(--blue-ink)':'')+'">✏️ 직접'+([10,20,30,45,60,90].indexOf(sec)<0?' '+sec+'초':'')+'</button></div>')}
 function qtick(){T.left=(T.end-Date.now())/1000;var c=document.getElementById('qclock');
  if(T.left<=0){stopT();T.left=0;beep();render();return}
  if(c){c.textContent=Math.ceil(T.left)+'초';c.className='mini'+(T.left<=5?' warn':'')}}
@@ -535,6 +537,8 @@ function act(d){
  if(d.hit!=null){st.score[+d.hit]++;save();next(V);resetQ();return render()}
  if(d.sel!=null){st.sel=+d.sel;save();return render()}
  if(d.bs){st.bodySec=+d.bs;save();return render()}
+ if(d.qs!=null){var qs=+d.qs;if(!qs){qs=parseInt(prompt('문제마다 몇 초? (5~300)',st.qSec[V]||30),10);if(!(qs>=5&&qs<=300))return}
+  st.qSec[V]=qs;save();if(!T.run)T.left=null;return render()} /* 초성·이모지 문제 시간 바꾸기(게임마다 따로 기억) */
  switch(d.a){
   case 'fs':if(document.fullscreenElement)document.exitFullscreen();else document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen();break;
   case 'zero':if(confirm('모든 팀 점수를 0점으로 할까요?')){st.score=[0,0,0,0,0,0];save();render()}break;
