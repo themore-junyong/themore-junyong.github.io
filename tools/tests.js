@@ -3,7 +3,7 @@
 var TESTS = window.TESTS = {};
 
 TESTS.riasec = {
-  group: '진로·직업', emoji: '🧭', title: '직업흥미검사', sub: '6가지 흥미 유형으로 어울리는 직무·학과 찾기', mins: 10,
+  group: '진로·직업', emoji: '🧭', title: '직업흥미검사', sub: '6가지 흥미 유형으로 어울리는 직무·학과 찾기', mins: 7,
   intro: '내가 <b>어떤 활동을 할 때 즐거운지</b>를 6가지 유형(현실형·탐구형·예술형·사회형·진취형·관습형)으로 알아봐요. 가장 높은 두 유형을 합친 "흥미 코드"로 어울리는 직무를 찾아요.',
   base: '홀랜드(J. Holland)의 직업흥미 이론(RIASEC)', top: 2, code: true, all: true,
   resNote: '위 두 개가 나의 흥미 코드예요. 막대가 높은 순서예요.',
@@ -63,7 +63,7 @@ TESTS.riasec = {
 };
 
 TESTS.big5 = {
-  group: '성격·마음', emoji: '🖐️', title: 'Big Five 성격검사', sub: '심리학에서 가장 많이 쓰는 성격 5요인', mins: 10, show: 'profile',
+  group: '성격·마음', emoji: '🖐️', title: 'Big Five 성격검사', sub: '심리학에서 가장 많이 쓰는 성격 5요인', mins: 7, show: 'profile',
   intro: '성격을 <b>개방성·성실성·외향성·우호성·정서 안정성</b> 다섯 가지 축으로 봐요. 유형으로 나누지 않고 "각 축의 어디쯤인지"를 보여 줘요. 직장 적응·업무 성과 연구에서 가장 많이 쓰이는 틀이에요.',
   base: '성격 5요인 모델(Big Five). 문항은 공개 문항(IPIP)을 참고해 새로 씀',
   after: '<b>직장 연구에서는</b> 성실성이 대부분의 직무 성과와 관련이 깊다고 알려져 있어요. 다만 어떤 축이든 "높을수록 좋다"는 없어요. 내 성격에 맞는 일하는 방식을 찾는 게 핵심이에요.',
@@ -109,7 +109,7 @@ TESTS.big5 = {
 };
 
 TESTS.enneagram = {
-  group: '성격·마음', emoji: '🔯', title: '에니어그램', sub: '나를 움직이는 마음의 동기 9가지', mins: 12, top: 1, all: true, low: false,
+  group: '성격·마음', emoji: '🔯', title: '에니어그램', sub: '나를 움직이는 마음의 동기 9가지', mins: 8, top: 1, all: true, low: false,
   intro: '에니어그램은 "무엇을 하느냐"보다 <b>왜 그렇게 행동하는지(마음의 동기)</b>를 9가지 유형으로 봐요. 가장 높은 유형이 나의 중심 유형이고, 두 번째로 높은 유형도 함께 참고해요.',
   base: '에니어그램 9유형 이론(동기·두려움 중심 해석). 공식 검사(RHETI 등)와 다른 수업용 문항',
   resNote: '가장 높은 유형이 나의 중심 유형이에요. 비슷하게 높은 유형이 있다면 둘 다 읽어 보고 더 "나 같은" 쪽을 골라 보세요.',
@@ -148,7 +148,7 @@ TESTS.enneagram = {
 };
 
 TESTS.values = {
-  group: '진로·직업', emoji: '💎', title: '직업가치관 검사', sub: '일에서 내가 가장 중요하게 여기는 것', mins: 9, top: 3, all: true, low: true,
+  group: '진로·직업', emoji: '💎', title: '직업가치관 검사', sub: '일에서 내가 가장 중요하게 여기는 것', mins: 6, top: 3, all: true, low: true,
   intro: '같은 회사라도 누구는 월급, 누구는 안정, 누구는 성장을 보고 들어가요. <b>일에서 내가 무엇을 가장 중요하게 여기는지</b> 9가지 가치로 알아봐요. 회사를 고를 때 기준이 돼요.',
   base: '직업가치 이론(Super의 일 가치, 고용노동부 직업가치관 검사의 가치 분류 개념을 참고해 문항 새로 씀)',
   resNote: '위 세 가지가 나의 핵심 직업가치예요. 회사를 고를 때 이 세 가지를 먼저 확인하세요.',
@@ -187,7 +187,7 @@ TESTS.values = {
 };
 
 TESTS.conflict = {
-  group: '관계·소통', emoji: '🤺', title: '갈등 대처 유형', sub: '의견이 부딪힐 때 나는 어떻게 할까', mins: 8, top: 1, all: true,
+  group: '관계·소통', emoji: '🤺', title: '갈등 대처 유형', sub: '의견이 부딪힐 때 나는 어떻게 할까', mins: 6, top: 1, all: true,
   intro: '직장에서 갈등은 피할 수 없어요. 중요한 건 <b>상황에 맞는 방법을 고르는 것</b>이에요. 나의 기본 습관이 경쟁·협력·타협·회피·양보 중 어디에 가까운지 알아봐요.',
   base: '토마스-킬만(Thomas-Kilmann)의 갈등 관리 5가지 방식 개념(주장성 × 협조성). 문항은 새로 씀',
   resNote: '가장 높은 것이 내가 자주 쓰는 방식이에요. 다섯 가지 모두 "맞는 상황"이 있어요.',
@@ -219,7 +219,7 @@ TESTS.conflict = {
 };
 
 TESTS.resil = {
-  group: '성격·마음', emoji: '🪀', title: '회복탄력성 검사', sub: '넘어져도 다시 일어서는 마음의 근육', mins: 8, top: 3, all: false, low: true,
+  group: '성격·마음', emoji: '🪀', title: '회복탄력성 검사', sub: '넘어져도 다시 일어서는 마음의 근육', mins: 5, top: 3, all: false, low: true,
   intro: '회복탄력성은 힘든 일을 겪고도 <b>다시 일어서는 힘</b>이에요. 타고나는 게 아니라 근육처럼 키울 수 있어요. 세 가지 힘(자기조절력·대인관계력·긍정성)으로 나눠 봐요.',
   base: '회복탄력성 연구(Reivich & Shatté, 국내 김주환의 3요인 구성 개념). 문항은 새로 씀',
   resNote: '세 가지 힘의 점수예요. 가장 낮은 힘이 이번에 키울 근육이에요.',
@@ -249,7 +249,7 @@ TESTS.resil = {
 };
 
 TESTS.coping = {
-  group: '성격·마음', emoji: '🌊', title: '스트레스 대처 유형', sub: '힘들 때 나는 어떻게 버틸까', mins: 8, top: 1, all: true,
+  group: '성격·마음', emoji: '🌊', title: '스트레스 대처 유형', sub: '힘들 때 나는 어떻게 버틸까', mins: 6, top: 1, all: true,
   intro: '스트레스를 받았을 때 사람마다 <b>대처하는 습관</b>이 달라요. 문제를 직접 해결하는지, 마음을 다스리는지, 도움을 청하는지, 피하는지 4가지로 봐요.',
   base: '라자루스와 포크먼(Lazarus & Folkman)의 스트레스 대처 이론(문제중심·정서중심 대처). 문항은 새로 씀',
   resNote: '가장 높은 것이 나의 주 대처 방식이에요.',
@@ -280,7 +280,7 @@ TESTS.coping = {
 };
 
 TESTS.mindset = {
-  group: '성격·마음', emoji: '🌱', title: '성장 마인드셋 진단', sub: '능력은 키울 수 있다고 믿는가', mins: 6, show: 'level',
+  group: '성격·마음', emoji: '🌱', title: '성장 마인드셋 진단', sub: '능력은 키울 수 있다고 믿는가', mins: 4, show: 'level',
   intro: '"머리는 타고나는 거야"라고 믿는 <b>고정 마인드셋</b>과 "노력하면 늘 수 있어"라고 믿는 <b>성장 마인드셋</b>. 어느 쪽에 가까운지에 따라 실패를 대하는 태도가 완전히 달라져요.',
   base: '캐럴 드웩(C. Dweck)의 마인드셋 연구. 문항은 새로 씀',
   levels: [
@@ -305,7 +305,7 @@ TESTS.mindset = {
 };
 
 TESTS.strength = {
-  group: '성격·마음', emoji: '💪', title: '강점 24가지 찾기', sub: '나의 대표 강점 TOP 5', mins: 10, top: 5, all: false,
+  group: '성격·마음', emoji: '💪', title: '강점 24가지 찾기', sub: '나의 대표 강점 TOP 5', mins: 8, top: 5, all: false,
   intro: '긍정심리학에서는 사람의 좋은 성품을 <b>24가지 강점</b>으로 정리했어요. 그중 가장 높은 5가지가 "나다운 강점(대표 강점)"이에요. 자소서·면접에서 장점을 말할 때 바로 쓸 수 있어요.',
   base: '셀리그먼·피터슨(Seligman & Peterson)의 성격 강점 24가지 분류(VIA 분류). 공식 VIA 검사와 다른 수업용 문항',
   resNote: '위 다섯 개가 나의 대표 강점이에요. 아래에 자소서 문장 예시가 있어요.',
