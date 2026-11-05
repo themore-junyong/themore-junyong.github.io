@@ -157,7 +157,7 @@ function item(a){
   if(k==='pick')return '<button class="g" data-pick="1" aria-expanded="'+!!S.pick+'"'+st+(S.pick?' data-on="1"':'')+'><b>'+t+(S.pick?' ▲':' ▼')+'</b><span>'+d+'</span></button>';
   return '<a class="g" href="'+to+'" target="_blank" rel="noopener" data-live="'+to+'" data-qn="'+esc(t)+'">'+in_+'</a>';
 }
-const TST=[['riasec','직업흥미'],['big5','Big Five 성격'],['enneagram','에니어그램'],['values','직업가치관'],['strength','강점 24'],['conflict','갈등 대처'],['resil','회복탄력성'],['coping','스트레스 대처'],['mindset','성장 마인드셋'],['literacy','직장 문해력']];
+const TST=[['riasec','직업흥미'],['big5','Big Five 성격'],['enneagram','에니어그램'],['values','직업가치관'],['strength','강점 24'],['conflict','갈등 대처'],['resil','회복탄력성'],['coping','스트레스 대처'],['mindset','성장 마인드셋'],['literacy','직장 문해력'],['mbti','MBTI형 16유형'],['animal','DISC 행동유형'],['teamrole','팀 역할'],['eq','감성지능 EQ'],['attach','관계 애착'],['appreciate','인정의 언어'],['selfesteem','자존감'],['grit','그릿(끈기)'],['burnout','번아웃'],['stressidx','스트레스 지수'],['study','공부 스타일'],['timetype','시간 관리']];
 function render(){
   let h='<div class="top"><div class="brand"><small>위듀케이션 취업 연구소</small></div><a href="./">학생 첫 화면 보기 →</a></div>';
   if(!S.pin){

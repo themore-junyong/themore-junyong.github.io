@@ -76,6 +76,31 @@ a.g b{font-size:1.05rem} a.g span{color:var(--soft);font-size:.88rem}
   padding:10px max(16px,env(safe-area-inset-right,0px)) calc(10px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));z-index:5}
 .barb .in{max-width:760px;margin:0 auto;display:flex;gap:8px;justify-content:space-between}
 .barb .btn{flex:1;max-width:220px;padding:12px}
+/* 같은 묶음 검사끼리 오가는 탭 */
+.tabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;scrollbar-width:thin}
+.tabs a{flex:0 0 auto;border:1px solid var(--line);background:var(--card);border-radius:999px;padding:6px 12px;font-size:.88rem;font-weight:700;color:var(--ink);text-decoration:none;white-space:nowrap}
+.tabs a[aria-current="page"]{background:var(--blue);border-color:var(--blue);color:var(--blue-ink)}
+/* 결과지 */
+.rep-h{display:flex;justify-content:space-between;align-items:flex-end;gap:10px;border-bottom:3px double var(--ink);padding-bottom:10px;flex-wrap:wrap}
+.rep-h .t{font-size:1.25rem;font-weight:900;letter-spacing:.04em}
+.rep-meta{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px 14px;font-size:.88rem}
+.rep-meta div{display:flex;flex-direction:column;border-bottom:1px solid var(--line);padding-bottom:4px}
+.rep-meta span{color:var(--soft);font-size:.76rem;font-weight:700;letter-spacing:.04em}
+table.sc td:first-child{min-width:6.5em}
+table.sc{width:100%;border-collapse:collapse;font-size:.92rem}
+table.sc th,table.sc td{border-bottom:1px solid var(--line);padding:8px 6px;text-align:left;vertical-align:middle}
+table.sc th{font-size:.78rem;color:var(--soft);font-weight:700;letter-spacing:.04em}
+table.sc td.n{text-align:right;font-variant-numeric:tabular-nums;font-weight:700;width:3.5em}
+table.sc .mini{position:relative;height:8px;border-radius:4px;background:var(--line);min-width:70px}
+table.sc .mini i{position:absolute;left:0;top:0;bottom:0;border-radius:4px;background:var(--blue)}
+table.sc .mini::after{content:"";position:absolute;left:50%;top:-3px;bottom:-3px;border-left:1px dashed var(--soft)}
+.lv{display:inline-block;border-radius:3px;padding:1px 8px;font-size:.8rem;font-weight:700;white-space:nowrap;background:var(--line)}
+.lv.l4{background:var(--blue);color:var(--blue-ink)}.lv.l3{background:var(--blue-soft);color:var(--blue)}.lv.l1{background:color-mix(in srgb,var(--bad) 15%,transparent);color:var(--bad)}
+.rel{display:flex;align-items:center;gap:8px;font-size:.92rem}
+.rel b.ok{color:var(--ok)}.rel b.bad{color:var(--bad)}
+.opin{border-left:4px solid var(--ink);padding:10px 14px;background:var(--field)}
+.letters{display:flex;gap:6px;justify-content:center}
+.letters b{font-size:2.6rem;font-weight:900;width:1.4em;text-align:center;border:2px solid var(--blue);border-radius:6px;color:var(--blue);line-height:1.3}
 @media print{.barb,.noprint{display:none!important}body{background:#fff}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
@@ -90,7 +115,10 @@ var id=new URLSearchParams(location.search).get('t'), T=TS[id];
 var LK=['전혀\n아니다','아니다','보통','그렇다','매우\n그렇다'];
 var PER=6;
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
-function head(){return '<div class="top"><div class="brand"><small>위듀케이션 · 자가진단</small></div><a href="test.html">← 검사 목록</a></div>'}
+function head(){return '<div class="top"><div class="brand"><small>위듀케이션 · 자가진단</small></div><a href="test.html">← 검사 목록</a></div>'+tabs()}
+function tabs(){ // 같은 묶음(group)의 검사끼리 위에서 바로 넘어감
+  if(!T)return '';var g=T.group,L=Object.keys(TS).filter(function(k){return TS[k].group===g});if(L.length<2)return '';
+  return '<nav class="tabs noprint" aria-label="'+esc(g)+'">'+L.map(function(k){return '<a href="?t='+k+'"'+(k===id?' aria-current="page"':'')+'>'+TS[k].emoji+' '+esc(TS[k].title)+'</a>'}).join('')+'</nav>'}
 
 /* 검사 목록 */
 if(!T){
@@ -146,6 +174,7 @@ function sendRes(){ // 결과 요약을 수업 방 선생님 화면으로
   if(!window.TM_ROOM)return;var sc=S.res,t,b;
   if(QUIZ){t=sc.ok+' / '+sc.n+' 정답';b=t}
   else if(T.show==='level'){var d=Object.keys(T.dims)[0],v=sc[d],lv=T.levels.filter(function(l){return v>=l[0]})[0];t=lv[1]+' ('+v+'점)';b=T.dims[d].name+' '+v+'점 / 100 · '+lv[1]}
+  else if(T.show==='type16'){var c=code16(sc);t=c+' '+T.types[c].nick;b=Object.keys(T.dims).map(function(d){var D=T.dims[d];return D.name+' '+(sc[d]>=50?D.a+' '+sc[d]:D.b+' '+(100-sc[d]))}).join('\n')}
   else{var r=ranked(sc);t=r.slice(0,T.top||(T.show==='profile'?5:1)).map(function(d){return T.dims[d].name}).join(' · ');b=r.map(function(d){return T.dims[d].name+' '+sc[d]}).join('\n')}
   TM_ROOM.send(('test-'+id).toLowerCase().replace(/[^a-z0-9-]/g,'').slice(0,24),T.title+' · '+t,b);
 }
@@ -160,8 +189,70 @@ function detail(d,sc){
   if(D.say)h+='<div><span class="label">면접·자소서에서 이렇게 말해 보세요</span><p class="say">'+D.say+'</p></div>';
   return h+'</div>';
 }
+function code16(sc){return Object.keys(T.dims).map(function(d){return sc[d]>=50?T.dims[d].a:T.dims[d].b}).join('')}
+function lvOf(v,worse){ // 점수 → 수준 (번아웃·스트레스처럼 높을수록 나쁜 검사는 색만 반대로)
+  var L=v>=80?[4,'매우 높음']:v>=60?[3,'높음']:v>=40?[2,'보통']:[1,'낮음'];
+  var c=worse?(L[0]>=3?1:L[0]===1?3:2):L[0];return '<span class="lv l'+c+'">'+L[1]+'</span>'}
+function reliab(){ // 응답 신뢰도: 한 가지 답만 몰아 찍었는지, 같은 뜻 문항(정·역)에 앞뒤가 맞는지
+  var v=ITEMS.map(function(_,i){return S.a[i]}).filter(function(x){return x!=null}),cnt={},mx=0;v.forEach(function(x){cnt[x]=(cnt[x]||0)+1;mx=Math.max(mx,cnt[x])});
+  var same=v.length?mx/v.length:0,gap=0,gn=0,by={};
+  ITEMS.forEach(function(it,i){var a=S.a[i];if(a==null)return;var o=by[it[1]]||(by[it[1]]={p:[],r:[]});(it[2]?o.r:o.p).push(it[2]?6-a:a)});
+  Object.keys(by).forEach(function(d){var o=by[d];if(o.p.length&&o.r.length){var m=function(x){return x.reduce(function(s,y){return s+y},0)/x.length};gap+=Math.abs(m(o.p)-m(o.r));gn++}});
+  gap=gn?gap/gn:0;
+  var secs=S.t0&&S.t1?Math.round((S.t1-S.t0)/1000):null,fast=secs!=null&&secs<ITEMS.length*1.5;
+  var bad=same>=0.7||gap>=1.6||fast,mid=!bad&&(same>=0.55||gap>=1.1);
+  var why=[];if(same>=0.55)why.push('같은 답을 '+Math.round(same*100)+'% 골랐어요');if(gap>=1.1)why.push('뜻이 반대인 문항끼리 답이 엇갈려요');if(fast)why.push('문항당 1.5초보다 빨리 답했어요');
+  return {lv:bad?'낮음':mid?'보통':'좋음',cls:bad?'bad':'ok',why:why,secs:secs}}
+function reportHead(){
+  var r=reliab(),d=new Date(S.t1||Date.now()),pad=function(n){return ('0'+n).slice(-2)},nick=(window.TM_ROOM&&TM_ROOM.get&&TM_ROOM.get()&&TM_ROOM.get().nick)||'';
+  var h='<div class="card"><div class="rep-h"><div><span class="label">위듀케이션 자가진단 결과지</span><div class="t">'+T.emoji+' '+esc(T.title)+'</div></div><span class="soft" style="font-size:.85rem">No. '+esc(S.no||'-')+'</span></div>'+
+   '<div class="rep-meta"><div><span>검사일</span>'+d.getFullYear()+'.'+pad(d.getMonth()+1)+'.'+pad(d.getDate())+' '+pad(d.getHours())+':'+pad(d.getMinutes())+'</div>'+
+   (nick?'<div><span>이름</span>'+esc(nick)+'</div>':'')+
+   '<div><span>문항 수</span>'+ITEMS.length+'문항</div>'+
+   (r.secs!=null?'<div><span>걸린 시간</span>'+Math.floor(r.secs/60)+'분 '+(r.secs%60)+'초</div>':'')+
+   (QUIZ?'':'<div><span>응답 신뢰도</span><b class="'+(r.cls)+'" style="color:var(--'+(r.cls==='bad'?'bad':'ok')+')">'+r.lv+'</b></div>')+
+   '<div><span>이론 바탕</span>'+esc((T.base||'').split(/[.(]/)[0])+'</div></div>';
+  if(!QUIZ&&r.why.length)h+='<p class="note">⚠️ 응답 신뢰도 '+r.lv+': '+r.why.join(', ')+'. '+(r.lv==='낮음'?'결과를 그대로 믿기 어려워요. 시간을 두고 다시 해 보세요.':'참고해서 읽어 주세요.')+'</p>';
+  return h+'</div>';
+}
+function scaleTable(sc){ // 척도별 점수표
+  var ks=Object.keys(T.dims),worse=!!T.worse;
+  return '<div class="card"><h3>척도별 점수</h3><table class="sc"><thead><tr><th>척도</th><th>점수</th><th style="width:40%">0 · 50 · 100</th><th>수준</th></tr></thead><tbody>'+
+   ks.map(function(d){var D=T.dims[d],v=sc[d];
+     if(T.show==='type16'){var a=v>=50;return '<tr><td>'+D.emoji+' '+esc(D.name)+'<br><span class="soft" style="font-size:.8rem">'+D.a+' '+D.an+' ↔ '+D.b+' '+D.bn+'</span></td><td class="n">'+(a?D.a:D.b)+' '+(a?v:100-v)+'</td><td><div class="mini"><i style="width:'+v+'%"></i></div></td><td><span class="lv l'+(Math.abs(v-50)>=25?4:Math.abs(v-50)>=10?3:2)+'">'+(Math.abs(v-50)>=25?'뚜렷함':Math.abs(v-50)>=10?'보통':'중간')+'</span></td></tr>'}
+     return '<tr><td>'+(D.emoji||'')+' '+esc(D.name)+'</td><td class="n">'+v+'</td><td><div class="mini"><i style="width:'+Math.max(2,v)+'%"></i></div></td><td>'+lvOf(v,worse)+'</td></tr>'}).join('')+
+   '</tbody></table><p class="note">점수는 0~100으로 바꾼 값이에요(50 = 보통). 같은 반 친구들과 비교한 순위가 아니라 나의 응답만으로 계산했어요.</p></div>';
+}
+function opinion(sc){ // 종합 소견 + 권고
+  var ks=Object.keys(T.dims),txt='',rec=[];
+  if(T.show==='type16'){var c=code16(sc),Y=T.types[c];
+    var clear=ks.filter(function(d){return Math.abs(sc[d]-50)>=25}).map(function(d){var D=T.dims[d];return (sc[d]>=50?D.an:D.bn)+'('+(sc[d]>=50?D.a:D.b)+')'});
+    var mid=ks.filter(function(d){return Math.abs(sc[d]-50)<10}).map(function(d){return T.dims[d].name});
+    txt='응답을 종합하면 <b>'+c+' '+esc(Y.nick)+'</b> 유형에 가장 가까워요. '+(clear.length?clear.join('·')+' 성향이 특히 뚜렷하게 나타났어요. ':'네 가지 모두 한쪽으로 크게 치우치지 않았어요. ')+(mid.length?'\''+mid.join('·')+'\' 기준에서는 두 성향이 비슷해서, 상황에 따라 다르게 행동할 수 있어요.':'');
+    rec=[Y.care,'나와 반대 유형('+c.split('').map(function(ch){var m={E:'I',I:'E',S:'N',N:'S',T:'F',F:'T',J:'P',P:'J'};return m[ch]}).join('')+') 친구와 서로 어떻게 다른지 이야기해 보기'];
+  }else if(T.show==='level'){var v=sc[ks[0]];txt=esc(T.dims[ks[0]].name)+' 점수는 <b>'+v+'점</b>이에요. '+T.levels.filter(function(l){return v>=l[0]})[0][2];rec=[]}
+  else{var r=ranked(sc),hi=r.filter(function(d){return sc[d]>=60}),lo=r.filter(function(d){return sc[d]<40}),nm=function(d){return T.dims[d].name};
+    txt='가장 높은 척도는 <b>'+esc(nm(r[0]))+'('+sc[r[0]]+')</b>'+(r[1]?', 다음은 '+esc(nm(r[1]))+'('+sc[r[1]]+')':'')+'이에요. '+(sc[r[0]]-(sc[r[1]]||0)<8&&r[1]?'두 척도의 차이가 작아서 둘 다 나의 모습으로 보는 게 좋아요. ':'')+
+      (hi.length>=3?'여러 척도가 높게 나와서 상황에 따라 다양한 모습을 쓸 줄 아는 편이에요. ':'')+(lo.length?esc(lo.map(nm).join('·'))+'은(는) 낮게 나왔어요. 약점이 아니라 아직 덜 써 본 모습이에요.':'');
+    rec=r.slice(0,1).concat(r.slice(-1)).map(function(d){return T.dims[d].tip}).filter(Boolean);
+  }
+  return '<div class="card"><h3>종합 소견</h3><p class="opin">'+txt+'</p>'+(rec.length?'<h3>권고 사항</h3><ol style="margin:0;padding-left:1.3em">'+rec.map(function(x){return '<li>'+x+'</li>'}).join('')+'</ol>':'')+'</div>';
+}
 function result(){
-  var h=head(),sc=S.res;
+  var h=head()+reportHead(),sc=S.res;
+  if(T.show==='type16'){
+    var c=code16(sc),Y=T.types[c];
+    h+='<div class="card" style="text-align:center;align-items:center"><span class="soft">나의 성격유형</span><div class="letters">'+c.split('').map(function(x){return '<b>'+x+'</b>'}).join('')+'</div><div class="res-type">'+Y.emoji+' '+esc(Y.nick)+'</div><p style="text-align:left">'+Y.desc+'</p></div>';
+    h+='<div class="card"><h3>네 가지 기준</h3><div style="display:flex;flex-direction:column;gap:14px">'+Object.keys(T.dims).map(function(d){var D=T.dims[d],v=sc[d],a=v>=50;
+      return '<div class="bp"><div class="row"><span'+(a?' style="color:var(--blue);font-weight:900"':'')+'>'+D.a+' '+D.an+' '+v+'%</span><b>'+D.emoji+' '+esc(D.name)+'</b><span'+(a?'':' style="color:var(--blue);font-weight:900"')+'>'+(100-v)+'% '+D.bn+' '+D.b+'</span></div><div class="track"><span class="dot" style="left:'+(100-v)+'%"></span></div><p class="note">'+(a?D.aText:D.bText)+'</p></div>'}).join('')+'</div></div>';
+    h+='<div class="card"><h3>'+Y.emoji+' '+c+' 자세히</h3><dl class="d"><dt>강점</dt><dd>'+Y.good+'</dd><dt>주의할 점</dt><dd>'+Y.care+'</dd><dt>어울리는 일</dt><dd>'+Y.jobs+'</dd></dl></div>';
+    h+=opinion(sc);
+    h+='<details class="card"><summary><b>16가지 유형 모두 보기</b></summary><div class="grid">'+Object.keys(T.types).map(function(k){var y=T.types[k];return '<div class="card" style="gap:6px;padding:12px'+(k===c?';border-color:var(--blue)':'')+'"><b>'+y.emoji+' '+k+' · '+esc(y.nick)+'</b><span class="soft" style="font-size:.88rem">'+y.good+'</span></div>'}).join('')+'</div></details>';
+    if(T.after)h+='<div class="why">'+T.after+'</div>';
+    h+='<p class="note">이 결과는 수업용 자가진단이에요. 공식 MBTI® 검사가 아니며, 정식 검사는 전문 기관에서 받을 수 있어요. 유형은 사람을 정하는 틀이 아니라 나를 이해하는 출발점이에요.</p>';
+    h+='<div class="btns noprint"><button class="btn" data-go="again">다시 하기</button><button class="btn" data-go="print">인쇄·PDF</button><a class="btn" href="test.html" style="text-decoration:none">다른 검사</a></div>';
+    return h;
+  }
   h+='<div class="card"><span class="soft">'+esc(T.title)+' 결과</span>';
   if(QUIZ){
     var pct=Math.round(sc.ok/sc.n*100),band=T.bands.filter(function(b){return pct>=b[0]})[0];
@@ -184,6 +275,7 @@ function result(){
     if(T.low){var lw=r[r.length-1];h+='<div class="card"><h3>가장 낮은 영역: '+(T.dims[lw].emoji||'')+' '+esc(T.dims[lw].name)+'</h3><p>'+(T.dims[lw].tip||T.dims[lw].grow||'')+'</p></div>'}
     if(T.all)h+='<details class="card"><summary><b>다른 유형 설명도 보기</b></summary>'+r.slice(top).map(function(d){return detail(d,sc[d])}).join('')+'</details>';
   }
+  if(!QUIZ){if(T.show!=='level')h+=scaleTable(sc);h+=opinion(sc)}
   if(T.after)h+='<div class="why">'+T.after+'</div>';
   h+='<p class="note">이 결과는 수업용 자가진단이에요. 그날 기분에 따라 달라질 수 있고, 사람을 한 가지로 정하는 도구가 아니에요. 정식 검사는 고용24·커리어넷 등에서 받을 수 있어요.</p>';
   h+='<div class="btns noprint"><button class="btn" data-go="again">다시 하기</button><button class="btn" data-go="print">인쇄·PDF</button><a class="btn" href="test.html" style="text-decoration:none">다른 검사</a></div>';
@@ -202,9 +294,9 @@ function render(){
   window.scrollTo(0,0);
 }
 function go(k){
-  if(k==='0')page=0;
+  if(k==='0'){page=0;if(!S.t0){S.t0=Date.now();save()}}
   else if(k==='prev')page=page===0?'intro':page-1;
-  else if(k==='next'){if(page===npages-1){S.res=score();save();page='res';sendRes()}else page++}
+  else if(k==='next'){if(page===npages-1){S.res=score();S.t1=Date.now();if(!S.no)S.no=String(Date.now()).slice(-6);save();page='res';sendRes()}else page++}
   else if(k==='again'){S={a:{}};save();page='intro'}
   else if(k==='print'){window.print();return}
   render();
