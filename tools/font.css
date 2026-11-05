@@ -1,0 +1,5 @@
+/* 취업연구소 공통 글꼴: 에스코어 드림 (S-Core 무료 글꼴, 상업 사용 가능)
+   보통 글씨(굵기 100~599) = 에스코어드림 5 Medium, 굵은 글씨(600~900) = 에스코어드림 7 ExtraBold
+   글꼴을 못 받으면 Noto Sans KR → 기기 기본 글꼴로 보여 줌 */
+@font-face{font-family:"SCDream";src:url("https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_six@1.2/S-CoreDream-5Medium.woff") format("woff");font-weight:100 599;font-style:normal;font-display:swap}
+@font-face{font-family:"SCDream";src:url("https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_six@1.2/S-CoreDream-7ExtraBold.woff") format("woff");font-weight:600 900;font-style:normal;font-display:swap}

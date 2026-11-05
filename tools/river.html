@@ -1,9 +1,9 @@
 <!doctype html>
 <html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<style>:root{color-scheme:light}body{margin:0;font-family:system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+<link rel="stylesheet" href="font.css"><style>:root{color-scheme:light}body{margin:0;font-family:"SCDream","Noto Sans KR",system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>문제해결 강건너기</title>
 <script>/* 학생 폰(?stu=1): 수업 방에 들어온 학생만 직접 풀기. 강사 노트북(빔)은 방 확인 없이 그대로 */
-if(/[?&]stu=1/.test(location.search))document.write('<script src="room.js?v=196" data-guard><\/script>');if(/[?&]stu=1/.test(location.search))document.write('<style>a[href="index.html"]{display:none!important}</style>')</script>
+if(/[?&]stu=1/.test(location.search))document.write('<script src="room.js?v=233" data-guard><\/script>');if(/[?&]stu=1/.test(location.search))document.write('<style>a[href="index.html"]{display:none!important}</style>')</script>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Gowun+Dodum&family=Noto+Sans+KR:wght@400;700;900&display=swap">
 <style>
@@ -12,9 +12,9 @@ if(/[?&]stu=1/.test(location.search))document.write('<script src="room.js?v=196"
   --sky:#e8f1ee; --sand:#efe2c4; --sand-edge:#d9c79c; --water:#2f8a96; --water-deep:#1f6a75;
   --ink:#1d2b2c; --ink-soft:#4d6163; --card:#fffdf7; --accent:#f2a33a; --accent-ink:#3a2300;
   --ok:#2f8f4e; --bad:#c8432f; --line:rgba(29,43,44,.14);
-  --f-display:"Black Han Sans","Noto Sans KR",system-ui,sans-serif;
-  --f-body:"Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
-  --f-soft:"Gowun Dodum","Noto Sans KR",system-ui,sans-serif;
+  --f-display:"SCDream","Noto Sans KR",system-ui,sans-serif;
+  --f-body:"SCDream","Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  --f-soft:"SCDream","Noto Sans KR",system-ui,sans-serif;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
   --sky:#10201f; --sand:#3a3324; --sand-edge:#56492f; --water:#1d5f68; --water-deep:#134249;
@@ -28,7 +28,7 @@ html,body{height:100%}
 body{background:var(--sky);color:var(--ink);font-family:var(--f-body);font-size:16px;
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 .wrap{max-width:1180px;margin:0 auto;padding-block:18px 28px;display:flex;flex-direction:column;gap:16px;min-height:100%;box-sizing:border-box}
-h1,h2,h3{font-family:var(--f-display);font-weight:400;margin:0;text-wrap:balance;letter-spacing:.01em}
+h1,h2,h3{font-family:var(--f-display);font-weight:800;margin:0;text-wrap:balance;letter-spacing:.01em}
 button{font:inherit;cursor:pointer}
 button:focus-visible,.token:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
 
@@ -65,7 +65,7 @@ button:focus-visible,.token:focus-visible{outline:3px solid var(--accent);outlin
 .board{display:grid;grid-template-columns:1fr 1.25fr 1fr;border-radius:16px;overflow:hidden;min-height:340px;border:2px solid var(--line)}
 .bank{background:var(--sand);padding:14px 10px;display:flex;flex-direction:column;gap:10px;min-width:0}
 .bank.left{border-right:6px solid var(--sand-edge)} .bank.right{border-left:6px solid var(--sand-edge)}
-.bank h4{margin:0;font-family:var(--f-display);font-weight:400;font-size:1.1rem;color:var(--ink-soft);text-align:center}
+.bank h4{margin:0;font-family:var(--f-display);font-weight:800;font-size:1.1rem;color:var(--ink-soft);text-align:center}
 .slots{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;align-content:flex-start;flex:1}
 .river{position:relative;background:repeating-linear-gradient(170deg,var(--water) 0 22px,var(--water-deep) 22px 26px);min-width:0;overflow:hidden}
 .river.bridge{background:linear-gradient(var(--water-deep),var(--water-deep))}
@@ -98,7 +98,7 @@ button:focus-visible,.token:focus-visible{outline:3px solid var(--accent);outlin
 .stur .who b{color:var(--ok)}
 .stubar{background:var(--water);color:#fff;border-radius:12px;padding:10px 14px;font-weight:700;text-align:center}
 .btn{border:2px solid var(--line);background:var(--card);color:var(--ink);border-radius:12px;padding:12px 18px;font-weight:700;font-size:1.05rem}
-.btn.go{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-size:1.25rem;padding:12px 30px;font-family:var(--f-display);font-weight:400}
+.btn.go{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-size:1.25rem;padding:12px 30px;font-family:var(--f-display);font-weight:800}
 .btn:disabled{opacity:.4;cursor:not-allowed}
 .msg{text-align:center;min-height:1.6em;font-weight:700;color:var(--ink-soft);margin:0}
 
@@ -116,7 +116,7 @@ button:focus-visible,.token:focus-visible{outline:3px solid var(--accent);outlin
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .card .lesson h3{color:var(--accent)}}
 .card .q{font-family:var(--f-soft);font-size:1.1rem;border-left:4px solid var(--accent);padding-left:10px}
 .star-box{border:2px dashed var(--line);border-radius:12px;padding:12px 14px;display:grid;grid-template-columns:auto 1fr;gap:6px 10px;font-size:.95rem;line-height:1.55}
-.star-box b{font-family:var(--f-display);font-weight:400;color:var(--water);font-size:1.1rem}
+.star-box b{font-family:var(--f-display);font-weight:800;color:var(--water);font-size:1.1rem}
 .star-box .hd{grid-column:1/-1;font-weight:700}
 .card .actions{display:flex;flex-wrap:wrap;gap:10px;justify-content:flex-end}
 

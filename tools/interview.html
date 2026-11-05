@@ -3,12 +3,12 @@
 <title>AI 모의면접</title>
 <meta name="robots" content="noindex">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap">
-<style>
+<link rel="stylesheet" href="font.css"><style>
 /* 흐름: 준비(코드·직무·방식·문항 수) → 면접(질문 → 답(타자·말하기) → 피드백+다음 질문) → 채점표 */
 :root{
   --bg:#f6f6f6; --ink:#333; --soft:#6f7480; --card:#fff; --line:#e2e3e8; --field:#fbfbfc;
   --blue:#4e6bf1; --blue-ink:#fff; --blue-soft:#e9edfe; --ok:#2e8b4c; --bad:#c8432f;
-  --f:"Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  --f:"SCDream","Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
   --bg:#16181d; --ink:#eceef2; --soft:#a3a8b5; --card:#1f2229; --line:#323642; --field:#1a1d23;
@@ -57,7 +57,7 @@ details summary{cursor:pointer;font-weight:700}
 @media print{.btns,.top a{display:none}}
 </style>
 </head><body>
-<script src="room.js?v=196" data-guard></script>
+<script src="room.js?v=233" data-guard></script>
 <div class="wrap" id="app"></div>
 <script type="module" src="ai.js"></script>
 <script>

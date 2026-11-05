@@ -73,7 +73,7 @@
     put(null);
     var o=document.createElement('div');
     o.style.cssText='position:fixed;inset:0;z-index:99;background:rgba(0,0,0,.65);display:flex;align-items:center;justify-content:center;padding:16px';
-    o.innerHTML='<div style="background:#fff;color:#222;border-radius:12px;padding:24px;max-width:420px;text-align:center;font-family:system-ui;display:flex;flex-direction:column;gap:12px"><b style="font-size:1.4rem">수업이 끝났어요 👋</b><span>'+why+'</span><span style="color:#666;font-size:.9rem">내가 쓴 내용은 이 휴대폰에 그대로 남아 있어요.</span><a href="./" style="background:#4e6bf1;color:#fff;padding:12px;border-radius:6px;text-decoration:none;font-weight:700">처음 화면으로</a></div>';
+    o.innerHTML='<div style="background:#fff;color:#222;border-radius:12px;padding:24px;max-width:420px;text-align:center;font-family:SCDream,system-ui;display:flex;flex-direction:column;gap:12px"><b style="font-size:1.4rem">수업이 끝났어요 👋</b><span>'+why+'</span><span style="color:#666;font-size:.9rem">내가 쓴 내용은 이 휴대폰에 그대로 남아 있어요.</span><a href="./" style="background:#4e6bf1;color:#fff;padding:12px;border-radius:6px;text-decoration:none;font-weight:700">처음 화면으로</a></div>';
     document.body.appendChild(o);
   }
   /* 강사가 '학생 화면 바꾸기'를 누르면 방 문서 go={to,t}가 바뀜 → 들어와 있는 학생 화면이 그 활동으로 넘어감(같은 지시는 한 번만) */
@@ -109,7 +109,7 @@
   function teamPick(){
     var r=get();if(!r)return;var o=document.createElement('div');
     o.style.cssText='position:fixed;inset:0;z-index:95;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:16px';
-    o.innerHTML='<div style="background:#fff;color:#222;border-radius:12px;padding:20px;width:min(420px,100%);font-family:system-ui;display:flex;flex-direction:column;gap:12px"><b style="font-size:1.2rem">우리 조 바꾸기</b><div id="tmTP" style="display:grid;grid-template-columns:1fr 1fr;gap:8px">불러오는 중…</div><a href="./" style="color:#4e6bf1;font-weight:700;text-align:center">처음 화면으로</a><button style="border:1px solid #ccc;background:#fff;border-radius:6px;padding:10px;font:700 15px system-ui">닫기</button></div>';
+    o.innerHTML='<div style="background:#fff;color:#222;border-radius:12px;padding:20px;width:min(420px,100%);font-family:SCDream,system-ui;display:flex;flex-direction:column;gap:12px"><b style="font-size:1.2rem">우리 조 바꾸기</b><div id="tmTP" style="display:grid;grid-template-columns:1fr 1fr;gap:8px">불러오는 중…</div><a href="./" style="color:#4e6bf1;font-weight:700;text-align:center">처음 화면으로</a><button style="border:1px solid #ccc;background:#fff;border-radius:6px;padding:10px;font:700 15px system-ui">닫기</button></div>';
     o.addEventListener('click',function(e){var t=e.target;if(t===o||t.tagName==='BUTTON'&&!t.dataset.t){o.remove();return}if(t.dataset&&t.dataset.t!=null){setTeam(t.dataset.t);o.remove();toast('✔ '+t.dataset.t+'(으)로 바꿨어요');try{window.dispatchEvent(new Event('tm-team'))}catch(x){}}});
     document.body.appendChild(o);
     info(r.pin).then(function(x){var b=document.getElementById('tmTP');if(!b)return;

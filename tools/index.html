@@ -3,12 +3,12 @@
 <title>위듀케이션 취업 연구소</title>
 <meta name="robots" content="noindex">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap">
-<style>
+<link rel="stylesheet" href="font.css"><style>
 /* Layout: 휴대폰 우선 한 줄 흐름. 위 = 단계 막대, 가운데 = 지금 단계 카드, 아래 = 이전/다음 고정 바 */
 :root{
   --bg:#f6f6f6; --ink:#333; --soft:#6f7480; --card:#fff; --line:#e2e3e8; --field:#fbfbfc;
   --blue:#4e6bf1; --blue-ink:#fff; --blue-soft:#e9edfe; --yel:#ffd164; --ok:#2e8b4c; --bad:#c8432f;
-  --f:"Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  --f:"SCDream","Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
   --bg:#16181d; --ink:#eceef2; --soft:#a3a8b5; --card:#1f2229; --line:#323642; --field:#1a1d23;
@@ -102,7 +102,7 @@ pre.out{white-space:pre-wrap;word-break:keep-all;overflow-wrap:anywhere;backgrou
 <div class="wrap" id="app"></div>
 <div class="bar" id="bar" hidden><div class="in"><button class="btn" id="prev">← 이전</button><button class="btn pri" id="next">다음 →</button></div></div>
 
-<script src="room.js?v=196"></script>
+<script src="room.js?v=233"></script>
 <script>
 (function(){
 var h=(location.hash||'').slice(1), m={safety:'safety.html',river:'river.html',intro:'intro.html',color:'color.html'};
