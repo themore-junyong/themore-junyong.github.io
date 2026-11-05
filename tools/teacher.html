@@ -88,6 +88,7 @@ input.w{width:100%}
 <div class="wrap" id="app"><p class="soft">불러오는 중…</p></div>
 <div id="qrov" hidden role="dialog" aria-label="학생 입장 QR"><button class="x" id="qrX" aria-label="닫기">✕</button><h2 id="qrH">📱 휴대폰 카메라로 찍고 들어오세요</h2><div class="p" id="qrP"></div><div id="qrbox"></div><div id="qrU" style="font-weight:700"></div></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="tests.js"></script>
 <script type="module">
 import { firebaseConfig } from './firebase-config.js';
 const V='10.12.2', G=`https://www.gstatic.com/firebasejs/${V}`;
@@ -192,6 +193,42 @@ function render(){
 const TOOL={jaso:'📝 자소서',interview:'🎤 모의면접',color:'🎨 퍼스널컬러',intro:'🗣 1분 자기소개'};
 const toolName=t=>TOOL[t]||(t.indexOf('test-')===0?'🧭 검사':t);
 let J=[],W=[],wUnsub=null,hbT=null,openW={};
+const clean=b=>String(b||'').replace(/\n?⟦[\s\S]*⟧\s*$/,'');
+/* 검사 반 통계: 학생 검사 결과 끝의 ⟦{k,s,c}⟧ 점수를 검사마다 모아 반 전체·조별로 보여 줌 */
+let openS={};
+function stats(){
+  const TS=window.TESTS||{},by={};let old=0;
+  W.forEach(w=>{if(w.tool.indexOf('test-')!==0)return;const m=/⟦([\s\S]*)⟧\s*$/.exec(w.body||'');let d=null;try{d=m&&JSON.parse(m[1])}catch(e){}
+    if(!d||!TS[d.k]){old++;return}(by[d.k]=by[d.k]||[]).push({team:w.team||'조 없음',nick:w.nick,s:d.s,c:d.c})});
+  const ks=Object.keys(by);if(!ks.length)return old?'<div class="card"><h3>📊 검사 반 통계</h3><p class="note">통계 기능이 생기기 전에 받은 결과 '+old+'개는 통계에 넣지 못했어요. 지금부터 검사를 마치는 학생은 여기 모여요.</p></div>':'';
+  const teams=(S.teams||[]).concat(['조 없음']);
+  const avg=a=>a.length?Math.round(a.reduce((x,y)=>x+y,0)/a.length):0;
+  const bar=(lab,v,max,txt,hi)=>'<div style="display:grid;grid-template-columns:minmax(7em,11em) 1fr 4.5em;gap:8px;align-items:center;font-size:.92rem"><span>'+lab+'</span><span style="height:14px;background:var(--line);border-radius:7px;overflow:hidden"><i style="display:block;height:100%;width:'+(max&&v?Math.max(2,v/max*100):0)+'%;background:'+(hi?'var(--ok,#2e8b4c)':'var(--blue)')+';border-radius:7px"></i></span><b style="text-align:right">'+txt+'</b></div>';
+  const count=(L,f)=>{const c={};L.forEach(x=>{const k=f(x);if(k!=null)c[k]=(c[k]||0)+1});return c};
+  const teamTable=(L,cols,val,fmt)=>{const T2=teams.filter(t=>L.some(x=>x.team===t));if(T2.length<2)return '';
+    return '<div style="overflow-x:auto"><table style="border-collapse:collapse;width:100%;font-size:.9rem"><thead><tr><th style="text-align:left;padding:6px">조</th><th style="padding:6px">인원</th>'+cols.map(c=>'<th style="padding:6px">'+c[1]+'</th>').join('')+'</tr></thead><tbody>'+
+      T2.map(t=>{const M=L.filter(x=>x.team===t);return '<tr style="border-top:1px solid var(--line)"><td style="padding:6px;font-weight:700">'+esc(t)+'</td><td style="padding:6px;text-align:center">'+M.length+'</td>'+cols.map(c=>'<td style="padding:6px;text-align:center">'+fmt(M,c[0])+'</td>').join('')+'</tr>'}).join('')+'</tbody></table></div>'};
+  let h='<div class="card"><div class="row" style="justify-content:space-between"><h3>📊 검사 반 통계</h3><span class="note">검사를 마친 학생 점수를 모아 보여 줘요. 학생이 마칠 때마다 바로 바뀌어요.</span></div>';
+  ks.forEach((k,ix)=>{const T=TS[k],L=by[k],n=L.length,op=openS[k]!=null?openS[k]:ix===0,dk=Object.keys(T.dims||{});
+    let b='';
+    if(T.kind==='quiz'){const pc=L.map(x=>Math.round(x.s.ok/x.s.n*100));
+      b+=bar('반 평균 정답률',avg(pc),100,avg(pc)+'%')+'<p class="note">최고 '+Math.max(...pc)+'% · 최저 '+Math.min(...pc)+'%</p>'+teamTable(L,[['p','평균 정답률']],0,(M)=>avg(M.map(x=>Math.round(x.s.ok/x.s.n*100)))+'%');
+    }else if(T.show==='type16'){const c=count(L,x=>x.c),top=Object.keys(c).sort((a,b)=>c[b]-c[a]),mx=c[top[0]]||1;
+      b+='<b>유형별 인원</b>'+top.map((t,i)=>bar(t+' '+esc((T.types[t]||{}).nick||''),c[t],mx,c[t]+'명',i===0)).join('');
+      b+='<b>네 가지 기준 (반 전체)</b>'+dk.map(d=>{const D=T.dims[d],na=L.filter(x=>x.s[d]>=50).length;return bar(D.emoji+' '+D.a+' '+D.an+' / '+D.b+' '+D.bn,na,n,D.a+' '+na+' · '+D.b+' '+(n-na))}).join('');
+      b+=teamTable(L,dk.map(d=>[d,T.dims[d].a+'/'+T.dims[d].b]),0,(M,d)=>{const na=M.filter(x=>x.s[d]>=50).length;return T.dims[d].a+na+' · '+T.dims[d].b+(M.length-na)});
+    }else if(T.show==='level'){const d=dk[0],v=L.map(x=>x.s[d]),lv=x=>(T.levels.filter(l=>x>=l[0])[0]||[])[1],c=count(L,x=>lv(x.s[d]));
+      b+=bar('반 평균',avg(v),100,avg(v)+'점')+'<b>수준별 인원</b>'+T.levels.map(l=>bar(l[1],c[l[1]]||0,n,(c[l[1]]||0)+'명')).join('')+teamTable(L,[[d,'평균']],0,(M,dd)=>avg(M.map(x=>x.s[dd]))+'점');
+    }else{const av={};dk.forEach(d=>av[d]=avg(L.map(x=>x.s[d]||0)));const order=dk.slice().sort((a,b)=>av[b]-av[a]);
+      if(T.show!=='profile'){const c=count(L,x=>x.c),mx=Math.max(1,...Object.values(c));b+='<b>1위 유형별 인원</b>'+order.filter(d=>c[d]).sort((a,b)=>c[b]-c[a]).map((d,i)=>bar((T.dims[d].emoji||'')+' '+esc(T.dims[d].name),c[d],mx,c[d]+'명',i===0)).join('')}
+      b+='<b>척도별 반 평균</b>'+order.map((d,i)=>bar((T.dims[d].emoji||'')+' '+esc(T.dims[d].name),av[d],100,av[d]+'점',i===0)).join('');
+      b+=teamTable(L,order.slice(0,8).map(d=>[d,(T.dims[d].emoji||'')+' '+T.dims[d].name]),0,(M,d)=>avg(M.map(x=>x.s[d]||0)));
+    }
+    h+='<details data-st="'+esc(k)+'" style="border-top:1px solid var(--line);padding-top:8px"'+(op?' open':'')+'><summary style="cursor:pointer;font-weight:800">'+T.emoji+' '+esc(T.title)+' <span class="note">'+n+'명</span></summary><div style="display:flex;flex-direction:column;gap:8px;margin-top:10px">'+b+'</div></details>';
+  });
+  if(old)h+='<p class="note">통계 기능이 생기기 전에 받은 결과 '+old+'개는 빠져 있어요.</p>';
+  return h+'</div>';
+}
 function works(){
   const by={},tOf={};W.forEach(w=>{(by[w.nick]=by[w.nick]||[]).push(w);if(w.team)tOf[w.nick]=w.team});
   const T=(S.teams||[]),ti=n=>{const i=T.indexOf(tOf[n]);return i<0?(tOf[n]?T.length:T.length+1):i};
@@ -200,10 +237,10 @@ function works(){
   const T2=(S.teams||[]).concat(J.some(j=>!j.team||(S.teams||[]).indexOf(j.team)<0)?['조 없음']:[]);
   const roll='<div class="card"><h3>들어온 학생 '+J.length+'명</h3>'+(J.length?'<div class="tnames" style="grid-template-columns:repeat(auto-fill,minmax(180px,1fr))">'+(T2.length?T2:['전체']).map(t=>{const M=J.filter(j=>t==='전체'||(t==='조 없음'?(!j.team||(S.teams||[]).indexOf(j.team)<0):j.team===t)).map(j=>j.nick).sort((a,b)=>a.localeCompare(b,'ko',{numeric:true}));
       return '<div style="border:1px solid var(--line);border-radius:6px;padding:8px 10px"><b style="color:var(--blue)">'+esc(t)+'</b> <span class="note">'+M.length+'명</span><div class="note" style="color:var(--ink)">'+(M.map(esc).join(', ')||'-')+'</div></div>'}).join('')+'</div>':'<p class="soft">학생이 QR로 들어오면 여기에 조별로 떠요.</p>')+'</div>';
-  return roll+'<div class="card"><div class="row" style="justify-content:space-between"><h3>학생 결과 ('+names.length+'명 · '+W.length+'개)</h3><span class="note">학생이 마치면 여기 바로 쌓여요. 이 방 강사만 볼 수 있어요.</span></div>'+
+  return roll+stats()+'<div class="card"><div class="row" style="justify-content:space-between"><h3>학생 결과 ('+names.length+'명 · '+W.length+'개)</h3><span class="note">학생이 마치면 여기 바로 쌓여요. 이 방 강사만 볼 수 있어요.</span></div>'+
    (names.length?names.map(n=>head(n)+'<div style="border-top:1px solid var(--line);padding-top:8px"><b>'+esc(n)+'</b><div style="display:flex;flex-direction:column;gap:4px;margin-top:4px">'+by[n].map(w=>{const k=w.id,o=openW[k];
      return '<div><button class="btn" data-w="'+esc(k)+'" style="padding:4px 10px;text-align:left;width:100%">'+toolName(w.tool)+' · '+esc(w.title)+' <span class="note">'+(w.t?new Date(w.t.toMillis()).toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'}):'')+'</span> '+(o?'▲':'▼')+'</button>'+
-      (o?'<pre style="white-space:pre-wrap;font:inherit;background:var(--field);border:1px solid var(--line);border-radius:4px;padding:10px;margin:4px 0 0">'+esc(w.body)+'</pre>':'')+'</div>'}).join('')+'</div></div>').join('')
+      (o?'<pre style="white-space:pre-wrap;font:inherit;background:var(--field);border:1px solid var(--line);border-radius:4px;padding:10px;margin:4px 0 0">'+esc(clean(w.body))+'</pre>':'')+'</div>'}).join('')+'</div></div>').join('')
     :'<p class="soft">아직 없어요. 학생이 방에 들어와 자소서 초안·검사·면접·퍼스널컬러를 마치면 자동으로 들어와요.</p>')+
    (W.length?'<button class="btn" data-a="csv">⬇ 엑셀(CSV)로 받기</button>':'')+'</div>';
 }
@@ -213,7 +250,7 @@ function live(){ // 방이 정해지면: hb(살아 있음) 1분마다 찍기 + �
   beat();hbT=setInterval(beat,60e3);if(!window.__tmVis){window.__tmVis=1;document.addEventListener('visibilitychange',()=>{if(!document.hidden&&S.pin)F.updateDoc(F.doc(db,'rooms',S.pin),{hb:F.serverTimestamp()}).catch(()=>{})})}
   wUnsub=F.onSnapshot(F.collection(db,'rooms',S.pin,'work'),q=>{const all=q.docs.map(d=>Object.assign({id:d.id},d.data()));J=all.filter(w=>w.tool==='join');W=all.filter(w=>w.tool!=='join'&&!/^(ai-(lie|who|eth)|sme-ox)$/.test(w.tool)).sort((a,b)=>(a.t?a.t.toMillis():0)-(b.t?b.t.toMillis():0));render()},()=>{});
 }
-function csv(){const rows=[['조','이름','도구','제목','시각','내용']].concat(W.map(w=>[w.team||'',w.nick,toolName(w.tool).replace(/^\S+ /,''),w.title,w.t?new Date(w.t.toMillis()).toLocaleString('ko-KR'):'',w.body]));
+function csv(){const rows=[['조','이름','도구','제목','시각','내용']].concat(W.map(w=>[w.team||'',w.nick,toolName(w.tool).replace(/^\S+ /,''),w.title,w.t?new Date(w.t.toMillis()).toLocaleString('ko-KR'):'',clean(w.body)]));
   const t='\ufeff'+rows.map(r=>r.map(x=>'"'+String(x==null?'':x).replace(/"/g,'""')+'"').join(',')).join('\r\n');
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([t],{type:'text/csv'}));a.download='방'+S.pin+'_학생결과.csv';a.click()}
 async function make(){
@@ -252,6 +289,7 @@ function qr(to,name){const o=document.getElementById('qrov'),u=to?(to.charAt(0)=
   document.getElementById('qrH').textContent=to?name+' · 찍고 바로 시작해요':'📱 휴대폰 카메라로 찍고 들어오세요';
   document.getElementById('qrP').textContent='방 번호 '+S.pin;document.getElementById('qrU').textContent=u.replace('https://','');b.innerHTML='';
   if(window.QRCode)new QRCode(b,{text:u,width:600,height:600,correctLevel:QRCode.CorrectLevel.M});else b.textContent='QR을 불러오지 못했어요. 위 주소를 칠판에 적어 주세요.'}
+app.addEventListener('toggle',e=>{const d=e.target;if(d.dataset&&d.dataset.st)openS[d.dataset.st]=d.open},true); /* 통계 펼침 상태 기억(화면이 새로 그려져도) */
 app.addEventListener('click',e=>{const t=e.target.closest('[data-fv],[data-a],[data-w],[data-q],[data-mode],[data-pick],[data-live],[data-tn]');if(!t)return;
   if(t.dataset.fv!=null){e.preventDefault();const k=t.dataset.fv,f=FAV().slice(),i=f.indexOf(k);if(i>=0)f.splice(i,1);else f.push(k);mySave({fav:f});render();return}
   if(t.dataset.mode){S.mode=t.dataset.mode;render();return}

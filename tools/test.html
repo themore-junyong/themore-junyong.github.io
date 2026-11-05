@@ -176,7 +176,9 @@ function sendRes(){ // 결과 요약을 수업 방 선생님 화면으로
   else if(T.show==='level'){var d=Object.keys(T.dims)[0],v=sc[d],lv=T.levels.filter(function(l){return v>=l[0]})[0];t=lv[1]+' ('+v+'점)';b=T.dims[d].name+' '+v+'점 / 100 · '+lv[1]}
   else if(T.show==='type16'){var c=code16(sc);t=c+' '+T.types[c].nick;b=Object.keys(T.dims).map(function(d){var D=T.dims[d];return D.name+' '+(sc[d]>=50?D.a+' '+sc[d]:D.b+' '+(100-sc[d]))}).join('\n')}
   else{var r=ranked(sc);t=r.slice(0,T.top||(T.show==='profile'?5:1)).map(function(d){return T.dims[d].name}).join(' · ');b=r.map(function(d){return T.dims[d].name+' '+sc[d]}).join('\n')}
-  TM_ROOM.send(('test-'+id).toLowerCase().replace(/[^a-z0-9-]/g,'').slice(0,24),T.title+' · '+t,b);
+  /* 통계용 점수(선생님 화면 '검사 반 통계'가 읽음). 결과 글 맨 끝 ⟦…⟧ 한 줄, 선생님 화면에서는 숨김 */
+  var dat={k:id,s:sc};if(T.show==='type16')dat.c=code16(sc);else if(!QUIZ&&T.show!=='level')dat.c=ranked(sc)[0];
+  TM_ROOM.send(('test-'+id).toLowerCase().replace(/[^a-z0-9-]/g,'').slice(0,24),T.title+' · '+t,b+'\n⟦'+JSON.stringify(dat)+'⟧');
 }
 function ranked(sc){return Object.keys(sc).sort(function(a,b){return sc[b]-sc[a]})}
 function bars(sc,top){return '<div class="bars">'+ranked(sc).map(function(d,i){var D=T.dims[d];return '<div class="bar'+(i<top?' top':'')+'"><span>'+(D.emoji||'')+' '+esc(D.name)+'</span><span class="tr"><span class="fl" style="width:'+Math.max(3,sc[d])+'%"></span></span><span class="n">'+sc[d]+'</span></div>'}).join('')+'</div>'}
