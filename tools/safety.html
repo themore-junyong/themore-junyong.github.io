@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<style>:root{color-scheme:light}body{margin:0;font-family:system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+<link rel="stylesheet" href="font.css"><style>:root{color-scheme:light}body{margin:0;font-family:"SCDream","Noto Sans KR",system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>안전 징검다리</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@400;700;900&display=swap">
@@ -10,7 +10,7 @@
   --bg:#f3f1e8; --ink:#1f2422; --soft:#55605b; --card:#fffef9; --line:rgba(31,36,34,.15);
   --water:#2c7f8c; --water2:#1d5e69; --stone:#c9c2ad; --stone-edge:#a39a80;
   --a:#e5522f; --b:#2f62d6; --hazard:#f5c518; --ok:#2e8b4c; --bad:#c8432f;
-  --f-d:"Black Han Sans","Noto Sans KR",system-ui,sans-serif; --f-b:"Noto Sans KR","Malgun Gothic",system-ui,sans-serif;
+  --f-d:"SCDream","Noto Sans KR",system-ui,sans-serif; --f-b:"SCDream","Noto Sans KR","Malgun Gothic",system-ui,sans-serif;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
   --bg:#151a19; --ink:#eef2ef; --soft:#a8b3ae; --card:#1f2725; --line:rgba(238,242,239,.16);
@@ -22,7 +22,7 @@ html,body{height:100%}
 body{background:var(--bg);color:var(--ink);font-family:var(--f-b);font-size:17px;
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 .wrap{max-width:1200px;margin:0 auto;padding-block:14px 24px;display:flex;flex-direction:column;gap:14px}
-h1,h2{font-family:var(--f-d);font-weight:400;margin:0;text-wrap:balance}
+h1,h2{font-family:var(--f-d);font-weight:800;margin:0;text-wrap:balance}
 button{font:inherit;cursor:pointer;color:inherit}
 button:focus-visible{outline:3px solid var(--hazard);outline-offset:3px}
 .top{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
@@ -36,7 +36,7 @@ button:focus-visible{outline:3px solid var(--hazard);outline-offset:3px}
 .st{height:46px;border-radius:50%/45%;background:var(--stone);border:3px solid var(--stone-edge);position:relative;display:flex;align-items:center;justify-content:center}
 .st .pl{position:absolute;font-size:2rem;top:-22px;transition:transform .3s}
 .lane.turn .st, .lane.turn .shore{box-shadow:0 0 0 3px var(--hazard)}
-.lane .who{font-family:var(--f-d);font-size:1.05rem;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.5)}
+.lane .who{font-family:var(--f-d);font-weight:800;font-size:1.05rem;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.5)}
 .lane-head{display:flex;justify-content:space-between;color:#fff;font-weight:700;font-size:.95rem;text-shadow:0 1px 2px rgba(0,0,0,.6)}
 .qcard{background:var(--card);border-radius:16px;padding:20px 22px;border:2px solid var(--line);display:flex;flex-direction:column;gap:14px}
 .qmeta{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font-weight:700;color:var(--soft)}
@@ -44,14 +44,14 @@ button:focus-visible{outline:3px solid var(--hazard);outline-offset:3px}
 .q{font-size:clamp(1.35rem,3vw,2.05rem);font-weight:900;line-height:1.45;margin:0;text-wrap:pretty}
 .opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
 .opt{border:3px solid var(--line);background:var(--bg);border-radius:14px;padding:16px;font-size:clamp(1.1rem,2.3vw,1.45rem);font-weight:700;text-align:left;display:flex;gap:12px;align-items:center;min-width:0}
-.opt .k{font-family:var(--f-d);font-size:1.6rem;min-width:1.4em;color:var(--soft)}
+.opt .k{font-family:var(--f-d);font-weight:800;font-size:1.6rem;min-width:1.4em;color:var(--soft)}
 .opt:hover:not(:disabled){border-color:var(--hazard)}
 .opt.right{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 18%,var(--bg))}
 .opt.wrong{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 15%,var(--bg))}
 .opt:disabled{cursor:default}
 .exp{border-left:6px solid var(--hazard);padding:10px 14px;background:var(--bg);border-radius:6px;font-size:1.1rem;line-height:1.65;margin:0}
 .exp b.ok{color:var(--ok)} .exp b.bad{color:var(--bad)}
-.next{align-self:flex-end;background:var(--hazard);color:#1f2422;border:0;border-radius:12px;padding:12px 26px;font-family:var(--f-d);font-size:1.3rem}
+.next{align-self:flex-end;background:var(--hazard);color:#1f2422;border:0;border-radius:12px;padding:12px 26px;font-family:var(--f-d);font-weight:800;font-size:1.3rem}
 .over{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:16px;z-index:9}
 .over .card{background:var(--card);border-radius:18px;padding:26px;max-width:620px;width:100%;display:flex;flex-direction:column;gap:14px;max-height:100%;overflow:auto;box-sizing:border-box}
 .over h2{font-size:2.4rem}
