@@ -21,6 +21,8 @@
     fb.catch(function(){dead=true});
     return fb;
   }
+  /* 강사 화면이 켜져 있다는 신호(hb): 빔 게임 화면만 띄워 둬도 학생 폰이 '수업 끝'으로 끊기지 않게 1분마다 */
+  if(on){var beat=function(){if(!dead)boot().then(function(b){return b.F.updateDoc(b.ref,{hb:b.F.serverTimestamp()})}).catch(function(){})};setTimeout(beat,3000);setInterval(beat,60e3)}
   function flush(){timer=null;if(!want||dead)return;var w=want;want=null;
     boot().then(function(b){return b.F.updateDoc(b.ref,{g:{k:w.k,s:w.s,t:b.F.serverTimestamp()}})}).catch(function(){});
   }

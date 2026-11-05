@@ -105,7 +105,7 @@ table.sc .mini::after{content:"";position:absolute;left:50%;top:-3px;bottom:-3px
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head><body>
-<script src="room.js?v=233" data-guard></script>
+<script src="room.js?v=235" data-guard></script>
 <div class="wrap" id="app"></div>
 <script src="tests.js"></script>
 <script>
@@ -118,7 +118,7 @@ function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return
 function head(){return '<div class="top"><div class="brand"><small>위듀케이션 · 자가진단</small></div><a href="test.html">← 검사 목록</a></div>'+tabs()}
 function tabs(){ // 같은 묶음(group)의 검사끼리 위에서 바로 넘어감
   if(!T)return '';var g=T.group,L=Object.keys(TS).filter(function(k){return TS[k].group===g});if(L.length<2)return '';
-  return '<nav class="tabs noprint" aria-label="'+esc(g)+'">'+L.map(function(k){return '<a href="?t='+k+'"'+(k===id?' aria-current="page"':'')+'>'+TS[k].emoji+' '+esc(TS[k].title)+'</a>'}).join('')+'</nav>'}
+  return '<nav data-room-hide class="tabs noprint" aria-label="'+esc(g)+'">'+L.map(function(k){return '<a href="?t='+k+'"'+(k===id?' aria-current="page"':'')+'>'+TS[k].emoji+' '+esc(TS[k].title)+'</a>'}).join('')+'</nav>'}
 
 /* 검사 목록 */
 if(!T){
@@ -250,7 +250,7 @@ function result(){
     h+='<details class="card"><summary><b>16가지 유형 모두 보기</b></summary><div class="grid">'+Object.keys(T.types).map(function(k){var y=T.types[k];return '<div class="card" style="gap:6px;padding:12px'+(k===c?';border-color:var(--blue)':'')+'"><b>'+y.emoji+' '+k+' · '+esc(y.nick)+'</b><span class="soft" style="font-size:.88rem">'+y.good+'</span></div>'}).join('')+'</div></details>';
     if(T.after)h+='<div class="why">'+T.after+'</div>';
     h+='<p class="note">이 결과는 수업용 자가진단이에요. 공식 MBTI® 검사가 아니며, 정식 검사는 전문 기관에서 받을 수 있어요. 유형은 사람을 정하는 틀이 아니라 나를 이해하는 출발점이에요.</p>';
-    h+='<div class="btns noprint"><button class="btn" data-go="again">다시 하기</button><button class="btn" data-go="print">인쇄·PDF</button><a class="btn" href="test.html" style="text-decoration:none">다른 검사</a></div>';
+    h+='<div class="btns noprint"><button class="btn" data-go="again" data-room-hide>다시 하기</button><button class="btn" data-go="print">인쇄·PDF</button><a class="btn" href="test.html" style="text-decoration:none" data-room-hide>다른 검사</a></div>';
     return h;
   }
   h+='<div class="card"><span class="soft">'+esc(T.title)+' 결과</span>';
@@ -278,11 +278,12 @@ function result(){
   if(!QUIZ){if(T.show!=='level')h+=scaleTable(sc);h+=opinion(sc)}
   if(T.after)h+='<div class="why">'+T.after+'</div>';
   h+='<p class="note">이 결과는 수업용 자가진단이에요. 그날 기분에 따라 달라질 수 있고, 사람을 한 가지로 정하는 도구가 아니에요. 정식 검사는 고용24·커리어넷 등에서 받을 수 있어요.</p>';
-  h+='<div class="btns noprint"><button class="btn" data-go="again">다시 하기</button><button class="btn" data-go="print">인쇄·PDF</button><a class="btn" href="test.html" style="text-decoration:none">다른 검사</a></div>';
+  h+='<div class="btns noprint"><button class="btn" data-go="again" data-room-hide>다시 하기</button><button class="btn" data-go="print">인쇄·PDF</button><a class="btn" href="test.html" style="text-decoration:none" data-room-hide>다른 검사</a></div>';
   return h;
 }
 function render(){
   var h=page==='intro'?intro():page==='res'?result():qpage(page);
+  window.TM_HOLD=page==='res'; /* 결과지를 보는 동안은 강사가 다음 활동을 눌러도 바로 안 넘어감(버튼으로) */
   app.innerHTML=h;
   var b=document.getElementById('barb');if(b)b.remove();
   if(typeof page==='number'){

@@ -210,7 +210,7 @@ function works(){
 function live(){ // 방이 정해지면: hb(살아 있음) 1분마다 찍기 + 학생 결과 듣기
   clearInterval(hbT);if(wUnsub)wUnsub();
   const ref=F.doc(db,'rooms',S.pin),beat=()=>F.updateDoc(ref,{hb:F.serverTimestamp()}).catch(()=>{});
-  beat();hbT=setInterval(beat,60e3);
+  beat();hbT=setInterval(beat,60e3);if(!window.__tmVis){window.__tmVis=1;document.addEventListener('visibilitychange',()=>{if(!document.hidden&&S.pin)F.updateDoc(F.doc(db,'rooms',S.pin),{hb:F.serverTimestamp()}).catch(()=>{})})}
   wUnsub=F.onSnapshot(F.collection(db,'rooms',S.pin,'work'),q=>{const all=q.docs.map(d=>Object.assign({id:d.id},d.data()));J=all.filter(w=>w.tool==='join');W=all.filter(w=>w.tool!=='join'&&!/^(ai-(lie|who|eth)|sme-ox)$/.test(w.tool)).sort((a,b)=>(a.t?a.t.toMillis():0)-(b.t?b.t.toMillis():0));render()},()=>{});
 }
 function csv(){const rows=[['조','이름','도구','제목','시각','내용']].concat(W.map(w=>[w.team||'',w.nick,toolName(w.tool).replace(/^\S+ /,''),w.title,w.t?new Date(w.t.toMillis()).toLocaleString('ko-KR'):'',w.body]));

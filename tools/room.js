@@ -4,7 +4,7 @@
    - 강사가 방을 종료(closed)하거나 강사 화면이 3분 넘게 꺼져 있으면(hb 멈춤) "수업이 끝났어요"로 끊김
    - TM_ROOM.send(도구, 제목, 내용) : 결과를 그 방 강사 화면으로 보냄(도구마다 1개, 다시 보내면 덮어씀). 강사만 읽을 수 있음 */
 (function(){
-  var V='10.12.2', G='https://www.gstatic.com/firebasejs/'+V, K='tm-room-s', STALE=3*60e3;
+  var V='10.12.2', G='https://www.gstatic.com/firebasejs/'+V, K='tm-room-s', STALE=10*60e3;
   var me=document.currentScript, GUARD=me&&me.hasAttribute('data-guard');
   var TEACH=/[?&]teach=1/.test(location.search); // 강사 미리보기: 방 없이 화면만 봄, 결과는 안 보냄
   /* 도구 안 화면(#해시, 예: ai.html#who)도 따라가기: 강사가 보낸 ?h=who 를 #who 로 바꿔 둠(페이지 스크립트보다 먼저) */
@@ -73,8 +73,8 @@
     put(null);
     var o=document.createElement('div');
     o.style.cssText='position:fixed;inset:0;z-index:99;background:rgba(0,0,0,.65);display:flex;align-items:center;justify-content:center;padding:16px';
-    o.innerHTML='<div style="background:#fff;color:#222;border-radius:12px;padding:24px;max-width:420px;text-align:center;font-family:SCDream,system-ui;display:flex;flex-direction:column;gap:12px"><b style="font-size:1.4rem">수업이 끝났어요 👋</b><span>'+why+'</span><span style="color:#666;font-size:.9rem">내가 쓴 내용은 이 휴대폰에 그대로 남아 있어요.</span><a href="./" style="background:#4e6bf1;color:#fff;padding:12px;border-radius:6px;text-decoration:none;font-weight:700">처음 화면으로</a></div>';
-    document.body.appendChild(o);
+    o.innerHTML='<div style="background:#fff;color:#222;border-radius:12px;padding:24px;max-width:420px;text-align:center;font-family:SCDream,system-ui;display:flex;flex-direction:column;gap:12px"><b style="font-size:1.4rem">수업이 끝났어요 👋</b><span>'+why+'</span><span style="color:#666;font-size:.9rem">내가 쓴 내용은 이 휴대폰에 그대로 남아 있어요.</span><button type="button" id="tmStay" style="background:#4e6bf1;color:#fff;padding:12px;border:0;border-radius:6px;font:inherit;font-weight:700;cursor:pointer">지금 화면 계속 보기</button><a href="./" style="color:#4e6bf1;padding:6px;text-decoration:none;font-weight:700">처음 화면으로</a></div>';
+    document.body.appendChild(o);var sb=document.getElementById('tmStay');if(sb)sb.addEventListener('click',function(){o.remove()});
   }
   /* 강사가 '학생 화면 바꾸기'를 누르면 방 문서 go={to,t}가 바뀜 → 들어와 있는 학생 화면이 그 활동으로 넘어감(같은 지시는 한 번만) */
   function here(){var f=location.pathname.split('/').pop()||'';if(f==='index.html')f='';
@@ -86,17 +86,30 @@
     var key=r.pin+':'+g.t.toMillis(),seen='';try{seen=localStorage.getItem('tm-room-go')||''}catch(e){}
     if(seen===key)return;try{localStorage.setItem('tm-room-go',key)}catch(e){}
     if(g.to===here())return;
+    var dest=g.to==='home'?'./':g.to.charAt(0)==='#'?'./'+g.to:g.to+(g.to.indexOf('?')<0?'?':'&')+'r='+r.pin;
+    if(window.TM_HOLD){var e=document.getElementById('tmNext');if(e)e.remove();e=document.createElement('a');e.id='tmNext';e.href=dest;
+      e.textContent='👉 선생님이 다음 활동을 열었어요. 결과를 다 봤으면 눌러요';
+      e.style.cssText='position:fixed;left:8px;right:8px;bottom:max(12px,env(safe-area-inset-bottom,0px));z-index:60;background:#4e6bf1;color:#fff;font:700 15px system-ui;padding:14px;border-radius:10px;text-align:center;text-decoration:none;box-shadow:0 4px 14px rgba(0,0,0,.25)';
+      document.body.appendChild(e);return}
     location.href=g.to==='home'?'./':g.to.charAt(0)==='#'?'./'+g.to:g.to+(g.to.indexOf('?')<0?'?':'&')+'r='+r.pin;
   }
   function codeSync(room){var r=get(),ak=room&&typeof room.ak==='string'?room.ak:'';if(!r||!ak)return;
     if(r.ak!==ak){r.ak=ak;put(r)}if(useCode(ak)&&/(intro|interview|ai)\.html$/.test(location.pathname))location.reload()}
+  function soft(w){ // 강사 화면 신호만 멈춤: 학생 화면은 그대로 두고 위에 작은 안내
+    var e=document.getElementById('tmSoft');
+    if(!w){if(e)e.remove();return}
+    if(e)return;e=document.createElement('div');e.id='tmSoft';e.textContent='⏸ 선생님 화면 연결이 잠시 멈췄어요. 지금 화면은 그대로 볼 수 있어요.';
+    e.style.cssText='position:fixed;left:8px;right:8px;top:max(44px,calc(env(safe-area-inset-top,0px) + 44px));z-index:41;background:#fff4d6;color:#5a4300;border:1px solid #e8c766;font:700 13px system-ui;padding:8px 12px;border-radius:8px;text-align:center';
+    document.body.appendChild(e)}
+  var isStale=function(w){return w&&w.indexOf('꺼져')>=0};
   function watch(onlyFollow){
     var r=get();if(!r||TEACH)return;hello();
     boot().then(function(b){
-      var last=null;
-      b.F.onSnapshot(b.F.doc(b.db,'rooms',r.pin),function(d){last=d.exists()?d.data():null;var w=alive(last);if(w){if(!onlyFollow)ended(w);return}codeSync(last);follow(r,last)},function(){});
+      var last=null,done=false;
+      var judge=function(){if(done||!get())return;var w=alive(last);if(isStale(w)){soft(w);return}soft('');if(w&&!onlyFollow){done=true;ended(w)}return w};
+      b.F.onSnapshot(b.F.doc(b.db,'rooms',r.pin),function(d){last=d.exists()?d.data():null;if(judge())return;codeSync(last);follow(r,last)},function(){});
       if(onlyFollow)return;
-      setInterval(function(){if(!get())return;var w=alive(last);if(last!==null&&w)ended(w)},30e3);
+      setInterval(function(){if(last!==null)judge()},30e3);
     }).catch(function(){});
   }
   function badge(){
@@ -144,8 +157,18 @@
     return true;
   }
   window.TM_ROOM.teachWork=teachWork;
+  function teachBeat(){
+    var host=null;try{host=JSON.parse(localStorage.getItem('live-host')||'null')}catch(e){}if(!host||!host.pin)return;
+    Promise.all([import('./firebase-config.js'),import(G+'/firebase-app.js'),import(G+'/firebase-auth.js'),import(G+'/firebase-firestore.js')]).then(function(m){
+      var app=m[1].getApps().filter(function(a){return a.name==='[DEFAULT]'})[0]||m[1].initializeApp(m[0].firebaseConfig),auth=m[2].getAuth(app);
+      return auth.authStateReady().then(function(){return auth.currentUser||m[2].signInAnonymously(auth)}).then(function(){
+        var F=m[3];return F.updateDoc(F.doc(F.getFirestore(app),'rooms',host.pin),{hb:F.serverTimestamp()})});
+    }).catch(function(){});
+  }
+  window.TM_ROOM.beat=teachBeat;
   if(TEACH){
     window.addEventListener('hashchange',teachGo);
+    teachBeat();setInterval(teachBeat,60e3);document.addEventListener('visibilitychange',function(){if(!document.hidden)teachBeat()});
     var tb=function(){var a=document.createElement('div');a.textContent='👀 선생님 미리보기 (학생이 보는 화면 · 결과는 안 보냄)';
       a.style.cssText='position:fixed;top:max(8px,env(safe-area-inset-top,0px));right:max(8px,env(safe-area-inset-right,0px));z-index:40;background:#2e2e2e;color:#fff;font:700 13px system-ui;padding:6px 12px;border-radius:999px;opacity:.92';document.body.appendChild(a)};
     if(document.body)tb();else document.addEventListener('DOMContentLoaded',tb);
@@ -157,6 +180,7 @@
     if(!cur){ // 방에 안 들어왔으면 첫 화면에서 방 번호·이름 → 들어오면 이 도구로 바로 돌아옴
       var f=(location.pathname.split('/').pop()||'')+location.search.replace(/([?&])r=\d*&?/,'$1').replace(/[?&]$/,'')+location.hash;
       location.replace('./?'+(qr?'r='+qr+'&':'')+'need=1&go='+encodeURIComponent(f));return}
+    var hide=function(){var st=document.createElement('style');st.textContent='.top a[href="./"],.top a[href="index.html"],.top a[href="test.html"],[data-room-hide]{display:none!important}';document.head.appendChild(st)};hide(); /* 수업 방 학생: 처음 화면·목록으로 돌아가는 버튼 숨김(강사가 화면을 이끔) */
     if(document.body)badge();else document.addEventListener('DOMContentLoaded',badge);
     watch();
   }
