@@ -101,7 +101,7 @@ dl.dress dd{margin:0}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head><body>
-<script src="room.js?v=233" data-guard></script>
+<script src="room.js?v=235" data-guard></script>
 <div class="wrap" id="app"></div>
 <script>
 (function(){
@@ -454,12 +454,13 @@ function report(){
    '<dt>액세서리</dt><dd>'+t.metal+'</dd><dt>헤어</dt><dd>'+t.hair+'</dd></dl>'+
    '<div class="why"><b>오늘의 한 줄</b><br>면접 첫인상은 비싼 옷이 아니라 <b>나한테 맞는 색</b>이 만든다. 지금 옷장에서 베스트 컬러 옷 한 벌을 찾아보세요.</div>'+
    '<p class="note">이 진단은 휴대폰 화면·조명으로 하는 <b>참고용</b>이에요. 정확한 진단은 자연광 아래 실제 천으로 전문가에게 받으세요.</p></div>'+
-   '<div class="btns noprint"><button class="btn pri" data-go="again">다시 진단하기</button><button class="btn" data-go="print">진단서 인쇄·PDF</button></div><p class="note noprint">휴대폰은 화면을 캡처해서 저장하세요.</p>';
+   '<div class="btns noprint"><button class="btn pri" data-go="again" data-room-hide>다시 진단하기</button><button class="btn" data-go="print">진단서 인쇄·PDF</button></div><p class="note noprint">휴대폰은 화면을 캡처해서 저장하세요.</p>';
   return h;
 }
 function render(){
   if(flick&&!(S.step>=3&&S.step<=5)){clearInterval(flick);flick=null}
   var h;
+  window.TM_HOLD=S.step==='report'; /* 진단서를 보는 동안은 강사가 다음 활동을 눌러도 바로 안 넘어감 */
   if(S.step==='report')h=report();
   else if(S.step<0)h=home();
   else h=[step0,step1,step2,drapeStep,drapeStep,drapeStep,step6][S.step]();
