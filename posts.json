@@ -1,6 +1,16 @@
 {
- "updated": "2026-11-06T20:53:12.915486+00:00",
+ "updated": "2026-11-07T00:55:17.470332+00:00",
  "posts": [
+  {
+   "kind": "강사 활동",
+   "src": "tistory",
+   "title": "특성화고 스피치 PT 수업 활동 2가지 | 학교 뉴스 낭독과 AI 발표 초안",
+   "link": "https://changenavigator.tistory.com/entry/%ED%8A%B9%EC%84%B1%ED%99%94%EA%B3%A0-%EC%8A%A4%ED%94%BC%EC%B9%98%C2%B7PT-%EC%88%98%EC%97%85-%ED%99%9C%EB%8F%99-2%EA%B0%80%EC%A7%80-%ED%95%99%EA%B5%90-%EB%89%B4%EC%8A%A4-%EB%82%AD%EB%8F%85%EA%B3%BC-AI-%EB%B0%9C%ED%91%9C-%EC%B4%88%EC%95%88",
+   "date": "2026-11-06T22:00:21+00:00",
+   "summary": "9월 28일, 충남 천안의 한 공업고등학교 2학년 학생들과 스피치 PT 발표 모의면접 4교시 수업을 진행했어요. 말하기 수업을 준비하는 선생님이 그대로 가져다 쓸…",
+   "image": "https://blog.kakaocdn.net/dn/GhMYg/dJMcaaN2uV2/XYrenM47PUXDhrWPRugDRk/img.jpg",
+   "cat": "강사 활동"
+  },
   {
    "kind": "강사 활동",
    "src": "tistory",
@@ -1142,5 +1152,7 @@
    "cat": "설교&middot;묵상"
   }
  ],
- "errors": []
+ "errors": [
+  "youtube: HTTP Error 404: Not Found"
+ ]
 }
