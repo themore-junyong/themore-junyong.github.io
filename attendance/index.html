@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<meta name="build" content="2026-11-01.1">
+<meta name="build" content="2026-11-08.1">
 <title>교회 출석 · THE MORE</title>
 <meta name="theme-color" content="#1F6F78">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -312,6 +312,8 @@ textarea.memo{min-height:60px;border:1px solid var(--line);background:var(--bg);
       <section>
         <h2>교회</h2>
         <label>교회 고르기<select id="aChurch"></select></label>
+        <p class="hint hidden" id="aStaffNote">교역자·담임목사는 이 교회의 성도·사진·출석 정리를 여기서 할 수 있어요. 교회 이름과 명단(이메일)은 앱 관리자만 바꿀 수 있어요.</p>
+        <div id="aChurchEdit">
         <label>교회 이름<input id="aName" placeholder="OO교회"></label>
         <label>예배 종류 (쉼표로 구분)<input id="aServices" placeholder="주일낮, 주일저녁, 수요, 금요"></label>
         <label>담임목사 이메일 (한 줄에 하나) · 출석 + 성도 관리 + 재정 모두<textarea id="aPastors" placeholder="senior@gmail.com"></textarea></label>
@@ -319,6 +321,7 @@ textarea.memo{min-height:60px;border:1px solid var(--line);background:var(--bg);
         <label>리더 이메일 (한 줄에 하나) · 출석 체크 + 정보 보기만 <span id="aLeaderCount" class="hint"></span><textarea id="aLeaders" placeholder="leader1@gmail.com"></textarea></label>
         <label>재정 담당 이메일 (한 줄에 하나) · 재정만 (출석·성도 명단 화면은 안 보임). 담임목사와 재정 담당 말고는 아무도 재정을 못 봐요<textarea id="aFinance" placeholder="finance@gmail.com"></textarea></label>
         <div class="row"><button class="btn" id="aSave">저장</button><button class="btn line" id="aNew">새 교회</button><span id="aMsg" class="ok"></span></div>
+        </div>
       </section>
       <p class="hint hidden" id="aOutside" style="background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;margin:0">🔒 이 교회 성도·출석·연락처는 볼 수 없어요. 관리자라도 그 교회 명단에 들어가 있을 때만 보여요. 들어가려면 위 담임목사나 교역자 칸에 내 이메일을 넣고 저장하세요. (교회 사람들도 명단에서 내 이메일을 볼 수 있어요)</p>
       <section class="needIn">
@@ -391,7 +394,7 @@ textarea.memo{min-height:60px;border:1px solid var(--line);background:var(--bg);
         <p class="hint">엑셀에서 바로 열리는 CSV 파일로 받아요. 교회가 데이터를 원하면 이 파일을 드리면 돼요.</p>
         <div class="row"><button class="btn line" id="aExpMembers">성도 명단</button><button class="btn line" id="aExpAtt">출석 기록 전체</button></div>
       </section>
-      <section>
+      <section id="aDelSec">
         <h2>교회 삭제</h2>
         <p class="hint">위에서 고른 교회와 그 교회의 성도·출석 기록이 모두 지워지고 되돌릴 수 없어요. 먼저 내보내기로 파일을 받아 두세요.</p>
         <div class="row"><button class="danger" id="aDel">이 교회 삭제</button><span id="aDelMsg" class="ok"></span></div>
@@ -523,7 +526,9 @@ function nextPids(ids, n = 1) {
 // ───────────── 저장소: 미리보기(가짜 데이터) ─────────────
 function demoStore() {
   const email = "demo@example.com";
-  const church = { id: "demo", name: "미리보기교회", services: ["주일낮","주일저녁","수요","금요"], leaders: [email], staff: [email], pastors: [email], finance: [email] };
+  // ?demo&staff = 교역자 화면, ?demo&leader = 리더 화면 미리보기
+  const asLeader = new URLSearchParams(location.search).has("leader");
+  const church = { id: "demo", name: "미리보기교회", services: ["주일낮","주일저녁","수요","금요"], leaders: [email], staff: asLeader ? [] : [email], pastors: asLeader ? [] : [email], finance: asLeader ? [] : [email] };
   const raw = [
     ["P001","홍길동","담임목사","교역자","남성","010-0000-0001","H001","세대주",false],
     ["P002","김영희","사모","교역자","여성","010-0000-0002","H001","배우자",false],
@@ -563,7 +568,7 @@ function demoStore() {
     onUser(cb) { setTimeout(() => cb({ email }), 0); },
     async signIn() {}, async signOut() { location.href = location.pathname; },
     async sendLink() {}, async completeLink() { return false; },
-    async isAdmin() { return !new URLSearchParams(location.search).has("leader"); }, // ?demo&leader = 리더 화면 미리보기,
+    async isAdmin() { const q = new URLSearchParams(location.search); return !q.has("leader") && !q.has("staff"); },
     async churches() { return [church]; },
     watchMembers(cid, cb) { memberCb = cb; emitMembers(); return () => { memberCb = null; }; },
     watchAttendance(cid, date, service, cb) { attCb = cb; attKey = [date, service]; emitAtt(); return () => { attCb = null; }; },
@@ -840,13 +845,15 @@ function pickChurch(c) {
   const pick = $("#churchPick");
   pick.classList.toggle("hidden", S.churches.length < 2);
   pick.innerHTML = S.churches.map(x => `<option value="${esc(x.id)}" ${x.id === c.id ? "selected" : ""}>${esc(x.name)}</option>`).join("");
-  $("#toAdmin").classList.toggle("hidden", !S.admin);
   const me = (S.email || "").toLowerCase();
   $("#toFinance").classList.toggle("hidden", !(c.finance || []).includes(me) && !(c.pastors || []).includes(me));
   if (S.store.demo) $("#toFinance").href = "./finance.html?demo";
   S.canEdit = isInsideStaff(c);
   $("#addBtn").classList.toggle("hidden", !S.canEdit);
   $("#toSms").classList.toggle("hidden", !S.canEdit);
+  // 관리 화면: 앱 관리자 + 이 교회 교역자·담임목사 (교역자는 성도 정리 도구만)
+  $("#toAdmin").classList.toggle("hidden", !S.admin && !S.canEdit);
+  $("#toAdmin").textContent = S.admin ? "관리" : "교회 관리";
   $("#editMode").textContent = S.canEdit ? "✎ 정보" : "정보 보기";
   document.querySelectorAll(".edit-phone").forEach(el => el.classList.toggle("hidden", !S.canEdit));
   $("#q").placeholder = S.canEdit ? "이름·전화 뒷자리 찾기" : "이름 찾기";
@@ -1298,13 +1305,19 @@ $("#statsBack").onclick = () => show("sMain");
 
 // ───────────── 관리자 ─────────────
 let adminCid = null;
-function openAdminKeep(id) { openAdmin(); $("#aChurch").value = id; fillAdmin((S.allChurches || []).find(c => c.id === id) || null); }
+// 앱 관리자는 모든 교회(이름·명단), 교역자·담임목사는 내가 교역자로 들어 있는 교회만 (성도 정리 도구만)
+const adminList = () => S.admin ? (S.allChurches || []) : (S.churches || []).filter(isInsideStaff);
+function openAdminKeep(id) { openAdmin(); $("#aChurch").value = id; fillAdmin(adminList().find(c => c.id === id) || null); }
 function openAdmin() {
   show("sAdmin");
+  $("#sAdmin h1").textContent = S.admin ? "관리" : "교회 관리";
+  $("#aChurchEdit").classList.toggle("hidden", !S.admin);
+  $("#aDelSec").classList.toggle("hidden", !S.admin);
+  $("#aStaffNote").classList.toggle("hidden", S.admin);
   const sel = $("#aChurch");
-  sel.innerHTML = (S.allChurches || []).map(c => `<option value="${esc(c.id)}">${esc(c.name)}</option>`).join("") || `<option value="">(교회 없음)</option>`;
+  sel.innerHTML = adminList().map(c => `<option value="${esc(c.id)}">${esc(c.name)}</option>`).join("") || `<option value="">(교회 없음)</option>`;
   if (S.church) sel.value = S.church.id;
-  fillAdmin((S.allChurches || []).find(c => c.id === sel.value) || null);
+  fillAdmin(adminList().find(c => c.id === sel.value) || null);
 }
 function fillAdmin(c) {
   adminCid = c?.id || null;
@@ -1335,9 +1348,10 @@ $("#backMain").onclick = () => {
   if (!S.churches.length) return ($("#aMsg").textContent = "내 이메일이 들어 있는 교회가 없어요. 교회 명단에 내 이메일을 넣고 저장하면 출석 화면으로 갈 수 있어요.");
   pickChurch(S.churches.find(c => c.id === S.church?.id) || S.churches[0]);
 };
-$("#aChurch").onchange = (e) => fillAdmin((S.allChurches || []).find(c => c.id === e.target.value));
-$("#aNew").onclick = () => { fillAdmin(null); $("#aName").focus(); };
+$("#aChurch").onchange = (e) => fillAdmin(adminList().find(c => c.id === e.target.value));
+$("#aNew").onclick = () => { if (!S.admin) return; fillAdmin(null); $("#aName").focus(); };
 $("#aDel").onclick = async () => {
+  if (!S.admin) return;
   const c = (S.allChurches || []).find(x => x.id === adminCid), msg = $("#aDelMsg");
   if (!c) return (msg.textContent = "지울 교회를 먼저 골라 주세요.");
   const typed = prompt(`'${c.name}'의 성도·출석 기록이 모두 지워지고 되돌릴 수 없어요.\n지우려면 교회 이름을 똑같이 입력하세요.`);
@@ -1357,6 +1371,7 @@ $("#aDel").onclick = async () => {
   } catch (e) { msg.textContent = "삭제 실패: " + e.message; }
 };
 $("#aSave").onclick = async () => {
+  if (!S.admin) return;
   const data = { name: $("#aName").value.trim(), services: $("#aServices").value.split(",").map(s => s.trim()).filter(Boolean), leaders: leaderList(), staff: staffList(), pastors: emailList($("#aPastors")), finance: emailList($("#aFinance")) };
   if (!data.name) return ($("#aMsg").textContent = "교회 이름을 넣어 주세요.");
   try {
