@@ -3,6 +3,7 @@ rules_version = '2';
 // 교회 출석앱 + 회비 관리 보안 규칙 (Firestore 규칙은 프로젝트에 하나라 둘을 함께 둠)
 // - config/admins 문서의 emails 배열에 있는 사람 = 관리자(준용). 교회를 만들고 이름·명단(이메일)을 정할 수 있음.
 //   관리자라도 그 교회 성도·출석·연락처·재정은 그 교회 명단에 자기 이메일이 있을 때만 봄 (2026-11-01)
+// - 교역자·담임목사는 앱의 '교회 관리' 화면에서 자기 교회 성도 정리 도구를 씀. 출석 기록 지우기도 교역자까지 (2026-11-08)
 // - churches/{교회}.leaders 배열에 있는 사람 = 그 교회를 쓰는 사람. 출석 체크와 성도 정보 보기 (연락처·메모 제외).
 // - churches/{교회}.staff 배열에 있는 사람 = 교역자. 위에 더해 성도 추가·수정·삭제. (앱이 staff도 leaders에 넣어 저장함)
 // - churches/{교회}.pastors 배열 = 담임목사. 교역자 권한 + 재정 (앱이 pastors를 staff·leaders에도 넣어 저장함)
@@ -78,7 +79,8 @@ service cloud.firestore {
         allow create, update: if canUse(cid)
           && request.resource.data.present is bool
           && request.resource.data.checkedBy == myEmail();
-        allow delete: if isAdmin() && isStaff(cid);
+        // 교역자·담임목사가 같은 이름 합치기·성도 번호 정리로 출석 기록을 옮길 때 지움 (리더는 못 지움)
+        allow delete: if isStaff(cid);
       }
 
       // ───────── 재정 (그 교회 담임목사·재정 담당만) ─────────
