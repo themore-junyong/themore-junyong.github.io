@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<meta name="build" content="2026-11-08.1">
+<meta name="build" content="2026-11-08.2">
 <title>교회 출석 · THE MORE</title>
 <meta name="theme-color" content="#1F6F78">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1512,7 +1512,7 @@ async function importPhotos(files) {
   const names = [...byName.entries()].filter(([k, v]) => v && k && k.length >= 2).sort((a, b) => b[0].length - a[0].length);
   const exact = (f) => { const n = base(f.name); return byPhoto.has(n) || byId.has(stem(n)) || byId.has(stem(n).split(/[._\s-]/)[0]) || !!byName.get(stem(f.name).normalize("NFC")) ? 1 : 0; };
   const namesIn = (t) => { const out = []; for (const [k, v] of names) if (t.includes(k)) { out.push(v); t = t.split(k).join("\u0000"); } return out; };
-  let ok = 0; const miss = [], had = [], own = new Set();
+  let ok = 0; const miss = [], had = [], fail = [], own = new Set();
   // 정확히 맞는 사진을 먼저 처리해야 부부 사진이 개인 사진을 덮지 않음
   files.sort((a, b) => exact(b) - exact(a));
   for (const [i, f] of files.entries()) {
@@ -1525,9 +1525,16 @@ async function importPhotos(files) {
     if (!found.length) { (named.length ? had : miss).push(f.name); continue; }
     if (m) own.add(m.id);
     msg.textContent = `${i + 1}/${files.length}장 줄이는 중…`;
-    try { const thumb = await makeThumb(f); for (const x of found) { await S.store.updateMember(adminCid, x.id, { thumb }); ok++; } } catch { miss.push(f.name); }
+    // 짝은 찾았는데 사진을 못 읽었거나(HEIC 등) 저장이 막힌 경우는 따로 이유와 함께 보여 줌
+    let thumb;
+    try { thumb = await makeThumb(f); } catch { fail.push(`${f.name} (사진을 못 읽음. JPG·PNG로 바꿔 주세요)`); continue; }
+    for (const x of found) {
+      try { await S.store.updateMember(adminCid, x.id, { thumb }); ok++; }
+      catch (e) { fail.push(`${f.name} → ${x.name} (${/permission/i.test(e.message) ? "저장 권한 없음. 이 교회 교역자 명단에 내 이메일이 있는지 확인" : e.message})`); }
+    }
   }
-  msg.innerHTML = esc(`${ok}명에게 사진을 넣었어요.` + (had.length ? ` 이미 사진이 있어 건너뛴 ${had.length}장.` : "")) + (miss.length ? `<details><summary>짝을 못 찾은 ${miss.length}장 보기</summary>${miss.map(esc).join("<br>")}</details>` : "");
+  msg.innerHTML = esc(`${ok}명에게 사진을 넣었어요.` + (had.length ? ` 이미 사진이 있어 건너뛴 ${had.length}장.` : "")) + (fail.length ? `<details open><summary>짝은 찾았는데 못 넣은 ${fail.length}장</summary>${fail.map(esc).join("<br>")}</details>` : "")
+    + (miss.length ? `<details><summary>짝을 못 찾은 ${miss.length}장 보기</summary><p class="hint" style="margin:4px 0">파일 이름에 성도 이름(예: 홍길동.jpg)이나 성도ID(P001.jpg)가 들어 있어야 짝을 찾아요. IMG_1234처럼 휴대폰이 붙인 이름은 못 찾아요.</p>${miss.map(esc).join("<br>")}</details>` : "");
 }
 $("#aPhotos").onchange = (e) => { importPhotos(e.target.files); e.target.value = ""; };
 $("#aPhotoDir").onchange = (e) => { importPhotos(e.target.files); e.target.value = ""; };
