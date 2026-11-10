@@ -313,13 +313,14 @@ exports.calFeed = onRequest({ region: 'asia-northeast3', invoker: 'public', maxI
       else if (Array.isArray(a.days) && a.days.length) days = days.filter(x => a.days.includes(x.d)); }
     const ds = days.map(x => x.d).sort(), st = a.status === '지원' ? 'applied' : a.paidAt || a.selfPaid ? 'paid' : over(ds) ? 'done' : 'confirmed';
     for (const x of days) add(x0.id, x.d, st, [j.region, j.school, j.title].filter(Boolean).join(' '), x.time, orgs[j.coId], j.fee, [j.region, j.school].filter(Boolean).join(' ')); }
-  const TAG = { applied: '지원', confirmed: '강의', done: '미입금', paid: '입금' };
+  // 구독 캘린더는 일정마다 색을 못 바꿔서 제목 앞 동그라미로 구분 (강사로 달력 색과 같게)
+const TAG = { applied: '⚪ 지원', confirmed: '🔵 확정', done: '🟣 미입금', paid: '🟢 입금' };
   const stamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+/, '');
   const L = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//kangsaro//ko', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH', 'X-WR-CALNAME:강사로 강의 일정', 'X-WR-TIMEZONE:Asia/Seoul', 'REFRESH-INTERVAL;VALUE=DURATION:PT3H', 'X-PUBLISHED-TTL:PT3H'];
   for (const e of ev) {
     const m = String(e.time || '').match(/(\d{1,2}):(\d{2})/), d0 = e.d.replace(/-/g, ''), d1 = ymd(new Date(Date.parse(e.d + 'T00:00:00Z') + 864e5)).replace(/-/g, '');
     L.push('BEGIN:VEVENT', `UID:${e.id}-${d0}@kangsaro`, `DTSTAMP:${stamp}`, `DTSTART;VALUE=DATE:${d0}`, `DTEND;VALUE=DATE:${d1}`,
-      icsFold(`SUMMARY:${icsEsc(`[${TAG[e.st]}] ${m ? m[1].padStart(2, '0') + ':' + m[2] + ' ' : ''}${e.title || '강의'}`)}`),
+      icsFold(`SUMMARY:${icsEsc(`${TAG[e.st]} ${m ? m[1].padStart(2, '0') + ':' + m[2] + ' ' : ''}${e.title || '강의'}`)}`),
       icsFold(`DESCRIPTION:${icsEsc([e.org && `업체: ${e.org}`, e.time && `시간: ${e.time}`, +e.fee ? `강사료: ${(+e.fee).toLocaleString('ko-KR')}원` : '', e.st === 'done' ? '페이 지급: ☐ 미입금' : e.st === 'paid' ? '페이 지급: ☑ 입금' : '', '강사로에서 자동으로 보냄 (고치려면 강사로 앱에서)'].filter(Boolean).join('\n'))}`),
       ...(e.where ? [icsFold(`LOCATION:${icsEsc(e.where)}`)] : []), 'TRANSP:TRANSPARENT', 'END:VEVENT');
   }
