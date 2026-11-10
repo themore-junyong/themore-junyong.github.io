@@ -1033,7 +1033,7 @@ function vCJob(j){const A=appsOf(j.id),s=jobStats(j);
   ${j.hold?`<div class="alert"><b>확인 대기 · 강사에게 아직 안 보여요</b><br>${scamWhy(j)} 때문이에요. 표현을 고쳐 저장하면 바로 다시 검사해서 올라가요. 그대로 두면 운영자 확인 뒤 올라가요. 문의: tobadyclup@naver.com</div>`:''}${downByReports(j)?'<div class="alert"><b>강사 신고 3건으로 내려갔어요.</b> 운영자가 확인 중이에요. 문의: tobadyclup@naver.com</div>':''}
   <div class="card"><div class="row">${jChip(j)}<h2 class="sp">${esc(j.region)} ${esc(j.school)} ${esc(j.title)}</h2></div>
   <div class="grid2"><label class="f">강의 제목<input data-act="jedit" data-k="title" value="${esc(j.title||'')}"></label><label class="f">학교(기관)<input data-act="jedit" data-k="school" value="${esc(j.school||'')}"></label><label class="f">지역<input data-act="jedit" data-k="region" value="${esc(j.region||'')}"></label></div>
-  <div class="grid2"><label class="f">날짜 (쉼표로)<input data-act="jedit" data-k="dates" value="${j.dates.join(', ')}"></label>${isOp(j)?`<div class="f"><span>시간</span><span class="sm" style="padding:10px 0">${esc(j.time||'')} <span class="mu">· 아래 운영 시간표에서 칸마다 정해요</span></span></div>`:`<label class="f">시간<input data-act="jedit" data-k="time" value="${esc(j.time)}"></label>`}</div>
+  <div class="grid2"><div class="f"><span>날짜</span><div class="row" style="gap:4px;flex-wrap:wrap">${j.dates.map(d=>`<span class="chip">${mdK(d)}(${dowOf(d)})</span>`).join('')}<button class="btn sm" data-act="jDateEdit">📅 날짜 바꾸기</button></div></div>${isOp(j)?`<div class="f"><span>시간</span><span class="sm" style="padding:10px 0">${esc(j.time||'')} <span class="mu">· 아래 운영 시간표에서 칸마다 정해요</span></span></div>`:`<label class="f">시간<input data-act="jedit" data-k="time" value="${esc(j.time)}"></label>`}</div>
   <span class="mu sm">날짜·시간을 고치면 확정된 강사 달력에도 바로 바뀌고, 강사에게 변경 공지가 가요.</span>
   <span class="mu">${esc(j.교시)} · ${esc(j.대상)} · 강사료 ${feeLabel(j)} (강사에게 공개)</span>
   <label class="f">공고 내용<textarea data-act="jedit" data-k="desc" rows="4">${esc(j.desc||'')}</textarea></label>
@@ -1151,7 +1151,11 @@ function jCalHtml(ds){const C=ui.jcal,[y,m]=C.ym.split('-').map(Number),first=ne
   <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;text-align:center">${['일','월','화','수','목','금','토'].map((w,i)=>`<span class="sm ${i===0?'':'mu'}" style="${i===0?'color:var(--r2)':''}">${w}</span>`).join('')}
   ${cells.map(d=>{if(!d)return '<span></span>';const v=iso(d),on=ds.includes(v),st=C.start===v,dw=(pad+d-1)%7;return `<button type="button" class="btn sm" data-act="jcDay" data-d="${v}" style="padding:6px 0;${on?'background:var(--ac);color:#fff;border-color:var(--ac)':st?'outline:2px solid var(--ac)':''};${!on&&dw===0?'color:var(--r2)':''};${v<T&&!on?'opacity:.45':''}">${d}</button>`}).join('')}</div></div>`}
 const JI=()=>(ui.jcal&&ui.jcal.p)||'j'; // 같은 달력을 새 공고('j')와 일정 넣기('p')가 같이 씀
-function jSetDates(ds){ds=[...new Set(ds)].sort();const k=JI();$('#'+k+'Dates').value=ds.join(', ');$('#'+k+'DateList').innerHTML=jDateChips(ds);$('#'+k+'Cal').innerHTML=jCalHtml(ds);if(k==='p'){pWarn();pNet()}else jWarn()}
+function sheetDateEdit(j){ui.jcal={p:'e',ym:(j.dates[0]||todayIso()).slice(0,7),mode:'day',start:'',we:false};
+  openSheet(`<div class="row"><h2 class="sp">날짜 바꾸기</h2><button class="btn sm" data-act="closeSheet">닫기</button></div><span class="mu sm">${esc(j.school)} ${esc(j.title)}. 달력에서 누르면 넣고, 다시 누르거나 ✕를 누르면 빠져요.</span>
+  <div id="eCal">${jCalHtml(j.dates)}</div><input type="hidden" id="eDates" value="${esc(j.dates.join(', '))}"><div class="row" id="eDateList">${jDateChips(j.dates)}</div>
+  <span class="mu sm">저장하면 확정된 강사 달력에도 바로 바뀌고, 강사에게 변경 공지가 가요.</span><button class="btn pri" data-act="jDateSave">저장</button>`)}
+function jSetDates(ds){ds=[...new Set(ds)].sort();const k=JI();$('#'+k+'Dates').value=ds.join(', ');$('#'+k+'DateList').innerHTML=jDateChips(ds);$('#'+k+'Cal').innerHTML=jCalHtml(ds);if(k==='p'){pWarn();pNet()}else if(k==='j')jWarn()}
 const jDatesNow=()=>$('#'+JI()+'Dates').value.split(/[,\s]+/).filter(x=>/^\d{4}-\d{2}-\d{2}$/.test(x));
 function jDateChips(ds){return ds.length?ds.map(d=>`<button class="btn sm" data-act="jdel" data-d="${d}" aria-label="${mdK(d)} 빼기">${mdK(d)}(${dowOf(d)}) ✕</button>`).join(''):'<span class="mu sm">날짜를 고르면 여기에 요일과 함께 보여요. 여러 날이면 계속 고르세요.</span>'}
 function jWarn(){const ds=$('#jDates').value.split(/[,\s]+/).filter(x=>/^\d{4}-\d{2}-\d{2}$/.test(x));$('#jWarn').innerHTML=dateWarn(ds).map(w=>`<div class="alert">${esc(w)}</div>`).join('')}
@@ -1385,6 +1389,12 @@ document.addEventListener('click',async ev=>{
     d.innerHTML=`${tPick('jTa','',st)}<span>~</span>${tPick('jTb','','')}<button type="button" class="btn sm" data-act="jTdel">✕</button>`;$('#jTmore').appendChild(d);return}
   if(A==='jTdel'){el.parentElement.remove();jTimeSync();const fl=$('#jFeeL');if(fl&&jRanges().length<2)fl.textContent='1일 강사료(원)';return}
   if(A==='jdel')return jSetDates(jDatesNow().filter(x=>x!==D.d));
+  if(A==='jDateEdit')return sheetDateEdit(job(ui.jobId));
+  if(A==='jDateSave'){const j=job(ui.jobId),old=j.dates||[],v=[...new Set(jDatesNow())].sort();if(!v.length)return toast('날짜를 하나 이상 골라 주세요');
+    if(v.join()===old.join()){closeSheet();return toast('바뀐 날짜가 없어요')}
+    j.dates=v;holdFix(j);const to=appsOf(j.id).filter(a=>a.status==='확정').map(a=>a.instId);
+    if(to.length)j.notices.push({id:uid(),text:`[일정 변경] ${j.school} ${j.title}: 날짜가 ${old.map(md).join('·')} → ${v.map(md).join('·')}(으)로 바뀌었어요.`,at:new Date().toISOString(),to,reads:{}});
+    save();closeSheet();render();return toast(to.length?`바꿨어요. 확정 강사 ${to.length}명에게 변경 공지가 갔어요`:'날짜를 바꿨어요')}
   if(A==='jcMode'){ui.jcal.mode=D.v;ui.jcal.start='';$('#'+JI()+'Cal').innerHTML=jCalHtml(jDatesNow());return}
   if(A==='jcMon'){const [y,m]=ui.jcal.ym.split('-').map(Number),d=new Date(y,m-1+(+D.v),1);ui.jcal.ym=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;$('#'+JI()+'Cal').innerHTML=jCalHtml(jDatesNow());return}
   if(A==='jcDay'){const C=ui.jcal,ds=jDatesNow();
