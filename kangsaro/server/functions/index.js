@@ -290,7 +290,8 @@ const icsEsc = s => String(s || '').replace(/\\/g, '\\\\').replace(/\n/g, '\\n')
 const icsFold = l => { const o = []; let s = l; while (Buffer.byteLength(s) > 73) { let n = 60; while (Buffer.byteLength(s.slice(0, n)) > 73) n--; o.push(s.slice(0, n)); s = ' ' + s.slice(n); } o.push(s); return o.join('\r\n'); };
 // 제목 앞 동그라미로 상태 구분 (강사로 달력 색과 같게). 구독 캘린더는 일정마다 색을 못 바꿔서 이걸로 구분
 const TAG = { applied: '⚪ 지원', confirmed: '🔵 확정', done: '🟣 미입금', paid: '🟢 입금' };
-const calTitle = (e, plain) => { const m = String(e.time || '').match(/(\d{1,2}):(\d{2})/); return `${plain ? '' : TAG[e.st] + ' '}${m ? m[1].padStart(2, '0') + ':' + m[2] + ' ' : ''}${e.title || '강의'}`; };
+const WORD = { applied: '지원', confirmed: '확정', done: '미입금', paid: '입금' }; // 바로 연결은 색 + [확정] 같은 글자로 구분
+const calTitle = (e, plain) => { const m = String(e.time || '').match(/(\d{1,2}):(\d{2})/); return `${plain ? `[${WORD[e.st]}] ` : TAG[e.st] + ' '}${m ? m[1].padStart(2, '0') + ':' + m[2] + ' ' : ''}${e.title || '강의'}`; };
 const calDesc = e => [e.org && `업체: ${e.org}`, e.time && `시간: ${e.time}`, +e.fee ? `강사료: ${(+e.fee).toLocaleString('ko-KR')}원` : '', e.st === 'done' ? '페이 지급: ☐ 미입금' : e.st === 'paid' ? '페이 지급: ☑ 입금' : '', '강사로에서 자동으로 보냄 (고치려면 강사로 앱에서)'].filter(Boolean).join('\n');
 const dayAfter = d => ymd(new Date(Date.parse(d + 'T00:00:00Z') + 864e5));
 // 강사 한 명의 강의 일정 목록 (구독 주소와 구글 바로 연결이 같이 씀). 90일 전부터
