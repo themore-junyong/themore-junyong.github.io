@@ -916,6 +916,16 @@ async function verCheck() {
 setInterval(verCheck, 3 * 60 * 1000);
 document.addEventListener('visibilitychange', verCheck);
 
+let GC = null, gcBusy = false; // 구글 캘린더 바로 연결 상태
+// 구글 허용 화면에서 돌아왔을 때 (?code=…&state=…). 주소창은 바로 깨끗하게
+if (Q.has('state') && (Q.has('code') || Q.has('error'))) {
+  const st = Q.get('state'), code = Q.get('code');
+  history.replaceState(null, '', location.pathname + (EMU ? '?emu' : ''));
+  if (!code) setTimeout(() => toast('구글 연결을 취소했어요'), 800);
+  else { setTimeout(() => toast('구글 캘린더에 연결하는 중이에요…'), 300);
+    callFn('gcalCode', { state: st, code }).then(r => { GC = null; render(); toast(r.data.err ? '연결은 됐는데 일정을 아직 못 보냈어요. 프로필에서 \'지금 다시 보내기\'를 눌러 주세요' : `구글 캘린더에 연결했어요. 강의 ${r.data.n}개를 보냈어요`); })
+      .catch(e => toast((e && e.message) || '구글 연결이 안 됐어요. 다시 눌러 주세요')); }
+}
 /* ===== 시작 ===== */
 if (A.isSignInWithEmailLink(auth, location.href)) {
   let m = localStorage.getItem('kangsaro.mail') || prompt('로그인할 메일 주소를 한 번 더 넣어 주세요');
@@ -925,3 +935,12 @@ A.onAuthStateChanged(auth, u => { maintPaint(); if (u) start(u).catch(e => { con
 window.KS = { auth, db, F, A, S: () => S, flush }; // 시험용
 // 구글 캘린더로 자동 보내기: 내 전용 구독 주소 (reset이면 새 주소 → 예전 주소는 끊김)
 REAL.calLink = async reset => (await callFn('calLink', { reset: !!reset })).data.url;
+// 구글 캘린더 바로 연결 (구글 계정 허용 → 몇 초 안에 반영). 상태는 서버만 알아서 처음 볼 때 한 번 물어봄. 서버에 아직 안 올렸으면(none) 구독 방식만 보여 줌
+REAL.gcal = () => {
+  if ((!GC || GC.uid !== uidMe) && !gcBusy && uidMe) { gcBusy = true; const u = uidMe;
+    callFn('gcalState', {}).then(r => { GC = { ...r.data, uid: u }; }).catch(e => { GC = { on: false, uid: u, none: /not-found|internal/.test((e && e.code) || '') }; }).finally(() => { gcBusy = false; render(); }); }
+  return GC && GC.uid === uidMe ? GC : null;
+};
+REAL.gcalStart = async () => (await callFn('gcalStart', {})).data.url;
+REAL.gcalNow = async () => { const d = (await callFn('gcalNow', {})).data; GC = { ...d, uid: uidMe }; return d; };
+REAL.gcalOff = async () => { await callFn('gcalOff', {}); GC = { on: false, uid: uidMe }; };

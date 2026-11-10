@@ -288,10 +288,13 @@ exports.calLink = onCall({ region: 'asia-northeast3', maxInstances: 3 }, async r
 });
 const icsEsc = s => String(s || '').replace(/\\/g, '\\\\').replace(/\n/g, '\\n').replace(/([,;])/g, '\\$1');
 const icsFold = l => { const o = []; let s = l; while (Buffer.byteLength(s) > 73) { let n = 60; while (Buffer.byteLength(s.slice(0, n)) > 73) n--; o.push(s.slice(0, n)); s = ' ' + s.slice(n); } o.push(s); return o.join('\r\n'); };
-exports.calFeed = onRequest({ region: 'asia-northeast3', invoker: 'public', maxInstances: 5, timeoutSeconds: 60 }, async (req, res) => {
-  const u = String(req.query.u || '').replace(/[^A-Za-z0-9]/g, '').slice(0, 40), k = String(req.query.k || '').slice(0, 60);
-  const kd = u && k ? await db.doc(`calKeys/${u}`).get() : null;
-  if (!kd || !kd.exists || kd.data().k !== k) return res.status(404).send('주소가 바뀌었거나 없어요. 강사로 앱에서 다시 연결해 주세요');
+// 제목 앞 동그라미로 상태 구분 (강사로 달력 색과 같게). 구독 캘린더는 일정마다 색을 못 바꿔서 이걸로 구분
+const TAG = { applied: '⚪ 지원', confirmed: '🔵 확정', done: '🟣 미입금', paid: '🟢 입금' };
+const calTitle = e => { const m = String(e.time || '').match(/(\d{1,2}):(\d{2})/); return `${TAG[e.st]} ${m ? m[1].padStart(2, '0') + ':' + m[2] + ' ' : ''}${e.title || '강의'}`; };
+const calDesc = e => [e.org && `업체: ${e.org}`, e.time && `시간: ${e.time}`, +e.fee ? `강사료: ${(+e.fee).toLocaleString('ko-KR')}원` : '', e.st === 'done' ? '페이 지급: ☐ 미입금' : e.st === 'paid' ? '페이 지급: ☑ 입금' : '', '강사로에서 자동으로 보냄 (고치려면 강사로 앱에서)'].filter(Boolean).join('\n');
+const dayAfter = d => ymd(new Date(Date.parse(d + 'T00:00:00Z') + 864e5));
+// 강사 한 명의 강의 일정 목록 (구독 주소와 구글 바로 연결이 같이 씀). 90일 전부터
+async function calEvents(u) {
   const today = ymd(new Date(Date.now() + 9 * 3600e3)), from = ymd(new Date(Date.now() - 90 * 864e5));
   const ev = [], add = (id, d, st, title, time, org, fee, where) => { if (d >= from) ev.push({ id, d, st, title, time, org, fee, where }); };
   const over = ds => ds.length && ds[ds.length - 1] < today;
@@ -313,17 +316,160 @@ exports.calFeed = onRequest({ region: 'asia-northeast3', invoker: 'public', maxI
       else if (Array.isArray(a.days) && a.days.length) days = days.filter(x => a.days.includes(x.d)); }
     const ds = days.map(x => x.d).sort(), st = a.status === '지원' ? 'applied' : a.paidAt || a.selfPaid ? 'paid' : over(ds) ? 'done' : 'confirmed';
     for (const x of days) add(x0.id, x.d, st, [j.region, j.school, j.title].filter(Boolean).join(' '), x.time, orgs[j.coId], j.fee, [j.region, j.school].filter(Boolean).join(' ')); }
-  // 구독 캘린더는 일정마다 색을 못 바꿔서 제목 앞 동그라미로 구분 (강사로 달력 색과 같게)
-const TAG = { applied: '⚪ 지원', confirmed: '🔵 확정', done: '🟣 미입금', paid: '🟢 입금' };
+  return ev;
+}
+exports.calFeed = onRequest({ region: 'asia-northeast3', invoker: 'public', maxInstances: 5, timeoutSeconds: 60 }, async (req, res) => {
+  const u = String(req.query.u || '').replace(/[^A-Za-z0-9]/g, '').slice(0, 40), k = String(req.query.k || '').slice(0, 60);
+  const kd = u && k ? await db.doc(`calKeys/${u}`).get() : null;
+  if (!kd || !kd.exists || kd.data().k !== k) return res.status(404).send('주소가 바뀌었거나 없어요. 강사로 앱에서 다시 연결해 주세요');
+  const ev = await calEvents(u);
   const stamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+/, '');
   const L = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//kangsaro//ko', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH', 'X-WR-CALNAME:강사로 강의 일정', 'X-WR-TIMEZONE:Asia/Seoul', 'REFRESH-INTERVAL;VALUE=DURATION:PT3H', 'X-PUBLISHED-TTL:PT3H'];
   for (const e of ev) {
-    const m = String(e.time || '').match(/(\d{1,2}):(\d{2})/), d0 = e.d.replace(/-/g, ''), d1 = ymd(new Date(Date.parse(e.d + 'T00:00:00Z') + 864e5)).replace(/-/g, '');
+    const d0 = e.d.replace(/-/g, ''), d1 = dayAfter(e.d).replace(/-/g, '');
     L.push('BEGIN:VEVENT', `UID:${e.id}-${d0}@kangsaro`, `DTSTAMP:${stamp}`, `DTSTART;VALUE=DATE:${d0}`, `DTEND;VALUE=DATE:${d1}`,
-      icsFold(`SUMMARY:${icsEsc(`${TAG[e.st]} ${m ? m[1].padStart(2, '0') + ':' + m[2] + ' ' : ''}${e.title || '강의'}`)}`),
-      icsFold(`DESCRIPTION:${icsEsc([e.org && `업체: ${e.org}`, e.time && `시간: ${e.time}`, +e.fee ? `강사료: ${(+e.fee).toLocaleString('ko-KR')}원` : '', e.st === 'done' ? '페이 지급: ☐ 미입금' : e.st === 'paid' ? '페이 지급: ☑ 입금' : '', '강사로에서 자동으로 보냄 (고치려면 강사로 앱에서)'].filter(Boolean).join('\n'))}`),
+      icsFold(`SUMMARY:${icsEsc(calTitle(e))}`), icsFold(`DESCRIPTION:${icsEsc(calDesc(e))}`),
       ...(e.where ? [icsFold(`LOCATION:${icsEsc(e.where)}`)] : []), 'TRANSP:TRANSPARENT', 'END:VEVENT');
   }
   L.push('END:VCALENDAR');
   res.set('Content-Type', 'text/calendar; charset=utf-8').set('Cache-Control', 'private, max-age=900').send(L.join('\r\n') + '\r\n');
+});
+
+/* ===== 구글 캘린더 바로 연결 (구글 캘린더 API, 몇 초 안에 반영) =====
+   강사가 '구글 계정으로 연결'을 누르면 구글 허용 화면 → 앱으로 돌아오며 gcalCode가 열쇠(refresh token)를 받아 gcal/{uid}에 둠 (앱에서는 못 읽음)
+   구글 캘린더에 '강사로 강의 일정' 캘린더를 하나 만들고, 강의·지원·시간표·일정이 바뀔 때마다 그 강사 것만 다시 맞춤.
+   권한은 calendar.app.created: 강사로가 만든 캘린더만 만지고 강사의 다른 일정은 못 봄.
+   키는 코드에 없음 → `firebase functions:secrets:set GCAL_ID`, `GCAL_SECRET` (구글 클라우드 → OAuth 클라이언트) */
+const { onDocumentWritten } = require('firebase-functions/v2/firestore');
+const GCAL_ID = defineSecret('GCAL_ID'), GCAL_SECRET = defineSecret('GCAL_SECRET');
+const gsec = { secrets: [GCAL_ID, GCAL_SECRET] };
+const GCAL_SCOPE = 'https://www.googleapis.com/auth/calendar.app.created';
+const GAUTH = process.env.GAUTH_URL || 'https://accounts.google.com/o/oauth2/v2/auth';
+const GTOKEN = process.env.GTOKEN_URL || 'https://oauth2.googleapis.com';
+const GAPI = process.env.GAPI_URL || 'https://www.googleapis.com/calendar/v3';
+const GCOLOR = { applied: '8', confirmed: '9', done: '3', paid: '10' }; // 회색·파랑·보라·초록 (강사로 달력 색과 같게)
+const gForm = o => ({ method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams(o).toString() });
+const gNow = () => new Date().toISOString();
+async function gToken(uid, g) {
+  const r = await fetch(`${GTOKEN}/token`, gForm({ grant_type: 'refresh_token', refresh_token: g.rt, client_id: GCAL_ID.value(), client_secret: GCAL_SECRET.value() }));
+  const t = await r.json().catch(() => ({}));
+  if (!r.ok || !t.access_token) { if (t.error === 'invalid_grant') await db.doc(`gcal/${uid}`).update({ err: 'revoked', errAt: gNow() }); throw new Error('gcal token ' + (t.error || r.status)); }
+  return t.access_token;
+}
+async function gApi(tok, method, path, body) {
+  for (let i = 0; ; i++) {
+    const r = await fetch(GAPI + path, { method, headers: { Authorization: 'Bearer ' + tok, 'Content-Type': 'application/json' }, body: body ? JSON.stringify(body) : undefined });
+    if (r.status === 204) return {};
+    const j = await r.json().catch(() => ({}));
+    if (r.ok) return j;
+    const why = (j.error && j.error.errors && j.error.errors[0] && j.error.errors[0].reason) || '';
+    if (i < 3 && (r.status === 429 || r.status >= 500 || /rateLimit/.test(why))) { await new Promise(f => setTimeout(f, 1000 * 2 ** i)); continue; } // 잠깐 많이 보내면 쉬었다가 다시
+    const e = new Error(`gcal ${method} ${path.split('?')[0]} ${r.status} ${(j.error && j.error.message) || ''}`); e.status = r.status; throw e;
+  }
+}
+// 구글에 들어갈 모양 (아이디는 강사로 문서·날짜로 늘 같게 → 두 번 들어가지 않음)
+const gIdOf = (id, d) => require('crypto').createHash('sha1').update(`${id}-${d}`).digest('hex');
+const gEvent = e => ({ summary: calTitle(e), description: calDesc(e), location: e.where || '', start: { date: e.d }, end: { date: dayAfter(e.d) },
+  colorId: GCOLOR[e.st], transparency: 'transparent', extendedProperties: { private: { ks: '1' } } });
+const gSame = (h, w) => (h.summary || '') === w.summary && (h.description || '') === w.description && (h.location || '') === w.location
+  && (h.colorId || '') === w.colorId && h.start && h.start.date === w.start.date && h.end && h.end.date === w.end.date && h.status !== 'cancelled';
+
+// 강사 한 명의 구글 캘린더를 강사로와 똑같이 맞춤. 바꾼 개수를 돌려줌
+async function gcalSync(uid, tok) {
+  const ref = db.doc(`gcal/${uid}`), g = (await ref.get()).data();
+  if (!g || !g.rt || g.err === 'revoked') return -1;
+  tok = tok || await gToken(uid, g);
+  let cal = g.cal || '';
+  if (cal) try { await gApi(tok, 'GET', `/calendars/${encodeURIComponent(cal)}`); } catch (e) { if ([403, 404, 410].includes(e.status)) cal = ''; else throw e; } // 강사가 구글에서 캘린더를 지웠으면 새로 만듦
+  if (!cal) {
+    cal = (await gApi(tok, 'POST', '/calendars', { summary: '강사로 강의 일정', description: '강사로 앱이 자동으로 넣는 강의 일정이에요. 고치려면 강사로 앱에서 바꿔 주세요.', timeZone: 'Asia/Seoul' })).id;
+    await ref.update({ cal });
+  }
+  const C = `/calendars/${encodeURIComponent(cal)}/events`, from = ymd(new Date(Date.now() - 90 * 864e5));
+  const want = new Map(); for (const e of await calEvents(uid)) want.set(gIdOf(e.id, e.d), gEvent(e));
+  const have = new Map(); let pt = '';
+  do { const j = await gApi(tok, 'GET', `${C}?maxResults=2500&showDeleted=true&privateExtendedProperty=ks%3D1&timeMin=${encodeURIComponent(from + 'T00:00:00+09:00')}${pt ? '&pageToken=' + encodeURIComponent(pt) : ''}`);
+    for (const x of j.items || []) have.set(x.id, x); pt = j.nextPageToken || ''; } while (pt);
+  let n = 0;
+  for (const [id, w] of want) { const h = have.get(id);
+    if (h && gSame(h, w)) continue;
+    if (!h) { try { await gApi(tok, 'POST', C, { id, ...w }); } catch (e) { if (e.status !== 409) throw e; await gApi(tok, 'PUT', `${C}/${id}`, { ...w, status: 'confirmed' }); } }
+    else await gApi(tok, 'PUT', `${C}/${id}`, { ...w, status: 'confirmed' });
+    n++; }
+  // 강사로에서 없어진 일정은 구글에서도 지움 (강사로가 넣은 것만. 90일보다 지난 일정은 기록으로 둠)
+  for (const [id, h] of have) if (!want.has(id) && h.status !== 'cancelled') { try { await gApi(tok, 'DELETE', `${C}/${id}`); } catch (e) { if (![404, 410].includes(e.status)) throw e; } n++; }
+  await ref.update({ last: gNow(), n: want.size, err: '' });
+  return n;
+}
+const gFail = (uid, e) => { console.warn('gcal', uid, e.message); return /invalid_grant/.test(e.message) ? null : db.doc(`gcal/${uid}`).update({ err: 'fail', errAt: gNow() }).catch(() => { }); }; // 'revoked'(강사가 구글에서 허용을 거둠)는 그대로 둠
+const gcalSafe = uid => gcalSync(uid).catch(e => gFail(uid, e));
+// 연결한 강사만 골라서 맞춤
+async function gcalKick(uids) {
+  uids = [...new Set(uids.filter(u => typeof u === 'string' && u))]; if (!uids.length) return;
+  const ds = await db.getAll(...uids.map(u => db.doc(`gcal/${u}`)));
+  await Promise.all(ds.filter(d => d.exists && d.data().rt && d.data().err !== 'revoked').map(d => gcalSafe(d.id)));
+}
+const instsOfJob = async jobId => (await db.collection('apps').where('jobId', '==', jobId).get()).docs.map(d => d.data().instId);
+const bothSides = e => [e.data.before && e.data.before.data(), e.data.after && e.data.after.data()].filter(Boolean);
+
+exports.gcalStart = onCall({ region: 'asia-northeast3', ...gsec, maxInstances: 3 }, async req => {
+  const uid = req.auth && req.auth.uid; if (!uid) fail('unauthenticated', '로그인이 필요해요');
+  const state = require('crypto').randomBytes(24).toString('base64url');
+  await db.doc(`gcalState/${state}`).set({ uid, exp: Date.now() + 20 * 60e3 });
+  const q = new URLSearchParams({ client_id: GCAL_ID.value(), redirect_uri: APP_URL, response_type: 'code', scope: GCAL_SCOPE, access_type: 'offline', prompt: 'consent', state });
+  return { url: `${GAUTH}?${q}` };
+});
+// 구글 허용 화면에서 앱으로 돌아왔을 때. 휴대폰 홈 화면 앱은 로그인이 안 된 브라우저로 돌아올 수 있어서 로그인 대신 state로 누구인지 앎
+exports.gcalCode = onCall({ region: 'asia-northeast3', ...gsec, maxInstances: 3, timeoutSeconds: 120 }, async req => {
+  const st = String((req.data && req.data.state) || '').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 64), code = String((req.data && req.data.code) || '').slice(0, 512);
+  const sd = st && code ? await db.doc(`gcalState/${st}`).get() : null;
+  if (!sd || !sd.exists || sd.data().exp < Date.now()) fail('failed-precondition', '연결 시간이 지났어요. 강사로 프로필에서 다시 눌러 주세요');
+  await sd.ref.delete(); const uid = sd.data().uid;
+  const r = await fetch(`${GTOKEN}/token`, gForm({ code, client_id: GCAL_ID.value(), client_secret: GCAL_SECRET.value(), redirect_uri: APP_URL, grant_type: 'authorization_code' }));
+  const t = await r.json().catch(() => ({}));
+  if (!r.ok || !t.refresh_token) fail('failed-precondition', '구글 연결이 안 됐어요. 다시 눌러 주세요');
+  if (!String(t.scope || '').split(' ').includes(GCAL_SCOPE)) fail('permission-denied', "구글 화면에서 캘린더 항목에 체크해 주세요. 다시 눌러 연결해 주세요");
+  await db.doc(`gcal/${uid}`).set({ rt: t.refresh_token, at: gNow(), err: '' }, { merge: true });
+  try { await gcalSync(uid, t.access_token); } catch (e) { await gFail(uid, e); }
+  const g = (await db.doc(`gcal/${uid}`).get()).data();
+  return { on: true, n: g.n || 0, last: g.last || '', err: g.err || '' };
+});
+exports.gcalState = onCall({ region: 'asia-northeast3', maxInstances: 5 }, async req => {
+  const uid = req.auth && req.auth.uid; if (!uid) fail('unauthenticated', '로그인이 필요해요');
+  const g = (await db.doc(`gcal/${uid}`).get()).data();
+  return g && g.rt ? { on: g.err !== 'revoked', err: g.err || '', n: g.n || 0, last: g.last || '' } : { on: false };
+});
+exports.gcalNow = onCall({ region: 'asia-northeast3', ...gsec, maxInstances: 3, timeoutSeconds: 120 }, async req => {
+  const uid = req.auth && req.auth.uid; if (!uid) fail('unauthenticated', '로그인이 필요해요');
+  try { if (await gcalSync(uid) < 0) fail('failed-precondition', '구글 계정이 연결돼 있지 않아요. 다시 연결해 주세요'); }
+  catch (e) { if (e instanceof HttpsError) throw e; await gFail(uid, e); if (/invalid_grant/.test(e.message)) fail('failed-precondition', '구글 연결이 끊겼어요. 다시 연결해 주세요'); fail('unavailable', '구글에 보내지 못했어요. 잠시 뒤 다시 눌러 주세요'); }
+  const g = (await db.doc(`gcal/${uid}`).get()).data();
+  return { on: true, n: g.n || 0, last: g.last || '', err: '' };
+});
+// 연결 끊기: 강사로가 만든 캘린더를 지우고 구글 허용도 거둠
+exports.gcalOff = onCall({ region: 'asia-northeast3', ...gsec, maxInstances: 3, timeoutSeconds: 60 }, async req => {
+  const uid = req.auth && req.auth.uid; if (!uid) fail('unauthenticated', '로그인이 필요해요');
+  const ref = db.doc(`gcal/${uid}`), g = (await ref.get()).data();
+  if (g && g.rt) {
+    try { const tok = await gToken(uid, g); if (g.cal) await gApi(tok, 'DELETE', `/calendars/${encodeURIComponent(g.cal)}`); } catch (e) { console.warn('gcalOff', e.message); }
+    await fetch(`${GTOKEN}/revoke`, gForm({ token: g.rt })).catch(() => { });
+  }
+  await ref.delete();
+  return { on: false };
+});
+// 바뀔 때마다 그 강사 것만 다시 맞춤
+const gtrig = { ...trig, ...gsec, timeoutSeconds: 120 };
+exports.gcalEv = onDocumentWritten({ ...gtrig, document: 'evs/{id}' }, async e => gcalKick(bothSides(e).map(x => x.instId)));
+exports.gcalApp = onDocumentWritten({ ...gtrig, document: 'apps/{id}' }, async e => gcalKick(bothSides(e).map(x => x.instId)));
+exports.gcalJob = onDocumentUpdated({ ...gtrig, document: 'jobs/{id}' }, async e => {
+  const a = e.data.before.data() || {}, b = e.data.after.data() || {}, K = ['dates', 'time', 'title', 'region', 'school', 'fee', 'op', 'coId'];
+  if (K.every(k => JSON.stringify(a[k]) === JSON.stringify(b[k]))) return;
+  await gcalKick(await instsOfJob(e.params.id));
+});
+exports.gcalPlan = onDocumentWritten({ ...gtrig, document: 'jobs/{j}/plan/{p}' }, async e => gcalKick(await instsOfJob(e.params.j)));
+// 매일 새벽: 날짜가 지나 '확정 → 미입금'으로 바뀌는 것 반영
+exports.gcalDaily = onSchedule({ schedule: 'every day 05:00', timeZone: 'Asia/Seoul', region: 'asia-northeast3', ...gsec, timeoutSeconds: 540 }, async () => {
+  const s = await db.collection('gcal').get();
+  for (const d of s.docs) if (d.data().rt && d.data().err !== 'revoked') await gcalSafe(d.id);
+  const old = await db.collection('gcalState').where('exp', '<', Date.now()).get(); await Promise.all(old.docs.map(d => d.ref.delete()));
 });

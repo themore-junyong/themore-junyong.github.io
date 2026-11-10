@@ -953,10 +953,14 @@ function vMe(){const p=inst(meId());
   ${(()=>{const V=verified(p.id);return `<div class="card"><h3>강의 이력</h3><span class="mu sm">강사로에서 업체가 확정하고, 강의를 마치고, 강사료 입금까지 끝난 강의만 자동으로 쌓이고 <span class="chip paid">✓ 강사로 인증</span>이 붙어요. 그 전 경력은 위 '강의 경력'에 직접 쓰면 '본인 작성'으로 보여요.</span>
     ${V.map(v=>`<div class="row sm"><span class="chip paid">✓ 인증</span><span class="sp">${esc(vLine(v))}</span></div>`).join('')||'<span class="mu sm">아직 입금까지 끝난 강사로 강의가 없어요.</span>'}
     ${String(p.career||'').split('\n').filter(x=>x.trim()).map(x=>`<div class="row sm"><span class="chip off">본인 작성</span><span class="sp">${esc(x)}</span></div>`).join('')}</div>`})()}
-  <div class="card" style="background:var(--acs)"><h3>📅 구글 캘린더로 자동 보내기</h3><span class="mu sm">한 번만 연결하면 강사로의 강의 일정(지원·확정·미입금·입금)이 구글 캘린더에 <b>'강사로 강의 일정'</b>으로 저절로 들어가요. 강사로에서 바꾸면 구글에도 몇 시간 안에 반영돼요. 개인 일정은 강사로로 오지 않아요.</span>
-    <button class="btn pri" data-act="calLink">구글 캘린더에 연결하기</button>
-    <details class="sm mu"><summary>연결이 안 될 때 · 휴대폰에서 안 보일 때</summary>① '구글 캘린더에 연결하기'를 누르면 구글 캘린더 화면이 열리고 "캘린더를 추가할까요?"가 나와요. <b>추가</b>를 누르면 끝이에요.<br>② 휴대폰 구글 캘린더 앱에 안 보이면: 앱 왼쪽 메뉴(☰) → 아래쪽에서 '강사로 강의 일정'에 체크해 주세요.<br>③ 아이폰 기본 캘린더를 쓰면 아래 '주소 복사'를 누르고, 설정 → 캘린더 → 계정 → 계정 추가 → 기타 → '구독 캘린더 추가'에 붙여 넣으세요.
-    <div class="row" style="margin-top:6px"><button class="btn sm" data-act="calCopy">주소 복사</button><button class="btn sm" data-act="calReset">주소 바꾸기 (예전 연결 끊기)</button></div><span>주소를 아는 사람은 내 강의 일정을 볼 수 있어요. 다른 사람에게 보내지 마세요.</span></details></div>
+  ${(()=>{const R0=typeof REAL!=='undefined'&&REAL.gcal,G0=R0?REAL.gcal():null,R=R0&&!(G0&&G0.none),G=R?G0:null,t=G&&G.last?new Date(G.last):null;
+    const st=!R?'':!G?'<span class="mu sm">연결 상태를 확인하는 중이에요…</span>':G.on&&G.err!=='fail'?`<div class="row sm"><span class="chip paid">✓ 연결됨</span><span class="sp">구글 캘린더 '강사로 강의 일정'에 강의 ${G.n||0}개${t?` · ${t.getMonth()+1}/${t.getDate()} ${pad(t.getHours())}:${pad(t.getMinutes())} 반영`:''}</span></div>`:G.on?'<div class="row sm"><span class="chip off">잠깐 멈춤</span><span class="sp">구글에 보내지 못했어요. \'지금 다시 보내기\'를 눌러 주세요</span></div>':G.err==='revoked'?'<div class="row sm"><span class="chip off">연결 끊김</span><span class="sp">구글에서 허용이 꺼졌어요. 다시 연결해 주세요</span></div>':'';
+    return `<div class="card" style="background:var(--acs)"><h3>📅 구글 캘린더로 자동 보내기</h3><span class="mu sm">구글 계정을 한 번만 연결하면 강사로의 강의 일정이 구글 캘린더 <b>'강사로 강의 일정'</b>에 <b>바로바로</b> 들어가요. 색도 강사로와 같아요 (⚪ 지원 · 🔵 확정 · 🟣 미입금 · 🟢 입금). 강사로는 이 캘린더만 만들고 고쳐요. 내 다른 구글 일정은 보지 않아요.</span>
+    ${st}
+    <div class="row">${R0&&!R?'<button class="btn pri" data-act="calLink">구글 캘린더에 연결하기</button>':G&&G.on?'<button class="btn sm" data-act="gNow">지금 다시 보내기</button><button class="btn sm" data-act="gOff">연결 끊기</button>':'<button class="btn pri" data-act="gOn">구글 계정으로 연결하기</button>'}</div>
+    ${G&&G.on||(R0&&!R)?'':'<span class="mu sm">구글 화면에서 계정을 고르고 <b>캘린더 항목에 체크 → 계속</b>을 누르면 끝이에요. "확인되지 않은 앱" 화면이 나오면 <b>고급 → 강사로(으)로 이동</b>을 눌러 주세요. 예전에 구독 주소로 연결했다면 그 캘린더는 구글 캘린더 설정에서 빼 주세요 (두 번 보여요).</span>'}
+    <details class="sm mu"><summary>다른 방법: 구독 주소로 연결 (아이폰 기본 캘린더 · 반영이 몇 시간 늦음)</summary><div class="row" style="margin:6px 0"><button class="btn sm" data-act="calLink">구독 주소로 연결하기</button></div>① '구독 주소로 연결하기'를 누르면 구글 캘린더 화면이 열리고 "캘린더를 추가할까요?"가 나와요. <b>추가</b>를 누르면 끝이에요.<br>② 휴대폰 구글 캘린더 앱에 안 보이면: 앱 왼쪽 메뉴(☰) → 아래쪽에서 '강사로 강의 일정'에 체크해 주세요.<br>③ 아이폰 기본 캘린더를 쓰면 아래 '주소 복사'를 누르고, 설정 → 캘린더 → 계정 → 계정 추가 → 기타 → '구독 캘린더 추가'에 붙여 넣으세요.
+    <div class="row" style="margin-top:6px"><button class="btn sm" data-act="calCopy">주소 복사</button><button class="btn sm" data-act="calReset">주소 바꾸기 (예전 연결 끊기)</button></div><span>주소를 아는 사람은 내 강의 일정을 볼 수 있어요. 다른 사람에게 보내지 마세요.</span></details></div>`})()}
   <div class="card"><h3>지금 일정 한 번에 넣기</h3><span class="mu sm">처음 오셨으면 가진 일정을 한 번에 넣어 두세요. ① 구글 캘린더 파일(.zip, .ics) ② 엑셀 표(제목 줄까지 복사해 붙여 넣기, 또는 양식 파일 고르기) ③ AI가 만든 표, 모두 돼요. 같은 일정은 두 번 들어가지 않아요.</span>
     <div class="row"><button class="btn sm" data-act="evTpl">엑셀 양식 받기</button></div>
     ${aiHelp('i')}
@@ -1209,6 +1213,11 @@ document.addEventListener('click',async ev=>{
   if(A==='install'){if(INST.ev){INST.ev.prompt();INST.ev.userChoice.then(c=>{if(c.outcome==='accepted'){$('#instBtn').hidden=true;toast('홈 화면에 강사로를 설치했어요')}INST.ev=null});return}return sheetInstall()}
   if(A==='unpaid')return sheetUnpaid();
   if(A==='mailCopy'&&ui.mail)return copy(ui.mail[D.k],{su:'제목',body:'본문',to:'받는 메일'}[D.k]);
+  if(A==='gOn'||A==='gNow'||A==='gOff'){if(typeof REAL==='undefined'||!REAL.gcal)return toast('체험판에서는 연결할 수 없어요. 실제 앱에서 돼요');
+    try{if(A==='gOn'){toast('구글 화면으로 가는 중이에요…');location.href=await REAL.gcalStart();return}
+      if(A==='gOff'){if(!confirm("구글 캘린더 연결을 끊을까요? 구글의 '강사로 강의 일정' 캘린더도 지워져요. 강사로 안의 일정은 그대로예요"))return;await REAL.gcalOff();render();return toast('연결을 끊었어요')}
+      toast('구글에 보내는 중이에요…');const r=await REAL.gcalNow();render();return toast(`구글 캘린더에 맞췄어요 (강의 ${r.n}개)`)}
+    catch(e){console.error(e);render();return toast((e&&e.message)||'잠시 뒤 다시 눌러 주세요')}}
   if(A==='calLink'||A==='calCopy'||A==='calReset'){if(typeof REAL==='undefined'||!REAL.calLink)return toast('체험판에서는 연결할 수 없어요. 실제 앱에서 돼요');
     if(A==='calReset'&&!confirm('새 주소를 만들까요? 지금 구글 캘린더에 연결된 강사로 일정은 더 이상 바뀌지 않아요. 새 주소로 다시 연결해 주세요'))return;
     const w=A==='calLink'?window.open('about:blank','_blank'):null; // 휴대폰 팝업 막힘 방지: 먼저 창을 열고 주소를 받으면 이동
