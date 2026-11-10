@@ -348,7 +348,7 @@ const GCAL_SCOPE = 'https://www.googleapis.com/auth/calendar.app.created';
 const GAUTH = process.env.GAUTH_URL || 'https://accounts.google.com/o/oauth2/v2/auth';
 const GTOKEN = process.env.GTOKEN_URL || 'https://oauth2.googleapis.com';
 const GAPI = process.env.GAPI_URL || 'https://www.googleapis.com/calendar/v3';
-const GCOLOR = { applied: '8', confirmed: '7', done: '1', paid: '2' }; // 회색·하늘(공작)·연보라(라벤더)·연두(세이지). 바로 연결은 색으로 구분해서 제목 앞 동그라미는 뺌
+const GCOLOR = { applied: '8', confirmed: '7', done: '3', paid: '2' }; // 회색·하늘(공작)·보라(포도)·연두(세이지). 바로 연결은 색으로 구분해서 제목 앞 동그라미는 뺌
 const gForm = o => ({ method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams(o).toString() });
 const gNow = () => new Date().toISOString();
 async function gToken(uid, g) {
