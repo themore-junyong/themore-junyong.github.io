@@ -1,6 +1,16 @@
 {
- "updated": "2026-11-09T18:46:35.442734+00:00",
+ "updated": "2026-11-10T02:05:58.945544+00:00",
  "posts": [
+  {
+   "kind": "말씀",
+   "src": "tistory",
+   "title": "질투가 날 때 성경은 뭐라고 할까 | 가인에게 하나님이 먼저 물으신 질문 (마음은 왜 그럴까 4)",
+   "link": "https://changenavigator.tistory.com/entry/%EC%A7%88%ED%88%AC%EA%B0%80-%EB%82%A0-%EB%95%8C-%EC%84%B1%EA%B2%BD%EC%9D%80-%EB%AD%90%EB%9D%BC%EA%B3%A0-%ED%95%A0%EA%B9%8C-%EA%B0%80%EC%9D%B8%EC%97%90%EA%B2%8C-%ED%95%98%EB%82%98%EB%8B%98%EC%9D%B4-%EB%A8%BC%EC%A0%80-%EB%AC%BC%EC%9C%BC%EC%8B%A0-%EC%A7%88%EB%AC%B8-%EB%A7%88%EC%9D%8C%EC%9D%80-%EC%99%9C-%EA%B7%B8%EB%9F%B4%EA%B9%8C-4",
+   "date": "2026-11-09T22:00:23+00:00",
+   "summary": "누가 잘됐다는 소식에 축하보다 \"운이 좋았네\"가 먼저 떠오른다면, 그건 질투가 보내는 신호입니다. 심리학자 아들러는 감정에는 저마다 목적이 있다고 봤고, 질투의 …",
+   "image": "https://blog.kakaocdn.net/dn/cIaEmR/dJMcahmpQmv/kizkAokqIzmkB2MUmln1mk/img.png",
+   "cat": "마음은 왜 그럴까"
+  },
   {
    "kind": "말씀",
    "src": "tistory",
@@ -1171,5 +1181,7 @@
    "cat": "설교&middot;묵상"
   }
  ],
- "errors": []
+ "errors": [
+  "youtube: HTTP Error 404: Not Found"
+ ]
 }
