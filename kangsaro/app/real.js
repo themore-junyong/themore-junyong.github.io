@@ -923,3 +923,5 @@ if (A.isSignInWithEmailLink(auth, location.href)) {
 }
 A.onAuthStateChanged(auth, u => { maintPaint(); if (u) start(u).catch(e => { console.error(e); toast('불러오지 못했어요: ' + (e.code || e.message)); }); else { profileLoaded = false; render(); } });
 window.KS = { auth, db, F, A, S: () => S, flush }; // 시험용
+// 구글 캘린더로 자동 보내기: 내 전용 구독 주소 (reset이면 새 주소 → 예전 주소는 끊김)
+REAL.calLink = async reset => (await callFn('calLink', { reset: !!reset })).data.url;

@@ -274,3 +274,55 @@ exports.askBot = onRequest({ region: 'asia-northeast3', invoker: 'public', cors:
   }
   res.json({ a: '지금은 답하기 어려워요. 잠시 뒤 다시 물어보시거나 tobadyclup@naver.com 으로 문의해 주세요' });
 });
+
+/* ===== 구글 캘린더로 자동 보내기 (구독 주소 .ics) =====
+   강사가 '구글 캘린더에 연결'을 누르면 calLink가 내 전용 주소를 만들어 줌 (열쇠는 calKeys/{uid}, 앱에서는 못 읽음)
+   구글 캘린더가 몇 시간마다 calFeed 주소를 읽어 강사로의 강의 일정(지원·확정·미입금·입금)만 보여 줌. 한쪽 방향(강사로 → 구글) */
+const CAL_URL = 'https://asia-northeast3-kangsaro-4ad33.cloudfunctions.net/calFeed';
+exports.calLink = onCall({ region: 'asia-northeast3', maxInstances: 3 }, async req => {
+  const uid = req.auth && req.auth.uid; if (!uid) fail('unauthenticated', '로그인이 필요해요');
+  const ref = db.doc(`calKeys/${uid}`), d = await ref.get();
+  let k = d.exists && !(req.data && req.data.reset) ? d.data().k : '';
+  if (!k) { k = require('crypto').randomBytes(18).toString('base64url'); await ref.set({ k, at: new Date().toISOString() }); }
+  return { url: `${CAL_URL}?u=${uid}&k=${k}` };
+});
+const icsEsc = s => String(s || '').replace(/\\/g, '\\\\').replace(/\n/g, '\\n').replace(/([,;])/g, '\\$1');
+const icsFold = l => { const o = []; let s = l; while (Buffer.byteLength(s) > 73) { let n = 60; while (Buffer.byteLength(s.slice(0, n)) > 73) n--; o.push(s.slice(0, n)); s = ' ' + s.slice(n); } o.push(s); return o.join('\r\n'); };
+exports.calFeed = onRequest({ region: 'asia-northeast3', invoker: 'public', maxInstances: 5, timeoutSeconds: 60 }, async (req, res) => {
+  const u = String(req.query.u || '').replace(/[^A-Za-z0-9]/g, '').slice(0, 40), k = String(req.query.k || '').slice(0, 60);
+  const kd = u && k ? await db.doc(`calKeys/${u}`).get() : null;
+  if (!kd || !kd.exists || kd.data().k !== k) return res.status(404).send('주소가 바뀌었거나 없어요. 강사로 앱에서 다시 연결해 주세요');
+  const today = ymd(new Date(Date.now() + 9 * 3600e3)), from = ymd(new Date(Date.now() - 90 * 864e5));
+  const ev = [], add = (id, d, st, title, time, org, fee, where) => { if (d >= from) ev.push({ id, d, st, title, time, org, fee, where }); };
+  const over = ds => ds.length && ds[ds.length - 1] < today;
+  // 내가 직접 넣은 일정 (메모·'안 됨' 빼고)
+  const evs = await db.collection('evs').where('instId', '==', u).get();
+  for (const x of evs.docs) { const e = x.data(); if (e.kind === 'memo' || e.st === 'no') continue; const ds = (e.dates || []).slice().sort();
+    const st = e.st === 'paid' ? 'paid' : e.st === 'applied' ? 'applied' : e.st === 'done' || over(ds) ? 'done' : 'confirmed';
+    for (const d of ds) add(x.id, d, st, e.title, e.time, e.org, e.fee, ''); }
+  // 강사로 안에서 지원·확정한 강의
+  const apps = await db.collection('apps').where('instId', '==', u).get(), orgs = {};
+  for (const x0 of apps.docs) { const a = x0.data(); if (a.status !== '지원' && a.status !== '확정') continue;
+    const jd = await db.doc(`jobs/${a.jobId}`).get(); if (!jd.exists) continue; const j = jd.data();
+    if (!(j.coId in orgs)) { const c = (await db.doc(`users/${j.coId}`).get()).data() || {}; orgs[j.coId] = c.role === 'c' ? c.name : (c.side && c.side.name) || c.name || ''; }
+    let days = (j.dates || []).map(d => ({ d, time: j.time }));
+    if (a.status === '확정' && j.op) { // 운영 시간표가 있으면 내 칸이 있는 날만 (없으면 강의 날짜 전체)
+      const pl = (await db.doc(`jobs/${a.jobId}/plan/main`).get()).data(), M = {};
+      for (const s of (pl && pl.slots) || []) if (s.inst === u || s.sub === u) (M[s.d] = M[s.d] || []).push(s.time);
+      if (Object.keys(M).length) days = Object.keys(M).sort().map(d => ({ d, time: M[d].filter(Boolean).sort().join(', ') }));
+      else if (Array.isArray(a.days) && a.days.length) days = days.filter(x => a.days.includes(x.d)); }
+    const ds = days.map(x => x.d).sort(), st = a.status === '지원' ? 'applied' : a.paidAt || a.selfPaid ? 'paid' : over(ds) ? 'done' : 'confirmed';
+    for (const x of days) add(x0.id, x.d, st, [j.region, j.school, j.title].filter(Boolean).join(' '), x.time, orgs[j.coId], j.fee, [j.region, j.school].filter(Boolean).join(' ')); }
+  const TAG = { applied: '지원', confirmed: '강의', done: '미입금', paid: '입금' };
+  const stamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+/, '');
+  const L = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//kangsaro//ko', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH', 'X-WR-CALNAME:강사로 강의 일정', 'X-WR-TIMEZONE:Asia/Seoul', 'REFRESH-INTERVAL;VALUE=DURATION:PT3H', 'X-PUBLISHED-TTL:PT3H'];
+  for (const e of ev) {
+    const m = String(e.time || '').match(/(\d{1,2}):(\d{2})/), d0 = e.d.replace(/-/g, ''), d1 = ymd(new Date(Date.parse(e.d + 'T00:00:00Z') + 864e5)).replace(/-/g, '');
+    L.push('BEGIN:VEVENT', `UID:${e.id}-${d0}@kangsaro`, `DTSTAMP:${stamp}`, `DTSTART;VALUE=DATE:${d0}`, `DTEND;VALUE=DATE:${d1}`,
+      icsFold(`SUMMARY:${icsEsc(`[${TAG[e.st]}] ${m ? m[1].padStart(2, '0') + ':' + m[2] + ' ' : ''}${e.title || '강의'}`)}`),
+      icsFold(`DESCRIPTION:${icsEsc([e.org && `업체: ${e.org}`, e.time && `시간: ${e.time}`, +e.fee ? `강사료: ${(+e.fee).toLocaleString('ko-KR')}원` : '', e.st === 'done' ? '페이 지급: ☐ 미입금' : e.st === 'paid' ? '페이 지급: ☑ 입금' : '', '강사로에서 자동으로 보냄 (고치려면 강사로 앱에서)'].filter(Boolean).join('\n'))}`),
+      ...(e.where ? [icsFold(`LOCATION:${icsEsc(e.where)}`)] : []), 'TRANSP:TRANSPARENT', 'END:VEVENT');
+  }
+  L.push('END:VCALENDAR');
+  res.set('Content-Type', 'text/calendar; charset=utf-8').set('Cache-Control', 'private, max-age=900').send(L.join('\r\n') + '\r\n');
+});
