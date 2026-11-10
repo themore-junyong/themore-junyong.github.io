@@ -1,6 +1,16 @@
 {
- "updated": "2026-11-10T17:48:33.303951+00:00",
+ "updated": "2026-11-10T23:18:00.223574+00:00",
  "posts": [
+  {
+   "kind": "앱",
+   "src": "tistory",
+   "title": "교회 성도 생일 챙기는 법 | 이번 달 생일 기념일을 한 화면에 모은 이유 (앱 개발기 ⑤)",
+   "link": "https://changenavigator.tistory.com/entry/%EA%B5%90%ED%9A%8C-%EC%84%B1%EB%8F%84-%EC%83%9D%EC%9D%BC-%EC%B1%99%EA%B8%B0%EB%8A%94-%EB%B2%95-%EC%9D%B4%EB%B2%88-%EB%8B%AC-%EC%83%9D%EC%9D%BC%C2%B7%EA%B8%B0%EB%85%90%EC%9D%BC%EC%9D%84-%ED%95%9C-%ED%99%94%EB%A9%B4%EC%97%90-%EB%AA%A8%EC%9D%80-%EC%9D%B4%EC%9C%A0-%EC%95%B1-%EA%B0%9C%EB%B0%9C%EA%B8%B0-%E2%91%A4",
+   "date": "2026-11-10T22:00:56+00:00",
+   "summary": "성도님 생일을 놓치는 건 마음이 없어서가 아니라, 생일 정보가 여기저기 흩어져 있어서인 경우가 많습니다. 그래서 출석 앱에 '이번 달 생일 기념일'을 한 화면에 …",
+   "image": "https://blog.kakaocdn.net/dn/bqPrCq/dJMcadjZ6XI/OLK227ZPWAkHwlZkyHKxAK/img.png",
+   "cat": "앱 이야기"
+  },
   {
    "kind": "영상",
    "src": "youtube",
