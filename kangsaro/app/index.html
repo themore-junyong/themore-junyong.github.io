@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<meta name="build" content="261110-0820">
+<meta name="build" content="261110-0825">
 <title>강사로</title>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#2563EB">
@@ -955,7 +955,7 @@ function vMe(){const p=inst(meId());
     ${String(p.career||'').split('\n').filter(x=>x.trim()).map(x=>`<div class="row sm"><span class="chip off">본인 작성</span><span class="sp">${esc(x)}</span></div>`).join('')}</div>`})()}
   ${(()=>{const R0=typeof REAL!=='undefined'&&REAL.gcal,G0=R0?REAL.gcal():null,R=R0&&!(G0&&G0.none),G=R?G0:null,t=G&&G.last?new Date(G.last):null;
     const st=!R?'':!G?'<span class="mu sm">연결 상태를 확인하는 중이에요…</span>':G.on&&G.err!=='fail'?`<div class="row sm"><span class="chip paid">✓ 연결됨</span><span class="sp">구글 캘린더 '강사로 강의 일정'에 강의 ${G.n||0}개${t?` · ${t.getMonth()+1}/${t.getDate()} ${pad(t.getHours())}:${pad(t.getMinutes())} 반영`:''}</span></div>`:G.on?'<div class="row sm"><span class="chip off">잠깐 멈춤</span><span class="sp">구글에 보내지 못했어요. \'지금 다시 보내기\'를 눌러 주세요</span></div>':G.err==='revoked'?'<div class="row sm"><span class="chip off">연결 끊김</span><span class="sp">구글에서 허용이 꺼졌어요. 다시 연결해 주세요</span></div>':'';
-    return `<div class="card" style="background:var(--acs)"><h3>📅 구글 캘린더로 자동 보내기</h3><span class="mu sm">구글 계정을 한 번만 연결하면 강사로의 강의 일정이 구글 캘린더 <b>'강사로 강의 일정'</b>에 <b>바로바로</b> 들어가요. 상태는 색으로 구분돼요 (회색 지원 · 하늘색 확정 · 연보라 미입금 · 연두 입금). 강사로는 이 캘린더만 만들고 고쳐요. 내 다른 구글 일정은 보지 않아요.</span>
+    return `<div class="card" style="background:var(--acs)"><h3>📅 구글 캘린더로 자동 보내기</h3><span class="mu sm">구글 계정을 한 번만 연결하면 강사로의 강의 일정이 구글 캘린더 <b>'강사로 강의 일정'</b>에 <b>바로바로</b> 들어가요. 상태는 색으로 구분돼요 (회색 지원 · 하늘색 확정 · 보라 미입금 · 연두 입금). 강사로는 이 캘린더만 만들고 고쳐요. 내 다른 구글 일정은 보지 않아요.</span>
     ${st}
     <div class="row">${R0&&!R?'<button class="btn pri" data-act="calLink">구글 캘린더에 연결하기</button>':G&&G.on?'<button class="btn sm" data-act="gNow">지금 다시 보내기</button><button class="btn sm" data-act="gOff">연결 끊기</button>':'<button class="btn pri" data-act="gOn">구글 계정으로 연결하기</button>'}</div>
     ${G&&G.on||(R0&&!R)?'':'<span class="mu sm">구글 화면에서 계정을 고르고 <b>캘린더 항목에 체크 → 계속</b>을 누르면 끝이에요. "확인되지 않은 앱" 화면이 나오면 <b>고급 → 강사로(으)로 이동</b>을 눌러 주세요. 예전에 구독 주소로 연결했다면 그 캘린더는 구글 캘린더 설정에서 빼 주세요 (두 번 보여요).</span>'}
@@ -1465,6 +1465,6 @@ function jTimeSync(){const R=jRanges(),t=$('#jTime'),pe=$('#jPer');if(!t)return;
 document.addEventListener('input',ev=>{if(ev.target.matches&&ev.target.matches('.trvV')){const c=$$('.trvC').find(x=>x.dataset.a===ev.target.dataset.a);if(c)c.checked=!!+ev.target.value}if(ev.target.matches&&ev.target.matches('.jTa,.jTb'))jTimeSync();if(ev.target.id==='jPer')ev.target.dataset.man=ev.target.value?'1':'';if(['pDates','pRaw'].includes(ev.target.id))pWarn();if(['pDates','pFee','pKm','pToll'].includes(ev.target.id))pNet()});
 render();
 </script>
-<script type="module" src="real.js?v=261110-0820"></script>
+<script type="module" src="real.js?v=261110-0825"></script>
 </body>
 </html>
