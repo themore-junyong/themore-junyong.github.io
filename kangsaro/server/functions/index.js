@@ -343,6 +343,7 @@ exports.calFeed = onRequest({ region: 'asia-northeast3', invoker: 'public', maxI
 const { onDocumentWritten } = require('firebase-functions/v2/firestore');
 const GCAL_ID = defineSecret('GCAL_ID'), GCAL_SECRET = defineSecret('GCAL_SECRET');
 const gsec = { secrets: [GCAL_ID, GCAL_SECRET] };
+const gId = () => String(GCAL_ID.value() || '').trim(), gSec = () => String(GCAL_SECRET.value() || '').trim(); // 붙여 넣을 때 들어간 빈칸·줄바꿈 무시
 const GCAL_SCOPE = 'https://www.googleapis.com/auth/calendar.app.created';
 const GAUTH = process.env.GAUTH_URL || 'https://accounts.google.com/o/oauth2/v2/auth';
 const GTOKEN = process.env.GTOKEN_URL || 'https://oauth2.googleapis.com';
@@ -351,7 +352,7 @@ const GCOLOR = { applied: '8', confirmed: '9', done: '3', paid: '10' }; // 회�
 const gForm = o => ({ method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams(o).toString() });
 const gNow = () => new Date().toISOString();
 async function gToken(uid, g) {
-  const r = await fetch(`${GTOKEN}/token`, gForm({ grant_type: 'refresh_token', refresh_token: g.rt, client_id: GCAL_ID.value(), client_secret: GCAL_SECRET.value() }));
+  const r = await fetch(`${GTOKEN}/token`, gForm({ grant_type: 'refresh_token', refresh_token: g.rt, client_id: gId(), client_secret: gSec() }));
   const t = await r.json().catch(() => ({}));
   if (!r.ok || !t.access_token) { if (t.error === 'invalid_grant') await db.doc(`gcal/${uid}`).update({ err: 'revoked', errAt: gNow() }); throw new Error('gcal token ' + (t.error || r.status)); }
   return t.access_token;
@@ -416,7 +417,7 @@ exports.gcalStart = onCall({ region: 'asia-northeast3', ...gsec, maxInstances: 3
   const uid = req.auth && req.auth.uid; if (!uid) fail('unauthenticated', '로그인이 필요해요');
   const state = require('crypto').randomBytes(24).toString('base64url');
   await db.doc(`gcalState/${state}`).set({ uid, exp: Date.now() + 20 * 60e3 });
-  const q = new URLSearchParams({ client_id: GCAL_ID.value(), redirect_uri: APP_URL, response_type: 'code', scope: GCAL_SCOPE, access_type: 'offline', prompt: 'consent', state });
+  const q = new URLSearchParams({ client_id: gId(), redirect_uri: APP_URL, response_type: 'code', scope: GCAL_SCOPE, access_type: 'offline', prompt: 'consent', state });
   return { url: `${GAUTH}?${q}` };
 });
 // 구글 허용 화면에서 앱으로 돌아왔을 때. 휴대폰 홈 화면 앱은 로그인이 안 된 브라우저로 돌아올 수 있어서 로그인 대신 state로 누구인지 앎
@@ -425,7 +426,7 @@ exports.gcalCode = onCall({ region: 'asia-northeast3', ...gsec, maxInstances: 3,
   const sd = st && code ? await db.doc(`gcalState/${st}`).get() : null;
   if (!sd || !sd.exists || sd.data().exp < Date.now()) fail('failed-precondition', '연결 시간이 지났어요. 강사로 프로필에서 다시 눌러 주세요');
   await sd.ref.delete(); const uid = sd.data().uid;
-  const r = await fetch(`${GTOKEN}/token`, gForm({ code, client_id: GCAL_ID.value(), client_secret: GCAL_SECRET.value(), redirect_uri: APP_URL, grant_type: 'authorization_code' }));
+  const r = await fetch(`${GTOKEN}/token`, gForm({ code, client_id: gId(), client_secret: gSec(), redirect_uri: APP_URL, grant_type: 'authorization_code' }));
   const t = await r.json().catch(() => ({}));
   if (!r.ok || !t.refresh_token) fail('failed-precondition', '구글 연결이 안 됐어요. 다시 눌러 주세요');
   if (!String(t.scope || '').split(' ').includes(GCAL_SCOPE)) fail('permission-denied', "구글 화면에서 캘린더 항목에 체크해 주세요. 다시 눌러 연결해 주세요");
