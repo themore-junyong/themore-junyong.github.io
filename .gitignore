@@ -1,0 +1,12 @@
+# 성도·회원 개인정보가 담긴 파일은 공개 저장소에 올리지 않는다 (PRIVACY.md)
+*.xlsx
+*.xls
+*.csv
+*.tsv
+*.vcf
+*명단*
+*교적*
+*성도*.json
+*회원*.json
+__pycache__/
+*.pyc
