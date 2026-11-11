@@ -292,15 +292,17 @@ const icsFold = l => { const o = []; let s = l; while (Buffer.byteLength(s) > 73
 const TAG = { applied: '⚪ 지원', confirmed: '🔵 확정', done: '🟣 미입금', paid: '🟢 입금' };
 const WORD = { applied: '지원', confirmed: '확정', done: '미입금', paid: '입금' }; // 바로 연결은 색 + [확정] 같은 글자로 구분
 const calTitle = (e, plain) => { const m = String(e.time || '').match(/(\d{1,2}):(\d{2})/); return `${plain ? `[${WORD[e.st]}] ` : TAG[e.st] + ' '}${m ? m[1].padStart(2, '0') + ':' + m[2] + ' ' : ''}${e.title || '강의'}`; };
-const calDesc = e => [e.org && `업체: ${e.org}`, e.time && `시간: ${e.time}`, +e.fee ? `강사료: ${(+e.fee).toLocaleString('ko-KR')}원` : '', e.st === 'done' ? '페이 지급: ☐ 미입금' : e.st === 'paid' ? '페이 지급: ☑ 입금' : '', '강사로에서 자동으로 보냄 (고치려면 강사로 앱에서)'].filter(Boolean).join('\n');
+const calDesc = e => [e.org && `업체: ${e.org}`, e.time && `시간: ${e.time}`, +e.fee ? `강사료: ${(+e.fee).toLocaleString('ko-KR')}원` : '', e.st === 'done' ? '페이 지급: ☐ 미입금' : e.st === 'paid' ? '페이 지급: ☑ 입금' : '', e.memo && `📝 메모: ${e.memo}`, '강사로에서 자동으로 보냄 (고치려면 강사로 앱에서)'].filter(Boolean).join('\n');
 const dayAfter = d => ymd(new Date(Date.parse(d + 'T00:00:00Z') + 864e5));
 // 강사 한 명의 강의 일정 목록 (구독 주소와 구글 바로 연결이 같이 씀). 90일 전부터
 async function calEvents(u) {
-  const today = ymd(new Date(Date.now() + 9 * 3600e3)), from = ymd(new Date(Date.now() - 90 * 864e5));
-  const ev = [], add = (id, d, st, title, time, org, fee, where) => { if (d >= from) ev.push({ id, d, st, title, time, org, fee, where }); };
+  const today = ymd(new Date(Date.now() + 9 * 3600e3)), from = ymd(new Date(Date.now() - 90 * 864e5)), memo = {};
+  const ev = [], add = (id, d, st, title, time, org, fee, where) => { if (d >= from) ev.push({ id, d, st, title, time, org, fee, where, memo: memo[id] || '' }); };
   const over = ds => ds.length && ds[ds.length - 1] < today;
   // 내가 직접 넣은 일정 (메모·'안 됨' 빼고)
   const evs = await db.collection('evs').where('instId', '==', u).get();
+  // 강의 카드 메모(kind 'memo', side 'L', ref = 강의 id)는 일정 설명에 붙임. 날짜 메모(side i/c)는 안 보냄
+  for (const x of evs.docs) { const e = x.data(); if (e.kind === 'memo' && e.side === 'L' && e.ref && e.text) memo[e.ref] = String(e.text).slice(0, 1000); }
   for (const x of evs.docs) { const e = x.data(); if (e.kind === 'memo' || e.st === 'no') continue; const ds = (e.dates || []).slice().sort();
     const st = e.st === 'paid' ? 'paid' : e.st === 'applied' ? 'applied' : e.st === 'done' || over(ds) ? 'done' : 'confirmed';
     for (const d of ds) add(x.id, d, st, e.title, e.time, e.org, e.fee, ''); }
