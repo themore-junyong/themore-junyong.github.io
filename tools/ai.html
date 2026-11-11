@@ -4,7 +4,7 @@
 <meta name="robots" content="noindex">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap">
 <link rel="stylesheet" href="font.css"><style>
-/* 다섯 활동: #prompt 프롬프트 연습장(AI) · #lie AI 거짓말 찾기 · #who AI vs 사람 글 · #ethics AI 윤리 딜레마 · #future 내 직무 미래 지도(AI) */
+/* 여섯 활동: #plan~#plan7 요청문 만들기(기획하는 법) · #prompt 프롬프트 연습장(AI) · #lie AI 거짓말 찾기 · #who AI vs 사람 글 · #ethics AI 윤리 딜레마 · #future 내 직무 미래 지도(AI) */
 :root{
   --bg:#f6f6f6; --ink:#333; --soft:#6f7480; --card:#fff; --line:#e2e3e8; --field:#fbfbfc;
   --blue:#4e6bf1; --blue-ink:#fff; --blue-soft:#e9edfe; --ok:#2e8b4c; --bad:#c8432f; --mid:#c98a00;
@@ -72,6 +72,21 @@ a.g b{font-size:1.1rem} a.g span{color:var(--soft);font-size:.92rem}
 .sq{border-top:1px dashed var(--line);padding-top:8px;display:flex;flex-direction:column;gap:6px}
 .qno{color:var(--blue);font-weight:700;font-size:.9rem}
 .big{font-size:2.2rem;font-weight:900;text-align:center}
+.vid{width:100%;max-width:320px;aspect-ratio:9/16;margin:0 auto;border-radius:6px;overflow:hidden;background:#000}.vid iframe{width:100%;height:100%;border:0;display:block}
+/* 요청문 만들기(#plan) */
+.steps{display:grid;grid-template-columns:repeat(6,1fr);gap:4px}
+.steps a{display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 2px;border-radius:4px;background:var(--card);border:1px solid var(--line);color:var(--soft);text-decoration:none;font-size:.78rem;text-align:center;line-height:1.3}
+.steps a b{font-size:1rem;color:var(--ink)}
+.steps a[aria-current="step"]{background:var(--blue);border-color:var(--blue);color:var(--blue-ink)}.steps a[aria-current="step"] b{color:var(--blue-ink)}
+.tgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+@media (max-width:640px){.tgrid{grid-template-columns:1fr 1fr}}
+.tp{border:2px solid var(--line);background:var(--card);border-radius:6px;padding:12px 8px;display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center;line-height:1.35;font-size:.92rem}
+.tp .te{font-size:1.7rem}.tp[aria-pressed="true"]{border-color:var(--blue);background:var(--blue-soft)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}.chips button{border:2px solid var(--line);background:var(--field);border-radius:999px;padding:6px 14px;font-weight:700}
+.chips button[aria-pressed="true"]{border-color:var(--blue);background:var(--blue-soft)}
+.ck{display:flex;gap:8px;align-items:flex-start;line-height:1.5}.ck input{width:20px;height:20px;margin-top:2px;flex:none}
+.plist{display:flex;flex-direction:column;gap:8px}.plist details{border:1px solid var(--line);border-radius:4px;padding:8px 12px;background:var(--field)}
+.plist summary{cursor:pointer;font-weight:700}
 </style>
 </head><body>
 <script src="room.js?v=235" data-guard></script>
@@ -100,11 +115,12 @@ function push(){if(!window.TM_ROOM||TM_ROOM.teach||!TM_ROOM.get())return;clearTi
     if(Object.keys(d).length)out.push(['ai-lie','AI 거짓말 찾기 '+L.score+'점',{d:d,s:L.score}])}
   if(st.who&&Object.keys(st.who.pick||{}).length){var ok=0,n=0;Object.keys(st.who.pick).forEach(function(i){n++;if(st.who.pick[i]==='ai')ok++});out.push(['ai-who','AI vs 사람 '+ok+'/'+n,{p:st.who.pick}])}
   if(st.eth&&Object.keys(st.eth.v||{}).length)out.push(['ai-eth','AI 윤리 딜레마 '+Object.keys(st.eth.v).length+'개 투표',{v:st.eth.v}]);
+  if(st.plan&&st.plan.what&&st.plan.what.trim())out.push(['ai-plan','요청문 · '+st.plan.what.trim().slice(0,60),{k:st.plan.k,t:st.plan.what.trim().slice(0,120),r:planOut().slice(0,1500)}]);
   out.forEach(function(o){var b=JSON.stringify(o[2]);if(pushed[o[0]]===b)return;pushed[o[0]]=b;TM_ROOM.send(o[0],o[1],b,true)});
 },1000)}
 var SW=null,STM=[];
 function statOn(){return !!(window.TM_ROOM&&TM_ROOM.teach&&TM_ROOM.teachWork)}
-if(statOn())TM_ROOM.teachWork(['ai-lie','ai-who','ai-eth'],function(A,T){if(T){STM=T}else SW=A.map(function(x){var b={};try{b=JSON.parse(x.body)}catch(e){}return {tool:x.tool,nick:x.nick,team:x.team||'',b:b}});
+if(statOn())TM_ROOM.teachWork(['ai-lie','ai-who','ai-eth','ai-plan'],function(A,T){if(T){STM=T}else SW=A.map(function(x){var b={};try{b=JSON.parse(x.body)}catch(e){}return {tool:x.tool,nick:x.nick,team:x.team||'',b:b}});
   var y=window.scrollY;render();window.scrollTo(0,y)});
 function sbar(lab,n,tot,c){var p=tot?Math.round(n/tot*100):0;return '<div class="sb"><span>'+lab+'</span><span class="tr"><i style="width:'+p+'%;background:'+(c||'var(--blue)')+'"></i></span><span class="n">'+n+'명 '+p+'%</span></div>'}
 function tlist(R){var t=STM.slice();R.forEach(function(r){var k=r.team&&t.indexOf(r.team)>=0?r.team:'조 없음';if(t.indexOf(k)<0)t.push(k)});return t}
@@ -113,6 +129,9 @@ function statBox(kind){if(!statOn())return '';var R=(SW||[]).filter(function(x){
   if(!SW)return '<div class="stat"><h3>📊 반 통계 <span>불러오는 중…</span></h3></div>';
   h='<div class="stat"><h3>📊 반 통계 (선생님만 보여요) <span>참여 '+R.length+'명</span></h3>';
   if(!R.length)return h+'<p class="note">학생이 고르면 여기에 바로 모여요.</p></div>';
+  if(kind==='ai-plan'){var TP=tlist(R);
+    h+=TP.map(function(t){var M=R.filter(function(r){return tof(r)===t});if(!M.length)return '';return '<div class="sq"><b>'+esc(t)+' ('+M.length+'명)</b><div class="plist">'+M.map(function(r){return '<details><summary>'+esc(r.nick)+' · '+esc(r.b.t||'')+'</summary><div class="out">'+esc(r.b.r||'')+'</div></details>'}).join('')+'</div></div>'}).join('');
+    return h+'<p class="note">요청문을 눌러 펼쳐 보세요. 빔에 띄워 "이 요청문에서 빠진 것은?"을 함께 찾아보면 좋아요.</p></div>'}
   if(kind==='ai-lie'){var T=tlist(R);
     h+='<div class="sq"><b>조별 평균 점수</b>'+T.map(function(t){var M=R.filter(function(r){return tof(r)===t});if(!M.length)return '';var a=M.reduce(function(s,r){return s+(+r.b.s||0)},0)/M.length;return '<div class="sb"><span>'+esc(t)+'</span><span class="tr"><i style="width:'+Math.max(0,Math.min(100,a/3*100))+'%;background:var(--blue)"></i></span><span class="n">'+a.toFixed(1)+'점</span></div>'}).join('')+'</div>';
     LIE.forEach(function(Q,i){var M=R.filter(function(r){return r.b.d&&r.b.d[i]});if(!M.length)return;
@@ -139,8 +158,9 @@ function lab(p){busy=true;note='';render();return AI.lab(Object.assign({code:COD
 
 /* ---------- 홈 ---------- */
 function home(){
-  return head('AI 수업 도구')+'<p class="soft">AI를 "잘 쓰는 사람"이 되기 위한 다섯 가지 활동이에요. ⚡표시는 AI가 실제로 답해요(초대코드 필요).</p><div class="list">'+
-   [['prompt','⚡ 프롬프트 연습장','대충 쓴 부탁 vs 잘 쓴 부탁, AI 답을 나란히 비교 + 프롬프트 채점'],
+  return head('AI 수업 도구')+'<p class="soft">AI를 "잘 쓰는 사람"이 되기 위한 여섯 가지 활동이에요. ⚡표시는 AI가 실제로 답해요(초대코드 필요).</p><div class="list">'+
+   [['plan','📝 요청문 만들기 · 기획하는 법','무엇을·누구에게·어떤 화면으로·완성 기준 6단계 → AI에게 줄 요청문 완성 + 고치기 요청문'],
+    ['prompt','⚡ 프롬프트 연습장','대충 쓴 부탁 vs 잘 쓴 부탁, AI 답을 나란히 비교 + 프롬프트 채점'],
     ['lie','🕵️ AI 거짓말 찾기','AI 답변 속 그럴듯한 거짓 문장을 찾아라 (환각 찾기)'],
     ['who','🤖 AI가 쓴 글 vs 사람이 쓴 글','어느 쪽이 AI일까? AI 글의 특징 알아보기'],
     ['ethics','⚖️ AI 윤리 딜레마','"AI로 자소서를 써도 될까?" 찬반 투표와 생각해 볼 점'],
@@ -187,11 +207,13 @@ var LIE=[
   ['AI에 입력한 개인정보는 어디에도 남지 않으니 마음껏 넣어도 됩니다.',1,'서비스에 따라 입력 내용이 저장·학습에 쓰일 수 있어요. 개인정보는 넣지 않는 게 원칙이에요.'],
   ['같은 질문도 어떻게 묻느냐에 따라 답이 달라집니다.',0]]}
 ];
+/* 거짓말 찾기 전에 보는 영상(준용 11/11 추가). 쇼츠라 세로 화면 */
+var LVID='<div class="card"><h3>🎬 먼저 영상 하나 보고 시작해요</h3><div class="vid"><iframe src="https://www.youtube-nocookie.com/embed/bbBbS9AGsGk" title="AI 거짓말 찾기 전에 보는 영상" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen loading="lazy"></iframe></div><p class="soft">보고 나서 생각해 봐요: <b>AI가 자신 있게 말하면 다 맞는 걸까?</b></p><a class="note" href="https://youtube.com/shorts/bbBbS9AGsGk" target="_blank" rel="noopener">영상이 안 나오면 유튜브에서 열기 ↗</a></div>';
 function lie(){
   var L=st.lie||(st.lie={i:0,sel:{},done:{},score:0});
   if(L.i>=LIE.length)return head('🕵️ AI 거짓말 찾기')+statBox('ai-lie')+'<div class="card"><div class="big">'+L.score+'점</div><p style="text-align:center">맞게 찾은 거짓 문장 +1, 참인 문장을 거짓이라 하면 -1</p><div class="why"><b>오늘의 한 줄:</b> AI는 <b>틀린 말도 자신 있게</b> 해요. 숫자·사람·법·출처는 반드시 <b>다른 곳에서 한 번 더 확인</b>하세요.</div><button class="btn pri" data-a="lieRe">처음부터 다시</button></div>';
   var R=LIE[L.i],sel=L.sel[L.i]||{},done=L.done[L.i];
-  var h=head('🕵️ AI 거짓말 찾기')+statBox('ai-lie')+'<p class="soft">AI 답변 속에 <b>거짓 문장</b>이 숨어 있어요. 수상한 문장을 눌러 표시하고 "정답 확인"을 누르세요. ('+(L.i+1)+' / '+LIE.length+')</p>';
+  var h=head('🕵️ AI 거짓말 찾기')+statBox('ai-lie')+(L.i===0&&!done?LVID:'')+'<p class="soft">AI 답변 속에 <b>거짓 문장</b>이 숨어 있어요. 수상한 문장을 눌러 표시하고 "정답 확인"을 누르세요. ('+(L.i+1)+' / '+LIE.length+')</p>';
   h+='<div class="card"><div class="aibox"><div class="who">🙋 질문: '+esc(R.t)+'</div><div class="who">🤖 AI 답변</div><p>'+R.s.map(function(x,j){var c='sent';if(done){if(x[1]&&sel[j])c+=' hit';else if(x[1])c+=' false';else if(sel[j])c+=' miss'}return '<span class="'+c+'" data-s="'+j+'" aria-pressed="'+(!!sel[j]&&!done)+'" role="button">'+esc(x[0])+'</span> '}).join('')+'</p></div>';
   if(!done)h+='<button class="btn pri" data-a="lieCheck">정답 확인</button>';
   else{
@@ -259,13 +281,156 @@ function future(){
   return h;
 }
 
+/* ---------- ⑥ 요청문 만들기 (기획하는 법) : #plan 소개 · #plan1~5 기획 단계 · #plan6 요청문 완성 · #plan7 고치기 요청문 ----------
+   강사가 단계를 누르면 학생도 같은 단계로 따라감(해시). 완성한 요청문은 선생님 화면 📊에 조별로 모임(ai-plan). AI는 기존 run·coach만 씀(서버 변경 없음). */
+var PT=[
+ {k:'iv',e:'🎤',n:'면접 질문 뽑기 + 타이머',what:'면접 질문 랜덤 뽑기와 60초 답변 타이머',who:'취업 면접을 앞둔 고등학생',when:'면접 전날 밤 혼자',why:'실제 면접처럼 질문에 소리 내어 답해 보려고',
+  s:[['앱 이름, 한 줄 설명, "시작" 버튼','"시작"을 누르면 질문 화면으로 간다'],['가운데 큰 글씨로 면접 질문 하나, 남은 시간 60초','"질문 뽑기"를 누르면 새 질문이 나오고 60초 타이머가 시작된다. 10초 남으면 숫자가 빨간색'],['오늘 연습한 질문 개수와 응원 한마디','"처음으로"를 누르면 처음 화면으로 간다']],
+  c:'고등학생 신입 면접에 자주 나오는 질문 20개(자기소개, 지원동기, 장단점, 팀워크, 실패 경험, 입사 후 포부 등). 같은 질문이 연달아 나오지 않게.',look:'밝고 깔끔한 파란색, 폰에서도 글씨가 크게',
+  d:['"질문 뽑기"를 누를 때마다 다른 질문이 나온다','60초가 줄어들고 10초부터 빨간색이 된다','폰으로 열어도 글씨가 잘리지 않는다']},
+ {k:'dday',e:'📅',n:'자격증 D-day 공부 계획',what:'자격증 시험 D-day 계산기와 하루 공부량 안내',who:'자격증 시험을 준비하는 공업계 고등학생',when:'공부를 시작하기 전',why:'시험까지 남은 날과 하루에 할 양을 알려고',
+  s:[['자격증 이름 입력칸, 시험 날짜 고르기, "계산" 버튼','"계산"을 누르면 결과 화면으로 간다'],['D-○○ 큰 글씨, 남은 주 수','전체 문제 수(예: 1000문제)를 넣으면 하루에 풀 문제 수가 나온다'],['오늘 할 일 체크칸 3개','체크하면 줄이 그어진다']],
+  c:'예시 자격증: 정보처리기능사, 전기기능사, 컴퓨터활용능력 2급. 시험 날짜는 사용자가 직접 넣음(앱이 날짜를 지어내지 않음).',look:'차분한 초록색, 숫자는 아주 크게',
+  d:['날짜를 넣으면 D-day가 맞게 나온다','하루 공부량이 숫자로 나온다','체크칸을 누르면 줄이 그어진다']},
+ {k:'quiz',e:'🧭',n:'나에게 맞는 직무 퀴즈',what:'질문 8개로 나에게 맞는 직무를 추천하는 퀴즈',who:'진로를 고민하는 고2 학생',when:'진로 시간에',why:'내 성향에 맞는 직무를 알아보려고',
+  s:[['퀴즈 제목, "시작" 버튼','"시작"을 누르면 1번 질문이 나온다'],['질문 하나와 보기 2개(예: 혼자 집중 vs 함께 협력), 진행 막대 1/8','보기를 누르면 다음 질문으로 넘어간다'],['추천 직무 3개와 각각 한 줄 설명','"다시 하기"를 누르면 처음부터']],
+  c:'우리 학과(예: 정보처리과)와 관련된 직무 6개 중에서 추천. 직무: 웹개발자, 앱개발자, 정보보안, 네트워크 관리, 데이터 입력·관리, IT 고객지원.',look:'귀엽고 밝은 보라색, 이모지 사용',
+  d:['8문제를 다 풀면 결과가 나온다','답을 다르게 고르면 결과도 달라진다','"다시 하기"가 된다']},
+ {k:'cmp',e:'🏢',n:'회사 조건 비교표',what:'지원할 회사 두 곳의 조건을 나란히 비교하는 표',who:'취업할 회사를 고르는 고3 학생',when:'원서를 쓰기 전',why:'월급·거리·근무시간을 한눈에 비교하려고',
+  s:[['회사 A, 회사 B 이름 입력칸','이름을 넣으면 표 위에 이름이 나온다'],['월급, 집에서 거리, 근무시간, 기숙사, 교대근무 칸을 회사별로 입력','"비교하기"를 누르면 더 좋은 쪽 칸이 초록색이 된다'],['내가 중요하게 여기는 것 1위 고르기','고르면 그 기준으로 추천 회사가 나온다']],
+  c:'숫자는 사용자가 직접 넣음. 앱이 회사 정보를 지어내지 않음.',look:'깔끔한 회색과 초록색, 표 형식',
+  d:['두 회사 값을 넣으면 나란히 보인다','더 좋은 쪽이 초록색으로 표시된다','폰에서도 표가 잘리지 않는다']},
+ {k:'card',e:'🃏',n:'전공 용어 카드',what:'전공 용어를 외우는 플래시카드',who:'전공 시험을 앞둔 우리 학과 학생',when:'쉬는 시간에 폰으로',why:'헷갈리는 전공 용어를 빠르게 외우려고',
+  s:[['카드 묶음 제목, "시작" 버튼','"시작"을 누르면 첫 카드가 나온다'],['카드 앞면에 용어 하나','카드를 누르면 뒤집혀서 뜻이 나온다. "알아요"/"몰라요" 버튼'],['맞힌 개수, 모르는 용어 목록','"모르는 것만 다시"를 누르면 그것만 다시 나온다']],
+  c:'우리 학과 기본 용어 15개(예: 정보처리과면 HTML, CSS, 서버, IP 주소, 데이터베이스 등)와 고등학생이 이해할 쉬운 뜻. 뜻은 내가 교과서로 확인.',look:'노란 카드 모양, 뒤집히는 효과',
+  d:['카드를 누르면 뜻이 나온다','"몰라요"를 누른 것만 다시 볼 수 있다','15개 모두 넘겨 볼 수 있다']},
+ {k:'chk',e:'✅',n:'취업 준비 체크리스트',what:'취업 준비 순서 체크리스트',who:'취업을 준비하는 고3 학생',when:'취업 준비를 시작할 때',why:'해야 할 일을 빠짐없이 순서대로 챙기려고',
+  s:[['제목, 전체 진행률(%) 막대',''],['단계별 할 일 목록(서류 → 자격증 → 회사 조사 → 면접 연습)','할 일을 누르면 체크되고 진행률이 올라간다'],['다 끝내면 축하 메시지','"처음부터"를 누르면 체크가 모두 풀린다']],
+  c:'할 일 12개 정도: 이력서 쓰기, 자기소개서 쓰기, 증명사진, 자격증 확인, 회사 3곳 조사, 면접 질문 연습 등.',look:'차분한 남색, 체크하면 초록색',
+  d:['누르면 체크되고 진행률이 바뀐다','다시 열어도 체크가 남아 있다','전부 체크하면 축하 메시지가 나온다']},
+ {k:'vote',e:'⭐',n:'우리 반 별점·투표판',what:'우리 반이 함께 쓰는 급식 별점판',who:'우리 반 친구들',when:'점심 먹고 나서',why:'오늘 급식 별점을 남기고 반 평균을 보려고',
+  s:[['오늘 날짜, 오늘 메뉴 입력칸',''],['별 1~5개 버튼, 한 줄 평 입력칸','별을 누르고 "남기기"를 누르면 저장된다'],['반 평균 별점과 한 줄 평 목록','새로 남기면 평균이 바로 바뀐다']],
+  c:'이름은 받지 않고 별점과 한 줄 평만. 남긴 내용이 쌓여서 모두에게 보이게.',look:'따뜻한 주황색, 큰 별 모양',
+  d:['별점을 남기면 목록에 쌓인다','평균 별점이 맞게 계산된다','이름을 묻는 칸이 없다']},
+ {k:'own',e:'✏️',n:'직접 정하기',what:'',who:'',when:'',why:'',s:[['',''],['',''],['','']],c:'',look:'',d:['','','']}
+];
+var PSTEP=[['plan1','무엇을','주제'],['plan2','누구를 위해','사용자'],['plan3','어떤 화면으로','화면 설계'],['plan4','무엇을 넣고 지킬지','내용·조건'],['plan5','어디까지','완성 기준'],['plan6','요청문 완성','복사·점검']];
+var PRULE=[['pi','이름·전화번호 같은 개인정보는 입력받지 않기'],['fact','사실이 아닌 내용(회사·숫자·날짜)을 지어내지 않기'],['ko','모든 글은 한국어로, 고등학생이 읽기 쉽게'],['one','한 페이지 안에서 화면이 바뀌게(파일 하나로)']];
+var PTONE=['친근한 반말','부드러운 존댓말','깔끔한 안내문 말투'];
+function PL(){var p=st.plan;if(!p||!p.s){p=st.plan={k:'',what:'',who:'',when:'',why:'',tone:'부드러운 존댓말',s:[['',''],['',''],['','']],c:'',look:'',rules:{pi:1,fact:1,ko:1,one:1},d:['','',''],text:'',ed:0,fix:[{w:'',n:'',g:''}],chk:{},rc:'',ru:''}}return p}
+function pv(a,b){return a==null||a===''?b:a}
+function planText(){var p=PL(),t=[],T=PT.filter(function(x){return x.k===p.k})[0]||{};
+  t.push('[만들 것] '+(p.what||'(무엇을 만들지 적어 주세요)')+' 웹앱을 만들어 줘.');
+  if(p.who||p.when||p.why)t.push('[쓸 사람] '+[p.who,p.when&&'언제: '+p.when,p.why&&'왜: '+p.why].filter(Boolean).join(' / ')+'\n[말투] '+p.tone);
+  var S=p.s.map(function(x,i){if(!x[0]&&!x[1])return '';return (i+1)+'. '+(x[0]||'')+(x[1]?' → '+x[1]:'')}).filter(Boolean);
+  if(S.length)t.push('[화면]\n'+S.join('\n'));
+  if(p.c)t.push('[들어갈 내용] '+p.c);
+  if(p.look)t.push('[모양] '+p.look);
+  var R=PRULE.filter(function(r){return p.rules[r[0]]}).map(function(r){return r[1]});
+  if(R.length)t.push('[꼭 지킬 것] '+R.join(' / '));
+  var D=p.d.filter(Boolean);if(D.length)t.push('[완성 기준] 아래가 모두 되면 완성이야.\n'+D.map(function(x){return '- '+x}).join('\n'));
+  return t.join('\n');
+}
+function planOut(){var p=PL();return p.ed&&p.text?p.text:planText()}
+function pbar(cur){return '<nav class="steps" aria-label="기획 단계">'+PSTEP.map(function(s,i){var on=s[0]===cur;return '<a href="#'+s[0]+'"'+(on?' aria-current="step"':'')+'><b>'+(i+1)+'</b><span>'+s[2]+'</span></a>'}).join('')+'</nav>'}
+function pnav(i){var a=i>0?PSTEP[i-1][0]:'plan',b=PSTEP[i+1];return (i>0&&pex()?'<p class="note">막막하면 <button class="btn" data-a="pfill" data-i="'+i+'" style="padding:4px 10px">예시 그대로 넣기</button> 를 누르고, 우리 팀 말로 고쳐 쓰세요.</p>':'')+'<div class="btns" style="justify-content:space-between"><a class="btn" href="#'+a+'">← 이전</a>'+(b?'<a class="btn pri" href="#'+b[0]+'">다음: '+b[1]+' →</a>':'')+'</div>'}
+function pin(id,lab,val,ph,big){return '<div class="f"><label for="'+id+'">'+lab+'</label>'+(big?'<textarea id="'+id+'" data-pf="'+id+'" maxlength="300" placeholder="'+esc(ph||'')+'">'+esc(val)+'</textarea>':'<input id="'+id+'" data-pf="'+id+'" maxlength="120" value="'+esc(val)+'" placeholder="'+esc(ph||'')+'">')+'</div>'}
+function pex(){var p=PL();var T=PT.filter(function(x){return x.k===p.k})[0];return T&&T.k!=='own'?T:null}
+function planIntro(){
+  var h=head('📝 요청문 만들기 · 기획하는 법')+statBox('ai-plan');
+  h+='<div class="why"><b>AI는 눈치가 없어요.</b> 내 머릿속 그림을 글로 꺼내 주지 않으면, 빠진 부분은 AI가 <b>마음대로</b> 정해 버려요. 머릿속 그림을 빠짐없이 글로 꺼내는 일, 그게 <b>기획</b>이에요.</div>';
+  h+='<div class="two"><div class="card"><span class="tag a">기획 없이</span><div class="out">면접 연습 앱 만들어 줘</div><p class="note">→ 질문은 몇 개? 누가 써? 타이머는? 폰에서? AI가 전부 마음대로 정해요.</p></div>'+
+    '<div class="card"><span class="tag b">기획하고 나서</span><div class="out">[만들 것] 면접 질문 랜덤 뽑기와 60초 답변 타이머 웹앱을 만들어 줘.\n[쓸 사람] 면접을 앞둔 고등학생이 전날 밤 혼자…\n[화면] 1. 시작 → 2. 질문 + 타이머 → 3. 오늘 연습 개수\n[완성 기준] 누를 때마다 다른 질문이 나온다…</div><p class="note">→ 처음부터 내가 원하는 앱에 가까워요. 고칠 것도 적어요.</p></div></div>';
+  h+='<div class="card"><h3>오늘 기획은 6단계예요</h3><div class="list">'+PSTEP.map(function(s,i){return '<a class="g" href="#'+s[0]+'"><b>'+(i+1)+'. '+s[1]+'</b><span>'+['작게, 쓸 사람이 있고, 오늘 끝낼 수 있는 주제','누가 · 언제 · 왜 쓰는지 세 문장','화면 3장: 무엇이 보이고, 누르면 무엇이 되는지','들어갈 내용 · 모양 · 꼭 지킬 것','"이게 되면 완성" 세 줄 = 나중에 테스트 기준','합쳐진 요청문을 복사해 Canva 코드에 붙여넣기 · AI 점검'][i]+'</span></a>'}).join('')+'</div>'+
+    '<p class="note">요청문의 4요소와 짝: <b>무엇을</b>=1단계 · <b>누구에게</b>=2단계 · <b>어떤 형태로</b>=3·4단계 · <b>완성 기준</b>=5단계</p><a class="btn pri" href="#plan1" style="text-align:center">1단계 시작 →</a></div>';
+  return h;
+}
+function plan1(){var p=PL();
+  var h=head('📝 요청문 만들기')+pbar('plan1')+'<h2>1. 무엇을 만들까</h2><div class="why"><b>좋은 주제 3조건:</b> ① <b>작다</b> — 화면 3장 안에 끝난다 ② <b>쓸 사람이 있다</b> — 친구·나·후배가 실제로 쓴다 ③ <b>오늘 끝낸다</b> — 버튼 1~2개로 돌아간다</div>';
+  h+='<div class="tgrid">'+PT.map(function(x){return '<button class="tp" data-pt="'+x.k+'" aria-pressed="'+(p.k===x.k)+'"><span class="te">'+x.e+'</span><b>'+esc(x.n)+'</b></button>'}).join('')+'</div>';
+  if(p.k){var T=pex();h+='<div class="card">'+pin('pf-what','우리가 만들 것 (한 줄)',p.what,T?T.what:'예: 우리 반 발표자 랜덤 뽑기')+(T?'<p class="note">예시 주제를 골랐어요. 아래 단계에 예시가 회색 글씨로 들어 있어요. <b>그대로 쓰지 말고 우리 팀 말로 바꿔 보세요.</b></p>':'')+'</div>';
+    h+='<div class="card"><b>3조건 점검</b>'+['화면 3장 안에 끝나요','실제로 쓸 사람이 있어요','버튼 1~2개로 돌아가요'].map(function(x,i){return '<label class="ck"><input type="checkbox" data-pc="g'+i+'"'+(p.chk['g'+i]?' checked':'')+'> '+x+'</label>'}).join('')+'</div>';}
+  return h+pnav(0);
+}
+function plan2(){var p=PL(),T=pex()||{};
+  var h=head('📝 요청문 만들기')+pbar('plan2')+'<h2>2. 누구를 위해 만들까</h2><div class="why"><b>쓸 사람을 정하면 나머지가 정해져요.</b> 고3 면접 준비생이면 존댓말·큰 글씨·진지한 질문, 우리 반 친구면 반말·이모지·재미. "모두를 위한 앱"은 아무도 안 써요. <b>한 사람</b>을 떠올리세요.</div>';
+  h+='<div class="card">'+pin('pf-who','누가 (한 사람을 떠올리며)',p.who,T.who||'예: 발표가 무서운 우리 반 친구')+pin('pf-when','언제·어디서',p.when,T.when||'예: 수업 시작 전 2분')+pin('pf-why','무엇을 하려고',p.why,T.why||'예: 공평하게 발표 순서를 정하려고')+
+    '<div class="f"><label>말투</label><div class="chips">'+PTONE.map(function(x){return '<button data-ptone="'+esc(x)+'" aria-pressed="'+(p.tone===x)+'">'+esc(x)+'</button>'}).join('')+'</div></div></div>';
+  h+='<div class="side">📌 이어 읽어 보기: <b>'+esc([p.who||T.who,p.when||T.when,p.why||T.why].filter(Boolean).join(' ')||'…')+'</b> 쓰는 앱</div>';
+  return h+pnav(1);
+}
+function plan3(){var p=PL(),T=pex()||{s:[['',''],['',''],['','']]};
+  var h=head('📝 요청문 만들기')+pbar('plan3')+'<h2>3. 어떤 화면으로 만들까</h2><div class="why"><b>화면마다 두 가지만 적어요.</b> ① 무엇이 <b>보이는지</b> ② 무엇을 <b>누르면 무엇이 되는지</b>. "누르면 ~가 된다"가 빠지면 AI는 그림만 그리고 아무것도 안 움직여요.</div>';
+  ['첫 화면 (여기가 뭐 하는 곳인지)','핵심 화면 (진짜 쓰는 곳)','결과 화면 (누르고 나서 보이는 것)'].forEach(function(lab,i){var E=T.s[i]||['',''];
+    h+='<div class="card"><span class="qno">화면 '+(i+1)+' · '+lab+'</span>'+pin('pf-s'+i+'a','보이는 것',p.s[i][0],E[0]||'예: 제목, 설명 한 줄, 시작 버튼')+pin('pf-s'+i+'b','누르면 → 이렇게 된다',p.s[i][1],E[1]||'예: "시작"을 누르면 다음 화면으로 간다')+'</div>'});
+  h+='<div class="side">💡 사용자가 할 수 있는 것(반응)을 꼭 하나 넣으세요: <b>뽑기 · 타이머 · 체크 · 점수/결과 · 별점·투표 · 입력하면 쌓이기</b></div>';
+  return h+pnav(2);
+}
+function plan4(){var p=PL(),T=pex()||{};
+  var h=head('📝 요청문 만들기')+pbar('plan4')+'<h2>4. 무엇을 넣고, 무엇을 지킬까</h2><div class="why"><b>내용을 안 적으면 AI가 지어내요.</b> 질문 몇 개, 어떤 용어, 어떤 회사… 숫자와 범위를 적어 주세요. AI가 만든 내용은 <b>반드시 우리가 확인</b>합니다.</div>';
+  h+='<div class="card">'+pin('pf-c','들어갈 내용 (몇 개, 어떤 것)',p.c,T.c||'예: 우리 반 28명 번호 1~28, 한 번 뽑힌 번호는 다시 안 나오게',1)+pin('pf-look','모양 (색 분위기 · 글씨)',p.look,T.look||'예: 밝은 노란색, 숫자는 아주 크게')+'</div>';
+  h+='<div class="card"><b>꼭 지킬 것</b>'+PRULE.map(function(r){return '<label class="ck"><input type="checkbox" data-pr="'+r[0]+'"'+(p.rules[r[0]]?' checked':'')+'> '+r[1]+'</label>'}).join('')+'<p class="note">개인정보·사실 확인은 오늘 수업의 약속이에요. 빼지 마세요.</p></div>';
+  return h+pnav(3);
+}
+function plan5(){var p=PL(),T=pex()||{d:['','','']};
+  var h=head('📝 요청문 만들기')+pbar('plan5')+'<h2>5. 어디까지 되면 완성일까</h2><div class="why"><b>완성 기준 = 테스트 기준.</b> "이게 되면 완성"을 세 줄로 적어요. 앱이 나오면 이 세 줄을 하나씩 눌러 보고, 안 되는 것만 고치면 돼요. 회사에서 개발자와 기획자가 일하는 방식 그대로예요.</div>';
+  h+='<div class="card">'+[0,1,2].map(function(i){return pin('pf-d'+i,'완성 기준 '+(i+1),p.d[i],T.d[i]||['예: 버튼을 누르면 번호가 나온다','예: 한 번 나온 번호는 다시 안 나온다','예: 폰에서도 숫자가 크게 보인다'][i])}).join('')+'<p class="note">"예쁘다"는 기준이 아니에요. <b>눌러서 확인할 수 있는 문장</b>으로 쓰세요.</p></div>';
+  return h+pnav(4);
+}
+function plan6(){var p=PL(),txt=planOut(),n=txt.length;
+  var h=head('📝 요청문 만들기')+pbar('plan6')+statBox('ai-plan')+'<h2>6. 요청문 완성</h2><div class="why">1~5단계를 합친 요청문이에요. 마지막으로 읽어 보고, 이상한 곳은 여기서 바로 고쳐도 돼요.</div>';
+  h+='<div class="card"><div class="f"><label for="pf-text">우리 팀 요청문 <span class="note">('+n+'자)</span></label><textarea id="pf-text" data-pf="pf-text" maxlength="1500" style="min-height:260px">'+esc(txt)+'</textarea></div>'+
+    '<div class="btns"><button class="btn pri" data-a="pcopy">📋 복사하기</button>'+(p.ed?'<button class="btn" data-a="preset">↺ 1~5단계 내용으로 다시 합치기</button>':'')+'</div>'+(note&&/복사/.test(note)?'<p class="note ok">'+esc(note)+'</p>':'')+
+    '<div class="side"><b>Canva 코드에 붙여넣기</b><br>① Canva → 디자인 만들기 → <b>코드</b> ② 입력창에 붙여넣기 → 보내기 ③ 나온 앱에서 5단계 완성 기준을 하나씩 눌러 보기 ④ 안 되는 건 <a href="#plan7">고치기 요청문</a>으로</div></div>';
+  h+='<div class="card"><h3>⚡ AI에게 미리 점검받기</h3>'+codeCard()+'<p class="soft">만들기 전에, AI가 우리 기획을 어떻게 알아들었는지 확인해요. AI가 <b>"마음대로 정해야 하는 것"</b>이 곧 우리 기획에 빠진 것이에요.</p>'+
+    '<div class="btns"><button class="btn pri" data-a="pund"'+(CODE.ok&&!busy?'':' disabled')+'>🤔 AI가 이해한 대로 듣기</button><button class="btn" data-a="pcoach"'+(CODE.ok&&!busy?'':' disabled')+'>💯 요청문 채점받기</button></div>'+
+    (n>650?'<p class="note">AI 점검은 앞부분 약 550자까지만 읽어요(꼭 지킬 것 줄은 빼고 읽어요). 길면 화면 설명을 짧게 줄여 보세요.</p>':'')+
+    (busy?'<p class="note">AI가 읽는 중… (10~30초)</p>':'')+(note&&!/복사/.test(note)?'<p class="note bad">'+esc(note)+'</p>':'')+
+    (p.ru?'<div><b>🤔 AI가 이해한 우리 앱</b><div class="out">'+esc(p.ru)+'</div></div>':'')+(p.rc?'<div><b>💯 채점</b><div class="out">'+esc(p.rc)+'</div></div>':'')+'</div>';
+  return h+'<div class="btns" style="justify-content:space-between"><a class="btn" href="#plan5">← 이전</a><a class="btn" href="#plan7">다음: 고치기 요청문 →</a></div>';
+}
+function plan7(){var p=PL();
+  var h=head('🔧 고치기 요청문')+'<div class="why"><b>"이상해, 고쳐 줘"는 AI도 못 고쳐요.</b> 세 칸만 채우면 AI가 알아듣는 고치기 요청문이 돼요. 한 번에 <b>하나씩</b> 고치세요.</div>';
+  var D=p.d.filter(Boolean);
+  if(D.length)h+='<div class="card"><h3>완성 기준으로 테스트하기</h3><p class="soft">앱에서 직접 눌러 보고, 되는 것만 체크하세요.</p>'+D.map(function(x,i){return '<label class="ck"><input type="checkbox" data-pc="t'+i+'"'+(p.chk['t'+i]?' checked':'')+'> '+esc(x)+'</label>'}).join('')+'</div>';
+  p.fix.forEach(function(f,i){var t=(f.w||f.n||f.g)?((f.w?f.w+'에서 문제가 있어. ':'')+(f.n?'지금은 '+f.n+'. ':'')+(f.g?f.g+' 되게 고쳐 줘. ':'')+'다른 부분은 바꾸지 마.'):'';
+    h+='<div class="card"><span class="qno">고칠 것 '+(i+1)+'</span>'+pin('pf-fw'+i,'① 어디서 (화면·버튼)',f.w,'예: 질문 화면의 "질문 뽑기" 버튼')+pin('pf-fn'+i,'② 지금은 어떻게 되나',f.n,'예: 같은 질문이 두 번 연속 나와요')+pin('pf-fg'+i,'③ 어떻게 되면 좋겠나',f.g,'예: 방금 나온 질문은 다음에 안 나오게')+
+      (t?'<div class="out" id="pfx'+i+'">'+esc(t)+'</div><button class="btn" data-a="pfcopy" data-i="'+i+'">📋 이 요청문 복사</button>':'')+'</div>'});
+  h+='<div class="btns"><button class="btn" data-a="pfadd">＋ 고칠 것 추가</button><a class="btn" href="#plan6">← 요청문으로</a></div>'+(note?'<p class="note ok">'+esc(note)+'</p>':'');
+  return h;
+}
+function pcopy(t){note='복사했어요. Canva 코드 입력창에 붙여넣으세요.';function ok(){render()}
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(t).then(ok,function(){fb()});else fb();
+  function fb(){var a=document.createElement('textarea');a.value=t;document.body.appendChild(a);a.select();try{document.execCommand('copy')}catch(e){}a.remove();ok()}}
+function planSet(id,v){var p=PL(),m;
+  if(id==='pf-text'){p.text=v;p.ed=1;return}
+  if((m=id.match(/^pf-s(\d)([ab])$/))){p.s[+m[1]][m[2]==='a'?0:1]=v;return}
+  if((m=id.match(/^pf-d(\d)$/))){p.d[+m[1]]=v;return}
+  if((m=id.match(/^pf-f([wng])(\d)$/))){p.fix[+m[2]][m[1]]=v;return}
+  var k=id.slice(3);if(['what','who','when','why','c','look'].indexOf(k)>=0)p[k]=v;
+}
+
 function render(){
-  var f={home:home,prompt:prompt,lie:lie,who:who,ethics:ethics,future:future}[V]||home;
+  var f={home:home,prompt:prompt,lie:lie,who:who,ethics:ethics,future:future,plan:planIntro,plan1:plan1,plan2:plan2,plan3:plan3,plan4:plan4,plan5:plan5,plan6:plan6,plan7:plan7}[V]||home;
   app.innerHTML=f();
 }
 function readP(){var P=st.p,a=document.getElementById('pa'),b=document.getElementById('pb');if(a)P.a=a.value;if(b)P.b=b.value;save()}
 app.addEventListener('click',function(e){
-  var t=e.target.closest('[data-a],[data-ex],[data-s],[data-who],[data-ev]');if(!t)return;var d=t.dataset;
+  var t=e.target.closest('[data-a],[data-ex],[data-s],[data-who],[data-ev],[data-pt],[data-ptone],[data-pc],[data-pr]');if(!t)return;var d=t.dataset;
+  if(d.pt){var P0=PL();if(P0.k!==d.pt){P0.k=d.pt;P0.what='';P0.chk={}}save();render();return}
+  if(d.ptone){PL().tone=d.ptone;save();render();return}
+  if(d.pc){PL().chk[d.pc]=t.checked?1:0;save();return}
+  if(d.pr){PL().rules[d.pr]=t.checked?1:0;save();return}
+  if(d.a==='pfill'){var P1=PL(),X=pex(),i=+d.i;if(!X)return;
+    if(i===1){P1.who=X.who;P1.when=X.when;P1.why=X.why}else if(i===2){P1.s=X.s.map(function(z){return z.slice()})}else if(i===3){P1.c=X.c;P1.look=X.look}else if(i===4){P1.d=X.d.slice()}
+    if(!P1.what)P1.what=X.what;save();render();return}
+  if(d.a==='pcopy'){pcopy(planOut());return}
+  if(d.a==='preset'){var P2=PL();P2.ed=0;P2.text='';save();render();return}
+  if(d.a==='pfadd'){PL().fix.push({w:'',n:'',g:''});save();render();return}
+  if(d.a==='pfcopy'){var el=document.getElementById('pfx'+d.i);if(el)pcopy(el.textContent);note='복사했어요. Canva 코드의 수정 입력창에 붙여넣으세요.';return}
+  if(d.a==='pund'||d.a==='pcoach'){var txt=planOut().split('\n').filter(function(l){return l.indexOf('[꼭 지킬 것]')!==0}).join('\n').trim(),P3=PL();if(!PL().what){note='1단계에서 만들 것을 먼저 적어 주세요';render();return}
+    var pr=d.a==='pund'?('개발자처럼 아래 기획을 읽고 1) 만들 앱을 화면 순서로 3줄 설명 2) 기획에 빠져서 네가 마음대로 정해야 할 것 3가지. 코드는 쓰지 마.\n'+txt).slice(0,600):txt.slice(0,600);
+    note='';lab({mode:d.a==='pund'?'run':'coach',prompt:pr}).then(function(r){if(d.a==='pund')P3.ru=r.text;else P3.rc=r.text;save()},function(er){note=er.message}).then(render);return}
   if(d.a==='code'){CODE={code:(document.getElementById('code').value||'').trim().toUpperCase()};saveCode();if(AI)check();render();return}
   if(d.a==='recode'){CODE={code:''};saveCode();render();return}
   if(d.ex!=null){st.p.a=PEX[d.ex][0];st.p.b=PEX[d.ex][1];st.p.ra=st.p.rb=st.p.rc='';save();render();return}
@@ -285,7 +450,7 @@ app.addEventListener('click',function(e){
   if(d.a==='fut'){var F=st.fut;F.job=(document.getElementById('job').value||'').trim();if(!F.job){note='직무를 먼저 적어 주세요';render();return}
     lab({mode:'future',job:F.job}).then(function(r){F.r=r.text;save()},function(er){note=er.message}).then(render);return}
 });
-app.addEventListener('input',function(e){if(e.target.id==='pa'||e.target.id==='pb')readP()});
+app.addEventListener('input',function(e){if(e.target.id==='pa'||e.target.id==='pb')readP();var pf=e.target.dataset&&e.target.dataset.pf;if(pf){planSet(pf,e.target.value);save()}});
 render();
 })();
 </script>
