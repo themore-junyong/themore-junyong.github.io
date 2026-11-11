@@ -72,6 +72,9 @@ input[type=number]{width:80px}
 .g b{font-size:1.05rem}.g span{color:var(--soft);font-size:.9rem}.g:hover{border-color:var(--blue)}
 input.w{width:100%}
 .glabel{font-weight:800;font-size:.95rem;color:var(--soft);margin-top:6px}
+.gfold{border-bottom:1px solid var(--line);padding-bottom:6px}.gfold>summary.glabel{cursor:pointer;list-style:none;display:flex;align-items:center;gap:8px;padding:8px 2px;font-size:1.02rem;color:var(--ink)}
+.gfold>summary::-webkit-details-marker{display:none}.gfold>summary::before{content:'▶';font-size:.75rem;color:var(--soft);transition:transform .15s}
+.gfold[open]>summary::before{transform:rotate(90deg)}.gfold[open]>.list{margin-bottom:8px}
 .g[data-on]{border-color:var(--blue)}
 .list{display:flex;flex-direction:column;gap:8px}.list .g{width:100%;box-sizing:border-box}
 .bad{color:var(--bad)}
@@ -127,6 +130,8 @@ async function myLoad(){if(!S.code||!F)return;try{const d=await F.getDoc(F.doc(d
   if(Array.isArray(MY.teams)&&!S.pin&&(MY.teams.length===0||MY.teams.length>=2))TM=MY.teams.slice(0,8);
   if(!S.name&&MY.name)S.name=MY.name;render()}catch(e){MY=null}}
 function mySave(p){if(!MY||!S.code||!F)return;Object.assign(MY,p);F.setDoc(F.doc(db,'teachers',S.code),Object.assign({},p,{t:F.serverTimestamp()}),{merge:true}).catch(()=>{})}
+/* 활동 묶음 접기·펴기 상태(이 노트북 tm-gopen) */
+const GOPEN=lsGet('tm-gopen',{})||{};
 const FAV=()=>(MY&&Array.isArray(MY.fav))?MY.fav:[];
 /* 수업 활동 목록(학생 첫 화면과 같은 묶음). 누르면 방에 들어온 학생 화면이 따라오고, 강사 노트북엔 같은 화면이 새 탭으로 열림
    q: 학생 도구(학생 화면 전환 + 강사 미리보기 탭) · live: 마인드맵(진행 화면 새 탭 + 학생은 답하기 화면) · b: 빔으로 하는 게임(게임 화면 새 탭 + 학생 폰은 play.html로 같은 문제·점수를 실시간으로) · pick: 검사 고르기 */
@@ -182,9 +187,9 @@ function render(){
      (S.goName?'<p class="note">지금 학생 화면: <b>'+esc(S.goName)+'</b></p>':'')+
      (MY?'<div class="row" style="justify-content:space-between;align-items:center"><span class="note">☁️ <b>'+esc(S.name||'')+' 선생님의 수업함</b> · 초대코드에 저장돼요(다른 컴퓨터에서도 그대로)</span><button class="btn" data-a="fav">'+(S.favEdit?'✔ 다 골랐어요':'⭐ 자주 쓰는 것 고르기')+'</button></div>':'')+
      (!S.favEdit&&FAV().length?(()=>{const all=[].concat.apply([],GROUPS.map(g=>g[1])),L=FAV().map(k=>all.filter(a=>(a[1]||'pick')===k)[0]).filter(Boolean);return L.length?'<span class="glabel">⭐ 자주 쓰는 것</span><div class="list">'+L.map(item).join('')+'</div>':''})():'')+
-     GROUPS.map(g=>'<span class="glabel">'+g[0]+'</span><div class="list">'+g[1].map(item).join('')+'</div>'+
+     GROUPS.map(g=>'<details class="gfold" data-gf="'+esc(g[0])+'"'+(S.favEdit||GOPEN[g[0]]?' open':'')+'><summary class="glabel">'+g[0]+' <span class="note">'+g[1].length+'</span></summary><div class="list">'+g[1].map(item).join('')+'</div>'+
        (g[1][0][0]==='pick'&&S.pick?'<div id="pick" style="border:2px solid var(--blue);border-radius:6px;padding:14px;display:flex;flex-direction:column;gap:10px"><b>🧭 어떤 검사를 할까요?</b><div class="grid">'+TST.map(t=>'<button class="g" data-q="test.html?t='+t[0]+'" data-qn="🧭 '+t[1]+' 검사" style="text-align:left;font:inherit"><b>'+t[1]+'</b></button>').join('')+
-       '</div><button class="btn" data-q="test.html" data-qn="🧭 검사 목록(학생이 고르기)">학생이 직접 고르게 하기 (검사 목록)</button></div>':'')).join('')+
+       '</div><button class="btn" data-q="test.html" data-qn="🧭 검사 목록(학생이 고르기)">학생이 직접 고르게 하기 (검사 목록)</button></div>':'')+'</details>').join('')+
      '</div>'+works();
   }
   app.innerHTML=h;
@@ -289,7 +294,9 @@ function qr(to,name){const o=document.getElementById('qrov'),u=to?(to.charAt(0)=
   document.getElementById('qrH').textContent=to?name+' · 찍고 바로 시작해요':'📱 휴대폰 카메라로 찍고 들어오세요';
   document.getElementById('qrP').textContent='방 번호 '+S.pin;document.getElementById('qrU').textContent=u.replace('https://','');b.innerHTML='';
   if(window.QRCode)new QRCode(b,{text:u,width:600,height:600,correctLevel:QRCode.CorrectLevel.M});else b.textContent='QR을 불러오지 못했어요. 위 주소를 칠판에 적어 주세요.'}
-app.addEventListener('toggle',e=>{const d=e.target;if(d.dataset&&d.dataset.st)openS[d.dataset.st]=d.open},true); /* 통계 펼침 상태 기억(화면이 새로 그려져도) */
+app.addEventListener('toggle',e=>{const d=e.target;if(d.dataset&&d.dataset.st)openS[d.dataset.st]=d.open},true);
+/* 활동 묶음 접기·펴기: 이 노트북에 기억(tm-gopen). 처음엔 모두 접힌 채 묶음 이름만 → 눌러서 펼침 */
+app.addEventListener('toggle',e=>{const d=e.target;if(!d.dataset||d.dataset.gf==null||S.favEdit)return;GOPEN[d.dataset.gf]=d.open;lsSet('tm-gopen',GOPEN)},true); /* 통계 펼침 상태 기억(화면이 새로 그려져도) */
 app.addEventListener('click',e=>{const t=e.target.closest('[data-fv],[data-a],[data-w],[data-q],[data-mode],[data-pick],[data-live],[data-tn]');if(!t)return;
   if(t.dataset.fv!=null){e.preventDefault();const k=t.dataset.fv,f=FAV().slice(),i=f.indexOf(k);if(i>=0)f.splice(i,1);else f.push(k);mySave({fav:f});render();return}
   if(t.dataset.mode){S.mode=t.dataset.mode;render();return}
