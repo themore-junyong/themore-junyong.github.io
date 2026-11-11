@@ -185,6 +185,43 @@ exports.termDaily = onSchedule({ schedule: 'every day 03:00', timeZone: 'Asia/Se
   const ids = (await db.collection('users').select().get()).docs.map(d => d.id);
   for (const id of ids) await syncTerm(id).catch(e => console.error('term', id, e.message));
 });
+/* ===== 서류 제출 기한 =====
+   업체가 공고에 정한 기한: jobs.due = {'*': 모든 서류 기한, 서류이름: 따로 정한 기한}, jobs.dueList = 기한 날짜 모음
+   매일 아침 9시(KST): 오늘이 기한인 서류를 아직 안 낸 확정 강사에게 [서류 기한] 공지(→ pushNotice가 휴대폰 알림)
+   + 업체 대표·직원에게 누가 안 냈는지 알림. 낸 것으로 보는 기준은 앱(docOf)과 같음 */
+const DOC_VAULT = ['통장사본', '신분증 사본'], DOC_RRN = '주민등록번호';
+async function docDueJob(jobId, j, t) {
+  const due = j.due || {}, N = (j.needs || []).filter(n => n !== '프로필' && (due[n] || due['*']) === t);
+  if (!N.length || !j.coId) return 0;
+  const apps = (await db.collection('apps').where('jobId', '==', jobId).get()).docs.map(d => d.data()).filter(a => a.status === '확정');
+  const rows = [];
+  for (const a of apps) {
+    const docs = a.docs || {}; let vault = null; const miss = [];
+    for (const n of N) {
+      if (docs[n] || (n === DOC_RRN && a.rrn)) continue;
+      if (DOC_VAULT.includes(n)) { if (!vault) vault = ((await db.doc(`users/${a.instId}/private/main`).get()).data() || {}).vault || {}; if (vault[n]) continue; }
+      miss.push(n);
+    }
+    if (miss.length) rows.push({ a, miss });
+  }
+  if (!rows.length) return 0;
+  const nm = [j.school, j.title].filter(Boolean).join(' '), md = `${+t.slice(5, 7)}/${+t.slice(8, 10)}`, at = new Date().toISOString(), b = db.batch();
+  for (const { a, miss } of rows) {
+    const ref = db.collection('notices').doc();
+    b.set(ref, { id: ref.id, jobId, coId: j.coId, kind: '서류', by: '강사로 자동 알림', to: [a.instId], reads: {}, at,
+      text: `[서류 기한] ${nm} 강의 ${miss.join(', ')} 제출 기한이 오늘(${md})이에요. 강사로 앱 홈 달력에서 이 강의 날짜를 눌러 올려 주세요.` });
+  }
+  await b.commit();
+  const who = await Promise.all(rows.map(r => nameOf(r.a.instId, 'i')));
+  await pushTo(await coPeople(j.coId), '강사로 · 서류 기한', `${nm} 서류 기한이 오늘인데 ${rows.length}명이 아직 안 냈어요: ${rows.map((r, i) => `${who[i] || '강사'}(${r.miss.join(', ')})`).join(', ')}. 강사에게는 알림을 보냈어요.`, 'dd-' + jobId);
+  return rows.length;
+}
+exports.docDue = onSchedule({ schedule: 'every day 09:00', timeZone: 'Asia/Seoul', region: 'asia-northeast3', timeoutSeconds: 300 }, async () => {
+  const t = ymd(new Date(Date.now() + 9 * 3600e3));
+  const js = await db.collection('jobs').where('dueList', 'array-contains', t).get();
+  for (const d of js.docs) { const n = await docDueJob(d.id, d.data(), t).catch(e => { console.error('docDue', d.id, e.message); return 0; }); if (n) console.log('docDue', d.id, n); }
+});
+
 // 업체 공고 수 세기 (요금제 한도용)
 exports.jobCount = onDocumentCreated({ ...trig, document: 'jobs/{id}' }, async e => {
   const j = e.data && e.data.data(); if (!j || !j.coId || j.pre) return; // 인수로 넘어온 공고는 안 셈
