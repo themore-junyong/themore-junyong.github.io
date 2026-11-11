@@ -728,7 +728,7 @@ function entryCard(e,clash){const tx=tax(e.fee),t=todayIso(),left=Math.round((dt
   ${departText(e.time,+e.ref.km)&&(e.st==='confirmed'||e.st==='applied')?`<span class="sm" style="font-weight:700">🚗 ${departText(e.time,+e.ref.km)}</span>`:''}
   ${e.st==='confirmed'||e.st==='applied'?`<div class="row"><button class="btn sm" data-act="gcal" data-id="${e.ref.id}" data-d="${e.d}">📅 구글 캘린더에 넣기</button><button class="btn sm" data-act="ics" data-id="${e.ref.id}" data-d="${e.d}">아이폰 캘린더 파일</button></div>`:''}
   <div class="grid2"><label class="f">왕복 거리(km)<input type="number" inputmode="numeric" data-act="km" data-kind="${e.kind}" data-id="${e.ref.id}" value="${+e.ref.km||0}"></label><label class="f">통행료(원)<input type="number" inputmode="numeric" data-act="toll" data-kind="${e.kind}" data-id="${e.ref.id}" value="${+e.ref.toll||0}"></label></div>
-  <label class="f">📝 메모 <span class="mu sm">(나만 봐요 · 업체에는 안 보여요)</span><textarea rows="2" maxlength="1000" data-act="lmemo" data-id="${e.ref.id}" placeholder="예) 준비물: 노트북·HDMI / 담당 선생님 010-… / 주차는 후문">${esc((lMemo(e.ref.id)||{}).text||'')}</textarea></label>
+  <label class="f">📝 메모 <span class="mu sm">(업체에는 안 보여요 · 연결한 구글 캘린더 일정 설명에는 함께 들어가요)</span><textarea rows="2" maxlength="1000" data-act="lmemo" data-id="${e.ref.id}" placeholder="예) 준비물: 노트북·HDMI / 담당 선생님 010-… / 주차는 후문">${esc((lMemo(e.ref.id)||{}).text||'')}</textarea></label>
   ${ctrl}</div>`}
 // 강의별 내 메모: 날짜 메모처럼 evs에 kind:'memo', side:'L', ref:강의(지원서·개인 일정) id 로 저장
 // → 본인만 읽는 보안 규칙 그대로, 달력·결산·구글 캘린더 피드에는 안 나옴(kind==='memo'는 다 건너뜀)
