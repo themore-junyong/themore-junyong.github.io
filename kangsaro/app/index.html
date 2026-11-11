@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<meta name="build" content="261110-1322">
+<meta name="build" content="261111-0811">
 <title>강사로</title>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#2563EB">
@@ -728,7 +728,11 @@ function entryCard(e,clash){const tx=tax(e.fee),t=todayIso(),left=Math.round((dt
   ${departText(e.time,+e.ref.km)&&(e.st==='confirmed'||e.st==='applied')?`<span class="sm" style="font-weight:700">🚗 ${departText(e.time,+e.ref.km)}</span>`:''}
   ${e.st==='confirmed'||e.st==='applied'?`<div class="row"><button class="btn sm" data-act="gcal" data-id="${e.ref.id}" data-d="${e.d}">📅 구글 캘린더에 넣기</button><button class="btn sm" data-act="ics" data-id="${e.ref.id}" data-d="${e.d}">아이폰 캘린더 파일</button></div>`:''}
   <div class="grid2"><label class="f">왕복 거리(km)<input type="number" inputmode="numeric" data-act="km" data-kind="${e.kind}" data-id="${e.ref.id}" value="${+e.ref.km||0}"></label><label class="f">통행료(원)<input type="number" inputmode="numeric" data-act="toll" data-kind="${e.kind}" data-id="${e.ref.id}" value="${+e.ref.toll||0}"></label></div>
+  <label class="f">📝 메모 <span class="mu sm">(나만 봐요 · 업체에는 안 보여요)</span><textarea rows="2" maxlength="1000" data-act="lmemo" data-id="${e.ref.id}" placeholder="예) 준비물: 노트북·HDMI / 담당 선생님 010-… / 주차는 후문">${esc((lMemo(e.ref.id)||{}).text||'')}</textarea></label>
   ${ctrl}</div>`}
+// 강의별 내 메모: 날짜 메모처럼 evs에 kind:'memo', side:'L', ref:강의(지원서·개인 일정) id 로 저장
+// → 본인만 읽는 보안 규칙 그대로, 달력·결산·구글 캘린더 피드에는 안 나옴(kind==='memo'는 다 건너뜀)
+const lMemo=id=>S.evs.find(e=>e.kind==='memo'&&e.side==='L'&&e.ref===id&&e.instId===meId());
 
 // 내 캘린더로 보내기: 구글은 채워진 일정 만들기 화면, 아이폰은 .ics 파일 (권한·서버 필요 없음)
 function calEv(id,d){const e=entries(meId()).find(x=>x.ref.id===id&&x.d===d);if(!e)return null;
@@ -736,7 +740,7 @@ function calEv(id,d){const e=entries(meId()).find(x=>x.ref.id===id&&x.d===d);if(
   const s=m?new Date(y,mo-1,da,+m[1],+m[2]):null,en=m?new Date(y,mo-1,da,+m[3],+m[4]):null;
   const title=`[${e.st==='applied'?'지원':'강의'}] ${m?pad(+m[1])+':'+m[2]+' ':''}${e.title}`;
   const dep=departText(e.time,+e.ref.km);
-  const desc=[e.org&&`업체: ${e.org}`,`강사료 ${won(e.fee)} · 순수익 ${won(netOf(e))}`,dep&&`🚗 ${dep}`,e.st==='applied'?'확정 대기':'페이 지급: ☐ 미입금','강사로에서 보냄'].filter(Boolean).join('\n');
+  const desc=[e.org&&`업체: ${e.org}`,`강사료 ${won(e.fee)} · 순수익 ${won(netOf(e))}`,dep&&`🚗 ${dep}`,e.st==='applied'?'확정 대기':'페이 지급: ☐ 미입금',lMemo(e.ref.id)&&`📝 ${lMemo(e.ref.id).text}`,'강사로에서 보냄'].filter(Boolean).join('\n');
   const loc=e.job?`${e.job.region} ${e.job.school}`:'';return {e,s,en,title,desc,loc,d}}
 const utc=x=>x.toISOString().replace(/[-:]/g,'').replace(/\.\d{3}/,'');
 function gcalUrl(c){const day=c.d.replace(/-/g,''),next=addDays(c.d,1).replace(/-/g,'');
@@ -1243,7 +1247,7 @@ document.addEventListener('click',async ev=>{
   if(A==='gotPaid'){if(D.kind==='ev'){S.evs.find(x=>x.id===D.id).st='paid'}else{const a=S.apps.find(x=>x.id===D.id);a.selfPaid=true;a.recv='ok'}save();render();sheetUnpaid();return toast('입금 완료로 바꿨어요')}
   if(A==='evImportTxt'){const t=$('#evImportTxt').value;if(!t.trim())return toast('붙여 넣은 내용이 없어요');return importEvs(t)}
   if(A==='evst'){const e=S.evs.find(x=>x.id===D.id);e.st=D.st;save();render();return toast(D.st==='no'?'달력에서 숨겼어요':'바꿨어요')}
-  if(A==='evdel'){S.evs=S.evs.filter(x=>x.id!==D.id);save();render();return toast('지웠어요')}
+  if(A==='evdel'){S.evs=S.evs.filter(x=>x.id!==D.id);S.evs=S.evs.filter(x=>!(x.kind==='memo'&&x.side==='L'&&x.ref===D.id));save();render();return toast('지웠어요')}
   if(A==='dayack'||A==='daydep'||A==='dayarr'||A==='daylate'){const a=S.apps.find(x=>x.id===D.a),x=dayOf(a,D.d);
     if(A==='dayack')x.ack=nowIso();
     if(A==='daydep'){const eta=$('#eta-'+a.id).value;if(!eta)return toast('예상 도착 시간을 넣어 주세요');x.dep=nowIso();x.eta=eta}
@@ -1417,6 +1421,9 @@ document.addEventListener('change',ev=>{const el=ev.target,D=el.dataset||{};
   if(el.id==='jcWe'){ui.jcal.we=el.checked;return}
   // 날짜 메모: 화면을 다시 그리지 않고 저장 (다른 날짜를 바로 누를 수 있게), 비우면 지움
   if(D.act==='chatImg'&&el.files[0]){const j=job(ui.chat);if(!j)return;shrink(el.files[0],900).then(img=>{if(!img)return toast('사진을 읽지 못했어요');if(img.length>290000)return toast('사진이 너무 커요');CHT().send(j.id,{by:myUid(),who:chatWho(j),text:'',img,at:new Date().toISOString()})});el.value='';return}
+  if(D.act==='lmemo'){const v=el.value.trim().slice(0,1000),m=lMemo(D.id),at=new Date().toISOString();
+    if(m){if(v){m.text=v;m.at=at}else S.evs=S.evs.filter(x=>x!==m)}else if(v)S.evs.push({id:uid(),instId:meId(),kind:'memo',side:'L',ref:D.id,text:v,at});else return;
+    save();return toast(v?'메모를 저장했어요':'메모를 지웠어요')}
   if(D.act==='memo'){const v=el.value.trim().slice(0,500),m=memoOf(D.d,D.side),at=new Date().toISOString();
     if(m){if(v){m.text=v;m.at=at}else S.evs=S.evs.filter(x=>x!==m)}else if(v)S.evs.push({id:uid(),instId:memoOwner(),kind:'memo',side:D.side,d:D.d,text:v,at});else return;
     save();const c=document.querySelector(`[data-act="${D.side==='c'?'csel':'sel'}"][data-d="${D.d}"]`);if(c){const k=c.querySelector('.mm');if(v&&!k)c.querySelector('.n').insertAdjacentHTML('afterend',memoMark(D.d,D.side));if(!v&&k)k.remove()}
@@ -1480,6 +1487,6 @@ function jTimeSync(){const R=jRanges(),t=$('#jTime'),pe=$('#jPer');if(!t)return;
 document.addEventListener('input',ev=>{if(ev.target.matches&&ev.target.matches('.trvV')){const c=$$('.trvC').find(x=>x.dataset.a===ev.target.dataset.a);if(c)c.checked=!!+ev.target.value}if(ev.target.matches&&ev.target.matches('.jTa,.jTb'))jTimeSync();if(ev.target.id==='jPer')ev.target.dataset.man=ev.target.value?'1':'';if(['pDates','pRaw'].includes(ev.target.id))pWarn();if(['pDates','pFee','pKm','pToll'].includes(ev.target.id))pNet()});
 render();
 </script>
-<script type="module" src="real.js?v=261110-1322"></script>
+<script type="module" src="real.js?v=261111-0811"></script>
 </body>
 </html>
