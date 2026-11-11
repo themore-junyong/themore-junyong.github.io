@@ -148,10 +148,12 @@ const GROUPS=[
   ['b','line.html','🔢 스트림 게임','숫자 줄 세우기 · 강사가 숫자를 부르면 학생은 폰 칸에 하나씩 · 이어 커지는 줄 점수 · 조별 순위'],
   ['b','class.html','👥 교실 도구','팀 나누기 · 한 명 뽑기 · 타이머 · 학생 폰에도 같이']]],
  ['나를 알아보는 검사',[
-  ['pick','','🧭 자가진단 검사 10종','누르면 검사를 골라요 · 결과가 학생 결과로']]],
- ['일과 건강',[
-  ['q','sme.html','🏭 중소기업 이해 · 좋은 회사 찾기','OX 퀴즈 · 회사 조사 체크리스트'],
+  ['pick','','🧭 자가진단 검사 10종','누르면 검사를 골라요 · 결과가 학생 결과로'],
   ['q','health.html','💪 생활습관 점검','33문항 → 내 약점 2곳 · 7일 실천']]],
+ ['비즈니스',[
+  ['q','sme.html','🏭 중소기업 이해','오해 깨기 O/X 10문제 · 반·조별 정답률 · 회사 조사 체크'],
+  ['q','company.html','🔎 좋은 회사 찾기','조건 경매(조마다 100만 원) → 기업 탐정 보고서 · 조별 보고서를 빔에 크게'],
+  ['q','manner.html','🤝 비즈니스 매너','첫 출근 상황 퀴즈 13문제(인사·전화·명함·소개·상석) · 3코스 확인표']]],
  ['AI 수업',[
   ['q','ai.html','🤖 AI 수업 도구 6종','프롬프트 연습장 · AI 거짓말 찾기 · 요청문 만들기 등']]]
 ];
@@ -195,8 +197,8 @@ function render(){
   app.innerHTML=h;
 }
 /* 학생 결과(work): 자소서·검사·면접·퍼스널컬러·1분 자기소개. 학생이 마치면 실시간으로 쌓임 */
-const TOOL={jaso:'📝 자소서',interview:'🎤 모의면접',color:'🎨 퍼스널컬러',intro:'🗣 1분 자기소개'};
-const toolName=t=>TOOL[t]||(t.indexOf('test-')===0?'🧭 검사':t);
+const TOOL={jaso:'📝 자소서',interview:'🎤 모의면접',color:'🎨 퍼스널컬러',intro:'🗣 1분 자기소개',company:'🕵️ 기업 탐정',health:'💪 생활습관'};
+const toolName=t=>TOOL[t]||(t.indexOf('test-')===0?'🧭 검사':t.indexOf('manner-c')===0?'🤝 매너 코스':t);
 let J=[],W=[],wUnsub=null,hbT=null,openW={};
 const clean=b=>String(b||'').replace(/\n?⟦[\s\S]*⟧\s*$/,'');
 /* 검사 반 통계: 학생 검사 결과 끝의 ⟦{k,s,c}⟧ 점수를 검사마다 모아 반 전체·조별로 보여 줌 */
@@ -253,7 +255,7 @@ function live(){ // 방이 정해지면: hb(살아 있음) 1분마다 찍기 + �
   clearInterval(hbT);if(wUnsub)wUnsub();
   const ref=F.doc(db,'rooms',S.pin),beat=()=>F.updateDoc(ref,{hb:F.serverTimestamp()}).catch(()=>{});
   beat();hbT=setInterval(beat,60e3);if(!window.__tmVis){window.__tmVis=1;document.addEventListener('visibilitychange',()=>{if(!document.hidden&&S.pin)F.updateDoc(F.doc(db,'rooms',S.pin),{hb:F.serverTimestamp()}).catch(()=>{})})}
-  wUnsub=F.onSnapshot(F.collection(db,'rooms',S.pin,'work'),q=>{const all=q.docs.map(d=>Object.assign({id:d.id},d.data()));J=all.filter(w=>w.tool==='join');W=all.filter(w=>w.tool!=='join'&&!/^(ai-(lie|who|eth)|sme-ox)$/.test(w.tool)).sort((a,b)=>(a.t?a.t.toMillis():0)-(b.t?b.t.toMillis():0));render()},()=>{});
+  wUnsub=F.onSnapshot(F.collection(db,'rooms',S.pin,'work'),q=>{const all=q.docs.map(d=>Object.assign({id:d.id},d.data()));J=all.filter(w=>w.tool==='join');W=all.filter(w=>w.tool!=='join'&&!/^(ai-(lie|who|eth)|sme-ox|manner-q)$/.test(w.tool)).sort((a,b)=>(a.t?a.t.toMillis():0)-(b.t?b.t.toMillis():0));render()},()=>{});
 }
 function csv(){const rows=[['조','이름','도구','제목','시각','내용']].concat(W.map(w=>[w.team||'',w.nick,toolName(w.tool).replace(/^\S+ /,''),w.title,w.t?new Date(w.t.toMillis()).toLocaleString('ko-KR'):'',clean(w.body)]));
   const t='\ufeff'+rows.map(r=>r.map(x=>'"'+String(x==null?'':x).replace(/"/g,'""')+'"').join(',')).join('\r\n');
