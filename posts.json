@@ -1,6 +1,25 @@
 {
- "updated": "2026-11-11T06:13:00.446522+00:00",
+ "updated": "2026-11-11T14:21:03.838263+00:00",
  "posts": [
+  {
+   "kind": "영상",
+   "src": "youtube",
+   "title": "성도님 생일, 지나고 나서야 알았나요? | 출석 앱 이번 달 생일·기념일 · 앱개발기 ⑤ #shorts",
+   "link": "https://www.youtube.com/watch?v=oDR6nZFTPpI",
+   "date": "2026-11-11T11:36:04+00:00",
+   "summary": "받은 것을 흘려보내는 사람, THE MORE 김준용입니다. 설교 · 하루 10분 성경 통독 · 간증을 나눕니다. 도움이 되셨다면 필요한 분께 보내주세요. 강의·집…",
+   "image": "https://i.ytimg.com/vi/oDR6nZFTPpI/hqdefault.jpg"
+  },
+  {
+   "kind": "강의",
+   "src": "naver",
+   "title": "고3 면접 캠프 후기 | 하루 만에 면접 사진부터 실전 모의면접까지 (인천 고등학교 강의)",
+   "link": "https://blog.naver.com/fiveluck_/224473238244?fromRss=true&trackingCode=rss",
+   "date": "2026-11-11T08:59:41+00:00",
+   "summary": "면접 사진을 사진관 대신 AI로 먼저 만들어 보는 것. 고3 면접 캠프는 이 실습으로 문을 열었어요. 안녕하세요, 강사 김준용입니다. 7월 13일, 인천의 한 여…",
+   "image": "https://blogthumb.pstatic.net/MjAyNjExMTFfNTMg/MDAxNzk0Mzg3NTAxOTQ1.zvceBaB0JDctpj9LxDbCkq8B7pIWVCwgTfA0EEZTyX4g.YdBS9pv_zL1NaEbYCADo_bocdER6FPYyiQaIEdSFpv4g.JPEG/01_%B3%D7%C0%CC%B9%F6%C4%AB%B5%E5_1_%B0%ED3%B8%E9%C1%A2%C4%B7%C7%C1.jpg?type=s3",
+   "cat": "강의 후기"
+  },
   {
    "kind": "앱",
    "src": "tistory",
@@ -1200,7 +1219,5 @@
    "cat": "설교&middot;묵상"
   }
  ],
- "errors": [
-  "youtube: HTTP Error 404: Not Found"
- ]
+ "errors": []
 }
