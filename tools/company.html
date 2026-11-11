@@ -1,0 +1,269 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>좋은 회사 찾기 · 조건 경매와 기업 탐정</title>
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap">
+<link rel="stylesheet" href="font.css"><style>
+:root{
+  --bg:#f6f6f6; --ink:#333; --soft:#6f7480; --card:#fff; --line:#e2e3e8; --field:#fbfbfc;
+  --blue:#4e6bf1; --blue-ink:#fff; --blue-soft:#e9edfe; --ok:#2e8b4c; --bad:#c8432f; --mid:#c98a00;
+  --f:"SCDream","Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#16181d; --ink:#eceef2; --soft:#a3a8b5; --card:#1f2229; --line:#323642; --field:#1a1d23;
+  --blue:#7c93ff; --blue-ink:#10121a; --blue-soft:#262d4a; --ok:#5cc47c; --bad:#ff7a63; --mid:#f0b93a; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#16181d; --ink:#eceef2; --soft:#a3a8b5; --card:#1f2229; --line:#323642; --field:#1a1d23;
+  --blue:#7c93ff; --blue-ink:#10121a; --blue-soft:#262d4a; --ok:#5cc47c; --bad:#ff7a63; --mid:#f0b93a; color-scheme:dark}
+body{background:var(--bg);color:var(--ink);font-family:var(--f);font-size:16px;line-height:1.6;margin:0;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:760px;margin:0 auto;padding-block:20px 60px;display:flex;flex-direction:column;gap:16px}
+h1,h2,h3{margin:0;text-wrap:balance;line-height:1.3}
+h1{font-size:1.75rem;font-weight:900} h2{font-size:1.35rem;font-weight:900} h3{font-size:1.05rem;font-weight:700}
+p{margin:0} .soft{color:var(--soft)}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+.top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.top a{color:var(--blue);font-weight:700;text-decoration:none}
+.brand small{letter-spacing:.12em;font-weight:700;color:var(--blue);font-size:.78rem}
+.tabs{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.tabs button{border:0;background:var(--card);padding:10px 4px;font-weight:700;font-size:.92rem}
+.tabs button[aria-pressed="true"]{background:var(--blue);color:var(--blue-ink)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:18px;display:flex;flex-direction:column;gap:14px}
+.why{background:var(--blue-soft);border-radius:4px;padding:12px 14px;font-size:.95rem}
+.why b{color:var(--blue)}
+.note{font-size:.88rem;color:var(--soft)}
+.btn{border:1px solid var(--line);background:var(--card);border-radius:4px;padding:10px 16px;font-weight:700}
+.btn.pri{background:var(--blue);color:var(--blue-ink);border-color:var(--blue)}
+.ox{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.ox button{border:2px solid var(--line);background:var(--field);border-radius:6px;padding:18px 0;font-size:2rem;font-weight:900}
+.ox button.right{border-color:var(--ok);color:var(--ok)}
+.ox button.wrong{border-color:var(--bad);color:var(--bad)}
+.qno{color:var(--blue);font-weight:700;font-size:.9rem}
+.q{font-size:1.3rem;font-weight:900;line-height:1.45}
+.ans{border-left:4px solid var(--ok);padding:10px 12px;background:var(--field)}
+.ans.bad{border-color:var(--bad)}
+.big{font-size:2.4rem;font-weight:900;text-align:center}
+.ox button.mine{border-color:var(--blue);background:var(--blue-soft)}
+.wait{background:var(--blue-soft);border-radius:6px;padding:12px 14px;font-weight:700;text-align:center}
+.tbar{display:grid;grid-template-columns:5.5em 1fr 4.5em;gap:8px;align-items:center;font-size:.92rem}
+.tbar .tr{display:flex;height:26px;border-radius:4px;overflow:hidden;background:var(--field);border:1px solid var(--line)}
+.tbar .tr i{display:flex;align-items:center;justify-content:center;color:#fff;font-style:normal;font-weight:700;font-size:.85rem;white-space:nowrap}
+.tbar .num{text-align:right;font-weight:700}
+.st{width:100%;border-collapse:collapse;font-size:.92rem}.st td,.st th{border-bottom:1px solid var(--line);padding:6px 4px;text-align:left}
+.chk{display:flex;flex-direction:column;gap:12px}
+.ci{display:flex;flex-direction:column;gap:6px;padding-bottom:12px;border-bottom:1px solid var(--line)}
+.ci:last-child{border-bottom:0}
+.ci b{font-size:1rem}
+.ci .how{font-size:.86rem;color:var(--soft)}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.seg button{border:1px solid var(--line);background:var(--field);border-radius:4px;padding:8px 2px;font-size:.88rem}
+.seg button[aria-pressed="true"][data-v="2"]{background:var(--ok);border-color:var(--ok);color:#fff;font-weight:700}
+.seg button[aria-pressed="true"][data-v="1"]{background:var(--mid);border-color:var(--mid);color:#fff;font-weight:700}
+.seg button[aria-pressed="true"][data-v="0"]{background:var(--bad);border-color:var(--bad);color:#fff;font-weight:700}
+.f{display:flex;flex-direction:column;gap:6px}
+.f label{font-weight:700}
+.f input{border:1px solid var(--line);background:var(--field);border-radius:4px;padding:10px 12px}
+.meter{height:16px;border-radius:8px;background:var(--line);overflow:hidden}
+.meter i{display:block;height:100%}
+.links{display:flex;flex-direction:column;gap:10px}
+.links a{display:flex;flex-direction:column;gap:2px;border:1px solid var(--line);border-left:6px solid var(--blue);border-radius:4px;padding:12px 14px;color:var(--ink);text-decoration:none;background:var(--card)}
+.links a b{font-size:1.02rem} .links a span{color:var(--soft);font-size:.88rem}
+.steps{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:6px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+.ch{display:flex;flex-direction:column;gap:10px}
+.ch button{border:2px solid var(--line);background:var(--field);border-radius:6px;padding:14px 14px;text-align:left;font-size:1.05rem;font-weight:700;line-height:1.45}
+.ch button .k{display:inline-block;min-width:1.6em;color:var(--blue);font-weight:900}
+.ch button.mine{border-color:var(--blue);background:var(--blue-soft)}
+.ch button.right{border-color:var(--ok);color:var(--ok)}
+.ch button.wrong{border-color:var(--bad);color:var(--bad)}
+.sit{display:inline-block;background:var(--blue-soft);color:var(--blue);border-radius:4px;padding:2px 8px;font-weight:700;font-size:.85rem}
+</style>
+<style>
+.row{display:flex;gap:8px;flex-wrap:wrap}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chips button{border:2px solid var(--line);background:var(--field);border-radius:999px;padding:8px 16px;font-weight:700}
+.chips button[aria-pressed="true"]{background:var(--blue);border-color:var(--blue);color:var(--blue-ink)}
+.chips button:disabled{opacity:.45}
+.bud{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
+.bt{border:1px solid var(--line);border-radius:6px;padding:10px 12px;display:flex;flex-direction:column;gap:2px;background:var(--field)}
+.bt .m{font-size:1.5rem;font-weight:900;color:var(--blue)}
+.cardbig{font-size:clamp(1.4rem,4vw,2.2rem);font-weight:900;line-height:1.35}
+.price{font-size:1.6rem;font-weight:900;min-width:5em;text-align:center}.price.sm{font-size:1.05rem;min-width:6em}
+.btn.sm{padding:6px 12px}
+.clist{display:flex;flex-direction:column;gap:6px}
+.clist button{display:flex;justify-content:space-between;gap:8px;border:1px solid var(--line);background:var(--field);border-radius:6px;padding:10px 12px;text-align:left;font-weight:700}
+.clist button[aria-pressed="true"]{border:2px solid var(--blue);background:var(--blue-soft)}
+.crow{display:flex;gap:10px;align-items:center}
+.star{border:2px solid var(--line);background:var(--field);border-radius:6px;width:38px;height:38px;font-size:1.3rem;color:var(--mid);flex:none}
+.star[aria-pressed="true"]{border-color:var(--mid);background:var(--mid);color:#fff}.star:disabled{opacity:.35}
+.tags{display:flex;gap:6px;flex-wrap:wrap}.tag{background:var(--blue-soft);color:var(--blue);border-radius:4px;padding:4px 10px;font-weight:700;font-size:.92rem}
+.f textarea{border:1px solid var(--line);background:var(--field);border-radius:4px;padding:10px 12px;font:inherit;color:inherit;resize:vertical}
+.res{border-top:1px solid var(--line);padding-top:8px;display:flex;flex-direction:column;gap:4px}.res ul{margin:4px 0 0;padding-left:20px}
+#big{position:fixed;inset:0;z-index:50;background:var(--card);padding:20px max(16px,4vw);display:flex;flex-direction:column;gap:12px;overflow:auto}
+#big .bt2{font-size:1.2rem;font-weight:900;color:var(--blue)}
+#big pre{white-space:pre-wrap;font-family:var(--f);font-size:clamp(1.2rem,3.2vw,2.2rem);font-weight:700;line-height:1.6;margin:0}
+</style>
+</head><body>
+<script src="room.js?v=235" data-guard></script>
+<div class="wrap" id="app"></div>
+<script>
+(function(){
+/* 좋은 회사 찾기 (11/19 강릉 6·7교시와 같은 흐름)
+   ① 조건 경매: 강사 화면 = 경매판(조마다 가짜 100만 원, 카드 10장, 10만 원씩, 기록은 강사 노트북). 학생 폰 = 작전 회의(꼭 살 3장·낼 돈) + 우리 조가 산 조건 체크
+   ② 기업 탐정 보고서: 산 조건으로 진짜 회사 1곳 → 7칸 보고서 → 선생님께 보내기(work company) → 강사 화면에서 조별로 크게 띄워 2분 발표
+   ③ 찾는 곳: 고용24 강소기업 등 */
+var CARDS=['첫 월급이 세후 280만 원 이상','집에서 20분 안에 출근','선배가 1:1로 기술을 제대로 가르쳐 준다','회사가 대학 학비를 대 준다','기숙사·밥 제공','야근이 거의 없다 (6시 퇴근)','매년 매출이 커지는 회사','팀 분위기가 좋다 (선배들이 오래 다님)','주 4.5일 근무','자격증을 따면 수당이 나온다'];
+var EM=['💰','🏠','🛠','🎓','🍚','🌙','📈','🤝','📅','📜'];
+var MONEY=100,STEP=10;
+var S={tab:0,star:{},max:{},got:{},r:{co:'',job:'',loc:'',size:'',fit:{},gk:'',gt:'',good:'',bad:'',end:'',why:''},board:false};
+try{S=Object.assign(S,JSON.parse(localStorage.getItem('company-v1')||'{}'))}catch(e){}
+function save(){try{localStorage.setItem('company-v1',JSON.stringify(S))}catch(e){}}
+var ROOM=window.TM_ROOM&&!TM_ROOM.teach&&TM_ROOM.get?TM_ROOM.get():null, TEACH=!!(window.TM_ROOM&&TM_ROOM.teach&&TM_ROOM.teachWork);
+var HOST='';try{HOST=(JSON.parse(localStorage.getItem('live-host')||'null')||{}).pin||''}catch(e){}
+if(ROOM&&S.room!==ROOM.pin){S.room=ROOM.pin;S.star={};S.max={};S.got={};S.r={co:'',job:'',loc:'',size:'',fit:{},gk:'',gt:'',good:'',bad:'',end:'',why:''};save()}
+/* 경매판 기록(강사 노트북): 방마다 따로 */
+var AK='company-auc-'+(HOST||'solo'),A={sold:{},cur:0,team:'',price:STEP};
+try{A=Object.assign(A,JSON.parse(localStorage.getItem(AK)||'{}'))}catch(e){}
+function asave(){try{localStorage.setItem(AK,JSON.stringify(A))}catch(e){}}
+var STM=[],RW=[],BIG=null;
+if(TEACH)TM_ROOM.teachWork(['company'],function(L,T){if(T){STM=T}else RW=L;render()});
+function teams(){return STM.length?STM:['1조','2조','3조']}
+function spent(t){var s=0;Object.keys(A.sold).forEach(function(k){var x=A.sold[k];if(x&&x.team===t)s+=x.price});return s}
+function left(t){return MONEY-spent(t)}
+var HT=/^#t([0-2])$/.exec(location.hash);if(HT)S.tab=+HT[1];
+window.addEventListener('hashchange',function(){var m=/^#t([0-2])$/.exec(location.hash);if(m&&+m[1]!==S.tab){S.tab=+m[1];save();render();window.scrollTo(0,0)}});
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+function won(n){return n+'만 원'}
+var app=document.getElementById('app');
+
+/* ① 경매판 (강사·빔) */
+function board(){
+  var T=teams(),i=A.cur,done=A.sold[i]!==undefined,h='';
+  h+='<div class="card"><h2>🔨 회사 조건 경매</h2><p class="soft">조마다 가짜 돈 <b>100만 원</b>. 시작가 10만 원, 10만 원씩 올려 불러요. 사고 싶은 조는 <b>모두 일어나</b> 조장이 "20만!"</p>'+
+    '<div class="bud">'+T.map(function(t){var own=Object.keys(A.sold).filter(function(k){return A.sold[k]&&A.sold[k].team===t});
+      return '<div class="bt"><b>'+esc(t)+'</b><span class="m">'+won(left(t))+'</span><span class="note">'+(own.length?own.map(function(k){return EM[k]}).join(' '):'아직 없음')+'</span></div>'}).join('')+'</div></div>';
+  h+='<div class="card"><span class="qno">카드 '+(i+1)+' / '+CARDS.length+'</span><p class="cardbig">'+EM[i]+' '+esc(CARDS[i])+'</p>';
+  if(done){var x=A.sold[i];h+='<p class="wait">'+(x?'🔨 낙찰! <b>'+esc(x.team)+'</b> · '+won(x.price):'유찰 (아무도 안 삼)')+'</p><div class="row"><button class="btn" data-a="undo">낙찰 취소</button>'+(i<CARDS.length-1?'<button class="btn pri" data-a="anext">다음 카드 →</button>':'<button class="btn pri" data-a="aend">결과 보기 →</button>')+'</div>'}
+  else{
+    h+='<p class="note">지금 부른 조를 누르고, 금액을 올려요.</p><div class="chips">'+T.map(function(t){var can=left(t)>=A.price;return '<button data-bt="'+esc(t)+'" aria-pressed="'+(A.team===t)+'"'+(can?'':' disabled')+'>'+esc(t)+(can?'':' (돈 부족)')+'</button>'}).join('')+'</div>'+
+      '<div class="row" style="align-items:center"><button class="btn" data-a="pm">－10만</button><span class="price">'+won(A.price)+'</span><button class="btn" data-a="pp">＋10만</button></div>'+
+      '<div class="row"><button class="btn pri" data-a="sold"'+(A.team?'':' disabled')+'>🔨 낙찰!</button><button class="btn" data-a="pass">유찰</button></div>';
+  }
+  h+='</div><div class="card"><h3>카드 10장</h3><div class="clist">'+CARDS.map(function(c,k){var x=A.sold[k];return '<button data-ac="'+k+'" aria-pressed="'+(k===i)+'"><span>'+EM[k]+' '+(k+1)+'. '+esc(c)+'</span><span class="note">'+(x===undefined?'':x?esc(x.team)+' '+won(x.price):'유찰')+'</span></button>'}).join('')+'</div>'+
+    '<div class="row"><button class="btn" data-a="aend">결과 보기</button><button class="btn" data-a="areset">경매 처음부터</button></div></div>';
+  return h;
+}
+function aresult(){
+  var T=teams();
+  return '<div class="card"><h2>📋 경매 결과</h2>'+T.map(function(t){var own=Object.keys(A.sold).filter(function(k){return A.sold[k]&&A.sold[k].team===t}).sort(function(a,b){return A.sold[b].price-A.sold[a].price});
+    return '<div class="res"><b>'+esc(t)+'</b> <span class="note">남은 돈 '+won(left(t))+'</span><ul>'+(own.length?own.map(function(k){return '<li>'+EM[k]+' '+esc(CARDS[k])+' <span class="note">'+won(A.sold[k].price)+'</span></li>'}).join(''):'<li class="note">산 조건 없음</li>')+'</ul></div>'}).join('')+
+    '<div class="why"><b>정리 30초 (조마다):</b> 산 조건 중 1등과 이유 / 못 사서 아쉬운 조건 1개.<br><b>오늘의 한 줄:</b> 모든 조건을 다 가진 회사는 없어요. <b>내가 먼저 볼 것</b>을 알면 좋은 회사가 보여요.</div>'+
+    '<p class="note">학생 폰 ①탭 아래 "우리 조가 산 조건"에 체크하게 하세요 → ②탭 보고서에 자동으로 들어가요.</p>'+
+    '<div class="row"><button class="btn" data-a="aback">← 경매판</button><button class="btn pri" data-tab="1">기업 탐정 보고서 →</button></div></div>';
+}
+/* ① 학생 폰: 작전 회의 + 산 조건 */
+function plan(){
+  var st=Object.keys(S.star).filter(function(k){return S.star[k]}),tot=st.reduce(function(a,k){return a+(S.max[k]||STEP)},0);
+  var h='<div class="card"><h2>🧠 작전 회의 (3분)</h2><p class="soft">조원끼리 이야기해서 <b>꼭 살 조건 3개</b>에 ★, 그리고 <b>얼마까지 낼지</b> 정해요. 우리 조 돈은 100만 원뿐!</p>'+
+    '<p class="wait">★ '+st.length+' / 3 · 낼 돈 합계 <b style="color:'+(tot>MONEY?'var(--bad)':'inherit')+'">'+won(tot)+'</b> / 100만 원'+(tot>MONEY?' · 돈이 모자라요!':'')+'</p><div class="chk">'+
+    CARDS.map(function(c,k){var on=!!S.star[k];return '<div class="ci"><div class="crow"><button class="star" data-st="'+k+'" aria-pressed="'+on+'"'+(!on&&st.length>=3?' disabled':'')+'>'+(on?'★':'☆')+'</button><b>'+EM[k]+' '+(k+1)+'. '+esc(c)+'</b></div>'+
+      (on?'<div class="row" style="align-items:center;padding-left:46px"><button class="btn sm" data-mx="'+k+'" data-d="-1">－</button><span class="price sm">'+won(S.max[k]||STEP)+'까지</span><button class="btn sm" data-mx="'+k+'" data-d="1">＋</button></div>':'')+'</div>'}).join('')+'</div></div>';
+  var got=Object.keys(S.got).filter(function(k){return S.got[k]});
+  h+='<div class="card"><h2>🔨 우리 조가 산 조건</h2><p class="soft">경매가 끝나면 우리 조가 낙찰받은 카드를 눌러요. 7교시 <b>기업 탐정 보고서</b>에 그대로 들어가요.</p><div class="clist">'+
+    CARDS.map(function(c,k){return '<button data-got="'+k+'" aria-pressed="'+!!S.got[k]+'"><span>'+(S.got[k]?'✔ ':'')+EM[k]+' '+esc(c)+'</span></button>'}).join('')+'</div>'+
+    (got.length?'<button class="btn pri" data-tab="1">이 조건으로 회사 찾기 →</button>':'')+'</div>';
+  if(!ROOM)h+='<button class="btn" data-a="board">🧑‍🏫 선생님 경매판 열기 (빔용)</button>';
+  return h;
+}
+/* ② 기업 탐정 보고서 */
+function conds(){var g=Object.keys(S.got).filter(function(k){return S.got[k]}).map(Number);return g.slice(0,3)}
+function F(id,lab,ph,v,big){return '<div class="f"><label for="'+id+'">'+lab+'</label>'+(big?'<textarea id="'+id+'" data-r="'+id+'" rows="2" maxlength="120" placeholder="'+esc(ph)+'">'+esc(v)+'</textarea>':'<input id="'+id+'" data-r="'+id+'" maxlength="60" placeholder="'+esc(ph)+'" value="'+esc(v)+'">')+'</div>'}
+function rtext(){var r=S.r,c=conds(),FT=['맞음','아님','못 찾음'];
+  return ['🔎 '+(r.co||'(회사 이름)')+(r.job?' — '+r.job:''),
+    '📍 위치·규모: '+(r.loc||'못 찾음')+' / 직원 '+(r.size||'못 찾음'),
+    '🔨 우리 조건: '+(c.length?c.map(function(k){return CARDS[k]+' → '+(r.fit[k]!=null?FT[r.fit[k]]:'못 찾음')}).join(' · '):'(없음)'),
+    '📈 성장 증거: '+(r.gk?r.gk+' ':'')+(r.gt||(!r.gk?'못 찾음':'')),
+    '👍 좋은 말: '+(r.good||'못 찾음'),'🤔 걱정되는 말: '+(r.bad||'못 찾음'),
+    '✅ 결론: 이 회사, '+(r.end==='y'?'가 볼 만하다':r.end==='n'?'아니다':'(고르기)')+(r.why?'. 왜냐하면 '+r.why:'')].join('\n')}
+function report(){
+  if(TEACH)return treports();
+  var r=S.r,c=conds(),h='';
+  h+='<div class="card"><h2>🕵️ 기업 탐정 보고서</h2><p class="soft">우리 조가 산 조건에 맞는 <b>진짜 회사 1곳</b>을 휴대폰으로 찾아 칸을 채워요. 못 찾은 칸은 <b>"못 찾음"</b>. 지어내면 탐정이 아니라 소설가예요!</p>'+
+    '<div class="tags">'+(c.length?c.map(function(k){return '<span class="tag">'+EM[k]+' '+esc(CARDS[k])+'</span>'}).join(''):'<span class="note">① 탭에서 "우리 조가 산 조건"을 먼저 눌러 주세요</span>')+'</div>'+
+    '<p class="note">찾는 순서: 고용24 강소기업 검색 → 후보 2~3곳 → 조건과 맞춰 1곳 고르기 → 크레딧잡·잡플래닛으로 확인 (③ 찾는 곳 탭)</p></div>';
+  h+='<div class="card">'+F('co','1. 회사 이름','예: (주)한빛정밀',r.co)+F('job','2. 하는 일 (한 문장)','예: 자동차 부품을 만드는 회사',r.job)+
+    F('loc','3. 위치 (학교·집에서 얼마나)','예: 강릉 구정면, 버스 25분',r.loc)+F('size','4. 직원 수','예: 약 85명 (크레딧잡)',r.size)+'</div>';
+  if(c.length)h+='<div class="card"><h3>5. 우리 조건과 맞나?</h3><div class="chk">'+c.map(function(k){var v=r.fit[k];return '<div class="ci"><b>'+EM[k]+' '+esc(CARDS[k])+'</b><div class="seg">'+[[0,'⭕ 맞음'],[1,'❌ 아님'],[2,'❔ 못 찾음']].map(function(o){return '<button data-fit="'+k+'" data-v="'+(o[0]===0?2:o[0]===1?0:1)+'" data-o="'+o[0]+'" aria-pressed="'+(v===o[0])+'">'+o[1]+'</button>'}).join('')+'</div></div>'}).join('')+'</div></div>';
+  h+='<div class="card"><h3>6. 성장 증거 1개</h3><div class="chips">'+['매출 증가','신규 채용','새 제품','인증 (강소기업 등)'].map(function(g){return '<button data-gk="'+g+'" aria-pressed="'+(r.gk===g)+'">'+g+'</button>'}).join('')+'</div>'+F('gt','어디서 무엇을 봤나','예: 2023→2024 매출 20% 증가 (기사)',r.gt)+'</div>';
+  h+='<div class="card"><h3>7. 리뷰 · 결론</h3>'+F('good','리뷰 좋은 말 1개','예: 선배들이 친절하게 가르쳐 줌',r.good,1)+F('bad','리뷰 걱정되는 말 1개','예: 바쁜 달에는 야근이 있음',r.bad,1)+
+    '<b>우리 결론: 이 회사,</b><div class="chips"><button data-end="y" aria-pressed="'+(r.end==='y')+'">👍 가 볼 만하다</button><button data-end="n" aria-pressed="'+(r.end==='n')+'">🙅 아니다</button></div>'+F('why','왜냐하면','예: 기술을 1:1로 가르쳐 주고, 직원 수가 3년째 늘고 있어서',r.why,1)+
+    '<p class="note">"아니다"도 훌륭한 탐정 결과예요. 이유만 있으면 돼요.</p></div>';
+  h+='<div class="row">'+(ROOM?'<button class="btn pri" data-a="rsend">📤 선생님께 보내기</button>':'')+'<button class="btn" data-a="rbig">🖥 발표 화면으로 크게</button><button class="btn" data-a="rclear">새로 쓰기</button></div>';
+  return h;
+}
+function treports(){
+  var by={};RW.forEach(function(w){var t=w.team||'조 없음';(by[t]=by[t]||[]).push(w)});var T=Object.keys(by);
+  var h='<div class="card"><h2>🕵️ 조별 기업 탐정 보고서</h2><p class="soft">학생이 📤 보내기를 누르면 여기에 바로 들어와요. <b>크게 보기</b>를 눌러 빔에 띄우고 조별 2분 발표.</p>'+
+    '<p class="wait">받은 보고서 '+RW.length+'개</p>';
+  if(!RW.length)h+='<p class="note">아직 없어요. 학생 폰 ② 탭에서 보고서를 채우고 보내면 들어와요.</p>';
+  T.forEach(function(t){h+='<h3 style="margin-top:6px">'+esc(t)+'</h3>'+by[t].map(function(w,i){return '<div class="res"><b>'+esc(w.title)+'</b> <span class="note">'+esc(w.nick)+'</span><div class="row"><button class="btn sm" data-big="'+esc(t)+'|'+i+'">🖥 크게 보기</button></div></div>'}).join('')});
+  h+='<div class="why"><b>발표마다 한 줄 받아 주기:</b> "리뷰에서 걱정되는 말까지 찾았네요. 그게 진짜 탐정이에요." / "조건과 안 맞는다는 결론도 좋아요. 안 맞는다는 걸 알게 된 거니까요."</div></div>';
+  return h;
+}
+function bigview(t,body){return '<div id="big" role="dialog" aria-label="발표 화면"><button class="btn" data-a="bigx" style="align-self:flex-end">✕ 닫기</button>'+(t?'<p class="bt2">'+esc(t)+'</p>':'')+'<pre>'+esc(body)+'</pre></div>'}
+function where(){
+  return '<div class="card"><h2>🗺️ 좋은 회사 찾는 곳</h2><div class="links">'+
+   '<a href="https://www.work24.go.kr" target="_blank" rel="noopener"><b>고용24 · 강소기업 / 청년친화강소기업</b><span>정부가 고른 괜찮은 중소기업 명단과 채용 공고. 지역(강원)·업종으로 좁혀 보기</span></a>'+
+   '<a href="https://www.kreditjob.com" target="_blank" rel="noopener"><b>크레딧잡</b><span>직원 수·입사자·퇴사자 변화(국민연금 기준), 추정 연봉</span></a>'+
+   '<a href="https://www.jobplanet.co.kr" target="_blank" rel="noopener"><b>잡플래닛</b><span>재직자·퇴사자 후기 (여러 개를 보고 공통된 말 찾기)</span></a>'+
+   '<a href="https://dart.fss.or.kr" target="_blank" rel="noopener"><b>DART 전자공시</b><span>매출·이익 (규모가 일정 이상인 회사만)</span></a>'+
+   '<a href="https://www.saramin.co.kr" target="_blank" rel="noopener"><b>사람인 · 잡코리아</b><span>채용 공고, 기업 정보, 복리후생</span></a></div></div>'+
+   '<div class="card"><h3>탐정 순서 (20분)</h3><ol class="steps"><li><b>찾기 8분</b>: 검색 담당이 고용24에서 후보 2~3곳 → 조건과 맞춰 1곳</li><li><b>캐기 8분</b>: 회사 이름으로 크레딧잡(직원 수)·잡플래닛(후기)·뉴스(성장)</li><li><b>쓰기 4분</b>: ② 탭 보고서 채우고 보내기</li></ol>'+
+   '<a class="btn" href="sme.html#t1" style="text-decoration:none;text-align:center">더 꼼꼼히: 좋은 회사 12가지 체크 →</a></div>';
+}
+function render(){
+  var h='<div class="top"><div class="brand"><small>위듀케이션 · 좋은 회사 찾기</small></div><a href="./">← 도구 모음</a></div><h1>좋은 회사 찾기</h1>'+
+    '<div class="tabs">'+['① 조건 경매','② 탐정 보고서','③ 찾는 곳'].map(function(t,i){return '<button data-tab="'+i+'" aria-pressed="'+(S.tab===i)+'">'+t+'</button>'}).join('')+'</div>';
+  var B=TEACH||(!ROOM&&S.board);
+  h+=[function(){return B?(A.end?aresult():board()):plan()},report,where][S.tab]();
+  if(BIG)h+=bigview(BIG.t,BIG.b);
+  app.innerHTML=h;
+}
+function toast(t){var d=document.createElement('div');d.textContent=t;d.style.cssText='position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#222;color:#fff;padding:10px 16px;border-radius:6px;z-index:60;font-weight:700';document.body.appendChild(d);setTimeout(function(){d.remove()},2200)}
+function keep(f){var y=window.scrollY;f();render();window.scrollTo(0,y)}
+app.addEventListener('click',function(e){
+  var b=e.target.closest('button');if(!b)return;var d=b.dataset;
+  if(d.tab!=null){S.tab=+d.tab;save();if(location.hash!=='#t'+S.tab)location.hash='t'+S.tab;render();window.scrollTo(0,0);return}
+  if(d.a==='board'){S.board=true;save();render();return}
+  if(d.bt!=null){keep(function(){A.team=d.bt;asave()});return}
+  if(d.a==='pp'){keep(function(){A.price=Math.min(MONEY,A.price+STEP);if(A.team&&left(A.team)<A.price)A.team='';asave()});return}
+  if(d.a==='pm'){keep(function(){A.price=Math.max(STEP,A.price-STEP);asave()});return}
+  if(d.a==='sold'){if(!A.team)return;keep(function(){A.sold[A.cur]={team:A.team,price:A.price};asave()});return}
+  if(d.a==='pass'){keep(function(){A.sold[A.cur]=null;asave()});return}
+  if(d.a==='undo'){keep(function(){delete A.sold[A.cur];asave()});return}
+  if(d.a==='anext'){A.cur=Math.min(CARDS.length-1,A.cur+1);A.team='';A.price=STEP;asave();render();window.scrollTo(0,0);return}
+  if(d.ac!=null){A.cur=+d.ac;A.team='';A.price=STEP;asave();render();window.scrollTo(0,0);return}
+  if(d.a==='aend'){A.end=true;asave();render();window.scrollTo(0,0);return}
+  if(d.a==='aback'){A.end=false;asave();render();return}
+  if(d.a==='areset'){if(!confirm('경매 기록을 지우고 처음부터 할까요?'))return;A={sold:{},cur:0,team:'',price:STEP};asave();render();return}
+  if(d.st!=null){keep(function(){S.star[d.st]=!S.star[d.st];if(S.star[d.st]&&!S.max[d.st])S.max[d.st]=STEP*3;save()});return}
+  if(d.mx!=null){keep(function(){S.max[d.mx]=Math.max(STEP,Math.min(MONEY,(S.max[d.mx]||STEP)+STEP*(+d.d)));save()});return}
+  if(d.got!=null){keep(function(){S.got[d.got]=!S.got[d.got];if(conds().length>3&&S.got[d.got]){S.got[d.got]=false;toast('조건은 3개까지만 보고서에 넣어요')}save()});return}
+  if(d.fit!=null){keep(function(){S.r.fit[d.fit]=+d.o;save()});return}
+  if(d.gk!=null){keep(function(){S.r.gk=S.r.gk===d.gk?'':d.gk;save()});return}
+  if(d.end!=null){keep(function(){S.r.end=d.end;save()});return}
+  if(d.a==='rbig'){BIG={t:'',b:rtext()};render();return}
+  if(d.big!=null){var p=d.big.split('|'),L=RW.filter(function(w){return (w.team||'조 없음')===p[0]}),w=L[+p[1]];if(w){BIG={t:p[0]+' · '+w.nick,b:w.body};render()}return}
+  if(d.a==='bigx'){BIG=null;render();return}
+  if(d.a==='rclear'){if(!confirm('보고서 칸을 모두 지울까요?'))return;S.r={co:'',job:'',loc:'',size:'',fit:{},gk:'',gt:'',good:'',bad:'',end:'',why:''};save();render();return}
+  if(d.a==='rsend'){if(!S.r.co.trim()){toast('회사 이름을 먼저 써 주세요');return}
+    TM_ROOM.send('company','🕵️ '+S.r.co.trim()+' · '+(S.r.end==='y'?'가 볼 만하다':S.r.end==='n'?'아니다':'결론 미정'),rtext()).then(function(){toast('✔ 선생님께 보냈어요')},function(){toast('보내지 못했어요. 다시 눌러 주세요')})}
+});
+app.addEventListener('input',function(e){var k=e.target.dataset&&e.target.dataset.r;if(k){S.r[k]=e.target.value;save()}});
+render();
+})();
+</script>
+</body></html>

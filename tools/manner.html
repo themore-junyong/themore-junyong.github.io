@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>비즈니스 매너 · 첫 출근 미리 해 보기</title>
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap">
+<link rel="stylesheet" href="font.css"><style>
+:root{
+  --bg:#f6f6f6; --ink:#333; --soft:#6f7480; --card:#fff; --line:#e2e3e8; --field:#fbfbfc;
+  --blue:#4e6bf1; --blue-ink:#fff; --blue-soft:#e9edfe; --ok:#2e8b4c; --bad:#c8432f; --mid:#c98a00;
+  --f:"SCDream","Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#16181d; --ink:#eceef2; --soft:#a3a8b5; --card:#1f2229; --line:#323642; --field:#1a1d23;
+  --blue:#7c93ff; --blue-ink:#10121a; --blue-soft:#262d4a; --ok:#5cc47c; --bad:#ff7a63; --mid:#f0b93a; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#16181d; --ink:#eceef2; --soft:#a3a8b5; --card:#1f2229; --line:#323642; --field:#1a1d23;
+  --blue:#7c93ff; --blue-ink:#10121a; --blue-soft:#262d4a; --ok:#5cc47c; --bad:#ff7a63; --mid:#f0b93a; color-scheme:dark}
+body{background:var(--bg);color:var(--ink);font-family:var(--f);font-size:16px;line-height:1.6;margin:0;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:760px;margin:0 auto;padding-block:20px 60px;display:flex;flex-direction:column;gap:16px}
+h1,h2,h3{margin:0;text-wrap:balance;line-height:1.3}
+h1{font-size:1.75rem;font-weight:900} h2{font-size:1.35rem;font-weight:900} h3{font-size:1.05rem;font-weight:700}
+p{margin:0} .soft{color:var(--soft)}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+.top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.top a{color:var(--blue);font-weight:700;text-decoration:none}
+.brand small{letter-spacing:.12em;font-weight:700;color:var(--blue);font-size:.78rem}
+.tabs{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.tabs button{border:0;background:var(--card);padding:10px 4px;font-weight:700;font-size:.92rem}
+.tabs button[aria-pressed="true"]{background:var(--blue);color:var(--blue-ink)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:18px;display:flex;flex-direction:column;gap:14px}
+.why{background:var(--blue-soft);border-radius:4px;padding:12px 14px;font-size:.95rem}
+.why b{color:var(--blue)}
+.note{font-size:.88rem;color:var(--soft)}
+.btn{border:1px solid var(--line);background:var(--card);border-radius:4px;padding:10px 16px;font-weight:700}
+.btn.pri{background:var(--blue);color:var(--blue-ink);border-color:var(--blue)}
+.ox{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.ox button{border:2px solid var(--line);background:var(--field);border-radius:6px;padding:18px 0;font-size:2rem;font-weight:900}
+.ox button.right{border-color:var(--ok);color:var(--ok)}
+.ox button.wrong{border-color:var(--bad);color:var(--bad)}
+.qno{color:var(--blue);font-weight:700;font-size:.9rem}
+.q{font-size:1.3rem;font-weight:900;line-height:1.45}
+.ans{border-left:4px solid var(--ok);padding:10px 12px;background:var(--field)}
+.ans.bad{border-color:var(--bad)}
+.big{font-size:2.4rem;font-weight:900;text-align:center}
+.ox button.mine{border-color:var(--blue);background:var(--blue-soft)}
+.wait{background:var(--blue-soft);border-radius:6px;padding:12px 14px;font-weight:700;text-align:center}
+.tbar{display:grid;grid-template-columns:5.5em 1fr 4.5em;gap:8px;align-items:center;font-size:.92rem}
+.tbar .tr{display:flex;height:26px;border-radius:4px;overflow:hidden;background:var(--field);border:1px solid var(--line)}
+.tbar .tr i{display:flex;align-items:center;justify-content:center;color:#fff;font-style:normal;font-weight:700;font-size:.85rem;white-space:nowrap}
+.tbar .num{text-align:right;font-weight:700}
+.st{width:100%;border-collapse:collapse;font-size:.92rem}.st td,.st th{border-bottom:1px solid var(--line);padding:6px 4px;text-align:left}
+.chk{display:flex;flex-direction:column;gap:12px}
+.ci{display:flex;flex-direction:column;gap:6px;padding-bottom:12px;border-bottom:1px solid var(--line)}
+.ci:last-child{border-bottom:0}
+.ci b{font-size:1rem}
+.ci .how{font-size:.86rem;color:var(--soft)}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.seg button{border:1px solid var(--line);background:var(--field);border-radius:4px;padding:8px 2px;font-size:.88rem}
+.seg button[aria-pressed="true"][data-v="2"]{background:var(--ok);border-color:var(--ok);color:#fff;font-weight:700}
+.seg button[aria-pressed="true"][data-v="1"]{background:var(--mid);border-color:var(--mid);color:#fff;font-weight:700}
+.seg button[aria-pressed="true"][data-v="0"]{background:var(--bad);border-color:var(--bad);color:#fff;font-weight:700}
+.f{display:flex;flex-direction:column;gap:6px}
+.f label{font-weight:700}
+.f input{border:1px solid var(--line);background:var(--field);border-radius:4px;padding:10px 12px}
+.meter{height:16px;border-radius:8px;background:var(--line);overflow:hidden}
+.meter i{display:block;height:100%}
+.links{display:flex;flex-direction:column;gap:10px}
+.links a{display:flex;flex-direction:column;gap:2px;border:1px solid var(--line);border-left:6px solid var(--blue);border-radius:4px;padding:12px 14px;color:var(--ink);text-decoration:none;background:var(--card)}
+.links a b{font-size:1.02rem} .links a span{color:var(--soft);font-size:.88rem}
+.steps{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:6px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+.ch{display:flex;flex-direction:column;gap:10px}
+.ch button{border:2px solid var(--line);background:var(--field);border-radius:6px;padding:14px 14px;text-align:left;font-size:1.05rem;font-weight:700;line-height:1.45}
+.ch button .k{display:inline-block;min-width:1.6em;color:var(--blue);font-weight:900}
+.ch button.mine{border-color:var(--blue);background:var(--blue-soft)}
+.ch button.right{border-color:var(--ok);color:var(--ok)}
+.ch button.wrong{border-color:var(--bad);color:var(--bad)}
+.sit{display:inline-block;background:var(--blue-soft);color:var(--blue);border-radius:4px;padding:2px 8px;font-weight:700;font-size:.85rem}
+</style>
+</head><body>
+<script src="room.js?v=235" data-guard></script>
+<div class="wrap" id="app"></div>
+<script>
+(function(){
+/* 비즈니스 매너 · 첫 출근 미리 해 보기 (11/19 강릉 2교시 내용과 같음)
+   ① 상황 퀴즈: 강사 미리보기가 #q0~#qN(-a)·#qend로 넘기면 학생 폰도 같은 문제. 답은 work/{uid}_manner-q 하나에 조용히(quiet) → 강사 화면 실시간 집계
+   ② 첫 출근 3코스: 코스별 확인표. 확인 담당이 체크하고 보내면 강사 화면 학생 결과에 쌓임(manner-c{코스}-{친구 번호}: 친구마다 따로 남게) */
+var Q=[
+ {s:'복도',q:'오늘 팀장님을 복도에서 세 번째 마주쳤어요. 어떻게 인사할까요?',c:['목례 (15°, 가볍게)','보통례 (30°)','정중례 (45°)'],a:0,e:'자주 마주칠 때는 <b>목례</b>. 눈을 맞추고 가볍게 고개와 허리를 숙이며 미소. 매번 크게 인사하면 오히려 서로 불편해요.'},
+ {s:'출근',q:'아침 9시, 사무실에 들어가면서 하는 인사는?',c:['고개만 까딱','"안녕하십니까" 말한 뒤 보통례 (30°)','말없이 정중례 (45°)'],a:1,e:'출근·퇴근 인사는 <b>보통례</b>. 말을 먼저 하고 허리를 숙여요. 숙인 채로 1초 멈추면 정성이 보여요.'},
+ {s:'사과',q:'내 실수로 일이 늦어져서 팀장님께 사과드려요.',c:['목례 (15°)','보통례 (30°)','정중례 (45°) + "죄송합니다"'],a:2,e:'사과·깊은 감사·면접 시작과 끝은 <b>정중례</b>. 천천히 숙이고 천천히 들어요.'},
+ {s:'전화',q:'회사 전화가 울려요. 받자마자 첫마디는?',c:['"여보세요?"','"감사합니다, ○○팀 ○○○입니다."','"네, 말씀하세요."'],a:1,e:'회사 전화는 <b>인사 + 소속 + 이름</b>. "여보세요"는 집 전화 말투예요. 벨이 세 번 울리기 전에 받으면 더 좋아요.'},
+ {s:'전화',q:'팀장님을 찾는 전화인데, 팀장님이 자리에 없어요.',c:['"지금 없는데요."','"자리에 안 계십니다. 제가 대신 받았습니다. 메모 남겨 드릴까요?"','"나중에 다시 걸어 주세요."'],a:1,e:'<b>"대신 받았습니다"</b>를 분명히 말하고, 메모를 남길지 먼저 물어요. 모르는 내용은 "확인하고 다시 연락드리겠습니다".'},
+ {s:'메모',q:'대신 받은 전화 메모에 꼭 적을 네 가지는?',c:['누가 · 언제 · 무슨 일 · 연락처','상대 목소리 · 기분 · 날씨 · 시간','이름 · 나이 · 회사 크기 · 직급'],a:0,e:'<b>누가·언제·무슨 일·연락처</b>. 다 적은 뒤 상대에게 다시 읽어 확인하면 실수가 없어요.'},
+ {s:'전화',q:'통화가 끝났어요. 수화기는 언제 내려놓을까요?',c:['내가 할 말 끝나면 바로','건 사람이 먼저 끊은 걸 확인하고','"네네네" 하면서 아무 때나'],a:1,e:'전화는 <b>건 사람이 먼저</b> 끊는 게 예의예요. 상대가 끊은 걸 확인하고 조용히 내려놓아요.'},
+ {s:'명함',q:'거래처 과장님께 내 명함을 드려요. 어떻게?',c:['앉은 채로 한 손으로','일어서서, 두 손으로, 상대가 읽게 돌려서','책상 위에 놓고 밀어서'],a:1,e:'명함은 <b>일어서서 · 두 손으로 · 상대가 읽을 수 있게</b> 돌려서. "○○회사 ○○○입니다"와 함께.'},
+ {s:'명함',q:'명함을 받았어요. 그다음엔?',c:['바로 지갑이나 주머니에 넣는다','이름을 소리 내 읽고, 대화 동안 책상 위에 꺼내 둔다','그 자리에서 뒷면에 메모한다'],a:1,e:'받은 명함은 <b>이름을 한 번 읽고 책상 위에</b>. 바로 넣거나 그 자리에서 낙서하면 "관심 없다"로 보여요.'},
+ {s:'명함',q:'명함은 누가 먼저 건넬까요?',c:['윗사람·손님이 먼저','아랫사람·찾아간 사람이 먼저','아무나 먼저'],a:1,e:'<b>아랫사람, 찾아간(방문한) 사람</b>이 먼저 건네요. 신입이면 거의 늘 내가 먼저예요.'},
+ {s:'소개',q:'우리 팀장님과 거래처 손님이 처음 만났어요. 신입인 내가 소개한다면?',c:['손님을 팀장님께 먼저 소개','우리 팀장님을 손님께 먼저 소개','둘이 알아서 인사하게 둔다'],a:1,e:'<b>우리 회사 사람을 손님에게 먼저</b> 소개해요. 아랫사람을 윗사람에게, 어린 사람을 나이 많은 사람에게 먼저. 높은 쪽이 먼저 알게 하는 거예요.'},
+ {s:'자리',q:'회의실에서 가장 높은 분이 앉는 자리(상석)는?',c:['문 바로 옆자리','문에서 가장 먼 자리','창문 옆이면 어디든'],a:1,e:'보통 <b>출입문에서 가장 먼 자리</b>가 상석. 방해받지 않고 회의를 이끌 수 있어요. 신입은 문 가까운 자리.'},
+ {s:'자리',q:'기사님이 운전하는 택시에 사장님과 탔어요. 사장님 자리는?',c:['조수석 (운전석 옆)','운전석 대각선 뒷자리','뒷자리 가운데'],a:1,e:'운전기사가 따로 있으면 <b>운전석 대각선 뒷자리</b>가 상석. 타고 내리기 편하고 가장 안전해요. 윗사람이 직접 운전하면 조수석이 상석이에요.'}
+];
+var CO=[
+ {t:'① 인사·명함',who:'2명: 신입 ↔ 거래처 과장',k:['보통례와 함께 "안녕하십니까, ○○회사 ○○○입니다"','일어서서 명함을 두 손으로 건넸다','명함 글씨가 상대 쪽으로 보이게 돌려서 줬다','받은 사람이 이름을 소리 내 읽었다','받은 명함을 책상 위에 꺼내 뒀다','역할을 바꿔 한 번 더 했다']},
+ {t:'② 전화 받기',who:'2명: 거는 사람이 상황 카드 읽기',k:['첫마디 "감사합니다, ○○팀 ○○○입니다"','찾는 사람이 없을 때 "대신 받았습니다"라고 말했다','메모에 누가 · 언제 · 무슨 일 · 연락처를 적었다','메모 내용을 상대에게 다시 읽어 확인했다','끝인사를 하고, 건 사람이 먼저 끊게 기다렸다']},
+ {t:'③ 소개·자리',who:'3명: 신입 · 팀장 · 손님',k:['신입이 팀장을 손님에게 먼저 소개했다','소개받은 사람이 일어나 보통례 + 이름을 한 번 불렀다','회의실 그림에 상석(문에서 먼 자리)을 맞게 정했다','택시 그림에 사장님 자리(운전석 대각선 뒤)를 맞게 정했다','신입인 내 자리를 맞게 골랐다']}
+];
+var S={tab:0,i:0,picks:[],co:0,ck:{},who:''};
+try{S=Object.assign(S,JSON.parse(localStorage.getItem('manner-v1')||'{}'))}catch(e){}
+function save(){try{localStorage.setItem('manner-v1',JSON.stringify(S))}catch(e){}}
+var ROOM=window.TM_ROOM&&!TM_ROOM.teach&&TM_ROOM.get?TM_ROOM.get():null, TEACH=!!(window.TM_ROOM&&TM_ROOM.teach&&TM_ROOM.teachWork);
+var REV=false,CTL=false,SW=[],STM=[];
+var HT=/^#t([01])$/.exec(location.hash);if(HT)S.tab=+HT[1];
+function qh(){var m=/^#q(\d+|end)(-a)?$/.exec(location.hash);if(!m)return false;S.tab=0;S.i=m[1]==='end'?Q.length:Math.min(+m[1],Q.length);REV=!!m[2];CTL=true;return true}
+window.addEventListener('hashchange',function(){var m=/^#t([01])$/.exec(location.hash);if(m&&+m[1]!==S.tab){S.tab=+m[1];save();render();window.scrollTo(0,0)}else if(qh()){render();window.scrollTo(0,0)}});
+if(ROOM&&S.room!==ROOM.pin){S.room=ROOM.pin;S.picks=[];S.i=0;S.ck={};save()}
+qh();
+function qgo(i,rev){S.i=i;REV=!!rev;var h='q'+(i>=Q.length?'end':i)+(rev?'-a':'');if(location.hash!=='#'+h)location.hash=h;else render();window.scrollTo(0,0)}
+function okN(){return S.picks.filter(function(p,i){return p===Q[i].a}).length}
+function push(){if(!ROOM||!window.TM_ROOM)return;var o={};S.picks.forEach(function(p,i){if(p!=null)o[i]=p});
+  TM_ROOM.send('manner-q','비즈니스 매너 퀴즈 '+okN()+'/'+Object.keys(o).length,JSON.stringify({p:o}),true)}
+if(TEACH)TM_ROOM.teachWork(['manner-q'],function(A,T){if(T){STM=T}else SW=A.map(function(x){var b={};try{b=JSON.parse(x.body)}catch(e){}return {nick:x.nick,team:x.team||'',p:b.p||{}}});if(S.tab===0)render()});
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+function bar(lab,parts,num){return '<div class="tbar"><span>'+esc(lab)+'</span><span class="tr">'+parts+'</span><span class="num">'+num+'</span></div>'}
+function seg(n,tot,c,l){return n?'<i style="width:'+(n/tot*100)+'%;background:'+c+'">'+l+'</i>':''}
+var COL=['#4e6bf1','#c98a00','#8e44ad'],K=['①','②','③'];
+function teams(){var t=STM.slice();SW.forEach(function(x){if(x.team&&t.indexOf(x.team)<0)t.push(x.team)});return t}
+var ONE='<div class="why"><b>오늘의 한 줄:</b> 예절은 알기만 해서는 몸에서 안 나와요. <b>한 번 해 본 만큼</b> 첫날 실수가 줄어요.</div>';
+function choices(q,p,mode){ // mode: 'self'(바로 채점) · 'live'(강사 진행) · 'teach'
+  return '<div class="ch">'+q.c.map(function(c,j){var cl='';
+    if(mode==='self'){if(p!=null)cl=j===q.a?'right':(j===p?'wrong':'')}
+    else if(mode==='live'){cl=REV?(j===q.a?'right':(j===p?'wrong':'')):(j===p?'mine':'')}
+    else if(REV&&j===q.a)cl='right';
+    var dis=(mode==='self'&&p!=null)||(mode==='live'&&REV)||mode==='teach';
+    return '<button data-'+(mode==='live'?'sc':'c')+'="'+j+'" class="'+cl+'"'+(dis?' disabled':'')+'><span class="k">'+K[j]+'</span> '+esc(c)+'</button>'}).join('')+'</div>';
+}
+function head(i){return '<span class="qno">Q'+(i+1)+' / '+Q.length+' <span class="sit">'+Q[i].s+'</span></span><p class="q">'+esc(Q[i].q)+'</p>'}
+function tQuiz(){
+  if(S.i>=Q.length){
+    var h='<div class="card"><h2 style="margin:0">📊 반 결과</h2><p class="soft">응답한 학생 '+SW.length+'명</p><table class="st"><tr><th>상황</th><th>정답률</th></tr>';
+    Q.forEach(function(q,i){var L=SW.filter(function(x){return x.p[i]!=null}),ok=L.filter(function(x){return +x.p[i]===q.a}).length;h+='<tr><td>Q'+(i+1)+'. '+esc(q.q)+'</td><td><b>'+(L.length?Math.round(ok/L.length*100)+'%':'-')+'</b> <span class="soft">('+ok+'/'+L.length+')</span></td></tr>'});
+    h+='</table>';var T=teams();
+    if(T.length){h+='<h3 style="margin:8px 0 0">조별 정답률</h3>';T.forEach(function(t){var a=0,o=0;SW.filter(function(x){return x.team===t}).forEach(function(x){Object.keys(x.p).forEach(function(k){a++;if(+x.p[k]===Q[k].a)o++})});h+=bar(t,a?seg(o,a,'#2e8b4c','⭕ '+o)+seg(a-o,a,'#9aa0ab','✕ '+(a-o)):'',a?Math.round(o/a*100)+'%':'-')})}
+    var low=Q.map(function(q,i){var L=SW.filter(function(x){return x.p[i]!=null});return {i:i,r:L.length?L.filter(function(x){return +x.p[i]===q.a}).length/L.length:1}}).sort(function(a,b){return a.r-b.r}).slice(0,3).filter(function(x){return x.r<1});
+    if(low.length)h+='<h3 style="margin:8px 0 0">🔁 많이 틀린 상황 (코스에서 한 번 더)</h3><p>'+low.map(function(x){return 'Q'+(x.i+1)+' '+Q[x.i].s+' '+Math.round(x.r*100)+'%'}).join(' · ')+'</p>';
+    return h+ONE+'<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" data-a="t0">처음부터 다시</button><button class="btn pri" data-tab="1">첫 출근 3코스 →</button></div></div>';
+  }
+  var q=Q[S.i],L=SW.filter(function(x){return x.p[S.i]!=null}),n=[0,0,0];L.forEach(function(x){n[+x.p[S.i]]++});
+  var h='<div class="card">'+head(S.i)+choices(q,null,'teach')+'<p class="wait">📱 학생 폰에 같은 문제 · 응답 <b>'+L.length+'</b>명</p>'+
+    bar('전체',L.length?n.map(function(v,j){return seg(v,L.length,REV?(j===q.a?'#2e8b4c':'#9aa0ab'):COL[j],K[j]+' '+v)}).join(''):'',L.length+'명');
+  teams().forEach(function(t){var M=L.filter(function(x){return x.team===t}),m=[0,0,0];M.forEach(function(x){m[+x.p[S.i]]++});h+=bar(t,M.length?m.map(function(v,j){return seg(v,M.length,REV?(j===q.a?'#2e8b4c':'#9aa0ab'):COL[j],K[j]+' '+v)}).join(''):'',M.length+'명')});
+  if(REV){var ok=n[q.a];h+='<div class="ans"><b>정답: '+K[q.a]+'</b> · 맞힌 학생 '+ok+'명'+(L.length?' ('+Math.round(ok/L.length*100)+'%)':'')+'<br>'+q.e+'</div>'}
+  return h+'<div style="display:flex;gap:8px;flex-wrap:wrap">'+(S.i?'<button class="btn" data-a="tprev">← 이전</button>':'')+'<button class="btn" data-a="trev">'+(REV?'정답 가리기':'정답 공개')+'</button><button class="btn pri" data-a="tnext">'+(S.i===Q.length-1?'결과 보기 →':'다음 상황 →')+'</button></div>'+
+   '<p class="note">학생 폰은 선생님이 넘길 때 같이 넘어가요. 정답을 공개하면 학생 답은 마감돼요. 정답이 나오면 그 자리에서 다 같이 한 번 해 보기(인사·명함·전화 첫마디).</p></div>';
+}
+function sQuiz(){
+  if(S.i>=Q.length)return '<div class="card"><p class="soft" style="text-align:center">비즈니스 매너 퀴즈</p><div class="big">'+okN()+' / '+Q.length+'</div>'+ONE+'</div>';
+  var q=Q[S.i],p=S.picks[S.i],done=p!=null,h='<div class="card">'+head(S.i)+choices(q,p,'live');
+  if(REV)h+='<div class="ans'+(p===q.a?'':' bad')+'"><b>'+(!done?'정답은 '+K[q.a]+'!':p===q.a?'정답!':'아쉬워요!')+'</b> '+q.e+'</div><p class="wait">선생님이 다음 상황으로 넘겨 줄 거예요</p>';
+  else h+='<p class="wait">'+(done?'✔ 보냈어요! 바꾸려면 다른 답을 눌러요':'답을 하나 골라요')+'</p>';
+  return h+'</div>';
+}
+function quiz(){
+  if(TEACH&&CTL)return tQuiz();
+  if(ROOM&&CTL)return sQuiz();
+  if(S.i>=Q.length){var ok=okN();
+    return '<div class="card"><p class="soft" style="text-align:center">비즈니스 매너 퀴즈</p><div class="big">'+ok+' / '+Q.length+'</div><p style="text-align:center">'+(ok>=11?'🏅 내일 출근해도 되겠어요!':ok>=8?'👍 기본은 몸에 있어요':'🌱 오늘 배운 게 많네요')+'</p>'+ONE+
+      '<button class="btn pri" data-tab="1">첫 출근 3코스 →</button><button class="btn" data-a="re">퀴즈 다시 하기</button></div>'}
+  var q=Q[S.i],p=S.picks[S.i],done=p!=null,h='<div class="card">'+head(S.i)+choices(q,p,'self');
+  if(done)h+='<div class="ans'+(p===q.a?'':' bad')+'"><b>'+(p===q.a?'정답!':'아쉬워요!')+'</b> '+q.e+'</div><button class="btn pri" data-a="nx">'+(S.i===Q.length-1?'결과 보기':'다음 상황 →')+'</button>';
+  return h+'</div><p class="note">인사 각도·상석은 회사·교재마다 조금씩 달라요. 일반적인 비즈니스 예절 기준이에요.</p>';
+}
+function course(){
+  var c=CO[S.co],ck=S.ck[S.co]||{},n=c.k.filter(function(_,j){return ck[j]}).length;
+  var h='<div class="card"><h2>🏢 첫 출근 리허설 3코스</h2><p class="soft">조마다 한 코스에서 시작해 6분씩 돌아요. 조에서 한 명은 <b>확인 담당</b>: 친구가 하는 걸 보고 해낸 것에 체크해요. 코스마다 확인 담당을 바꿔요.</p>'+
+    '<div class="tabs">'+CO.map(function(x,i){return '<button data-co="'+i+'" aria-pressed="'+(S.co===i)+'">'+x.t+'</button>'}).join('')+'</div></div>';
+  h+='<div class="card"><h3>'+c.t+' <span class="note">'+c.who+'</span></h3><div class="f"><label for="who">해 본 친구 이름</label><input id="who" maxlength="12" value="'+esc(S.who)+'" placeholder="예: 민준"></div><div class="chk">'+
+    c.k.map(function(t,j){return '<div class="ci"><div class="seg" style="grid-template-columns:1fr auto;align-items:center"><b>'+(j+1)+'. '+esc(t)+'</b><button data-k="'+j+'" data-v="'+(ck[j]?2:1)+'" aria-pressed="'+!!ck[j]+'" style="min-width:5.5em">'+(ck[j]?'✔ 해냄':'아직')+'</button></div></div>'}).join('')+
+    '</div><div class="meter"><i style="width:'+(n/c.k.length*100)+'%;background:var(--ok)"></i></div><p><b style="font-size:1.3rem">'+n+' / '+c.k.length+'</b> '+(n===c.k.length?'🎉 완벽해요!':'<span class="soft">못 한 것은 한 번 더 해 보고 체크</span>')+'</p>'+
+    (ROOM?'<button class="btn pri" data-a="send">📤 선생님께 보내기</button>':'')+'<button class="btn" data-a="next">다음 친구 (체크 지우기)</button></div>';
+  return h+ONE;
+}
+var app=document.getElementById('app');
+function render(){
+  var h='<div class="top"><div class="brand"><small>위듀케이션 · 비즈니스 매너</small></div><a href="./">← 도구 모음</a></div><h1>첫 출근 미리 해 보기</h1>'+
+    '<div class="tabs" style="grid-template-columns:1fr 1fr">'+['① 상황 퀴즈','② 첫 출근 3코스'].map(function(t,i){return '<button data-tab="'+i+'" aria-pressed="'+(S.tab===i)+'">'+t+'</button>'}).join('')+'</div>';
+  app.innerHTML=h+[quiz,course][S.tab]();
+}
+function toast(t){var d=document.createElement('div');d.textContent=t;d.style.cssText='position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#222;color:#fff;padding:10px 16px;border-radius:6px;z-index:60;font-weight:700';document.body.appendChild(d);setTimeout(function(){d.remove()},2200)}
+app.addEventListener('click',function(e){
+  var b=e.target.closest('button');if(!b)return;var d=b.dataset;
+  if(d.tab!=null){S.tab=+d.tab;save();if(TEACH&&S.tab===0){CTL=true;qgo(S.i>=Q.length?0:S.i,false);return}if(location.hash!=='#t'+S.tab)location.hash='t'+S.tab;render();window.scrollTo(0,0);return}
+  if(d.sc!=null){if(REV)return;S.picks[S.i]=+d.sc;save();push();render();return}
+  if(d.c!=null){S.picks[S.i]=+d.c;save();push();render();return}
+  if(d.a==='tnext'){qgo(S.i+1,false);return}
+  if(d.a==='tprev'){qgo(Math.max(0,Math.min(S.i,Q.length)-1),false);return}
+  if(d.a==='trev'){qgo(S.i,!REV);return}
+  if(d.a==='t0'){qgo(0,false);return}
+  if(d.a==='nx'){S.i++;save();render();window.scrollTo(0,0);return}
+  if(d.a==='re'){S.i=0;S.picks=[];save();render();return}
+  if(d.co!=null){S.co=+d.co;save();render();return}
+  if(d.k!=null){var o=S.ck[S.co]=S.ck[S.co]||{};o[d.k]=!o[d.k];save();var y=window.scrollY;render();window.scrollTo(0,y);return}
+  if(d.a==='next'){S.ck[S.co]={};S.who='';S.cn=(S.cn||0)+1;save();render();return}
+  if(d.a==='send'){var c=CO[S.co],ck=S.ck[S.co]||{},n=c.k.filter(function(_,j){return ck[j]}).length,who=S.who.trim()||'이름 없음';
+    TM_ROOM.send('manner-c'+(S.co+1)+'-'+((S.cn||0)%100),c.t+' · '+who+' '+n+'/'+c.k.length,c.k.map(function(t,j){return (ck[j]?'✔ ':'· ')+t}).join('\n')).then(function(){toast('✔ 보냈어요')},function(){toast('보내지 못했어요. 다시 눌러 주세요')})}
+});
+app.addEventListener('input',function(e){if(e.target.id==='who'){S.who=e.target.value;save()}});
+if(TEACH&&S.tab===0&&!CTL){var hp='';try{hp=(JSON.parse(localStorage.getItem('live-host')||'null')||{}).pin||''}catch(e){}if(S.hroom!==hp){S.hroom=hp;S.i=0;save()}
+  CTL=true;S.i=Math.min(S.i,Q.length-1);location.hash='q'+S.i}
+render();
+})();
+</script>
+</body></html>
