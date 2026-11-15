@@ -41,49 +41,66 @@ exports.codeCheck = onCall({ region: 'asia-northeast3', maxInstances: 3, timeout
   return { name: c.name || '', perDay: c.perDay || 3 };
 });
 
-// 화면과 같은 질문지 (학생이 보낸 값만 넣고, 길이는 잘라서)
+// 화면과 같은 질문지 (학생이 보낸 값만 넣고, 길이는 잘라서). tools/index.html buildPrompt와 같은 내용 — 고치면 두 곳 다.
+// 작성 기준: 이지선 대표(위듀케이션) 「NCS 자기소개서 작성법」 + 자소서 컨설팅 메모(2026-11-15)
+const LENS = [500, 600, 700, 800, 1000];
+const GRP = { solo: '혼자 한 일', team: '여럿이 함께 (협업)' };
 function prompt(d) {
   const lines = (...a) => a.filter(x => x !== false && x != null && x !== 0 && (x === '' || String(x).trim())).join('\n');
   const exps = (Array.isArray(d.exps) ? d.exps : []).slice(0, 3).map(e => e || {}).filter(e => e.title || e.a || e.s).map((e, i) => lines(
-    `[${i + 1}] ${e.kind ? s(e.kind, 20) + ' · ' : ''}${s(e.title, 80) || '(제목 없음)'}`,
+    `[${i + 1}] ${e.kind ? s(e.kind, 20) + ' · ' : ''}${GRP[e.group] ? GRP[e.group] + ' · ' : ''}${s(e.title, 80) || '(제목 없음)'}`,
     e.s && '- 상황(S): ' + s(e.s, 600), e.t && '- 역할·목표(T): ' + s(e.t, 600), e.a && '- 행동(A): ' + s(e.a, 800),
     e.r && '- 결과(R): ' + s(e.r, 600), e.learn && '- 배운 점·강점: ' + s(e.learn, 600))).join('\n\n');
-  const traits = arr(d.traits, 3, 20), values = arr(d.values, 2, 20), core = arr(d.core, 2, 20), style = arr(d.style, 4, 30);
+  const traits = arr(d.traits, 3, 20), values = arr(d.values, 2, 20), core = arr(d.core, 2, 20), style = arr(d.style, 4, 30), ncs = arr(d.ncs, 2, 20);
+  const n = LENS.includes(+d.len) ? +d.len : 800, m = Math.max(300, n - 300);
+  const company = s(d.company, 80), nc = d.nocomp === true || !company;
   return lines(
-    '너는 고등학생·대학생의 첫 취업을 돕는 자기소개서 전문가야. 아래 [내 정보]만 근거로, 실제 회사에 낼 수 있는 자기소개서 초안을 써 줘.',
+    '너는 고등학생·대학생의 첫 취업을 돕는 NCS 자기소개서 전문가야. 아래 [내 정보]만 근거로, 실제 회사에 낼 수 있는 자기소개서 초안을 써 줘.',
     '',
     '[쓰는 규칙]',
-    '1. 말투: 친근하지만 정중하고 전문적인 "~습니다"체.',
-    '2. 내 정보에 없는 경험·숫자·자격증·회사 정보는 절대 지어내지 마. 내용이 모자라면 그 자리에 [추가 필요: 무엇을 쓰면 좋을지]라고 표시해.',
-    '3. 각 항목 첫 문장은 핵심 한 줄(소제목처럼)로 시작해.',
-    '4. 글자 수(공백 포함)를 넘기지 마.',
-    '5. 맨 끝에 "고쳐 쓸 점" 3가지를 짧게 적어 줘.',
+    '1. 자기소개서는 나를 소개하는 글이 아니라, 지원 직무를 잘할 수 있는 나의 역량을 보여 주는 글이다. 모든 항목을 지원 직무와 이어서 써.',
+    '2. 모든 항목에 지식(아는 것)·기술(할 줄 아는 것)·태도(일하는 자세)가 드러나게 써.',
+    '3. 말투: 친근하지만 정중하고 전문적인 "~습니다"체. 문장은 짧게, 결론을 먼저(두괄식).',
+    '4. 내 정보에 없는 경험·숫자·자격증·회사 정보는 절대 지어내지 마. 내용이 모자라면 그 자리에 [추가 필요: 무엇을 쓰면 좋을지]라고 표시해.',
+    '5. 각 항목 본문 맨 앞에 내용의 핵심을 담은 [소제목] 한 줄을 달아.',
+    `6. 각 항목은 공백 포함 ${m}~${n}자. 다른 회사 이름은 넣지 마.`,
     '',
     '[내 정보]',
     '- 학교·학과: ' + (s(d.school, 80) || '(미입력)'),
-    '- 지원 회사: ' + (s(d.company, 80) || '(미입력)'),
+    '- 지원 회사: ' + (nc ? '아직 정하지 않음' : company),
     '- 지원 직무: ' + (s(d.job, 80) || '(미입력)'),
+    d.tasks && '- 이 직무에서 하는 일: ' + s(d.tasks, 400),
     d.jobwhy && '- 직무를 알게 된 계기: ' + s(d.jobwhy, 300),
+    d.ksaK && '- 지식(아는 것): ' + s(d.ksaK, 500),
+    d.ksaS && '- 기술(할 줄 아는 것): ' + s(d.ksaS, 500),
+    d.ksaA && '- 태도(일하는 자세): ' + s(d.ksaA, 500),
+    ncs.length && '- 보여 줄 NCS 직업기초능력: ' + ncs.join(', '),
+    core.length && '- 직무에 필요한 성격 강점: ' + core.join(', '),
     traits.length && '- 나를 설명하는 단어: ' + traits.join(', '),
     values.length && '- 일할 때 중요하게 여기는 것: ' + values.join(', '),
     style.length && '- 일하는 스타일: ' + style.join(', '),
-    core.length && '- 직무 핵심 역량: ' + core.join(', '),
-    d.grow && '- 나를 바꾼 경험: ' + s(d.grow, 800),
+    d.grow && '- 능력이 자란 과정: ' + s(d.grow, 800),
     d.good && '- 장점: ' + s(d.good, 60) + (d.goodEx ? ' / 사례: ' + s(d.goodEx, 600) : ''),
     d.bad && '- 단점: ' + s(d.bad, 60) + (d.badFix ? ' / 고치려는 노력: ' + s(d.badFix, 600) : ''),
-    d.know && '- 회사에 대해 알아본 것: ' + s(d.know, 800),
+    d.know && '- ' + (nc ? '직무(업종)' : '회사') + '에 대해 알아본 것: ' + s(d.know, 800),
     d.motive && '- 지원 이유: ' + s(d.motive, 800),
-    d.plan && '- 입사 후 목표: ' + s(d.plan, 600),
+    d.plan && '- 입사 후 1년 안에 할 일: ' + s(d.plan, 600),
+    d.plan5 && '- 5년 뒤 모습: ' + s(d.plan5, 400),
+    d.give && '- 회사에 보탤 수 있는 것: ' + s(d.give, 400),
     '',
     exps ? '[경험]\n' + exps : '[경험] (미입력)',
     '',
     '[써야 할 항목]',
-    '1. 성장과정 (700자 이내): 성격·가치관을 만든 경험 1~2가지와 배운 점.',
-    '2. 성격의 장단점 (500자 이내): 직무 역량과 이어지는 장점 1개와 사례, 단점 1개와 고치려는 구체적 노력.',
-    '3. 직무 관련 경험 (1000자 이내): 경험 1~2개를 STAR(상황-과제-행동-결과) 순서로. 결과의 숫자는 내 정보에 있는 것만.',
-    '4. 지원동기와 입사 후 포부 (700자 이내): 이 회사·직무를 고른 이유를 내 경험과 연결하고, 1년·5년 목표.',
+    '1. 성장과정: 가족·어린 시절 이야기가 아니라, 지원 직무와 관련된 능력이 어떻게 자랐는지(처음 수준 → 내가 한 노력 → 지금 할 수 있는 것)를 장면 하나로. 그때 생긴 가치관과 직무에서 쓸 점으로 끝맺어.',
+    '2. 성격의 장단점: 업무할 때 드러나는 성격으로. 장점이 약 70%("저의 장점은 ○○입니다"로 시작, 직무와 이어지는 구체적 사례), 단점이 약 30%(솔직하게, 지금 고치고 있는 구체적 행동과 함께).',
+    '3. 단체활동: 여럿이 함께한(협업) 경험 하나를 상황-과제-행동-결과 순서로. 어려움이나 갈등이 있었다면 내 역할과 해결 과정을 중심으로, 배운 점까지.',
+    nc ? '4. 지원동기: 회사가 아직 정해지지 않았으니 회사 이름 없이 "직무 지원동기"로 써. 이 직무를 고른 이유, 이 직무를 위해 해 온 노력, 그래서 갖춘 자격.'
+      : '4. 지원동기: 이 회사를 고른 이유(회사가 하는 일·경쟁력·인재상 중 하나)와 이 직무를 고른 이유를 내 경험과 이어서.',
+    '5. 입사 후 포부: 현실적이고 구체적으로. (1) 직무에 맞는 나의 강점 (2) 입사 후 1년 안에 할 일 (3) 5년 뒤 목표와 조직에 기여할 점. "열심히 하겠습니다" 같은 막연한 말은 쓰지 마.',
     '',
-    '출력 형식: 항목마다 "## 1. 성장과정 (OOO자)"처럼 제목과 실제 글자 수를 쓰고 본문. 그 밖의 설명은 쓰지 마.');
+    '출력 형식: 항목마다 "## 1. 성장과정 (OOO자)"처럼 제목과 실제 글자 수, 다음 줄에 [소제목], 그다음 본문.',
+    '본문 5개를 다 쓴 뒤 "## 지식·기술·태도 확인"에 항목마다 지식/기술/태도가 드러난 말을 짧게 적고, 빠진 것은 "빠짐"이라고 써.',
+    '맨 끝 "## 고쳐 쓸 점"에 3가지를 짧게. 그 밖의 설명은 쓰지 마.');
 }
 
 exports.jasoDraft = onCall({ region: 'asia-northeast3', secrets: [GEMINI_KEY], maxInstances: 5, timeoutSeconds: 300, memory: '512MiB' }, async req => {
@@ -115,7 +132,7 @@ exports.jasoDraft = onCall({ region: 'asia-northeast3', secrets: [GEMINI_KEY], m
 
   const ai = new GoogleGenAI({ apiKey: GEMINI_KEY.value() });
   // 생각은 짧게(LOW): 기본값이면 2분 넘게 걸림. 붐비면 2초 뒤 한 번 더, 그래도 붐비면 가벼운 모델로
-  const ask = model => ai.models.generateContent({ model, contents: prompt(d), config: { maxOutputTokens: 8192, thinkingConfig: { thinkingLevel: 'LOW' } } });
+  const ask = model => ai.models.generateContent({ model, contents: prompt(d), config: { maxOutputTokens: 12288, thinkingConfig: { thinkingLevel: 'LOW' } } });
   const busy = e => e instanceof ApiError && (e.status === 503 || e.status === 500);
   let r;
   try {
