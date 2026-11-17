@@ -444,7 +444,7 @@ function opXls(j,k){const P=j.plan.slots,ds=[...new Set(P.map(x=>x.d))].sort(),w
   toast('받았어요. 엑셀이 "형식이 다르다"고 물으면 [예]를 누르면 열려요')}
 // 시간표를 그림(PNG)으로: 카톡 공지·강사 공지에 바로 올리기 좋게
 function opCanvas(j){const P=j.plan.slots,PN=opPanels(P),day=PN[0].memo?'':P[0].d,who=x=>x.inst?inst(x.inst).name:x.nm||'',sub=x=>x.sub?inst(x.sub).name:x.subNm||'';
-  const F='"Pretendard","Malgun Gothic","Apple SD Gothic Neo",sans-serif',hasSub=P.some(sub),hasMemo=PN[0].memo&&P.some(x=>x.memo),RW=PN[0].memo?170:90,mc=Math.max(...PN.map(X=>X.cols.length)),CW=Math.max(hasMemo?140:120,Math.min(170,Math.floor(1100/mc))),HH=44,RH=34+(hasSub?20:0)+(hasMemo?36:0),M=24,TOP=86,TT=PN.length>1||PN[0].title?40:0;
+  const F='"Pretendard","Malgun Gothic","Apple SD Gothic Neo",sans-serif',hasSub=P.some(sub),hasMemo=PN[0].memo&&P.some(x=>x.memo),RW=PN[0].memo?170:90,mc=Math.max(...PN.map(X=>X.cols.length)),CW=Math.max(hasMemo?140:120,Math.min(170,Math.floor(1100/mc))),HH=48,RH=(PN[0].memo?54:40)+(hasSub?20:0)+(hasMemo?36:0),M=24,TOP=86,TT=PN.length>1||PN[0].title?40:0;
   const c=document.createElement('canvas'),W=Math.max(420,M*2+RW+CW*mc),H=TOP+PN.reduce((a,X)=>a+TT+HH+RH*X.rows.length+12,0)+M+14;c.width=W;c.height=H;const g=c.getContext('2d');
   const fit=(t,w,f)=>{g.font=f;if(g.measureText(t).width<=w)return t;while(t.length>1&&g.measureText(t+'…').width>w)t=t.slice(0,-1);return t+'…'};
   const txt=(t,x,y,f,col,w)=>{g.font=f;g.fillStyle=col;g.fillText(fit(t,w,f),x,y)};
@@ -455,7 +455,7 @@ function opCanvas(j){const P=j.plan.slots,PN=opPanels(P),day=PN[0].memo?'':P[0].
     box(M,Y,RW,HH,'#DCE6F8');txt(X.corner,M+RW/2,Y+HH/2,`bold 15px ${F}`,'#1E3A8A',RW-8);
     X.cols.forEach((d,i)=>{const x=M+RW+CW*i;box(x,Y,CW,HH,'#DCE6F8');txt(X.cLab(d),x+CW/2,Y+HH/2,`bold 15px ${F}`,'#1E3A8A',CW-8)});
     X.rows.forEach((r,ri)=>{const y=Y+HH+RH*ri,[a1,a2]=X.rLab(r);box(M,y,RW,RH,'#F1F5FB');
-      if(a2){txt(a1,M+RW/2,y+RH/2-9,`bold 15px ${F}`,'#111',RW-10);txt(a2,M+RW/2,y+RH/2+11,`13px ${F}`,'#555',RW-10)}else txt(a1,M+RW/2,y+RH/2,`bold 15px ${F}`,'#111',RW-10);
+      if(a2){txt(a1,M+RW/2,y+RH/2-11,`bold 15px ${F}`,'#111',RW-10);txt(a2,M+RW/2,y+RH/2+12,`13px ${F}`,'#555',RW-10)}else txt(a1,M+RW/2,y+RH/2,`bold 15px ${F}`,'#111',RW-10);
       X.cols.forEach((d,i)=>{const x=M+RW+CW*i,s2=P.find(z=>X.in(z)&&X.cO(z)===d&&X.rO(z)===r);if(!s2)return box(x,y,CW,RH,'#EEF0F3');const w=who(s2),L=[[w||'미정',`bold 16px ${F}`,w?'#111':'#C0392B']];
         if(sub(s2))L.push(['보조 '+sub(s2),`13px ${F}`,'#444']);if(X.memo&&s2.memo){g.font=`12px ${F}`;let a='',m=s2.memo,k=0;while(k<m.length&&g.measureText(a+m[k]).width<=CW-12)a+=m[k++];L.push([a,`12px ${F}`,'#777']);if(k<m.length)L.push([m.slice(k),`12px ${F}`,'#777'])}box(x,y,CW,RH,w?'#fff':'#FDECE3');
         const lh=L.length>3?17:20,y0=y+RH/2-(L.length-1)*lh/2;L.forEach(([t,f,col],k)=>txt(t,x+CW/2,y0+k*lh,f,col,CW-10))});
