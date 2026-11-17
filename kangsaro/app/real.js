@@ -843,23 +843,49 @@ async function refAdmin() {
   return `<div class="card"><b>소개 현황 (가입 기준)</b>${names.map(([id, n]) => `<span class="sm">${esc(n)}: ${by.get(id)}명</span>`).join('')}<span class="mu sm">인정 여부는 각자 '소개하기' 화면에서 봐요.</span></div>`;
 }
 
-/* ===== 파일 (서류 사진은 줄여서 Firestore에 저장, 1MB 한도) ===== */
+/* ===== 파일 =====
+   작은 파일(사진은 줄여서 900KB 미만, 그 밖은 650KB 미만): 예전처럼 Firestore 문서 안에 통째로 (data)
+   큰 파일(20MB까지, 11/17 준용 결정): Firebase 저장소(Storage)의 같은 경로에 올리고, Firestore 문서에는 이름·경로(sp)만
+   → 저장소를 아직 안 켰어도 작은 파일은 그대로 됨. 보안 규칙은 storage.rules (Firestore 규칙과 같은 사람만) */
+const BIG = 20 * 1024 * 1024;
 async function fileData(f) {
   if (/^image\//.test(f.type)) { const u = await shrink(f, 1600); return u && u.length < 900000 ? u : ''; }
-  // 한글·워드·엑셀·PDF 등은 650KB까지 그대로
   if (f.size < 650000) return await new Promise(res => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = () => res(''); r.readAsDataURL(f); });
   return '';
 }
+let STO = null;
+async function sto() { if (!STO) { const M = await import(`${G}/firebase-storage.js`); STO = { ...M, s: M.getStorage(fbApp) }; } return STO; }
+// path = Firestore 문서 경로(= 저장소 경로). 성공하면 true, 실패하면 이유를 알리고 false
+async function fileSave(path, f, extra = {}) {
+  const at = new Date().toISOString(), data = await fileData(f);
+  if (data) { await setDoc(doc(db, path), { name: f.name, type: data.slice(5, data.indexOf(';')), data, at, ...extra }); return true; }
+  if (f.size > BIG) { toast('20MB 이하 파일만 올릴 수 있어요'); return false; }
+  toast('큰 파일이라 올리는 데 조금 걸려요…');
+  try {
+    const S2 = await sto();
+    await S2.uploadBytes(S2.ref(S2.s, path), f, { contentType: f.type || 'application/octet-stream', contentDisposition: `attachment; filename*=UTF-8''${encodeURIComponent(f.name)}` });
+  } catch (e) {
+    console.warn('storage', e.code || e);
+    toast(String(e.code || '').includes('unauthorized') ? '이 파일을 올릴 권한이 없어요' : '큰 파일 저장소가 아직 준비되지 않았어요. 650KB 이하로 줄여서 올려 주세요');
+    return false;
+  }
+  await setDoc(doc(db, path), { name: f.name, type: f.type || '', sp: path, size: f.size, at, ...extra });
+  return true;
+}
+// 지울 때 저장소에 있던 큰 파일도 같이 지움 (없으면 그냥 넘어감)
+async function fileDel(path) {
+  const d = await getDoc(doc(db, path)).catch(() => null);
+  if (d && d.exists() && d.data().sp) { try { const S2 = await sto(); await S2.deleteObject(S2.ref(S2.s, d.data().sp)); } catch (e) { console.warn('storage del', e.code || e); } }
+  await deleteDoc(doc(db, path));
+}
 REAL.vault = async (n, f) => {
-  const data = await fileData(f);
-  if (!data) return toast('사진이나 650KB 이하 파일만 올릴 수 있어요');
-  await setDoc(doc(db, 'users', uidMe, 'files', n), { name: f.name, type: data.slice(5, data.indexOf(';')), data, at: new Date().toISOString() });
+  if (!await fileSave(`users/${uidMe}/files/${n}`, f).catch(e => { toast('저장하지 못했어요: ' + (e.code || e.message)); return false; })) return;
   const p = inst(uidMe); p.vault = { ...(p.vault || {}), [n]: f.name }; save(); render(); toast(`${n} 저장했어요. 확정된 업체에만 보여요`);
 };
 REAL.doc = async (appId, n, f) => {
-  const a = S.apps.find(x => x.id === appId); let data = await fileData(f), name = f.name;
-  if (!data) { const u = prompt('파일이 커서 바로 올릴 수 없어요. 구글 드라이브 공유 링크를 붙여 주세요'); if (!u || !/^https?:\/\//.test(u.trim())) return; name = u.trim(); }
-  else await setDoc(doc(db, 'apps', appId, 'files', n), { name, type: data.slice(5, data.indexOf(';')), data, at: new Date().toISOString() });
+  const a = S.apps.find(x => x.id === appId); let name = f.name;
+  const ok = await fileSave(`apps/${appId}/files/${n}`, f).catch(e => { toast('올리지 못했어요: ' + (e.code || e.message)); return false; });
+  if (!ok) { if (f.size > BIG || !confirm('파일을 바로 올리지 못했어요. 대신 구글 드라이브 공유 링크로 낼까요?')) return; const u = prompt('구글 드라이브 공유 링크를 붙여 주세요'); if (!u || !/^https?:\/\//.test(u.trim())) return; name = u.trim(); }
   a.docs = { ...(a.docs || {}), [n]: name }; save(); render(); toast(`${n} 냈어요`);
 };
 
@@ -886,36 +912,39 @@ REAL.report = async id => {
   catch (e) { const j = job(id); if (j && j.reports) delete j.reports[uidMe]; render(); toast(e.code === 'permission-denied' ? '강사 계정만 신고할 수 있어요' : '신고하지 못했어요. 인터넷을 확인해 주세요'); }
 };
 REAL.formUp = async (n, f) => {
-  const data = await fileData(f);
-  if (!data) return toast('650KB 이하 파일만 올릴 수 있어요');
   // 대표·직원 모두 (11/17 준용 결정). 파일은 업체(CO) 양식 자리, 직원은 업체 문서의 forms 목록만 직접 고침(규칙: 직원은 forms 칸만)
-  try { await setDoc(doc(db, 'users', CO, 'forms', n), { name: f.name, data, at: new Date().toISOString() }); } catch (e) { return toast(e.code === 'permission-denied' ? '권한이 없어요. 운영자에게 보안 규칙 게시를 확인해 달라고 해 주세요' : '올리지 못했어요: ' + e.code); }
+  try { if (!await fileSave(`users/${CO}/forms/${n}`, f)) return; } catch (e) { return toast(e.code === 'permission-denied' ? '권한이 없어요. 운영자에게 보안 규칙 게시를 확인해 달라고 해 주세요' : '올리지 못했어요: ' + e.code); }
   const c = S.cos.find(x => x.id === CO); c.forms = { ...(c.forms || {}), [n]: f.name };
   if (isStaffView()) await updateDoc(doc(db, 'users', CO), { forms: c.forms }).catch(e => console.warn('forms', e.code));
   save(); render(); toast(`${n} 양식을 올렸어요`);
 };
 REAL.formDel = async n => {
-  try { await deleteDoc(doc(db, 'users', CO, 'forms', n)); } catch (e) { return toast('지우지 못했어요: ' + e.code); }
+  try { await fileDel(`users/${CO}/forms/${n}`); } catch (e) { return toast('지우지 못했어요: ' + e.code); }
   const c = S.cos.find(x => x.id === CO); const f = { ...(c.forms || {}) }; delete f[n]; c.forms = f;
   if (isStaffView()) await updateDoc(doc(db, 'users', CO), { forms: f }).catch(e => console.warn('forms', e.code));
   save(); render(); toast('양식을 지웠어요');
 };
 // 일정(공고)마다 원청 양식: 업체 양식 자리(users/{업체}/forms)에 '{공고id}__{서류}' 이름으로 저장 → 규칙 변경 없음
 REAL.jFormUp = async (j, n, f, done) => {
-  const data = await fileData(f);
-  if (!data) return toast('650KB 이하 파일만 올릴 수 있어요');
-  try { await setDoc(doc(db, 'users', j.coId, 'forms', jfId(j.id, n)), { name: f.name, data, job: j.id, at: new Date().toISOString() }); } catch (e) { return toast('올리지 못했어요: ' + e.code); }
+  try { if (!await fileSave(`users/${j.coId}/forms/${jfId(j.id, n)}`, f, { job: j.id })) return; } catch (e) { return toast('올리지 못했어요: ' + e.code); }
   done();
 };
 REAL.jFormDel = async (j, n, done) => {
-  try { await deleteDoc(doc(db, 'users', j.coId, 'forms', jfId(j.id, n))); } catch (e) { return toast('지우지 못했어요: ' + e.code); }
+  try { await fileDel(`users/${j.coId}/forms/${jfId(j.id, n)}`); } catch (e) { return toast('지우지 못했어요: ' + e.code); }
   done();
 };
 // 저장해 둔 파일 내려받기 (양식, 강사가 낸 서류)
 REAL.getFile = async (path, name) => {
   let d; try { d = await getDoc(doc(db, path)); } catch (e) { return toast(e.code === 'permission-denied' ? '볼 수 있는 권한이 없어요' : '받지 못했어요. 인터넷을 확인해 주세요'); }
   if (!d.exists()) return toast('파일이 없어요. 다시 올려 달라고 해 주세요');
-  const x = d.data(), blob = await (await fetch(x.data)).blob(), u = URL.createObjectURL(blob), a = document.createElement('a');
+  const x = d.data();
+  // 큰 파일(저장소): 내려받기 주소를 받아 새 창으로 (파일 이름은 올릴 때 넣어 둔 contentDisposition으로 붙음). 저장소 주소는 버킷 CORS 설정 없이도 열림
+  if (x.sp) {
+    try { const S2 = await sto(), url = await S2.getDownloadURL(S2.ref(S2.s, x.sp)), a = document.createElement('a'); a.href = url; a.target = '_blank'; a.rel = 'noopener'; document.body.appendChild(a); a.click(); a.remove(); }
+    catch (e) { toast(String(e.code || '').includes('unauthorized') ? '볼 수 있는 권한이 없어요' : String(e.code || '').includes('not-found') ? '파일이 없어요. 다시 올려 달라고 해 주세요' : '받지 못했어요: ' + (e.code || e.message)); }
+    return;
+  }
+  const blob = await (await fetch(x.data)).blob(), u = URL.createObjectURL(blob), a = document.createElement('a');
   a.href = u; a.download = x.name || name || '파일'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(u), 4000);
 };
 

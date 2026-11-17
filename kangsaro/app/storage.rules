@@ -1,0 +1,38 @@
+rules_version = '2';
+// 강사로 큰 파일 저장소 (Firebase Storage). 650KB가 넘는 파일만 여기 들어가고, 경로는 Firestore 문서 경로와 같음.
+// 누가 읽고 쓰는지는 firestore.rules의 같은 경로와 똑같이 맞춤. 파일 하나 20MB까지.
+// Firebase 콘솔 → Storage → 규칙 → 전부 지우고 이 파일 통째로 붙여 넣고 게시.
+service firebase.storage {
+  match /b/{bucket}/o {
+    function signed() { return request.auth != null; }
+    function me() { return request.auth.uid; }
+    function small() { return request.resource == null || request.resource.size < 20 * 1024 * 1024; }
+    function isStaff(c) { return firestore.exists(/databases/(default)/documents/staff/$(c + '_' + me())); }
+    function linked(co, inst) { return firestore.exists(/databases/(default)/documents/links/$(co + '_' + inst)); }
+    function staffLinked(inst) {
+      let s = firestore.get(/databases/(default)/documents/users/$(me())).data.get('staffOf', '');
+      return s != '' && isStaff(s) && linked(s, inst);
+    }
+
+    // 업체 서류 양식(업체 기본 + 일정별): 가입한 사람은 받기, 대표와 그 업체 직원이 올리고 지움
+    match /users/{u}/forms/{f} {
+      allow read: if signed();
+      allow write: if signed() && (me() == u || isStaff(u)) && small();
+    }
+    // 강사 서류함(통장사본·신분증): 본인, 나를 확정한 업체(대표·직원)
+    match /users/{u}/files/{f} {
+      allow read: if signed() && (me() == u || linked(me(), u) || staffLinked(u));
+      allow write: if signed() && me() == u && small();
+    }
+    // 강의에 낸 서류: 낸 강사, 확정한 업체(대표·직원)
+    match /apps/{a}/files/{f} {
+      function app() { return firestore.get(/databases/(default)/documents/apps/$(a)).data; }
+      allow read: if signed() && (app().instId == me() || ((app().coId == me() || isStaff(app().coId)) && app().status == '확정'));
+      allow write: if signed() && app().instId == me() && small();
+    }
+    // 그 밖은 막음
+    match /{all=**} {
+      allow read, write: if false;
+    }
+  }
+}

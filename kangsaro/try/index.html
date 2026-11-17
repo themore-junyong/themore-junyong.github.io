@@ -553,7 +553,7 @@ function entries(iid){const t=todayIso(),me=inst(iid),out=[];
     const pend=a.status==='확정'&&!!j.op&&(P?!P.days.length:!appDays(j,a).length);
     const ds=pend?j.dates:P?P.dates:a.status==='확정'?appDays(j,a):j.dates,st=a.status==='지원'?'applied':a.paidAt||a.selfPaid?'paid':isOver(ds,j.time)?'done':'confirmed';
     if(pend)for(const d of ds)out.push({kind:'app',ref:a,job:j,d,st,pend:true,title:`${j.region} ${j.school} ${j.title} · 시간표 배정 확인 중`,org:co(j.coId).name,time:j.time,fee:0,trv:travel(a,me)});
-    else if(P)P.days.forEach((x,i)=>out.push({kind:'app',ref:a,job:j,d:x.d,st,title:`${j.region} ${j.school} ${j.title}${x.lab?' · '+x.lab:''}`,org:co(j.coId).name,time:x.time||j.time,slots:x.slots,fee:x.fee+(i?0:P.taxable-P.base),plus:i?0:P.plus,trv:travel(a,me)}));
+    else if(P)P.days.forEach((x,i)=>out.push({kind:'app',ref:a,job:j,d:x.d,st,title:`${j.region} ${j.school} ${j.title}`,lab:x.lab,org:co(j.coId).name,time:x.time||j.time,slots:x.slots,fee:x.fee+(i?0:P.taxable-P.base),plus:i?0:P.plus,trv:travel(a,me)}));
     else for(const d of ds)out.push({kind:'app',ref:a,job:j,d,st,title:`${j.region} ${j.school} ${j.title}`,org:co(j.coId).name,time:j.time,fee:+j.fee||0,trv:travel(a,me)})}
   return out.sort((x,y)=>x.d<y.d?-1:x.d>y.d?1:0)}
 const netOf=e=>tax(e.fee).net+(e.plus||0)-e.trv;
@@ -734,7 +734,7 @@ function entryCard(e,clash){const tx=tax(e.fee),t=todayIso(),left=Math.round((dt
     :`<p class="mu sm">강사로 안에서 지원한 강의예요. 회사가 확정·지급하면 자동으로 바뀌어요.</p>${e.st==='applied'?`<button class="btn sm" data-act="cancelApp" data-a="${e.ref.id}">지원 취소</button>`:e.st==='confirmed'?`<button class="btn sm" data-act="cancelApp" data-a="${e.ref.id}">확정 강의 취소 (업체에 사유 전달)</button>`:''}`;
   return `<div class="card" data-d="${e.d}" ${e.kind==='app'?`data-j="${j.id}"`:''}><div class="row">${chip(e.st)}${e.d>=t?`<span class="chip ${left<=1?'warn':'off'}">${left<=0?'오늘':'D-'+left}</span>`:''}${un?`<span class="chip warn">새 공지 ${un}</span>`:''}${miss.length?`<span class="chip warn">서류 ${miss.length}${(()=>{const d=miss.map(n=>dueOf(j,n)).filter(Boolean).sort()[0];return d?` · ${md(d)}까지`:''})()}</span>`:''}${e.kind==='app'&&chatNew(j.id)&&chatCan(j)?'<span class="chip warn">새 대화</span>':''}</div><h3>${esc(e.title)}</h3>
   <span class="mu">${md(e.d)}(${dowOf(e.d)}) · ${part?`<b class="chip ${part==='종일'?'confirmed':'off'}" style="font-size:12px">${part}</b> `:''}${esc(e.time||'시간 미정')} · ${esc(e.org)}</span>
-  ${e.slots&&e.slots.length>1?`<div class="sm" style="display:flex;flex-direction:column;gap:2px;border-left:3px solid var(--ac);padding-left:8px">${e.slots.map(s=>`<span><b>${esc(s.time||'시간 미정')}</b> ${dayPart(s.time)?`<span class="mu">(${dayPart(s.time)})</span> `:''}${esc(s.lab)}</span>`).join('')}</div>`:''}
+  ${e.slots&&(e.slots.length>1||e.slots.some(s=>s.lab))?`<div class="sm" style="display:flex;flex-direction:column;gap:2px;border-left:3px solid var(--ac);padding-left:8px">${e.slots.map(s=>`<span><b>${esc(s.time||'시간 미정')}</b> ${dayPart(s.time)?`<span class="mu">(${dayPart(s.time)})</span> `:''}${esc(s.lab)}</span>`).join('')}</div>`:''}
   ${clash?'<div class="alert">같은 날 일정이 두 개예요. 시간과 거리를 확인하세요.</div>':''}
   ${e.pend?'<div class="alert">업체 운영 시간표에 아직 내 칸이 없어요. 업체가 시간표에 넣으면 정확한 날짜·시간·강사료로 바뀌어요. 그때까지 강의 날짜 전체에 표시해 둘게요.</div>':''}${e.kind==='app'?(first?noticeBox(j,iid):(()=>{const nb=noticeBox(j,iid);return nb?`<details><summary class="sm">회사 공지 보기 <span class="mu">(${md(mine[0])} 카드에 펼쳐져 있어요)</span></summary>${nb}</details>`:''})())+chatBtn(j)+dayBox(e):''}
   ${a&&j.desc?`<details><summary>공고 내용 보기</summary><pre class="pf">${esc(j.desc)}</pre></details>`:''}
@@ -922,7 +922,7 @@ const FORMS=['강사카드','교재카드','개인정보 동의서','범죄경�
 const jfId=(jid,n)=>`${jid}__${String(n).replace(/\//g,'_')}`;
 function formOf(j,n){const f=(j.forms||{})[n];if(f)return {nm:f,p:`users/${j.coId}/forms/${jfId(j.id,n)}`,own:1};const c=(co(j.coId).forms||{})[n];return c?{nm:c,p:`users/${j.coId}/forms/${n}`}:null}
 function jFormBox(j){const L=j.needs.filter(n=>n!=='프로필'&&n!==RRN);if(!L.length)return '';const c=co(j.coId).forms||{};
-  return `<div class="card"><h3>이 일정 양식</h3><span class="mu sm">원청(발주처)이 준 양식을 이 일정에만 올려요. 하루짜리든 여러 날짜리든 이 일정 전체에 적용되고, 다른 일정에는 영향이 없어요. 안 올린 서류는 '서류 양식'의 우리 업체 기본 양식이 나가요. 한글·워드·엑셀·PDF, 650KB 이하.</span>
+  return `<div class="card"><h3>이 일정 양식</h3><span class="mu sm">원청(발주처)이 준 양식을 이 일정에만 올려요. 하루짜리든 여러 날짜리든 이 일정 전체에 적용되고, 다른 일정에는 영향이 없어요. 안 올린 서류는 '서류 양식'의 우리 업체 기본 양식이 나가요. 한글·워드·엑셀·PDF, 20MB 이하.</span>
   ${L.map(n=>{const f=(j.forms||{})[n];return `<div class="row" style="border-top:1px solid var(--ln);padding-top:6px"><span class="sm sp"><b>${esc(n)}</b> ${f?`<span class="chip">이 일정 양식</span> <span class="mu">${esc(f)}</span>`:c[n]?`<span class="mu">업체 기본 양식 (${esc(c[n])})</span>`:'<span class="mu">양식 없음</span>'}</span><label class="btn sm">${f?'바꾸기':'올리기'}<input type="file" data-act="jFormUp" data-n="${esc(n)}" hidden></label>${f?`<button class="btn sm" data-act="jFormDel" data-n="${esc(n)}">지우기</button>`:''}</div>`}).join('')}</div>`}
 // 양식을 올린 뒤: 공고에 기록하고, 아직 그 서류를 안 낸 확정 강사에게 공지
 function jFormDone(j,n,name){const re=!!(j.forms||{})[n];j.forms={...(j.forms||{}),[n]:name};
@@ -1051,7 +1051,7 @@ function vCJobs(){if(ui.jobId&&job(ui.jobId))return vCJob(job(ui.jobId));const t
   <h3>다가오는 강의</h3>${up.map(card).join('')||'<p class="mu">아래 + 로 강의를 등록하세요.</p>'}
   <details><summary>지난 강의 ${past.length}건</summary>${past.map(card).join('')}</details>
   ${(()=>{const c=co(meId());return `<div class="card"><h3>프로필 PDF에 넣을 업체 로고</h3><span class="mu sm">올려 두면 지원자 프로필 PDF 맨 위에 우리 로고와 업체명(${esc(c.name)})이 자동으로 들어가요. 학교에 그대로 보내도 돼요.</span><div class="row">${c.logo?`<img src="${c.logo}" alt="업체 로고" style="height:40px;max-width:160px;object-fit:contain">`:''}<label class="btn sm">${c.logo?'로고 바꾸기':'로고 올리기'}<input type="file" accept="image/*" data-act="logo" hidden></label>${c.logo?'<button class="btn sm" data-act="logoDel">지우기</button>':''}</div></div>
-  <div class="card"><h3>서류 양식</h3><span class="mu sm">우리 업체 양식(한글·워드·엑셀·PDF, 650KB 이하)을 올려 두면, 그 서류를 받는 강의에 확정된 강사가 '양식 받기'로 내려받아 채워서 올려요. 원청마다 양식이 다르면 강의 상세의 '이 일정 양식'에서 그 일정에만 따로 올리세요.</span>
+  <div class="card"><h3>서류 양식</h3><span class="mu sm">우리 업체 양식(한글·워드·엑셀·PDF, 20MB 이하)을 올려 두면, 그 서류를 받는 강의에 확정된 강사가 '양식 받기'로 내려받아 채워서 올려요. 원청마다 양식이 다르면 강의 상세의 '이 일정 양식'에서 그 일정에만 따로 올리세요.</span>
   ${FORMS.map(n=>{const f=(c.forms||{})[n];return `<div class="row" style="border-top:1px solid var(--ln);padding-top:6px"><span class="sm sp"><b>${esc(n)}</b> ${f?`<span class="mu">${esc(f)}</span>`:'<span class="mu">양식 없음</span>'}</span><label class="btn sm">${f?'바꾸기':'올리기'}<input type="file" data-act="formUp" data-n="${esc(n)}" hidden></label>${f?`<button class="btn sm" data-act="formDel" data-n="${esc(n)}">지우기</button>`:''}</div>`}).join('')}</div>`})()}`}
 // 서류 제출 기한 정하기: 모든 서류 한 번에 + 서류마다 따로
 function dueBox(j){const N=j.needs.filter(n=>n!=='프로필'),d=j.due||{},own=N.filter(n=>d[n]);if(!N.length)return '';
