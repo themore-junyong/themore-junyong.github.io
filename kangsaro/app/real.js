@@ -144,7 +144,7 @@ function payloads() {
   const out = new Map(), u = uidMe;
   if (!u || !S.me) return out;
   const mine = role === 'i' ? S.insts.find(x => x.id === u) : S.cos.find(x => x.id === u);
-  // 직원은 업체 정보(이름·양식)를 못 고침 → users 문서는 대표만 씀
+  // 직원은 업체 정보(이름 등)를 못 고침 → users 문서는 대표만 씀 (서류 양식 목록은 REAL.formUp/formDel이 직접 씀)
   if (mine && me && !isStaffView()) {
     const base = omit(me, ['id', ...PRIV.i]);
     out.set(`users/${u}`, role === me.role ? { ...omit(base, PUB[role]), ...pick(mine, PUB[role]), role } : { ...base, side: { ...pick(mine, SIDE[role]), role } });
@@ -758,7 +758,7 @@ async function staffSheet() {
   const row = x => `<div class="card"><div class="row"><b class="sp">${esc(x.name)}${x.uid === uidMe ? ' (나)' : ''}</b>${x.pay ? '<span class="chip paid">정산 가능</span>' : '<span class="chip off">정산 안 보임</span>'}</div><span class="mu sm">${esc(x.email || '')} · ${esc(x.at.slice(0, 10))} 합류</span>
     ${owner ? `<div class="row"><button class="btn sm" data-real="staffPay" data-id="${x.id}">${x.pay ? '정산 권한 끄기' : '정산 권한 켜기'}</button><button class="btn sm" data-real="staffOut" data-id="${x.id}" data-n="${esc(x.name)}" style="color:var(--r2)">내보내기</button></div>` : ''}</div>`;
   openSheet(`<div class="row"><h2 class="sp">직원 ${st.length ? st.length + '명' : ''}</h2><button class="btn sm" data-act="closeSheet">닫기</button></div>
-    ${owner ? `<p class="mu sm">직원은 자기 구글·메일로 로그인해서 같은 업체의 공고·강사·공지·서류 체크표를 같이 봐요. 공지에는 작성한 사람 이름이 남아요. 업체 정보·양식·직원 관리는 대표만 해요. 지급(정산)은 '정산 권한'을 켠 직원만 봐요.</p>
+    ${owner ? `<p class="mu sm">직원은 자기 구글·메일로 로그인해서 같은 업체의 공고·강사·공지·서류 체크표를 같이 봐요. 공지에는 작성한 사람 이름이 남아요. 업체 정보·직원 관리는 대표만 해요. 서류 양식은 직원도 올리고 지울 수 있어요. 지급(정산)은 '정산 권한'을 켠 직원만 봐요.</p>
     <div class="card"><b>직원 초대 링크</b>${inv ? `<input readonly value="${esc(link)}" onclick="this.select()"><div class="row"><button class="btn sm pri" data-real="invCopy" data-t="${esc(link)}">링크 복사</button><button class="btn sm" data-real="invNew">새 링크로 바꾸기</button><button class="btn sm" data-real="invOff">링크 끄기</button></div><span class="mu sm">링크를 받은 사람은 누구나 직원으로 합류할 수 있어요. 다 초대했으면 '링크 끄기'를 눌러 두세요.</span>` : `<span class="mu sm">링크를 만들어 카톡으로 보내면 직원이 눌러서 합류해요.</span><button class="btn pri" data-real="invNew">초대 링크 만들기</button>`}</div>`
     : `<p class="mu sm">함께 일하는 사람이에요. 업체 정보·직원 관리는 대표만 해요.</p>`}
     ${st.map(row).join('') || '<p class="mu">아직 직원이 없어요.</p>'}
@@ -888,26 +888,27 @@ REAL.report = async id => {
 REAL.formUp = async (n, f) => {
   const data = await fileData(f);
   if (!data) return toast('650KB 이하 파일만 올릴 수 있어요');
-  if (isStaffView()) return toast('서류 양식은 대표만 올릴 수 있어요');
-  try { await setDoc(doc(db, 'users', uidMe, 'forms', n), { name: f.name, data, at: new Date().toISOString() }); } catch (e) { return toast('올리지 못했어요: ' + e.code); }
-  const c = S.cos.find(x => x.id === uidMe); c.forms = { ...(c.forms || {}), [n]: f.name }; save(); render(); toast(`${n} 양식을 올렸어요`);
+  // 대표·직원 모두 (11/17 준용 결정). 파일은 업체(CO) 양식 자리, 직원은 업체 문서의 forms 목록만 직접 고침(규칙: 직원은 forms 칸만)
+  try { await setDoc(doc(db, 'users', CO, 'forms', n), { name: f.name, data, at: new Date().toISOString() }); } catch (e) { return toast(e.code === 'permission-denied' ? '권한이 없어요. 운영자에게 보안 규칙 게시를 확인해 달라고 해 주세요' : '올리지 못했어요: ' + e.code); }
+  const c = S.cos.find(x => x.id === CO); c.forms = { ...(c.forms || {}), [n]: f.name };
+  if (isStaffView()) await updateDoc(doc(db, 'users', CO), { forms: c.forms }).catch(e => console.warn('forms', e.code));
+  save(); render(); toast(`${n} 양식을 올렸어요`);
 };
 REAL.formDel = async n => {
-  if (isStaffView()) return toast('서류 양식은 대표만 지울 수 있어요');
-  try { await deleteDoc(doc(db, 'users', uidMe, 'forms', n)); } catch (e) { return toast('지우지 못했어요: ' + e.code); }
-  const c = S.cos.find(x => x.id === uidMe); const f = { ...(c.forms || {}) }; delete f[n]; c.forms = f; save(); render(); toast('양식을 지웠어요');
+  try { await deleteDoc(doc(db, 'users', CO, 'forms', n)); } catch (e) { return toast('지우지 못했어요: ' + e.code); }
+  const c = S.cos.find(x => x.id === CO); const f = { ...(c.forms || {}) }; delete f[n]; c.forms = f;
+  if (isStaffView()) await updateDoc(doc(db, 'users', CO), { forms: f }).catch(e => console.warn('forms', e.code));
+  save(); render(); toast('양식을 지웠어요');
 };
 // 일정(공고)마다 원청 양식: 업체 양식 자리(users/{업체}/forms)에 '{공고id}__{서류}' 이름으로 저장 → 규칙 변경 없음
 REAL.jFormUp = async (j, n, f, done) => {
-  if (isStaffView()) return toast('서류 양식은 대표만 올릴 수 있어요');
   const data = await fileData(f);
   if (!data) return toast('650KB 이하 파일만 올릴 수 있어요');
-  try { await setDoc(doc(db, 'users', uidMe, 'forms', jfId(j.id, n)), { name: f.name, data, job: j.id, at: new Date().toISOString() }); } catch (e) { return toast('올리지 못했어요: ' + e.code); }
+  try { await setDoc(doc(db, 'users', j.coId, 'forms', jfId(j.id, n)), { name: f.name, data, job: j.id, at: new Date().toISOString() }); } catch (e) { return toast('올리지 못했어요: ' + e.code); }
   done();
 };
 REAL.jFormDel = async (j, n, done) => {
-  if (isStaffView()) return toast('서류 양식은 대표만 지울 수 있어요');
-  try { await deleteDoc(doc(db, 'users', uidMe, 'forms', jfId(j.id, n))); } catch (e) { return toast('지우지 못했어요: ' + e.code); }
+  try { await deleteDoc(doc(db, 'users', j.coId, 'forms', jfId(j.id, n))); } catch (e) { return toast('지우지 못했어요: ' + e.code); }
   done();
 };
 // 저장해 둔 파일 내려받기 (양식, 강사가 낸 서류)
