@@ -440,7 +440,7 @@ async function start(user, want) {
 const isKakaoUA = /KAKAOTALK/i.test(navigator.userAgent);
 REAL.gate = () => {
   if (!auth.currentUser) return `<div class="card"><h2>강사로 시작하기</h2>
-    <p class="mu"><b>지금 가입하면 3개월 무료</b>예요. 3개월만 써 보세요. 강의 관리에 쓰던 시간이 확실히 줄어듭니다. 카드 등록은 필요 없어요. 강의 업체는 사업자등록번호를 넣으면 바로 공고를 올릴 수 있어요.</p>
+    <p class="mu"><b>지금은 정식 오픈 전이라 모든 기능이 무료</b>예요. 정식 오픈 때 유료로 바뀌고, 바뀌기 전에 앱 안에서 먼저 알려 드려요. 카드 등록은 필요 없어요. 강의 업체는 사업자등록번호를 넣으면 바로 공고를 올릴 수 있어요.</p>
     ${isKakaoUA ? '<div class="alert">카카오톡 안에서는 구글 로그인이 막혀요. 아래 이메일로 로그인하거나, 위의 "다른 브라우저로 열기"를 눌러 주세요.</div>' : `<button class="btn pri" data-real="google">구글 계정으로 시작</button>`}
     <label class="f">이메일로 시작 (비밀번호 없이, 메일로 온 링크를 누르면 로그인돼요)<input id="rMail" type="email" autocomplete="email" placeholder="you@example.com"></label>
     <button class="btn ${isKakaoUA ? 'pri' : ''}" data-real="mail">로그인 링크 받기</button>
@@ -456,7 +456,7 @@ REAL.gate = () => {
   return `<div class="card"><h2>어느 쪽으로 가입할까요?</h2>
     <span class="mu sm">${esc(auth.currentUser.email || '')}로 로그인했어요.</span>
     ${lsGet('kangsaro.claim') ? `<div class="alert"><b>강사로 운영자가 초대한 업체예요.</b> '강의 업체예요'를 고르고 사업자등록번호를 넣어 가입하면, 톡방에 올리셨던 강의가 이 업체 계정으로 바로 넘어와요.</div>` : ''}
-    ${lsGet('kangsaro.ref') ? '<div class="alert">소개로 오셨어요. 가입하면 소개한 분과 함께 무료 기간이 늘어요 (업체 1개월, 강사 1주일).</div>' : ''}
+    ${lsGet('kangsaro.ref') ? '<div class="alert">소개로 오셨어요. 가입하면 소개해 주신 분 기록에 남아요.</div>' : ''}
     <div class="row"><label class="sm"><input type="radio" name="rRole" value="i" ${lsGet('kangsaro.claim') ? '' : 'checked'}> 강사예요</label><label class="sm"><input type="radio" name="rRole" value="c" ${lsGet('kangsaro.claim') ? 'checked' : ''}> 강의 업체예요</label></div>
     <label class="f">이름 (업체는 업체명)<input id="rName" autocomplete="name"></label>
     <label class="f">연락처<input id="rPhone" type="tel" autocomplete="tel" placeholder="010-0000-0000"></label>
@@ -568,6 +568,7 @@ document.addEventListener('click', async e => {
   if (k === 'jDown') { if (!confirm('이 공고를 내릴까요? 마감 처리돼서 강사에게 안 보여요.')) return; await updateDoc(doc(db, 'jobs', b.dataset.j), { status: '마감' }); toast('내렸어요'); return adminSheet(); }
   if (k === 'reload') return location.reload();
   if (k === 'lockInfo') return lockSheet();
+  if (k === 'openInfo') return openInfoSheet();
   if (k === 'ref') return refSheet();
   if (k === 'refCopy') { const t = refText(); try { await navigator.clipboard.writeText(t); toast('복사했어요. 카톡에 붙여 넣으세요'); } catch (err) { prompt('길게 눌러 복사해 주세요', t); } return; }
   if (k === 'refShare') { try { await navigator.share({ title: '강사로', text: refText() }); } catch (err) { } return; }
@@ -625,11 +626,14 @@ function sideSheet(r) {
     <label class="f">사는 곳 (순수익·거리 계산용)<select id="sRegion">${Object.keys(GEO).map(k => `<option>${k}</option>`).join('')}</select></label>
     <button class="btn pri" data-real="sideJoin" data-r="i">강사 화면 만들기</button>`);
 }
-/* ===== 소개하기: 업체가 가입하면 양쪽 1개월, 강사가 가입하면 양쪽 1주일 무료 (최대 6개월) ===== */
+/* ===== 정식 오픈 전 (11/17 준용 결정): '3개월 무료' 대신 모두 무료, 기간 잠금 없음. 정식 오픈 때 유료 전환을 앱 안에서 먼저 공지
+   PRE_OPEN을 false로 바꾸면 예전 계산(가입일 + 3개월 + 소개 보너스)으로 돌아감. 서버(index.js)도 같은 값 ===== */
+const PRE_OPEN = true, PRE_END = '2099-12-31';
+/* ===== 소개하기: 업체가 가입하면 양쪽 1개월, 강사가 가입하면 양쪽 1주일 무료 (최대 6개월). 정식 오픈 전에는 기록만 남김 ===== */
 const REF_MAX = 180, refDays = r => r === 'c' ? 30 : 7;
 const dayTxt = d => [Math.floor(d / 30) && Math.floor(d / 30) + '개월', d % 30 && d % 30 + '일'].filter(Boolean).join(' ') || '0일';
 const refLink = () => location.origin + location.pathname + '?ref=' + uidMe;
-const refText = () => `강사 일정·강사료 관리, 강의 업체 강사 관리를 한 앱에서 하는 '강사로'예요. 이 링크로 가입하면 무료 기간을 더 드려요 (업체 1개월, 강사 1주일).\n${refLink()}`;
+const refText = () => `강사 일정·강사료 관리, 강의 업체 강사 관리를 한 앱에서 하는 '강사로'예요. 지금은 정식 오픈 전이라 모든 기능이 무료예요.\n${refLink()}`;
 // 인정 조건: 강사는 프로필(분야·소개) 완성, 업체는 승인 후 공고 1건
 async function refDone(u) {
   if (u.role === 'i') return !!((u.topics || '').trim() && (u.intro || '').trim());
@@ -639,6 +643,7 @@ async function refDone(u) {
 }
 // 이용 기간: 가입일 + 3개월 + 소개로 쌓인 기간 (직원은 업체 기준). 서버 계산(terms)이 없을 때만 씀
 async function termLocal() {
+  if (PRE_OPEN) return PRE_END;
   const id = role === 'c' ? CO : uidMe, u = id === uidMe ? me : await loadUser(id, false).catch(() => null);
   const js = u ? [u.joined, u.side && u.side.joined].filter(Boolean).sort() : [];
   if (!js.length) return '';
@@ -660,7 +665,7 @@ async function loadTerm() {
   return TD && TD.end ? TD.end : await termLocal();
 }
 // 운영자 계정은 기간 없이 계속 씀. 기간이 지나면 보기만 (LOCK)
-let LOCK = false, TERM = '';
+let LOCK = false, TERM = '', PRE_SEEN = false;
 // 업체 요금제 (한 달에 올리는 강의 수 기준). 요금제가 없으면(무료 기간) 한도 없이 모든 기능
 const PLANS = [['베이직', '10건 미만', '1만 원'], ['스탠다드', '30건 미만', '3만 원'], ['프로', '30건 이상', '5만 원']];
 const PLANS_I = [['베이직', '달력·지원', '4,900원'], ['프로', '+ 결산', '9,900원']];
@@ -670,15 +675,24 @@ const quotaLeft = () => role !== 'c' || !TD || !LIMIT[TD.planC] ? Infinity : LIM
 async function showTerm() {
   const el = $('#term'); if (!el) return;
   TERM = !S.me || isAdm() ? '' : await loadTerm().catch(() => '');
-  LOCK = !!TERM && todayIso() > TERM;
+  const pre = PRE_OPEN && !!S.me && !isAdm();
+  LOCK = !pre && !!TERM && todayIso() > TERM;
   const pl = planOf();
-  const t = !S.me ? '' : isAdm() ? '운영자 · 기간 없음' : !TERM ? '' : LOCK ? '이용 기간 끝남 · 보기만 가능' : `이용 기간 ~${TERM.replace(/-/g, '.')}${pl ? ` · ${pl}` : ''}`;
-  el.textContent = t; el.hidden = !t; el.style.cssText = LOCK ? 'background:var(--r2);color:#fff;cursor:pointer' : '';
-  if (LOCK) el.dataset.real = 'lockInfo'; else delete el.dataset.real;
+  const t = !S.me ? '' : isAdm() ? '운영자 · 기간 없음' : pre ? '정식 오픈 전 · 무료' : !TERM ? '' : LOCK ? '이용 기간 끝남 · 보기만 가능' : `이용 기간 ~${TERM.replace(/-/g, '.')}${pl ? ` · ${pl}` : ''}`;
+  el.textContent = t; el.hidden = !t; el.style.cssText = LOCK ? 'background:var(--r2);color:#fff;cursor:pointer' : pre ? 'cursor:pointer' : '';
+  if (LOCK) el.dataset.real = 'lockInfo'; else if (pre) el.dataset.real = 'openInfo'; else delete el.dataset.real;
+  // 정식 오픈 전 안내: 계정마다 한 번 자동으로 띄움 (위 '정식 오픈 전 · 무료'를 누르면 다시 봄)
+  if (pre && !PRE_SEEN) { PRE_SEEN = true; const k = 'kangsaro.preopen1.' + uidMe; if (!lsGet(k)) { try { localStorage.setItem(k, '1'); } catch (e) { } openInfoSheet(); } }
+}
+function openInfoSheet() {
+  openSheet(`<div class="row"><h2 class="sp">지금은 정식 오픈 전이에요</h2><button class="btn sm" data-act="closeSheet">닫기</button></div>
+    <p>강사로는 지금 <b>정식 오픈 전이라 모든 기능을 무료로</b> 써요. 기간 제한도, 카드 등록도 없어요.</p>
+    <p>정식 오픈 때 유료로 바뀌어요. <b>바뀌기 전에 이 앱 안에서 날짜와 요금을 먼저 알려 드리고</b>, 그동안 넣은 일정·서류·결산 기록은 그대로 남아요.</p>
+    <div class="card"><b>${role === 'c' ? '정식 오픈 뒤 업체 요금 (예정, 한 달에 올리는 강의 수 기준)' : '정식 오픈 뒤 강사 요금 (예정)'}</b>${(role === 'c' ? PLANS : PLANS_I).map(x => `<div class="row"><b class="sp">${x[0]}</b><span class="sm">${x[1]}</span><b>월 ${x[2]}</b></div>`).join('')}<span class="mu sm">예정 요금이라 정식 오픈 때 바뀔 수 있어요.</span></div>`);
 }
 // 기간이 끝나면 화면 이동·보기만 되고, 지원·등록·수정·내려받기·복사 등은 막음
 const OPEN_ACT = new Set(['slNav', 'report', 'alMore', 'alertGo', 'alertOk', 'back', 'closeSheet', 'closeSheetBg', 'cmon', 'csel', 'jmore', 'jf', 'mgo', 'mmon', 'mon', 'mview', 'openJob', 'sel', 'unpaid', 'year', 'install']);
-const OPEN_REAL = new Set(['push', 'out', 'ref', 'refCopy', 'refShare', 'reload', 'swap', 'lockInfo', 'staffLeave']);
+const OPEN_REAL = new Set(['push', 'out', 'ref', 'refCopy', 'refShare', 'reload', 'swap', 'lockInfo', 'openInfo', 'staffLeave']);
 function lockSheet() {
   openSheet(`<div class="row"><h2 class="sp">이용 기간이 끝났어요</h2><button class="btn sm" data-act="closeSheet">닫기</button></div>
     <p>${TERM.replace(/-/g, '.')}까지였던 이용 기간이 끝나서 지금은 <b>지금까지 한 것을 보기만</b> 할 수 있어요. 지원, 등록, 수정, 내려받기는 잠겨 있어요.</p>
@@ -726,11 +740,11 @@ async function refSheet() {
   const got = Math.min(REF_MAX, mine + rows.filter(r => r.done).reduce((t, r) => t + refDays(r.role), 0));
   const can = !!navigator.share;
   openSheet(`<div class="row"><h2 class="sp">소개하기</h2><button class="btn sm" data-act="closeSheet">닫기</button></div>
-    <p>내 링크로 가입하면 소개한 분과 가입한 분 모두 무료 기간이 늘어요. <b>업체가 가입하면 1개월, 강사가 가입하면 1주일</b>씩이에요.</p>
-    <span class="mu sm">강사는 프로필(분야·소개)을 채우면, 업체는 공고를 1건 올리면 인정돼요. 최대 ${dayTxt(REF_MAX)}까지 쌓여요.</span>
+    ${PRE_OPEN ? '<p>내 링크로 가입한 분은 아래에 기록돼요. 지금은 정식 오픈 전이라 모두 무료예요.</p><span class="mu sm">강사는 프로필(분야·소개)을 채우면, 업체는 공고를 1건 올리면 인정돼요.</span>' : `<p>내 링크로 가입하면 소개한 분과 가입한 분 모두 무료 기간이 늘어요. <b>업체가 가입하면 1개월, 강사가 가입하면 1주일</b>씩이에요.</p>
+    <span class="mu sm">강사는 프로필(분야·소개)을 채우면, 업체는 공고를 1건 올리면 인정돼요. 최대 ${dayTxt(REF_MAX)}까지 쌓여요.</span>`}
     <label class="f">내 소개 링크<input readonly value="${esc(refLink())}" onclick="this.select()"></label>
     <div class="row"><button class="btn pri" data-real="refCopy">소개 문구 복사</button>${can ? '<button class="btn" data-real="refShare">공유하기</button>' : ''}</div>
-    <div class="card"><b>쌓인 무료 기간: ${dayTxt(got)}</b><span class="mu sm">가입 후 3개월에 이 기간이 더해져요. 위에 보이는 '이용 기간'에 이미 들어 있어요.${mine ? ` (소개로 가입한 ${dayTxt(mine)} 포함)` : ''}</span></div>
+    ${PRE_OPEN ? '' : `<div class="card"><b>쌓인 무료 기간: ${dayTxt(got)}</b><span class="mu sm">가입 후 3개월에 이 기간이 더해져요. 위에 보이는 '이용 기간'에 이미 들어 있어요.${mine ? ` (소개로 가입한 ${dayTxt(mine)} 포함)` : ''}</span></div>`}
     <h3>내가 소개한 분 (${rows.length})</h3>
     ${rows.map(r => `<div class="row"><span class="sp">${esc(r.name || '')} <span class="mu sm">${r.role === 'c' ? '업체' : '강사'} · 가입 ${esc(r.joined || '')}</span></span><span class="sm">${r.done ? `✓ ${dayTxt(refDays(r.role))}` : (r.role === 'c' ? '공고 전' : '프로필 작성 전')}</span></div>`).join('') || '<p class="mu">아직 없어요. 링크를 톡방이나 지인에게 보내 보세요.</p>'}`);
 }
@@ -882,6 +896,19 @@ REAL.formDel = async n => {
   if (isStaffView()) return toast('서류 양식은 대표만 지울 수 있어요');
   try { await deleteDoc(doc(db, 'users', uidMe, 'forms', n)); } catch (e) { return toast('지우지 못했어요: ' + e.code); }
   const c = S.cos.find(x => x.id === uidMe); const f = { ...(c.forms || {}) }; delete f[n]; c.forms = f; save(); render(); toast('양식을 지웠어요');
+};
+// 일정(공고)마다 원청 양식: 업체 양식 자리(users/{업체}/forms)에 '{공고id}__{서류}' 이름으로 저장 → 규칙 변경 없음
+REAL.jFormUp = async (j, n, f, done) => {
+  if (isStaffView()) return toast('서류 양식은 대표만 올릴 수 있어요');
+  const data = await fileData(f);
+  if (!data) return toast('650KB 이하 파일만 올릴 수 있어요');
+  try { await setDoc(doc(db, 'users', uidMe, 'forms', jfId(j.id, n)), { name: f.name, data, job: j.id, at: new Date().toISOString() }); } catch (e) { return toast('올리지 못했어요: ' + e.code); }
+  done();
+};
+REAL.jFormDel = async (j, n, done) => {
+  if (isStaffView()) return toast('서류 양식은 대표만 지울 수 있어요');
+  try { await deleteDoc(doc(db, 'users', uidMe, 'forms', jfId(j.id, n))); } catch (e) { return toast('지우지 못했어요: ' + e.code); }
+  done();
 };
 // 저장해 둔 파일 내려받기 (양식, 강사가 낸 서류)
 REAL.getFile = async (path, name) => {

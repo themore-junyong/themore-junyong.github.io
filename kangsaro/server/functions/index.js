@@ -150,8 +150,11 @@ async function refDone(id, u) {
   return !(await db.collection('jobs').where('coId', '==', id).limit(1).get()).empty;
 }
 // 무료 기간 끝: 가입일 + 3개월 + 소개로 쌓인 날 (앱의 termEnd와 같은 계산)
+// 정식 오픈 전(11/17 준용 결정): 모두 무료, 기간 잠금 없음 → 끝 날짜를 아주 먼 날로. 정식 오픈 때 false (앱 real.js와 같은 값)
+const PRE_OPEN = true, PRE_END = '2099-12-31';
 async function freeEnd(id) {
   const s = await db.doc(`users/${id}`).get(); if (!s.exists) return '';
+  if (PRE_OPEN) return PRE_END;
   const u = s.data(), js = [u.joined, u.side && u.side.joined].filter(Boolean).sort();
   if (!js.length) return '';
   let got = u.refBy && await refDone(id, u) ? refDays(u.role) : 0;
