@@ -52,6 +52,8 @@ service cloud.firestore {
         && (!('refBy' in request.resource.data) || (request.resource.data.refBy is string && request.resource.data.refBy != me()
             && exists(/databases/$(db)/documents/users/$(request.resource.data.refBy))));
       allow update: if (me() == u && !changed().hasAny(['role', 'approved', 'refBy', 'biz', 'blocked', 'bizCheck']))
+        // 업체 직원: 서류 양식 목록(forms)만 고침 (11/17)
+        || (signed() && isStaff(u) && changed().hasOnly(['forms']))
         // 업체가 사업자등록번호를 넣으면 스스로 승인 (운영자가 멈춘 업체는 안 됨)
         || (me() == u && isCo(resource.data) && changed().hasOnly(['biz', 'approved'])
             && request.resource.data.approved == true && ntsOff() && bizMine(request.resource.data.biz) && resource.data.get('blocked', false) != true)
@@ -71,10 +73,10 @@ service cloud.firestore {
       match /push/{t} {
         allow read, write: if me() == u;
       }
-      // 업체 서류 양식 (빈 양식이라 가입한 사람은 다 받을 수 있음)
+      // 업체 서류 양식 (빈 양식이라 가입한 사람은 다 받을 수 있음). 대표와 그 업체 직원이 올리고 지움
       match /forms/{f} {
         allow read: if signed();
-        allow write: if me() == u;
+        allow write: if me() == u || (signed() && isStaff(u));
       }
     }
 
