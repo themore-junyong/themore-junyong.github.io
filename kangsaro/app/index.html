@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<meta name="build" content="261117-1009">
+<meta name="build" content="261117-1014">
 <title>강사로</title>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#2563EB">
@@ -922,7 +922,7 @@ const FORMS=['강사카드','교재카드','개인정보 동의서','범죄경�
 const jfId=(jid,n)=>`${jid}__${String(n).replace(/\//g,'_')}`;
 function formOf(j,n){const f=(j.forms||{})[n];if(f)return {nm:f,p:`users/${j.coId}/forms/${jfId(j.id,n)}`,own:1};const c=(co(j.coId).forms||{})[n];return c?{nm:c,p:`users/${j.coId}/forms/${n}`}:null}
 function jFormBox(j){const L=j.needs.filter(n=>n!=='프로필'&&n!==RRN);if(!L.length)return '';const c=co(j.coId).forms||{};
-  return `<div class="card"><h3>이 일정 양식</h3><span class="mu sm">원청(발주처)이 준 양식을 이 일정에만 올려요. 하루짜리든 여러 날짜리든 이 일정 전체에 적용되고, 다른 일정에는 영향이 없어요. 안 올린 서류는 '서류 양식'의 우리 업체 기본 양식이 나가요. 한글·워드·엑셀·PDF, 650KB 이하.</span>
+  return `<div class="card"><h3>이 일정 양식</h3><span class="mu sm">원청(발주처)이 준 양식을 이 일정에만 올려요. 하루짜리든 여러 날짜리든 이 일정 전체에 적용되고, 다른 일정에는 영향이 없어요. 안 올린 서류는 '서류 양식'의 우리 업체 기본 양식이 나가요. 한글·워드·엑셀·PDF, 20MB 이하.</span>
   ${L.map(n=>{const f=(j.forms||{})[n];return `<div class="row" style="border-top:1px solid var(--ln);padding-top:6px"><span class="sm sp"><b>${esc(n)}</b> ${f?`<span class="chip">이 일정 양식</span> <span class="mu">${esc(f)}</span>`:c[n]?`<span class="mu">업체 기본 양식 (${esc(c[n])})</span>`:'<span class="mu">양식 없음</span>'}</span><label class="btn sm">${f?'바꾸기':'올리기'}<input type="file" data-act="jFormUp" data-n="${esc(n)}" hidden></label>${f?`<button class="btn sm" data-act="jFormDel" data-n="${esc(n)}">지우기</button>`:''}</div>`}).join('')}</div>`}
 // 양식을 올린 뒤: 공고에 기록하고, 아직 그 서류를 안 낸 확정 강사에게 공지
 function jFormDone(j,n,name){const re=!!(j.forms||{})[n];j.forms={...(j.forms||{}),[n]:name};
@@ -1051,7 +1051,7 @@ function vCJobs(){if(ui.jobId&&job(ui.jobId))return vCJob(job(ui.jobId));const t
   <h3>다가오는 강의</h3>${up.map(card).join('')||'<p class="mu">아래 + 로 강의를 등록하세요.</p>'}
   <details><summary>지난 강의 ${past.length}건</summary>${past.map(card).join('')}</details>
   ${(()=>{const c=co(meId());return `<div class="card"><h3>프로필 PDF에 넣을 업체 로고</h3><span class="mu sm">올려 두면 지원자 프로필 PDF 맨 위에 우리 로고와 업체명(${esc(c.name)})이 자동으로 들어가요. 학교에 그대로 보내도 돼요.</span><div class="row">${c.logo?`<img src="${c.logo}" alt="업체 로고" style="height:40px;max-width:160px;object-fit:contain">`:''}<label class="btn sm">${c.logo?'로고 바꾸기':'로고 올리기'}<input type="file" accept="image/*" data-act="logo" hidden></label>${c.logo?'<button class="btn sm" data-act="logoDel">지우기</button>':''}</div></div>
-  <div class="card"><h3>서류 양식</h3><span class="mu sm">우리 업체 양식(한글·워드·엑셀·PDF, 650KB 이하)을 올려 두면, 그 서류를 받는 강의에 확정된 강사가 '양식 받기'로 내려받아 채워서 올려요. 원청마다 양식이 다르면 강의 상세의 '이 일정 양식'에서 그 일정에만 따로 올리세요.</span>
+  <div class="card"><h3>서류 양식</h3><span class="mu sm">우리 업체 양식(한글·워드·엑셀·PDF, 20MB 이하)을 올려 두면, 그 서류를 받는 강의에 확정된 강사가 '양식 받기'로 내려받아 채워서 올려요. 원청마다 양식이 다르면 강의 상세의 '이 일정 양식'에서 그 일정에만 따로 올리세요.</span>
   ${FORMS.map(n=>{const f=(c.forms||{})[n];return `<div class="row" style="border-top:1px solid var(--ln);padding-top:6px"><span class="sm sp"><b>${esc(n)}</b> ${f?`<span class="mu">${esc(f)}</span>`:'<span class="mu">양식 없음</span>'}</span><label class="btn sm">${f?'바꾸기':'올리기'}<input type="file" data-act="formUp" data-n="${esc(n)}" hidden></label>${f?`<button class="btn sm" data-act="formDel" data-n="${esc(n)}">지우기</button>`:''}</div>`}).join('')}</div>`})()}`}
 // 서류 제출 기한 정하기: 모든 서류 한 번에 + 서류마다 따로
 function dueBox(j){const N=j.needs.filter(n=>n!=='프로필'),d=j.due||{},own=N.filter(n=>d[n]);if(!N.length)return '';
@@ -1541,6 +1541,6 @@ function jTimeSync(){const R=jRanges(),t=$('#jTime'),pe=$('#jPer');if(!t)return;
 document.addEventListener('input',ev=>{if(ev.target.matches&&ev.target.matches('.trvV')){const c=$$('.trvC').find(x=>x.dataset.a===ev.target.dataset.a);if(c)c.checked=!!+ev.target.value}if(ev.target.matches&&ev.target.matches('.jTa,.jTb'))jTimeSync();if(ev.target.id==='jPer')ev.target.dataset.man=ev.target.value?'1':'';if(['pDates','pRaw'].includes(ev.target.id))pWarn();if(['pDates','pFee','pKm','pToll'].includes(ev.target.id))pNet()});
 render();
 </script>
-<script type="module" src="real.js?v=261117-1009"></script>
+<script type="module" src="real.js?v=261117-1014"></script>
 </body>
 </html>
