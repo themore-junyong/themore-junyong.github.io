@@ -320,7 +320,7 @@ function payOf(j,iid,a){const days=[];a=a||cfApp(j,iid);
     for(const [d,L] of [...M].sort((x,y)=>x[0]<y[0]?-1:1)){L.sort((x,y)=>String(x.time).localeCompare(String(y.time)));
       const fs=L.map(s=>slotFee(j,s,iid)),main=L.filter(s=>s.inst===iid);let fee=fs.reduce((t,f)=>t+(f||0),0);
       if(j.feeMode!=='per'&&main.length&&main.every(s=>s.fee===''||s.fee==null))fee+=+j.fee||0; // 하루 총액: 그날 한 번
-      days.push({d,fee,time:L.map(s=>s.time).filter(Boolean).join(', '),lab:L.map(s=>`${s.cls?s.cls+' ':''}${s.per||''}${s.inst!==iid?'(보조)':''}`.trim()).filter(Boolean).join(', ')})}}
+      days.push({d,fee,slots:L.map(s=>({time:s.time||'',lab:`${s.cls?s.cls+' ':''}${s.per||''}${s.inst!==iid?'(보조)':''}`.trim()})),time:L.map(s=>s.time).filter(Boolean).join(', '),lab:L.map(s=>`${s.cls?s.cls+' ':''}${s.per||''}${s.inst!==iid?'(보조)':''}`.trim()).filter(Boolean).join(', ')})}}
   const ext=(a&&a.ext)||[],base=days.reduce((t,x)=>t+x.fee,0),txE=ext.filter(x=>x.tx).reduce((t,x)=>t+(+x.amt||0),0),noE=ext.filter(x=>!x.tx).reduce((t,x)=>t+(+x.amt||0),0);
   const taxable=base+txE,tx=tax(taxable);return {days,dates:days.map(x=>x.d),base,ext,taxable,plus:noE,amt:taxable+noE,tx:{...tx,net:tx.net+noE}}}
 const feeLabel=j=>j.feeMode==='per'?`교시당 ${won(j.feePer)}`:j.fee?`1일 ${won(j.fee)}`:'공고 내용 참고';
@@ -328,6 +328,9 @@ const myDates=(j,iid)=>isOp(j)?payOf(j,iid).dates:appDays(j,cfApp(j,iid));
 const opEmpty=j=>isOp(j)?j.plan.slots.filter(s=>!s.inst&&!s.nm).length:0;
 
 // 하루 통 시간(예: 09:00~16:00)이 점심(12~13시)을 넘으면 오전·오후 두 칸으로 나눌 수 있음
+// 그날 강의가 종일인지 오전·오후인지 (여러 칸이면 가장 이른 시작~가장 늦은 끝). 12시 전에 시작해 13시 넘어 끝나면 종일
+function dayPart(t){const R=[...String(t||'').matchAll(/(\d{1,2}):(\d{2})\s*[~∼\-–]\s*(\d{1,2}):(\d{2})/g)].map(m=>[+m[1]*60+ +m[2],+m[3]*60+ +m[4]]);if(!R.length)return '';
+  const s=Math.min(...R.map(r=>r[0])),e=Math.max(...R.map(r=>r[1]));return s<720&&e>780?'종일':e<=780?'오전':'오후'}
 const hmOf=t=>{const m=String(t||'').match(/(\d{1,2}):(\d{2})\s*[~∼\-–]\s*(\d{1,2}):(\d{2})/);return m?[+m[1]*60+ +m[2],+m[3]*60+ +m[4]]:null};
 const hhmm=n=>`${pad(Math.floor(n/60))}:${pad(n%60)}`;
 const splitable=x=>{const r=hmOf(x.time);return !!r&&r[0]<12*60&&r[1]>13*60};
@@ -419,7 +422,7 @@ function opGrid(j,cf,names,byD){const P=j.plan.slots,B=ui.brush||'',PN=opPanels(
     ${B?`<span class="sm">지금: <b>${B==='__clear'?'지우개 (칸 비우기)':esc(B.startsWith('nm:')?B.slice(3):inst(B).name)}</b></span>`:''}${B&&!B.startsWith('nm:')&&B!=='__clear'&&names.length?`<span class="sm" style="color:var(--ac)">앱 밖 이름을 누르면 그 이름의 칸이 모두 <b>${esc(inst(B).name)}</b> 계정으로 바뀌어요 (같은 사람이 초대받고 들어왔을 때).</span>`:''}</div>
   ${PN.map((X,gi)=>{const short=t=>{const [a,b2]=X.rLab(t);return `<b>${esc(a)}</b>${b2?`<br><span class="mu">${esc(b2)}</span>`:''}`},RW=X.memo?140:100;
   return `${X.title?`<b style="margin-top:6px">${esc(X.title)}</b>`:''}<div style="overflow-x:auto"><table class="sm" style="border-collapse:collapse;table-layout:fixed;width:100%;min-width:${RW+X.cols.length*96}px"><colgroup><col style="width:${RW}px">${X.cols.map(()=>'<col>').join('')}</colgroup><thead><tr><th class="mu">${X.memo?'':'반'}</th>${X.cols.map(v=>`<th style="padding:2px"><button class="btn sm" data-act="paint" data-j="${j.id}" data-g="${gi}" data-cv="${esc(v)}" style="width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(X.cLab(v))}</button></th>`).join('')}</tr></thead><tbody>
-  ${X.rows.map(r=>`<tr><th style="padding:2px"><div style="display:flex;gap:2px"><button class="btn sm" data-act="paint" data-j="${j.id}" data-g="${gi}" data-rv="${esc(r)}" style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${short(r)}</button><button class="btn sm" data-act="rowName" data-j="${j.id}" data-g="${gi}" data-rv="${esc(r)}" style="flex:none;padding:2px 5px" aria-label="줄 이름 바꾸기" title="줄 이름 바꾸기">✎</button></div></th>${X.cols.map(v=>{const x=P.find(y=>X.in(y)&&X.cO(y)===v&&X.rO(y)===r);if(!x)return '<td style="background:var(--bg)"></td>';const w=who(x),hit=B&&val(x)===B;
+  ${X.rows.map((r,ri)=>`<tr${X.memo&&ri&&r.split('|')[0]!==X.rows[ri-1].split('|')[0]?' style="border-top:2px solid var(--fg)"':''}><th style="padding:2px"><div style="display:flex;gap:2px"><button class="btn sm" data-act="paint" data-j="${j.id}" data-g="${gi}" data-rv="${esc(r)}" style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${short(r)}</button><button class="btn sm" data-act="rowName" data-j="${j.id}" data-g="${gi}" data-rv="${esc(r)}" style="flex:none;padding:2px 5px" aria-label="줄 이름 바꾸기" title="줄 이름 바꾸기">✎</button></div></th>${X.cols.map(v=>{const x=P.find(y=>X.in(y)&&X.cO(y)===v&&X.rO(y)===r);if(!x)return '<td style="background:var(--bg)"></td>';const w=who(x),hit=B&&val(x)===B;
     return `<td style="padding:2px"><button class="btn sm" data-act="paint" data-j="${j.id}" data-s="${x.id}" style="width:100%;height:${CH}px;padding:2px 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;${w?'background:var(--sf)':'background:var(--warns,#FDECE3);color:var(--r2)'};${hit?'outline:2px solid var(--ac)':''}">${w?esc(w)+(x.sub||x.subNm?'<span class="mu">+보조</span>':''):'미정'}${X.memo&&x.memo?`<span class="mu" style="display:block;font-size:11px;overflow:hidden;text-overflow:ellipsis">${esc(x.memo)}</span>`:''}</button></td>`}).join('')}</tr>`).join('')}
   </tbody></table></div>`}).join('')}
   <div class="row" style="flex-wrap:wrap;gap:4px"><span class="sm">같은 시간에 강사 한 명 더:</span>${[...new Set(P.map(tKey))].sort(kSort).map(tk=>{const [t,pr]=tk.split('|');const lb=esc([t,pr].filter(Boolean).join(' ')||'시간 없음'),many=P.some(x=>tKey(x)===tk&&P.filter(y=>y.d===x.d&&tKey(y)===tk).length>1);return `<span class="row" style="gap:2px"><button class="btn sm" data-act="opMore" data-j="${j.id}" data-tk="${esc(tk)}">＋ 인원 (${lb})</button>${many?`<button class="btn sm" data-act="opLess" data-j="${j.id}" data-tk="${esc(tk)}" aria-label="${lb} 인원 한 명 빼기">－</button>`:''}</span>`}).join('')}</div>
@@ -455,7 +458,9 @@ function opCanvas(j){const P=j.plan.slots,PN=opPanels(P),day=PN[0].memo?'':P[0].
       if(a2){txt(a1,M+RW/2,y+RH/2-9,`bold 15px ${F}`,'#111',RW-10);txt(a2,M+RW/2,y+RH/2+11,`13px ${F}`,'#555',RW-10)}else txt(a1,M+RW/2,y+RH/2,`bold 15px ${F}`,'#111',RW-10);
       X.cols.forEach((d,i)=>{const x=M+RW+CW*i,s2=P.find(z=>X.in(z)&&X.cO(z)===d&&X.rO(z)===r);if(!s2)return box(x,y,CW,RH,'#EEF0F3');const w=who(s2),L=[[w||'미정',`bold 16px ${F}`,w?'#111':'#C0392B']];
         if(sub(s2))L.push(['보조 '+sub(s2),`13px ${F}`,'#444']);if(X.memo&&s2.memo){g.font=`12px ${F}`;let a='',m=s2.memo,k=0;while(k<m.length&&g.measureText(a+m[k]).width<=CW-12)a+=m[k++];L.push([a,`12px ${F}`,'#777']);if(k<m.length)L.push([m.slice(k),`12px ${F}`,'#777'])}box(x,y,CW,RH,w?'#fff':'#FDECE3');
-        const lh=L.length>3?17:20,y0=y+RH/2-(L.length-1)*lh/2;L.forEach(([t,f,col],k)=>txt(t,x+CW/2,y0+k*lh,f,col,CW-10))})});
+        const lh=L.length>3?17:20,y0=y+RH/2-(L.length-1)*lh/2;L.forEach(([t,f,col],k)=>txt(t,x+CW/2,y0+k*lh,f,col,CW-10))});
+      // 반이 바뀌는 줄 위에 굵은 구분선
+      if(X.memo&&ri&&r.split('|')[0]!==X.rows[ri-1].split('|')[0]){g.strokeStyle='#111';g.lineWidth=2.5;g.beginPath();g.moveTo(M,y+.5);g.lineTo(M+RW+CW*X.cols.length,y+.5);g.stroke();g.lineWidth=1}});
     Y+=HH+RH*X.rows.length+12}
   g.textAlign='right';txt('강사로 · themore-junyong.github.io/kangsaro',W-M,H-16,`12px ${F}`,'#999',W);return c}
 function opCanvasInst(j){const P=j.plan.slots,who=x=>x.inst?inst(x.inst).name:x.nm||'',sub=x=>x.sub?inst(x.sub).name:x.subNm||'';
@@ -548,7 +553,7 @@ function entries(iid){const t=todayIso(),me=inst(iid),out=[];
     const pend=a.status==='확정'&&!!j.op&&(P?!P.days.length:!appDays(j,a).length);
     const ds=pend?j.dates:P?P.dates:a.status==='확정'?appDays(j,a):j.dates,st=a.status==='지원'?'applied':a.paidAt||a.selfPaid?'paid':isOver(ds,j.time)?'done':'confirmed';
     if(pend)for(const d of ds)out.push({kind:'app',ref:a,job:j,d,st,pend:true,title:`${j.region} ${j.school} ${j.title} · 시간표 배정 확인 중`,org:co(j.coId).name,time:j.time,fee:0,trv:travel(a,me)});
-    else if(P)P.days.forEach((x,i)=>out.push({kind:'app',ref:a,job:j,d:x.d,st,title:`${j.region} ${j.school} ${j.title}${x.lab?' · '+x.lab:''}`,org:co(j.coId).name,time:x.time||j.time,fee:x.fee+(i?0:P.taxable-P.base),plus:i?0:P.plus,trv:travel(a,me)}));
+    else if(P)P.days.forEach((x,i)=>out.push({kind:'app',ref:a,job:j,d:x.d,st,title:`${j.region} ${j.school} ${j.title}${x.lab?' · '+x.lab:''}`,org:co(j.coId).name,time:x.time||j.time,slots:x.slots,fee:x.fee+(i?0:P.taxable-P.base),plus:i?0:P.plus,trv:travel(a,me)}));
     else for(const d of ds)out.push({kind:'app',ref:a,job:j,d,st,title:`${j.region} ${j.school} ${j.title}`,org:co(j.coId).name,time:j.time,fee:+j.fee||0,trv:travel(a,me)})}
   return out.sort((x,y)=>x.d<y.d?-1:x.d>y.d?1:0)}
 const netOf=e=>tax(e.fee).net+(e.plus||0)-e.trv;
@@ -723,14 +728,18 @@ function dayBoard(cid){const t=todayIso(),tm=addDays(t,1),now=nowIso(),rows=[];
    <span class="mu sm">시작 1시간 전까지 출발을 안 누르거나, 시작보다 늦게 도착할 예정이면 빨간색이에요.</span></div>`}
 function entryCard(e,clash){const tx=tax(e.fee),t=todayIso(),left=Math.round((dt(e.d)-dt(t))/864e5),iid=meId();
   const a=e.kind==='app'&&e.ref.status==='확정'&&e.d>=t?e.ref:null,j=e.job,un=e.kind==='app'?j.notices.filter(n=>(n.to||[]).includes(iid)&&!n.reads[iid]).length:0,miss=a?j.needs.filter(n=>n!=='프로필'&&n!==RRN&&!docOf(a,n)):[];
+  // 여러 날 강의: 서류는 일정 전체에 한 번만 내면 됨 → 남은 날 중 첫 카드에만 올리기 칸, 나머지 카드는 한 줄 안내. 공지도 첫 카드에만 펼침
+  const mine=a?(myDates(j,iid).length?myDates(j,iid):j.dates).filter(d=>d>=t):[],first=!a||!mine.length||e.d===mine[0],part=dayPart(e.time);
   const ctrl=e.kind==='ev'?`<div class="row">${[['applied','지원'],['confirmed','확정'],['done','미입금'],['paid','입금 완료'],['no','안 됨']].map(([k,l])=>`<button class="btn sm" data-act="evst" data-id="${e.ref.id}" data-st="${k}" ${e.ref.st===k||(k==='done'&&e.st==='done')?'style="border-color:var(--ac);color:var(--ac)"':''}>${l}</button>`).join('')}<button class="btn sm" data-act="evdel" data-id="${e.ref.id}">지우기</button></div>`
     :`<p class="mu sm">강사로 안에서 지원한 강의예요. 회사가 확정·지급하면 자동으로 바뀌어요.</p>${e.st==='applied'?`<button class="btn sm" data-act="cancelApp" data-a="${e.ref.id}">지원 취소</button>`:e.st==='confirmed'?`<button class="btn sm" data-act="cancelApp" data-a="${e.ref.id}">확정 강의 취소 (업체에 사유 전달)</button>`:''}`;
   return `<div class="card" data-d="${e.d}" ${e.kind==='app'?`data-j="${j.id}"`:''}><div class="row">${chip(e.st)}${e.d>=t?`<span class="chip ${left<=1?'warn':'off'}">${left<=0?'오늘':'D-'+left}</span>`:''}${un?`<span class="chip warn">새 공지 ${un}</span>`:''}${miss.length?`<span class="chip warn">서류 ${miss.length}${(()=>{const d=miss.map(n=>dueOf(j,n)).filter(Boolean).sort()[0];return d?` · ${md(d)}까지`:''})()}</span>`:''}${e.kind==='app'&&chatNew(j.id)&&chatCan(j)?'<span class="chip warn">새 대화</span>':''}</div><h3>${esc(e.title)}</h3>
-  <span class="mu">${md(e.d)}(${dowOf(e.d)}) · ${esc(e.time||'시간 미정')} · ${esc(e.org)}</span>
+  <span class="mu">${md(e.d)}(${dowOf(e.d)}) · ${part?`<b class="chip ${part==='종일'?'confirmed':'off'}" style="font-size:12px">${part}</b> `:''}${esc(e.time||'시간 미정')} · ${esc(e.org)}</span>
+  ${e.slots&&e.slots.length>1?`<div class="sm" style="display:flex;flex-direction:column;gap:2px;border-left:3px solid var(--ac);padding-left:8px">${e.slots.map(s=>`<span><b>${esc(s.time||'시간 미정')}</b> ${dayPart(s.time)?`<span class="mu">(${dayPart(s.time)})</span> `:''}${esc(s.lab)}</span>`).join('')}</div>`:''}
   ${clash?'<div class="alert">같은 날 일정이 두 개예요. 시간과 거리를 확인하세요.</div>':''}
-  ${e.pend?'<div class="alert">업체 운영 시간표에 아직 내 칸이 없어요. 업체가 시간표에 넣으면 정확한 날짜·시간·강사료로 바뀌어요. 그때까지 강의 날짜 전체에 표시해 둘게요.</div>':''}${e.kind==='app'?noticeBox(j,iid)+chatBtn(j)+dayBox(e):''}
+  ${e.pend?'<div class="alert">업체 운영 시간표에 아직 내 칸이 없어요. 업체가 시간표에 넣으면 정확한 날짜·시간·강사료로 바뀌어요. 그때까지 강의 날짜 전체에 표시해 둘게요.</div>':''}${e.kind==='app'?(first?noticeBox(j,iid):(()=>{const nb=noticeBox(j,iid);return nb?`<details><summary class="sm">회사 공지 보기 <span class="mu">(${md(mine[0])} 카드에 펼쳐져 있어요)</span></summary>${nb}</details>`:''})())+chatBtn(j)+dayBox(e):''}
   ${a&&j.desc?`<details><summary>공고 내용 보기</summary><pre class="pf">${esc(j.desc)}</pre></details>`:''}
-  ${a?`<div class="mu sm">낼 것: ${j.needs.map(n=>n==='프로필'?'프로필 ✓(자동)':docOf(a,n)?`${esc(n)} ✓${docOf(a,n).endsWith('(자동)')?'(자동)':''}`:`<b style="color:var(--r2)">${esc(n)} 빠짐</b>${dueTag(j,n)}`).join(' · ')}</div>
+  ${a&&!first?`<div class="mu sm">${miss.length?`<b style="color:var(--r2)">${miss.map(esc).join('·')} 빠짐</b> · `:'서류 다 냄 ✓ · '}서류는 이 일정 전체(${(myDates(j,iid).length||j.dates.length)}일)에 한 번만 내요.${miss.length?` <button class="btn sm" data-act="sel" data-d="${mine[0]}">${md(mine[0])} 카드에서 내기 ›</button>`:''}</div>`:''}
+  ${a&&first?`<div class="mu sm">${mine.length>1?`<b>서류는 한 번만 내면 이 일정 ${mine.length}일 모두에 들어가요.</b><br>`:''}낼 것: ${j.needs.map(n=>n==='프로필'?'프로필 ✓(자동)':docOf(a,n)?`${esc(n)} ✓${docOf(a,n).endsWith('(자동)')?'(자동)':''}`:`<b style="color:var(--r2)">${esc(n)} 빠짐</b>${dueTag(j,n)}`).join(' · ')}</div>
     ${miss.map(n=>{const fm=formOf(j,n);return `${fm?`<div class="row"><span class="sm sp">${esc(n)}: ${fm.own?'이 강의 전용 양식':'업체 양식'}이 있어요. 받아서 채운 뒤 올려 주세요.</span><button class="btn sm" data-act="getFile" data-p="${esc(fm.p)}" data-nm="${esc(fm.nm)}">양식 받기</button></div>`:''}<label class="f">${esc(n)} 올리기 <input type="file" data-act="doc" data-a="${a.id}" data-n="${esc(n)}"></label>`}).join('')}
     ${j.needs.includes(RRN)&&!a.docs[RRN]?`<div class="row"><span class="mu sm sp">원천징수(3.3%) 신고에 필요해서 이 업체만 요청했어요. 업체가 확인하면 바로 지워지고 강사로에는 남지 않아요.</span><button class="btn sm" data-act="rrnSend" data-a="${a.id}">주민등록번호 보내기</button></div>`:''}`:''}
   <span class="mu sm money">강사료 ${won(e.fee)} · 3.3% 뗀 뒤 ${won(tx.net)}${e.plus?` · 세금 없는 추가 ${won(e.plus)}`:''} · 왕복 교통비 ${won(e.trv)}</span>
