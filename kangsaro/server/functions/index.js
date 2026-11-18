@@ -201,7 +201,8 @@ async function docDueJob(jobId, j, t) {
   for (const a of apps) {
     const docs = a.docs || {}; let vault = null; const miss = [];
     for (const n of N) {
-      if (docs[n] || (n === DOC_RRN && a.rrn)) continue;
+      // 같은 서류를 여러 개 낼 수 있음: '강사카드', '강사카드 #2' … 중 하나라도 있으면 냄
+      if (docs[n] || Object.keys(docs).some(k => docs[k] && k.startsWith(n + ' #') && /^\d+$/.test(k.slice(n.length + 2))) || (n === DOC_RRN && a.rrn)) continue;
       if (DOC_VAULT.includes(n)) { if (!vault) vault = ((await db.doc(`users/${a.instId}/private/main`).get()).data() || {}).vault || {}; if (vault[n]) continue; }
       miss.push(n);
     }
