@@ -197,7 +197,35 @@ function patchOf(o, n) {
   for (const k of Object.keys(o)) if (!(k in n)) p[k] = deleteField();
   return p;
 }
+// 운영 시간표 3자 합치기: base = 이 기기가 마지막으로 서버와 맞춘 칸, mine = 지금 이 기기, srv = 지금 서버.
+// 이 기기에서 실제로 바꾼 칸만 서버 위에 얹고, 다른 기기(직원·다른 폰)가 그사이 바꾼 칸은 그대로 둠.
+// (예전: 시간표를 통째로 덮어써서, 옛 시간표를 들고 있던 기기가 저장하면 다른 기기에서 넣은 강사 배정이 사라졌음)
+function planMerge(base, mine, srv) {
+  const B = new Map(base.map(s => [s.id, stable(s)])), M = new Map(mine.map(s => [s.id, s])), out = [], seen = new Set();
+  for (const s of srv) {
+    seen.add(s.id);
+    const m = M.get(s.id), b = B.get(s.id);
+    if (b !== undefined && !m) continue; // 이 기기에서 지운 칸
+    out.push(m && b !== undefined && stable(m) !== b ? m : m && b === undefined ? m : s);
+  }
+  for (const m of mine) if (!seen.has(m.id) && !B.has(m.id)) out.push(m); // 이 기기에서 새로 만든 칸
+  return out;
+}
+async function putPlan(k, v) {
+  const o = last.get(k), ref = doc(db, k);
+  let base = null; try { base = o ? JSON.parse(o).slots || [] : null; } catch (e) { base = null; }
+  let merged = v.slots || [], changed = false;
+  await F.runTransaction(db, async tx => {
+    const cur = await tx.get(ref), srv = cur.exists() ? cur.data().slots || [] : null;
+    merged = v.slots || []; changed = false;
+    if (srv && base && stable(srv) !== stable(base)) { merged = planMerge(base, v.slots || [], srv); changed = stable(merged) !== stable(v.slots || []); }
+    tx.set(ref, { slots: merged });
+  });
+  if (changed) { const j = S.jobs.find(x => x.id === k.split('/')[1]); if (j) { j.plan = { slots: merged }; later(); } }
+  return { slots: merged };
+}
 async function put(k, v) {
+  if (k.endsWith('/plan/main')) return putPlan(k, v);
   const o = last.get(k);
   // 시간표(칸 목록)와 대화방은 통째로, 처음 쓰는 문서도 통째로
   if (!o || k.endsWith('/plan/main') || k.startsWith('rooms/')) return setDoc(doc(db, k), v, k.startsWith('jobs/') || k.startsWith('rooms/') ? { merge: true } : {});
@@ -215,14 +243,14 @@ async function flush() {
   // 대화방은 보안 규칙을 아직 안 올렸으면 막힘 → 다른 저장에 영향 없고 경고줄도 안 띄움
   const tryDo = async (k, f) => { try { await f(); } catch (e) { console.warn('save', k, e.code || e); if (!k.startsWith('rooms/')) errs.push({ k, e }); } };
   try {
-    const P = payloads(), R = readMarks(), order = k => k.startsWith('users/') ? 0 : k.startsWith('jobs/') ? (k.includes('/plan/') ? 1.5 : 1) : k.startsWith('apps/') ? 2 : k.startsWith('rooms/') ? 4 : 3;
+    const P = payloads(), R = readMarks(), order = k => k.startsWith('users/') ? 0 : k.startsWith('jobs/') ? (k.includes('/plan/') ? (last.has(k.split('/').slice(0, 2).join('/')) ? 0.5 : 1.5) : 1) : k.startsWith('apps/') ? 2 : k.startsWith('rooms/') ? 4 : 3;
     const writes = [...P].filter(([k, v]) => last.get(k) !== stable(v)).sort((a, b) => order(a[0]) - order(b[0]));
     for (const [k, v] of writes) {
       if (g !== GEN) break; // 계정·역할을 바꾸는 중이면 멈춤
       await tryDo(k, async () => {
         if (k.endsWith('/plan/main')) await planBackup(k);
         const nw = k.startsWith('jobs/') && !k.includes('/plan/') && !last.has(k);
-        await put(k, v); last.set(k, stable(v));
+        const r = await put(k, v); last.set(k, stable(r && r.slots ? r : v));
         if (nw && TD) TD.cnt = { ...(TD.cnt || {}), [ymNow()]: ((TD.cnt || {})[ymNow()] || 0) + 1 };
       });
     }
@@ -911,17 +939,28 @@ REAL.report = async id => {
   try { await updateDoc(doc(db, 'jobs', id), { ['reports.' + uidMe]: new Date().toISOString() }); toast('신고했어요. 고마워요'); }
   catch (e) { const j = job(id); if (j && j.reports) delete j.reports[uidMe]; render(); toast(e.code === 'permission-denied' ? '강사 계정만 신고할 수 있어요' : '신고하지 못했어요. 인터넷을 확인해 주세요'); }
 };
+// 업체 서류 양식 목록은 앱을 켤 때 한 번만 읽음 → 오래 켜 둔 화면(다른 폰·PC)에서 양식을 올리면
+// 그사이 다른 기기에서 올린 양식이 목록에서 빠졌음(11/18 '업데이트 하면 하나씩 없어져'). 고치기 직전에 서버 목록을 다시 읽고,
+// 직원은 목록 통째가 아니라 그 서류 한 칸만 고침
+async function formsFresh(c) {
+  if (!c) return;
+  const d = await getDoc(doc(db, 'users', CO)).catch(() => null); if (!d || !d.exists()) return;
+  const x = d.data(), sf = x.role === 'c' ? x.forms : (x.side || {}).forms;
+  c.forms = { ...(sf || {}) };
+  // 대표: '마지막으로 맞춘 내용'도 서버 목록으로 → 저장할 때 바뀐 그 서류 칸만 감
+  if (!isStaffView() && CO === uidMe) { const k = `users/${uidMe}`, o = last.get(k); if (o) { try { const L = JSON.parse(o); if (x.role === 'c') L.forms = c.forms; else if (L.side) L.side.forms = c.forms; last.set(k, stable(L)); } catch (e) { } } }
+}
 REAL.formUp = async (n, f) => {
   // 대표·직원 모두 (11/17 준용 결정). 파일은 업체(CO) 양식 자리, 직원은 업체 문서의 forms 목록만 직접 고침(규칙: 직원은 forms 칸만)
   try { if (!await fileSave(`users/${CO}/forms/${n}`, f)) return; } catch (e) { return toast(e.code === 'permission-denied' ? '권한이 없어요. 운영자에게 보안 규칙 게시를 확인해 달라고 해 주세요' : '올리지 못했어요: ' + e.code); }
-  const c = S.cos.find(x => x.id === CO); c.forms = { ...(c.forms || {}), [n]: f.name };
-  if (isStaffView()) await updateDoc(doc(db, 'users', CO), { forms: c.forms }).catch(e => console.warn('forms', e.code));
+  const c = S.cos.find(x => x.id === CO); await formsFresh(c); c.forms = { ...(c.forms || {}), [n]: f.name };
+  if (isStaffView()) await updateDoc(doc(db, 'users', CO), new F.FieldPath('forms', n), f.name).catch(e => console.warn('forms', e.code));
   save(); render(); toast(`${n} 양식을 올렸어요`);
 };
 REAL.formDel = async n => {
   try { await fileDel(`users/${CO}/forms/${n}`); } catch (e) { return toast('지우지 못했어요: ' + e.code); }
-  const c = S.cos.find(x => x.id === CO); const f = { ...(c.forms || {}) }; delete f[n]; c.forms = f;
-  if (isStaffView()) await updateDoc(doc(db, 'users', CO), { forms: f }).catch(e => console.warn('forms', e.code));
+  const c = S.cos.find(x => x.id === CO); await formsFresh(c); const f = { ...(c.forms || {}) }; delete f[n]; c.forms = f;
+  if (isStaffView()) await updateDoc(doc(db, 'users', CO), new F.FieldPath('forms', n), deleteField()).catch(e => console.warn('forms', e.code));
   save(); render(); toast('양식을 지웠어요');
 };
 // 일정(공고)마다 원청 양식: 업체 양식 자리(users/{업체}/forms)에 '{공고id}__{서류}' 이름으로 저장 → 규칙 변경 없음
