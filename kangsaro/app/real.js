@@ -916,6 +916,13 @@ REAL.doc = async (appId, n, f) => {
   if (!ok) { if (f.size > BIG || !confirm('파일을 바로 올리지 못했어요. 대신 구글 드라이브 공유 링크로 낼까요?')) return; const u = prompt('구글 드라이브 공유 링크를 붙여 주세요'); if (!u || !/^https?:\/\//.test(u.trim())) return; name = u.trim(); }
   a.docs = { ...(a.docs || {}), [n]: name }; save(); render(); toast(`${n} 냈어요`);
 };
+// 낸 파일 하나 지우기 (같은 서류를 여러 개 낼 수 있어서, 잘못 낸 것만 지움)
+REAL.docDel = async (appId, k) => {
+  const a = S.apps.find(x => x.id === appId); if (!a) return;
+  const v = (a.docs || {})[k];
+  if (v && !/^https?:\/\//.test(v)) { try { await fileDel(`apps/${appId}/files/${k}`); } catch (e) { return toast('지우지 못했어요: ' + (e.code || e.message)); } }
+  const d = { ...(a.docs || {}) }; delete d[k]; a.docs = d; save(); render(); toast('지웠어요');
+};
 
 /* ===== 푸시 알림: 이 기기 토큰을 users/{나}/push 에 저장 → 서버가 새 알림·공지·지원 때 보냄 ===== */
 const isStandalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
