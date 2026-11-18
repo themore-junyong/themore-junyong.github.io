@@ -2,7 +2,7 @@
    HIDE = true  → 화면·제목에서 '위듀케이션'을 지움
    HIDE = false → 원래대로 보임 (이 한 줄만 바꾸면 됨) */
 (function(){
-  var HIDE = true;
+  var HIDE = false;
   window.TM_BRAND_HIDDEN = HIDE;
   if(!HIDE) return;
   var RULES = [
