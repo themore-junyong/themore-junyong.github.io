@@ -939,17 +939,28 @@ REAL.report = async id => {
   try { await updateDoc(doc(db, 'jobs', id), { ['reports.' + uidMe]: new Date().toISOString() }); toast('신고했어요. 고마워요'); }
   catch (e) { const j = job(id); if (j && j.reports) delete j.reports[uidMe]; render(); toast(e.code === 'permission-denied' ? '강사 계정만 신고할 수 있어요' : '신고하지 못했어요. 인터넷을 확인해 주세요'); }
 };
+// 업체 서류 양식 목록은 앱을 켤 때 한 번만 읽음 → 오래 켜 둔 화면(다른 폰·PC)에서 양식을 올리면
+// 그사이 다른 기기에서 올린 양식이 목록에서 빠졌음(11/18 '업데이트 하면 하나씩 없어져'). 고치기 직전에 서버 목록을 다시 읽고,
+// 직원은 목록 통째가 아니라 그 서류 한 칸만 고침
+async function formsFresh(c) {
+  if (!c) return;
+  const d = await getDoc(doc(db, 'users', CO)).catch(() => null); if (!d || !d.exists()) return;
+  const x = d.data(), sf = x.role === 'c' ? x.forms : (x.side || {}).forms;
+  c.forms = { ...(sf || {}) };
+  // 대표: '마지막으로 맞춘 내용'도 서버 목록으로 → 저장할 때 바뀐 그 서류 칸만 감
+  if (!isStaffView() && CO === uidMe) { const k = `users/${uidMe}`, o = last.get(k); if (o) { try { const L = JSON.parse(o); if (x.role === 'c') L.forms = c.forms; else if (L.side) L.side.forms = c.forms; last.set(k, stable(L)); } catch (e) { } } }
+}
 REAL.formUp = async (n, f) => {
   // 대표·직원 모두 (11/17 준용 결정). 파일은 업체(CO) 양식 자리, 직원은 업체 문서의 forms 목록만 직접 고침(규칙: 직원은 forms 칸만)
   try { if (!await fileSave(`users/${CO}/forms/${n}`, f)) return; } catch (e) { return toast(e.code === 'permission-denied' ? '권한이 없어요. 운영자에게 보안 규칙 게시를 확인해 달라고 해 주세요' : '올리지 못했어요: ' + e.code); }
-  const c = S.cos.find(x => x.id === CO); c.forms = { ...(c.forms || {}), [n]: f.name };
-  if (isStaffView()) await updateDoc(doc(db, 'users', CO), { forms: c.forms }).catch(e => console.warn('forms', e.code));
+  const c = S.cos.find(x => x.id === CO); await formsFresh(c); c.forms = { ...(c.forms || {}), [n]: f.name };
+  if (isStaffView()) await updateDoc(doc(db, 'users', CO), new F.FieldPath('forms', n), f.name).catch(e => console.warn('forms', e.code));
   save(); render(); toast(`${n} 양식을 올렸어요`);
 };
 REAL.formDel = async n => {
   try { await fileDel(`users/${CO}/forms/${n}`); } catch (e) { return toast('지우지 못했어요: ' + e.code); }
-  const c = S.cos.find(x => x.id === CO); const f = { ...(c.forms || {}) }; delete f[n]; c.forms = f;
-  if (isStaffView()) await updateDoc(doc(db, 'users', CO), { forms: f }).catch(e => console.warn('forms', e.code));
+  const c = S.cos.find(x => x.id === CO); await formsFresh(c); const f = { ...(c.forms || {}) }; delete f[n]; c.forms = f;
+  if (isStaffView()) await updateDoc(doc(db, 'users', CO), new F.FieldPath('forms', n), deleteField()).catch(e => console.warn('forms', e.code));
   save(); render(); toast('양식을 지웠어요');
 };
 // 일정(공고)마다 원청 양식: 업체 양식 자리(users/{업체}/forms)에 '{공고id}__{서류}' 이름으로 저장 → 규칙 변경 없음
