@@ -4,6 +4,7 @@ const { onCall, HttpsError } = require('firebase-functions/v2/https');
 const { defineSecret } = require('firebase-functions/params');
 const { initializeApp } = require('firebase-admin/app');
 const { getFirestore } = require('firebase-admin/firestore');
+const { getStorage } = require('firebase-admin/storage');
 
 initializeApp();
 const db = getFirestore();
@@ -128,6 +129,27 @@ exports.chatDoneJob = onDocumentUpdated({ ...trig, document: 'jobs/{id}' }, asyn
   const b = e.data.before.data() || {}, a = e.data.after.data() || {};
   if (b.status === a.status || a.status !== '마감') return;
   await chatDoneCheck(e.params.id);
+});
+
+/* ===== 강의를 지우면 딸린 기록 정리 (jobGone) =====
+   업체 앱은 지급·입금 기록이나 확정 강사가 있으면 지우기를 막음. 그래도 서버는 한 번 더 지켜서
+   지급(paidAt)·입금 확인(selfPaid, recv ok)·확정인 지원서는 남기고, 나머지 지원서(제출 서류·큰 파일 포함)·공지·대화방·시간표만 지움 */
+const { onDocumentDeleted } = require('firebase-functions/v2/firestore');
+exports.jobGone = onDocumentDeleted({ ...trig, document: 'jobs/{id}' }, async e => {
+  const id = e.params.id, j = (e.data && e.data.data()) || {};
+  await db.recursiveDelete(db.doc(`jobs/${id}`)).catch(x => console.warn('jobGone plan', id, x.message)); // plan/main·prev 같은 하위 문서
+  const room = db.doc(`rooms/${id}`); if ((await room.get()).exists) await db.recursiveDelete(room);
+  const nt = await db.collection('notices').where('jobId', '==', id).get();
+  await Promise.all(nt.docs.map(d => d.ref.delete()));
+  const ap = await db.collection('apps').where('jobId', '==', id).get();
+  let gone = 0, kept = 0;
+  for (const d of ap.docs) {
+    const a = d.data();
+    if (a.paidAt || a.selfPaid || a.recv === 'ok' || a.status === '확정') { kept++; continue; }
+    try { await getStorage().bucket().deleteFiles({ prefix: `apps/${d.id}/` }); } catch (x) { /* 큰 파일 저장소를 안 켰으면 그냥 넘어감 */ }
+    await db.recursiveDelete(d.ref); gone++;
+  }
+  console.log('jobGone', id, j.coId || '', `apps -${gone} kept ${kept}, notices -${nt.size}`);
 });
 
 /* ===== 이용 기간·요금제 =====
