@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<meta name="build" content="2026-11-08.2">
+<meta name="build" content="2026-11-22.1">
 <title>교회 출석 · THE MORE</title>
 <meta name="theme-color" content="#1F6F78">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -312,7 +312,7 @@ textarea.memo{min-height:60px;border:1px solid var(--line);background:var(--bg);
       <section>
         <h2>교회</h2>
         <label>교회 고르기<select id="aChurch"></select></label>
-        <p class="hint hidden" id="aStaffNote">교역자·담임목사는 이 교회의 성도·사진·출석 정리를 여기서 할 수 있어요. 교회 이름과 명단(이메일)은 앱 관리자만 바꿀 수 있어요.</p>
+        <p class="hint hidden" id="aStaffNote">교역자·담임목사는 이 교회의 성도·사진·출석 정리를 여기서 할 수 있어요. 담임목사는 교역자·리더·재정 명단과 예배 종류도 바꿀 수 있어요. 교회 이름과 담임목사 명단은 앱 관리자만 바꿀 수 있어요.</p>
         <div id="aChurchEdit">
         <label>교회 이름<input id="aName" placeholder="OO교회"></label>
         <label>예배 종류 (쉼표로 구분)<input id="aServices" placeholder="주일낮, 주일저녁, 수요, 금요"></label>
@@ -1311,7 +1311,6 @@ function openAdminKeep(id) { openAdmin(); $("#aChurch").value = id; fillAdmin(ad
 function openAdmin() {
   show("sAdmin");
   $("#sAdmin h1").textContent = S.admin ? "관리" : "교회 관리";
-  $("#aChurchEdit").classList.toggle("hidden", !S.admin);
   $("#aDelSec").classList.toggle("hidden", !S.admin);
   $("#aStaffNote").classList.toggle("hidden", S.admin);
   const sel = $("#aChurch");
@@ -1319,8 +1318,14 @@ function openAdmin() {
   if (S.church) sel.value = S.church.id;
   fillAdmin(adminList().find(c => c.id === sel.value) || null);
 }
+// 담임목사는 자기 교회의 교역자·리더·재정 명단과 예배 종류만 바꿀 수 있음 (교회 이름·담임목사 명단은 관리자만)
+const isPastorOf = (c) => !!c && (c.pastors || []).includes(myMail());
 function fillAdmin(c) {
   adminCid = c?.id || null;
+  const pastorOnly = !S.admin && isPastorOf(c);
+  $("#aChurchEdit").classList.toggle("hidden", !S.admin && !pastorOnly);
+  $("#aName").readOnly = $("#aPastors").readOnly = pastorOnly;
+  $("#aNew").classList.toggle("hidden", !S.admin);
   $("#aName").value = c?.name || "";
   $("#aServices").value = (c?.services || ["주일낮","주일저녁","수요","금요"]).join(", ");
   const staff = c?.staff || [];
@@ -1371,7 +1376,7 @@ $("#aDel").onclick = async () => {
   } catch (e) { msg.textContent = "삭제 실패: " + e.message; }
 };
 $("#aSave").onclick = async () => {
-  if (!S.admin) return;
+  if (!S.admin) return savePastorLists();
   const data = { name: $("#aName").value.trim(), services: $("#aServices").value.split(",").map(s => s.trim()).filter(Boolean), leaders: leaderList(), staff: staffList(), pastors: emailList($("#aPastors")), finance: emailList($("#aFinance")) };
   if (!data.name) return ($("#aMsg").textContent = "교회 이름을 넣어 주세요.");
   try {
@@ -1384,6 +1389,24 @@ $("#aSave").onclick = async () => {
     adminCid = id; openAdminKeep(id); $("#aMsg").textContent = "저장했어요.";
   } catch (e) { $("#aMsg").textContent = "저장 실패: " + e.message; }
 };
+
+// 담임목사 저장: 담임목사 명단·교회 이름은 그대로 두고 교역자·리더·재정 명단과 예배 종류만
+async function savePastorLists() {
+  const c = adminList().find(x => x.id === adminCid);
+  if (!isPastorOf(c)) return;
+  const pastors = c.pastors || [];
+  $("#aPastors").value = pastors.join("\n"); $("#aName").value = c.name || "";
+  const data = { services: $("#aServices").value.split(",").map(s => s.trim()).filter(Boolean), leaders: leaderList(), staff: staffList(), finance: emailList($("#aFinance")) };
+  if (!data.services.length) return ($("#aMsg").textContent = "예배 종류를 하나 이상 넣어 주세요.");
+  try {
+    await S.store.saveChurch(c.id, data);
+    const n = { ...c, ...data };
+    S.allChurches = (S.allChurches || []).map(x => x.id === c.id ? n : x);
+    S.churches = myChurches();
+    if (S.church?.id === c.id) S.church = n;
+    openAdminKeep(c.id); $("#aMsg").textContent = "저장했어요.";
+  } catch (e) { $("#aMsg").textContent = "저장 실패: " + e.message; }
+}
 
 // 시트에서 복사한 글(탭) 또는 CSV를 표로. 따옴표 안의 줄바꿈도 처리
 function parseTable(text) {

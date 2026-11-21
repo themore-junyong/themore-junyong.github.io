@@ -7,6 +7,7 @@ rules_version = '2';
 // - churches/{교회}.leaders 배열에 있는 사람 = 그 교회를 쓰는 사람. 출석 체크와 성도 정보 보기 (연락처·메모 제외).
 // - churches/{교회}.staff 배열에 있는 사람 = 교역자. 위에 더해 성도 추가·수정·삭제. (앱이 staff도 leaders에 넣어 저장함)
 // - churches/{교회}.pastors 배열 = 담임목사. 교역자 권한 + 재정 (앱이 pastors를 staff·leaders에도 넣어 저장함)
+//   담임목사는 자기 교회의 교역자·리더·재정 명단과 예배 종류를 바꿀 수 있음. 교회 이름·담임목사 명단·새 교회·삭제는 관리자만 (2026-11-22)
 // - churches/{교회}.finance 배열에 있는 사람 = 재정 담당. 헌금·장부(재정)만. 교역자·리더·앱 관리자는 재정을 못 봄.
 // - 그 밖의 사람은 아무것도 볼 수 없음.
 service cloud.firestore {
@@ -52,7 +53,16 @@ service cloud.firestore {
     match /churches/{cid} {
       allow read: if isAdmin() || (signedIn() && (myEmail() in resource.data.get('leaders', []) || myEmail() in resource.data.get('pastors', [])
         || myEmail() in resource.data.get('finance', [])));
-      allow write: if isAdmin();
+      allow create, delete: if isAdmin();
+      // 담임목사도 자기 교회의 교역자·리더·재정 명단과 예배 종류는 바꿀 수 있음 (2026-11-22)
+      // 교회 이름·담임목사 명단은 관리자만. 담임목사는 교역자·리더 명단에서 빠질 수 없음
+      allow update: if isAdmin() || (signedIn() && myEmail() in resource.data.get('pastors', [])
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['staff', 'leaders', 'finance', 'services'])
+        && request.resource.data.get('staff', []) is list && request.resource.data.get('leaders', []) is list
+        && request.resource.data.get('finance', []) is list && request.resource.data.get('services', []) is list
+        && request.resource.data.get('leaders', []).size() <= 300 && request.resource.data.get('finance', []).size() <= 20
+        && resource.data.get('pastors', []).toSet().difference(request.resource.data.get('staff', []).toSet()).size() == 0
+        && request.resource.data.get('staff', []).toSet().difference(request.resource.data.get('leaders', []).toSet()).size() == 0);
 
       // 연락처(phone)·메모(memo)는 성도 문서에 새로 넣거나 바꿀 수 없고 contacts에만 둠 (예전 문서에 남은 값은 교역자가 앱을 열면 옮겨짐)
       match /members/{mid} {
