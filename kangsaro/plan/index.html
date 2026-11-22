@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>강의 시간표 · 강사로</title>
+<link rel="stylesheet" href="../fonts/font.css">
+<link rel="icon" href="../try/icons/icon-192.png">
+<style>
+:root{color-scheme:light}
+body{margin:0;background:#F4F5F7;color:#1D1F23;font-family:'S-Core Dream','Pretendard','Apple SD Gothic Neo','Malgun Gothic',sans-serif;padding:20px 16px 40px}
+.wrap{max-width:1240px;margin:0 auto;display:flex;flex-direction:column;gap:12px}
+.top{display:flex;align-items:center;gap:8px;font-size:13px;color:#6B7280}
+.top b{color:#2563EB;font-size:15px}
+.msg{background:#fff;border:1px solid #D9DCE1;border-radius:12px;padding:18px;font-size:15px;line-height:1.6}
+.foot{font-size:12px;color:#6B7280;line-height:1.6}
+.foot a{color:#2563EB}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><b>강사로</b><span>강의 시간표</span><span id="upd" style="margin-left:auto"></span></div>
+  <div id="main"><div class="msg">시간표를 불러오는 중이에요…</div></div>
+  <div class="foot">업체가 시간표를 고치면 이 화면도 저절로 바뀌어요. 이 주소는 강의를 함께하는 분들에게만 보내 주세요.<br>강사로 앱을 쓰면 내 칸만 달력에 뜨고 서류·공지도 한곳에서 볼 수 있어요. <a href="../" target="_blank" rel="noopener">강사로 알아보기</a></div>
+</div>
+<script src="view.js"></script>
+<script type="module">
+import { firebaseConfig } from '../app/firebase-config.js';
+const G = 'https://www.gstatic.com/firebasejs/10.12.2';
+const $ = s => document.querySelector(s), k = new URLSearchParams(location.search).get('k') || '';
+const fail = t => { $('#main').innerHTML = `<div class="msg">${t}</div>`; };
+if (!/^[A-Za-z0-9_-]{20,}$/.test(k)) fail('주소가 올바르지 않아요. 받은 링크를 다시 확인해 주세요.');
+else {
+  try {
+    const { initializeApp } = await import(`${G}/firebase-app.js`);
+    const F = await import(`${G}/firebase-firestore.js`);
+    const db = F.getFirestore(initializeApp(firebaseConfig));
+    if (new URLSearchParams(location.search).has('emu')) F.connectFirestoreEmulator(db, '127.0.0.1', 8080);
+    KSRPV.bind();
+    F.onSnapshot(F.doc(db, 'pubPlans', k), d => {
+      if (!d.exists()) return fail('이 시간표 링크는 꺼졌거나 없어요. 업체에 새 링크를 받아 주세요.');
+      const D = d.data(); document.title = `${D.title || '강의'} 시간표 · 강사로`;
+      const cur = document.querySelector('.pv') && document.querySelector('.pv').dataset.pvcur;
+      $('#main').innerHTML = KSRPV.html(D);
+      if (cur) KSRPV.pick(document.querySelector('.pv'), cur);
+      const n = new Date(); $('#upd').textContent = `${n.getHours()}:${String(n.getMinutes()).padStart(2, '0')} 기준`;
+    }, e => { console.warn(e.code); fail(e.code === 'permission-denied' ? '이 시간표 링크는 기간이 지났거나 꺼졌어요. 업체에 새 링크를 받아 주세요.' : '시간표를 불러오지 못했어요. 인터넷을 확인하고 새로고침해 주세요.'); });
+  } catch (e) { console.error(e); fail('시간표를 불러오지 못했어요. 새로고침해 주세요.'); }
+}
+</script>
+</body>
+</html>
