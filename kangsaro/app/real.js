@@ -158,6 +158,8 @@ function payloads() {
     out.set(`jobs/${j.id}`, omit(j, ['notices', 'reports', 'plan']));
     // 운영 시간표(누가 어느 칸)는 업체·연결된 강사만 보는 하위 문서로
     if (j.plan) out.set(`jobs/${j.id}/plan/main`, { slots: j.plan.slots || [] });
+    // 로그인 없이 보는 시간표 링크(켜 둔 강의만): 강의명·반·시간·강사 이름만. 강사료·연락처 없음. 마지막 날 + 30일 뒤 저절로 못 열림
+    if (j.plan && PUBK[j.id]) out.set(`pubPlans/${PUBK[j.id]}`, pubDoc(j, c));
     // 강의 대화방: 확정 강사가 있고 아직 끝나지 않은 강의만
     { const r = roomOf(j); if (r.members.length && !chatDone(j)) out.set(`rooms/${j.id}`, r); }
     for (const n of j.notices || []) out.set(`notices/${n.id}`, { ...n, jobId: j.id, coId: c });
@@ -292,7 +294,7 @@ function saveErr(on, code, list) {
   b.innerHTML = `<span style="flex:1;min-width:12em">⚠ 저장이 안 된 것이 있어요${kinds.length ? `: <u>${esc(kinds.join(', '))}</u>` : ''}${code === 'permission-denied' ? ' (권한 문제)' : ''}. 새로고침하면 그 부분은 사라질 수 있어요.</span><button class="btn sm" style="background:#fff;color:#C62828;border:0" onclick="this.disabled=true;window.KSR_RESAVE&&window.KSR_RESAVE()">다시 저장</button>${L.length ? `<details style="flex-basis:100%;font-weight:400;font-size:12px"><summary>자세히 (캡처해서 보내 주세요)</summary>${L.slice(0, 12).map(x => `<div>${esc(x)}</div>`).join('')}</details>` : ''}`;
 }
 window.KSR_RESAVE = () => flush();
-const mayDelete = k => /^(evs|notices|jobs|alerts)\//.test(k);
+const mayDelete = k => /^(evs|notices|jobs|alerts|pubPlans)\//.test(k);
 // 업체가 확정한 강사만 그 강사의 연락처·계좌·서류를 볼 수 있게 표시
 async function syncLinks() {
   const want = new Map();
@@ -321,7 +323,24 @@ function putJob(j) {
   else if (!j.op) delete j.plan;
 }
 // 운영 시간표: 업체와 확정(연결)된 강사만 읽을 수 있음. 못 읽으면 그냥 보통 강의처럼 보임
-window.PLANST = {}; window.PLANPREV = {}; window.PLANDEL = new Set();
+window.PLANST = {}; window.PLANPREV = {}; window.PLANDEL = new Set(); window.PUBK = {};
+// 시간표 링크: 주소 열쇠는 업체·연결된 강사만 읽는 jobs/{id}/plan/link 에, 내용은 pubPlans/{열쇠} 에 (열쇠를 아는 사람만 읽음, 목록 보기 막힘)
+const pubExp = j => { const L = (j.dates || []).slice().sort().pop(); return (L ? Date.parse(L + 'T23:59:59+09:00') : Date.now()) + 30 * 864e5; };
+const pubDoc = (j, c) => ({ ...pubPlanData(j), coId: c, jobId: j.id, exp: pubExp(j) });
+window.KSR_PUBON = async j => {
+  if (PUBK[j.id]) return PUBK[j.id];
+  const b = crypto.getRandomValues(new Uint8Array(18)), key = btoa(String.fromCharCode(...b)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  const v = clean(pubDoc(j, CO));
+  await setDoc(doc(db, 'pubPlans', key), v);
+  await setDoc(doc(db, 'jobs', j.id, 'plan', 'link'), { key });
+  PUBK[j.id] = key; last.set(`pubPlans/${key}`, stable(v)); return key;
+};
+window.KSR_PUBOFF = async j => {
+  const key = PUBK[j.id]; if (!key) return;
+  await deleteDoc(doc(db, 'jobs', j.id, 'plan', 'link'));
+  await deleteDoc(doc(db, 'pubPlans', key)).catch(e => console.warn('pub off', e.code));
+  delete PUBK[j.id]; last.delete(`pubPlans/${key}`);
+};
 async function loadPlan(id) {
   if (PLANST[id] !== 'ok') PLANST[id] = 'loading';
   let err = false; const d = await getDoc(doc(db, 'jobs', id, 'plan', 'main')).catch(e => { err = true; console.warn('plan', id, e.code); return null; }), j = S.jobs.find(x => x.id === id);
@@ -334,6 +353,9 @@ async function loadPlan(id) {
     later(); return;
   }
   PLANST[id] = 'ok'; j.plan = { slots: d.data().slots || [] }; prime(new Set([`jobs/${id}/plan/main`])); later();
+  // 업체: 시간표 링크를 켜 뒀는지 / 강사: 전체 시간표에 다른 강사 이름이 보이게 이름(공개 정보)만 불러옴
+  if (role === 'c' && !PUBK[id]) { const lk = await getDoc(doc(db, 'jobs', id, 'plan', 'link')).catch(() => null); if (lk && lk.exists() && lk.data().key) { PUBK[id] = lk.data().key; later(); } }
+  if (role === 'i') for (const iid of new Set(j.plan.slots.flatMap(x => [x.inst, x.sub]).filter(Boolean))) if (!S.insts.some(x => x.id === iid)) loadInst(iid, false);
 }
 window.KSR_PLANLOAD = id => { loadPlan(id); };
 window.KSR_PLANPREV = async id => { const pv = await getDoc(doc(db, 'jobs', id, 'plan', 'prev')).catch(() => null); return pv && pv.exists() ? pv.data() : null; };

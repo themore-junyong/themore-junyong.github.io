@@ -144,6 +144,16 @@ service cloud.firestore {
       }
     }
 
+    // 로그인 없이 보는 시간표 링크: 열쇠(문서 이름, 24자 무작위)를 아는 사람만 한 개씩 읽음. 목록 보기는 막음.
+    // 강의 마지막 날 + 30일(exp)이 지나면 못 읽음. 쓰기·끄기는 그 업체(대표·직원)만
+    match /pubPlans/{k} {
+      allow get: if resource.data.exp is number && request.time.toMillis() < resource.data.exp || mine(resource.data.coId);
+      allow list: if false;
+      allow create: if k.size() >= 20 && mine(request.resource.data.coId) && active(request.resource.data.coId) && request.resource.data.exp is number;
+      allow update: if mine(resource.data.coId) && request.resource.data.coId == resource.data.coId && request.resource.data.exp is number;
+      allow delete: if mine(resource.data.coId);
+    }
+
     // 공지: 업체가 쓰고, 받는 강사는 자기 '읽음'만 고침
     match /notices/{n} {
       allow read: if signed() && (mine(resource.data.coId) || me() in resource.data.to);
