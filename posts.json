@@ -1,6 +1,16 @@
 {
- "updated": "2026-11-23T00:50:53.828269+00:00",
+ "updated": "2026-11-23T09:00:48.032822+00:00",
  "posts": [
+  {
+   "kind": "말씀",
+   "src": "tistory",
+   "title": "창세기 2장 18-25절 묵상, 하나님이 처음 좋지 않다 하신 것은? | 창세기 강해 2026 ⑦",
+   "link": "https://changenavigator.tistory.com/entry/%EC%B0%BD%EC%84%B8%EA%B8%B0-2%EC%9E%A5-18-25%EC%A0%88-%EB%AC%B5%EC%83%81-%ED%95%98%EB%82%98%EB%8B%98%EC%9D%B4-%EC%B2%98%EC%9D%8C-%EC%A2%8B%EC%A7%80-%EC%95%8A%EB%8B%A4-%ED%95%98%EC%8B%A0-%EA%B2%83%EC%9D%80-%EC%B0%BD%EC%84%B8%EA%B8%B0-%EA%B0%95%ED%95%B4-2026-%E2%91%A6",
+   "date": "2026-11-22T22:00:40+00:00",
+   "summary": "하나님이 완벽한 에덴에서 처음으로 \"좋지 않다\"고 하신 것은 사람이 혼자인 모습이었어요. 창세기 2장 18절은 \"사람이 혼자 사는 것이 좋지 아니하니\"라고 말하는…",
+   "image": "https://blog.kakaocdn.net/dn/bTt4H3/dJMcafI3u81/CmSYJk0KpmMkdtXLsFaOyk/img.png",
+   "cat": "설교&middot;묵상"
+  },
   {
    "kind": "강사 활동",
    "src": "tistory",
@@ -1288,7 +1298,5 @@
    "cat": "설교&middot;묵상"
   }
  ],
- "errors": [
-  "tistory: <urlopen error timed out>"
- ]
+ "errors": []
 }
