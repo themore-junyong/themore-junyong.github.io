@@ -135,6 +135,10 @@ var S=load(id);S.a=S.a||{};
 function save(){try{localStorage.setItem('test-'+id,JSON.stringify(S))}catch(e){}}
 document.title=T.title;
 var QUIZ=T.kind==='quiz', ITEMS=QUIZ?T.items:order();
+/* 문항 수가 바뀌면(문항 추가 등) 풀던 답이 엉뚱한 문항에 붙지 않게 처음부터 다시. 결과가 나온 기록은 그대로 둠.
+   에니어그램은 72→144문항으로 늘리기 전 기록에 문항 수(n)가 없어서 함께 비움 */
+if(!S.res&&Object.keys(S.a).length&&S.n!==ITEMS.length&&(S.n!=null||id==='enneagram'))S.a={};
+S.n=ITEMS.length;
 function order(){ // 같은 차원 문항이 몰리지 않게 섞되, 매번 같은 순서(검사 id로 고정)
   var a=T.items.map(function(x,i){return i}),seed=0;for(var i=0;i<id.length;i++)seed=seed*31+id.charCodeAt(i)>>>0;
   for(var j=a.length-1;j>0;j--){seed=(seed*1103515245+12345)>>>0;var k=seed%(j+1),t=a[j];a[j]=a[k];a[k]=t}
@@ -190,6 +194,13 @@ function detail(d,sc){
   if(L.length)h+='<dl class="d">'+L.map(function(x){return '<dt>'+x[0]+'</dt><dd>'+x[1]+'</dd>'}).join('')+'</dl>';
   if(D.say)h+='<div><span class="label">면접·자소서에서 이렇게 말해 보세요</span><p class="say">'+D.say+'</p></div>';
   return h+'</div>';
+}
+function centers(sc){ // 에니어그램 힘의 중심(머리·가슴·장): 세 유형씩 묶은 평균 점수
+  var C=T.centers.map(function(c){var v=Math.round(c.dims.reduce(function(s,d){return s+sc[d]},0)/c.dims.length);return {c:c,v:v}}).sort(function(a,b){return b.v-a.v}),t=C[0].c;
+  return '<div class="card"><h3>나의 힘의 중심: '+t.emoji+' '+esc(t.name)+'</h3><p class="soft">9가지 유형은 세 묶음으로 나뉘어요. 세 유형 점수의 평균이에요.</p><div class="bars">'+
+    C.map(function(x,i){return '<div class="bar'+(i===0?' top':'')+'"><span>'+x.c.emoji+' '+esc(x.c.name)+'</span><span class="tr"><span class="fl" style="width:'+Math.max(3,x.v)+'%"></span></span><span class="n">'+x.v+'</span></div>'}).join('')+'</div>'+
+    '<p><b>'+esc(t.name)+' ('+t.dims.map(function(d){return d+'번'}).join('·')+'):</b> '+t.desc+'</p>'+
+    '<p class="note">'+esc(t.name)+' 안에서는 '+t.dims.slice().sort(function(a,b){return sc[b]-sc[a]}).map(function(d){return T.dims[d].name+' '+sc[d]}).join(' · ')+' 순서예요.</p></div>';
 }
 function code16(sc){return Object.keys(T.dims).map(function(d){return sc[d]>=50?T.dims[d].a:T.dims[d].b}).join('')}
 function lvOf(v,worse){ // 점수 → 수준 (번아웃·스트레스처럼 높을수록 나쁜 검사는 색만 반대로)
@@ -273,6 +284,7 @@ function result(){
   }else{
     var r=ranked(sc),top=T.top||1,names=r.slice(0,top).map(function(d){return (T.dims[d].emoji||'')+' '+T.dims[d].name});
     h+='<div class="res-type">'+names.join(' · ')+'</div>'+(T.code?'<p>나의 코드: <b>'+r.slice(0,top).join('')+'</b></p>':'')+'<p class="soft">'+(T.resNote||'점수가 높은 순서예요.')+'</p>'+bars(sc,top)+'</div>';
+    if(T.centers)h+=centers(sc);
     r.slice(0,top).forEach(function(d){h+=detail(d,sc[d])});
     if(T.low){var lw=r[r.length-1];h+='<div class="card"><h3>가장 낮은 영역: '+(T.dims[lw].emoji||'')+' '+esc(T.dims[lw].name)+'</h3><p>'+(T.dims[lw].tip||T.dims[lw].grow||'')+'</p></div>'}
     if(T.all)h+='<details class="card"><summary><b>다른 유형 설명도 보기</b></summary>'+r.slice(top).map(function(d){return detail(d,sc[d])}).join('')+'</details>';
@@ -300,7 +312,7 @@ function go(k){
   if(k==='0'){page=0;if(!S.t0){S.t0=Date.now();save()}}
   else if(k==='prev')page=page===0?'intro':page-1;
   else if(k==='next'){if(page===npages-1){S.res=score();S.t1=Date.now();if(!S.no)S.no=String(Date.now()).slice(-6);save();page='res';sendRes()}else page++}
-  else if(k==='again'){S={a:{}};save();page='intro'}
+  else if(k==='again'){S={a:{},n:ITEMS.length};save();page='intro'}
   else if(k==='print'){window.print();return}
   render();
 }
