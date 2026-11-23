@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-22T19:36:18.650732+00:00",
+ "updated": "2026-11-23T00:50:53.828269+00:00",
  "posts": [
   {
    "kind": "강사 활동",
@@ -1288,5 +1288,7 @@
    "cat": "설교&middot;묵상"
   }
  ],
- "errors": []
+ "errors": [
+  "tistory: <urlopen error timed out>"
+ ]
 }
