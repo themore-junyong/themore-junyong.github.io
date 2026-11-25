@@ -154,6 +154,15 @@ const GROUPS=[
   ['q','sme.html','🏭 중소기업 이해','오해 깨기 O/X 10문제 · 반·조별 정답률 · 회사 조사 체크'],
   ['q','company.html','🔎 좋은 회사 찾기','조건 경매(조마다 100만 원) → 기업 탐정 보고서 · 조별 보고서를 빔에 크게'],
   ['q','manner.html','🤝 비즈니스 매너','첫 출근 상황 퀴즈 13문제(인사·전화·명함·소개·상석) · 3코스 확인표']]],
+ ['첫 출근 법정교육',[
+  ['q','law.html','🛡 첫 출근 법정교육 (처음 화면)','교육 6가지 카드 · 법정 의무교육 한눈에 표 · 확인 퀴즈 · 학습 확인서'],
+  ['q','law.html?h=safety-1','🦺 산업안전','비상구 찾기 · O/X 4문제 → 평택 교반기·화성 37초 · 멈출 권리(제52조) · 미리보기 탭에 반 통계'],
+  ['q','law.html?h=rights-1','📝 내 권리 · 현장실습','근무표 틀린 칸 찾기 · 여수 실습생 사고 · 만 18세 미만 7시간·밤 10시 · 근로계약서'],
+  ['q','law.html?h=harass-1','🙅 직장 내 성희롱 예방','"이건 성희롱일까?" O/X · 2024 실태조사 숫자 · "불편합니다" + 기록 4칸'],
+  ['q','law.html?h=bully-1','🛑 직장 내 괴롭힘 예방','괴롭힘일까 업무 지시일까 4장면 · 세 가지 기준 · 신고 16,373건 · 과태료·벌칙'],
+  ['q','law.html?h=disab-1','🤝 장애인 인식개선','신문지 탑 세 판 · 안내견 거부 사례 · 88.1% · 먼저 묻고 돕기'],
+  ['q','law.html?h=privacy-1','🔒 개인정보보호','출근 인증샷 속 정보 찾기 · 카카오 696명 유출 · 118'],
+  ['q','law.html?h=quiz','📝 법정교육 확인 퀴즈','10문제 · 반 평균·조별 점수 → 학습 확인서(학생 결과로)']]],
  ['AI 수업',[
   ['q','ai.html','🤖 AI 수업 도구 6종','프롬프트 연습장 · AI 거짓말 찾기 · 요청문 만들기 등']]],
  ['창업 · 재도전 클리닉',[
@@ -205,7 +214,7 @@ function render(){
   app.innerHTML=h;
 }
 /* 학생 결과(work): 자소서·검사·면접·퍼스널컬러·1분 자기소개. 학생이 마치면 실시간으로 쌓임 */
-const TOOL={jaso:'📝 자소서',interview:'🎤 모의면접',color:'🎨 퍼스널컬러',intro:'🗣 1분 자기소개',company:'🕵️ 기업 탐정',health:'💪 생활습관','su-m1':'🧭 창업 M1 진단','su-m2':'💡 창업 M2 아이디어','su-m3':'📈 창업 M3 시장 검증','su-m4':'🤖 창업 M4 AI','su-m5':'🗺 창업 M5 로드맵','su-post':'✅ 창업 사후 진단'};
+const TOOL={jaso:'📝 자소서',interview:'🎤 모의면접',color:'🎨 퍼스널컬러',intro:'🗣 1분 자기소개',company:'🕵️ 기업 탐정',health:'💪 생활습관','su-m1':'🧭 창업 M1 진단','su-m2':'💡 창업 M2 아이디어','su-m3':'📈 창업 M3 시장 검증','su-m4':'🤖 창업 M4 AI','su-m5':'🗺 창업 M5 로드맵','su-post':'✅ 창업 사후 진단',law:'🛡 법정교육 확인서'};
 const toolName=t=>TOOL[t]||(t.indexOf('test-')===0?'🧭 검사':t.indexOf('manner-c')===0?'🤝 매너 코스':t);
 let J=[],W=[],wUnsub=null,hbT=null,openW={};
 const clean=b=>String(b||'').replace(/\n?⟦[\s\S]*⟧\s*$/,'');
@@ -263,7 +272,7 @@ function live(){ // 방이 정해지면: hb(살아 있음) 1분마다 찍기 + �
   clearInterval(hbT);if(wUnsub)wUnsub();
   const ref=F.doc(db,'rooms',S.pin),beat=()=>F.updateDoc(ref,{hb:F.serverTimestamp()}).catch(()=>{});
   beat();hbT=setInterval(beat,60e3);if(!window.__tmVis){window.__tmVis=1;document.addEventListener('visibilitychange',()=>{if(!document.hidden&&S.pin)F.updateDoc(F.doc(db,'rooms',S.pin),{hb:F.serverTimestamp()}).catch(()=>{})})}
-  wUnsub=F.onSnapshot(F.collection(db,'rooms',S.pin,'work'),q=>{const all=q.docs.map(d=>Object.assign({id:d.id},d.data()));J=all.filter(w=>w.tool==='join');W=all.filter(w=>w.tool!=='join'&&!/^(ai-(lie|who|eth)|sme-ox|manner-q)$/.test(w.tool)).sort((a,b)=>(a.t?a.t.toMillis():0)-(b.t?b.t.toMillis():0));render()},()=>{});
+  wUnsub=F.onSnapshot(F.collection(db,'rooms',S.pin,'work'),q=>{const all=q.docs.map(d=>Object.assign({id:d.id},d.data()));J=all.filter(w=>w.tool==='join');W=all.filter(w=>w.tool!=='join'&&!/^(ai-(lie|who|eth)|sme-ox|manner-q|law-(ox|feel|quiz))$/.test(w.tool)).sort((a,b)=>(a.t?a.t.toMillis():0)-(b.t?b.t.toMillis():0));render()},()=>{});
 }
 function csv(){const rows=[['조','이름','도구','제목','시각','내용']].concat(W.map(w=>[w.team||'',w.nick,toolName(w.tool).replace(/^\S+ /,''),w.title,w.t?new Date(w.t.toMillis()).toLocaleString('ko-KR'):'',clean(w.body)]));
   const t='\ufeff'+rows.map(r=>r.map(x=>'"'+String(x==null?'':x).replace(/"/g,'""')+'"').join(',')).join('\r\n');
