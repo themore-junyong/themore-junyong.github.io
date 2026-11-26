@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<meta name="build" content="261122-0819">
+<meta name="build" content="261126-0123">
 <title>강사로</title>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#2563EB">
@@ -789,8 +789,8 @@ function entryCard(e,clash){const tx=tax(e.fee),t=todayIso(),left=Math.round((dt
   const a=e.kind==='app'&&e.ref.status==='확정'&&e.d>=t?e.ref:null,j=e.job,un=e.kind==='app'?j.notices.filter(n=>(n.to||[]).includes(iid)&&!n.reads[iid]).length:0,miss=a?j.needs.filter(n=>n!=='프로필'&&n!==RRN&&!docOf(a,n)):[];
   // 여러 날 강의: 서류는 일정 전체에 한 번만 내면 됨 → 남은 날 중 첫 카드에만 올리기 칸, 나머지 카드는 한 줄 안내. 공지도 첫 카드에만 펼침
   const mine=a?(myDates(j,iid).length?myDates(j,iid):j.dates).filter(d=>d>=t):[],first=!a||!mine.length||e.d===mine[0],part=dayPart(e.time);
-  const ctrl=e.kind==='ev'?`<div class="row">${[['applied','지원'],['confirmed','확정'],['done','미입금'],['paid','입금 완료'],['no','안 됨']].map(([k,l])=>`<button class="btn sm" data-act="evst" data-id="${e.ref.id}" data-st="${k}" ${e.ref.st===k||(k==='done'&&e.st==='done')?'style="border-color:var(--ac);color:var(--ac)"':''}>${l}</button>`).join('')}<button class="btn sm" data-act="evdel" data-id="${e.ref.id}">지우기</button></div>`
-    :`<p class="mu sm">강사로 안에서 지원한 강의예요. 회사가 확정·지급하면 자동으로 바뀌어요.</p>${e.st==='applied'?`<button class="btn sm" data-act="cancelApp" data-a="${e.ref.id}">지원 취소</button>`:e.st==='confirmed'?`<button class="btn sm" data-act="cancelApp" data-a="${e.ref.id}">확정 강의 취소 (업체에 사유 전달)</button>`:''}`;
+  const ctrl=e.kind==='ev'?`<div class="row">${[['applied','지원'],['confirmed','확정'],['done','미입금'],['paid','입금 완료'],['no','안 됨']].map(([k,l])=>`<button class="btn sm" data-act="evst" data-id="${e.ref.id}" data-st="${k}" ${e.ref.st===k||(k==='done'&&e.st==='done')?'style="border-color:var(--ac);color:var(--ac)"':''}>${l}</button>`).join('')}<button class="btn sm" data-act="evEdit" data-id="${e.ref.id}">✏️ 날짜·시간 고치기</button><button class="btn sm" data-act="evdel" data-id="${e.ref.id}">지우기</button></div>`
+    :`<p class="mu sm">강사로 안에서 지원한 강의예요. 회사가 확정·지급하면 자동으로 바뀌고, 날짜가 바뀌면 업체가 고쳐서 공지가 와요.</p>${e.st==='applied'?`<button class="btn sm" data-act="cancelApp" data-a="${e.ref.id}">지원 취소</button>`:e.st==='confirmed'?`<button class="btn sm" data-act="cancelApp" data-a="${e.ref.id}">확정 강의 취소 (업체에 사유 전달)</button>`:''}`;
   return `<div class="card" data-d="${e.d}" ${e.kind==='app'?`data-j="${j.id}"`:''}><div class="row">${chip(e.st)}${e.d>=t?`<span class="chip ${left<=1?'warn':'off'}">${left<=0?'오늘':'D-'+left}</span>`:''}${un?`<span class="chip warn">새 공지 ${un}</span>`:''}${miss.length?`<span class="chip warn">서류 ${miss.length}${(()=>{const d=miss.map(n=>dueOf(j,n)).filter(Boolean).sort()[0];return d?` · ${md(d)}까지`:''})()}</span>`:''}${e.kind==='app'&&chatNew(j.id)&&chatCan(j)?'<span class="chip warn">새 대화</span>':''}</div><h3>${esc(e.title)}</h3>
   <span class="mu">${md(e.d)}(${dowOf(e.d)}) · ${part?`<b class="chip ${part==='종일'?'confirmed':'off'}" style="font-size:12px">${part}</b> `:''}${esc(e.time||'시간 미정')} · ${esc(e.org)}</span>
   ${e.slots&&(e.slots.length>1||e.slots.some(s=>s.lab))?`<div class="sm" style="display:flex;flex-direction:column;gap:2px;border-left:3px solid var(--ac);padding-left:8px">${e.slots.map(s=>`<span><b>${esc(s.time||'시간 미정')}</b> ${dayPart(s.time)?`<span class="mu">(${dayPart(s.time)})</span> `:''}${esc(s.lab)}</span>`).join('')}</div>`:''}
@@ -1285,6 +1285,13 @@ function sheetDateEdit(j){ui.jcal={p:'e',ym:(j.dates[0]||todayIso()).slice(0,7),
   openSheet(`<div class="row"><h2 class="sp">날짜 바꾸기</h2><button class="btn sm" data-act="closeSheet">닫기</button></div><span class="mu sm">${esc(j.school)} ${esc(j.title)}. 달력에서 누르면 넣고, 다시 누르거나 ✕를 누르면 빠져요.</span>
   <div id="eCal">${jCalHtml(j.dates)}</div><input type="hidden" id="eDates" value="${esc(j.dates.join(', '))}"><div class="row" id="eDateList">${jDateChips(j.dates)}</div>
   <span class="mu sm">저장하면 확정된 강사 달력에도 바로 바뀌고, 강사에게 변경 공지가 가요.</span><button class="btn pri" data-act="jDateSave">저장</button>`)}
+// 내가 직접 넣은 일정(업체가 강사로 밖) 고치기: 업체 사정으로 날짜·시간이 바뀔 때. 같은 evs 문서를 고치므로 D-day·달력·결산·구글 캘린더(서버 gcalEv)가 따라 바뀜
+function sheetEvEdit(e){ui.jcal={p:'v',ym:(e.dates[0]||todayIso()).slice(0,7),mode:'day',start:'',we:false};ui.evId=e.id;
+  openSheet(`<div class="row"><h2 class="sp">일정 고치기</h2><button class="btn sm" data-act="closeSheet">닫기</button></div><span class="mu sm">업체에서 날짜·시간이 바뀌었을 때 여기서 고치세요. 달력에서 누르면 넣고, 다시 누르거나 ✕를 누르면 빠져요.</span>
+  <div class="grid2"><label class="f">강의<input id="vTitle" maxlength="80" value="${esc(e.title||'')}"></label><label class="f">업체<input id="vOrg" maxlength="60" value="${esc(e.org||'')}"></label></div>
+  <div id="vCal">${jCalHtml(e.dates)}</div><input type="hidden" id="vDates" value="${esc(e.dates.join(', '))}"><div class="row" id="vDateList">${jDateChips(e.dates)}</div>
+  <div class="grid2"><label class="f">시간 <span class="mu sm">(비우면 '시간 미정')</span><input id="vTime" maxlength="40" placeholder="예) 09:00~12:00" value="${esc(e.time||'')}"></label><label class="f">1일 강사료(원)<input id="vFee" type="number" inputmode="numeric" value="${+e.fee||''}"></label></div>
+  <span class="mu sm">저장하면 D-day·달력·결산이 바로 바뀌고, 연결한 구글 캘린더 일정도 곧 따라 바뀌어요. 업체에는 아무것도 가지 않아요.</span><button class="btn pri" data-act="evEditSave">저장</button>`)}
 function jSetDates(ds){ds=[...new Set(ds)].sort();const k=JI();$('#'+k+'Dates').value=ds.join(', ');$('#'+k+'DateList').innerHTML=jDateChips(ds);$('#'+k+'Cal').innerHTML=jCalHtml(ds);if(k==='p'){pWarn();pNet()}else if(k==='j')jWarn()}
 const jDatesNow=()=>$('#'+JI()+'Dates').value.split(/[,\s]+/).filter(x=>/^\d{4}-\d{2}-\d{2}$/.test(x));
 function jDateChips(ds){return ds.length?ds.map(d=>`<button class="btn sm" data-act="jdel" data-d="${d}" aria-label="${mdK(d)} 빼기">${mdK(d)}(${dowOf(d)}) ✕</button>`).join(''):'<span class="mu sm">날짜를 고르면 여기에 요일과 함께 보여요. 여러 날이면 계속 고르세요.</span>'}
@@ -1380,6 +1387,13 @@ document.addEventListener('click',async ev=>{
   if(A==='gotPaid'){if(D.kind==='ev'){S.evs.find(x=>x.id===D.id).st='paid'}else{const a=S.apps.find(x=>x.id===D.id);a.selfPaid=true;a.recv='ok'}save();render();sheetUnpaid();return toast('입금 완료로 바꿨어요')}
   if(A==='evImportTxt'){const t=$('#evImportTxt').value;if(!t.trim())return toast('붙여 넣은 내용이 없어요');return importEvs(t)}
   if(A==='evst'){const e=S.evs.find(x=>x.id===D.id);e.st=D.st;save();render();return toast(D.st==='no'?'달력에서 숨겼어요':'바꿨어요')}
+  if(A==='evEdit'){const e=S.evs.find(x=>x.id===D.id);return e?sheetEvEdit(e):undefined}
+  if(A==='evEditSave'){const e=S.evs.find(x=>x.id===ui.evId);if(!e)return closeSheet();const v=[...new Set(jDatesNow())].sort();if(!v.length)return toast('날짜를 하나 이상 골라 주세요');
+    const n={dates:v,time:$('#vTime').value.trim().slice(0,40),title:$('#vTitle').value.trim().slice(0,80)||e.title,org:$('#vOrg').value.trim().slice(0,60),fee:+$('#vFee').value||0};
+    if(Object.keys(n).every(k=>String(n[k])===String(e[k]??(k==='fee'?0:'')))){closeSheet();return toast('바뀐 내용이 없어요')}
+    const moved=v.join()!==e.dates.join(),old=e.dates;Object.assign(e,n);save();closeSheet();
+    const t=todayIso(),nx=v.find(d=>d>=t)||v[0];if(moved){ui.sel=nx;render();slideTo(nx,true)}else render();
+    const cl=moved?clashes(meId(),v,e).length:0;return toast(moved?`${old.map(md).join('·')} → ${v.map(md).join('·')}(으)로 바꿨어요${cl?' · 같은 날 다른 일정이 있어요':''}`:'고쳤어요')}
   if(A==='evdel'){S.evs=S.evs.filter(x=>x.id!==D.id);S.evs=S.evs.filter(x=>!(x.kind==='memo'&&x.side==='L'&&x.ref===D.id));save();render();return toast('지웠어요')}
   if(A==='dayack'||A==='daydep'||A==='dayarr'||A==='daylate'){const a=S.apps.find(x=>x.id===D.a),x=dayOf(a,D.d);
     if(A==='dayack')x.ack=nowIso();
@@ -1635,6 +1649,6 @@ function jTimeSync(){const R=jRanges(),t=$('#jTime'),pe=$('#jPer');if(!t)return;
 document.addEventListener('input',ev=>{if(ev.target.matches&&ev.target.matches('.trvV')){const c=$$('.trvC').find(x=>x.dataset.a===ev.target.dataset.a);if(c)c.checked=!!+ev.target.value}if(ev.target.matches&&ev.target.matches('.jTa,.jTb'))jTimeSync();if(ev.target.id==='jPer')ev.target.dataset.man=ev.target.value?'1':'';if(['pDates','pRaw'].includes(ev.target.id))pWarn();if(['pDates','pFee','pKm','pToll'].includes(ev.target.id))pNet()});
 render();
 </script>
-<script type="module" src="real.js?v=261122-0819"></script>
+<script type="module" src="real.js?v=261126-0123"></script>
 </body>
 </html>
